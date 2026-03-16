@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JMUX — Vik's Phase Breakdown | March 16, 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fa; color: #222; font-size: 13px; }
+
+  .header {
+    background: #003387;
+    color: white;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header .title { font-size: 17px; font-weight: 700; }
+  .header .sub { font-size: 11px; opacity: 0.75; margin-top: 3px; }
+  .header .tag { font-size: 11px; background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 20px; }
+  .orange-bar { height: 4px; background: #F7941D; }
+
+  .container { padding: 20px 28px; max-width: 1050px; margin: 0 auto; }
+
+  /* Vik Quote */
+  .vik-quote {
+    background: #fff;
+    border-left: 5px solid #F7941D;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .vik-quote .label { font-size: 10px; font-weight: 800; color: #F7941D; text-transform: uppercase; margin-bottom: 6px; }
+  .vik-quote blockquote { font-size: 13px; color: #333; font-style: italic; line-height: 1.6; }
+  .vik-quote .attribution { font-size: 11px; color: #888; margin-top: 6px; }
+
+  /* Progress tracker */
+  .progress-bar-wrap { margin-bottom: 24px; }
+  .progress-label { font-size: 11px; font-weight: 700; color: #555; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .progress-track { background: #e2e6f0; border-radius: 20px; height: 12px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 20px; transition: width 0.5s; }
+  .fill-green { background: #28a745; }
+  .fill-orange { background: #F7941D; }
+  .fill-red { background: #dc3545; }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 22px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e6f0;
+  }
+  .section-header .icon { font-size: 18px; }
+  .section-header .text { font-size: 14px; font-weight: 800; color: #003387; text-transform: uppercase; letter-spacing: 0.4px; }
+  .section-header .count { background: #003387; color: white; font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 10px; }
+
+  /* Category blocks */
+  .category {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .cat-header {
+    padding: 11px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  .cat-header.done { background: #d4edda; }
+  .cat-header.partial { background: #fff3cd; }
+  .cat-header.pending { background: #f8d7da; }
+  .cat-header.action { background: #cce5ff; }
+
+  .cat-title { font-size: 13px; font-weight: 700; }
+  .cat-title.done { color: #155724; }
+  .cat-title.partial { color: #856404; }
+  .cat-title.pending { color: #721c24; }
+  .cat-title.action { color: #004085; }
+
+  .cat-pct { font-size: 18px; font-weight: 800; margin-left: 8px; }
+  .pct-done { color: #28a745; }
+  .pct-partial { color: #F7941D; }
+  .pct-pending { color: #dc3545; }
+
+  .cat-body { padding: 0; }
+
+  .row {
+    display: grid;
+    grid-template-columns: 28px 1fr 120px 130px;
+    gap: 10px;
+    padding: 9px 16px;
+    border-bottom: 1px solid #f0f2f7;
+    align-items: start;
+  }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: #f9fafe; }
+
+  .row-icon { font-size: 14px; padding-top: 1px; }
+  .row-content {}
+  .row-title { font-size: 12px; font-weight: 600; color: #222; }
+  .row-detail { font-size: 11px; color: #666; margin-top: 2px; line-height: 1.4; }
+  .row-source { font-size: 10px; color: #aaa; font-style: italic; margin-top: 2px; }
+
+  .status-badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .s-done { background: #d4edda; color: #155724; }
+  .s-partial { background: #fff3cd; color: #856404; }
+  .s-pending { background: #f8d7da; color: #721c24; }
+  .s-action { background: #cce5ff; color: #004085; }
+  .s-blocked { background: #e2e3e5; color: #383d41; }
+  .s-pull { background: #e8d5f5; color: #5a0080; }
+  .s-defer { background: #fce4ec; color: #880e4f; }
+
+  .owner-tag {
+    font-size: 10px;
+    color: #888;
+    background: #f4f6fa;
+    padding: 2px 7px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .owner-tag strong { color: #003387; }
+
+  /* Financial callout */
+  .fin-callout {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .fin-callout .title { font-size: 12px; font-weight: 800; color: #856404; margin-bottom: 8px; }
+  .fin-rows { display: flex; flex-direction: column; gap: 6px; }
+  .fin-row { display: grid; grid-template-columns: 1fr 120px 120px; gap: 10px; font-size: 12px; align-items: center; }
+  .fin-row .item-name { color: #333; font-weight: 600; }
+  .fin-row .cur { color: #dc3545; font-weight: 700; }
+  .fin-row .tgt { color: #28a745; font-weight: 700; }
+  .fin-header { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #888; }
+
+  footer { text-align: center; color: #aaa; font-size: 10px; padding: 16px 0 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="title">JMUX Replacement — Phase Status Breakdown</div>
+    <div class="sub">As directed by Vik (Vikas Vohra) · Project Reporting Meeting · March 16, 2026</div>
+  </div>
+  <div class="tag">🎙️ Based on Meeting Recording</div>
+</div>
+<div class="orange-bar"></div>
+
+<div class="container">
+
+  <!-- VIK QUOTE -->
+  <div class="vik-quote">
+    <div class="label">Vik's Directive — March 16, 2026</div>
+    <blockquote>"Reporting isn't correctly aligned with how the project is running. Phase One needs to be broken into micro-phases. Engineering 100% done, Deployment only 5% done. The stuff that's already happened — what's done is done. Focus on what's coming and what we can control financially. Phase 3 IFRs can be brought into Phase 2 for completion. We have to look at what else we can bring in and what we will NOT be billing in Phase 2."</blockquote>
+    <div class="attribution">— Vikas Vohra, Group Product Manager – IT Infrastructure, PSEG LI</div>
+  </div>
+
+  <!-- OVERALL PROGRESS BARS -->
+  <div class="progress-bar-wrap">
+    <div class="progress-label"><span>📊 Phase 1 Overall Completion (per Vik's micro-phase framework)</span><span>~65%</span></div>
+    <div class="progress-track"><div class="progress-fill fill-orange" style="width:65%"></div></div>
+  </div>
+
+  <!-- ===== COMPLETED ===== -->
+  <div class="section-header">
+    <span class="icon">✅</span>
+    <span class="text">Completed — Phase 1</span>
+    <span class="count">6 items</span>
+  </div>
+
+  <div class="category">
+    <div class="cat-header done">
+      <span class="cat-title done">1. Engineering &amp; Design</span>
+      <span class="cat-pct pct-done">100%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">Site surveys — all 31 Phase 1 sites</div>
+          <div class="row-detail">Visual inspection, photos, fiber connectivity confirmed at all sites</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>B&M</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">IFRs — 30 of 31 Phase 1 sites</div>
+          <div class="row-detail">30 of 31 NY PE-sealed construction documents approved as of Oct 8, 2025</div>
+          <div class="row-source">Source: Oct 2025 B&M presentation, slide 7</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>B&M</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">IFCs — all 31 Phase 1 sites</div>
+          <div class="row-detail">Final sealed construction packages issued to Hawkeye for all sites</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>B&M</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">High Level Design (HLD) + Network Design</div>
+          <div class="row-detail">MPLS ring topology, Nokia 7705 SAR-8 node design, power design complete</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>B&M</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-header done">
+      <span class="cat-title done">2. Procurement &amp; Staging</span>
+      <span class="cat-pct pct-done">100%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">Nokia equipment purchased and delivered</div>
+          <div class="row-detail">All Nokia 7705 SAR-8 nodes, CWDM filters, and accessories procured. Delivered to Hawkeye staging facility.</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>PSEG LI / Nokia</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">Staging — racking, testing, firmware validation</div>
+          <div class="row-detail">All nodes racked, powered, firmware validated, BGP/OSPF/QoS tested in staging. Milestone 1 complete ($57,300 paid to B&M).</div>
+          <div class="row-source">Source: B&M SOW CPS Milestone 1, completed 8/22/2025</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>B&M / Hawkeye</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">Hawkeye construction support coordinator (Bill) — Phase 1 period</div>
+          <div class="row-detail">Bill on-site Aug 2025 – Jan 2026 for Phase 1 construction. Phase 1 construction period complete.</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>B&M (Bill)</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-header done">
+      <span class="cat-title done">3. Construction &amp; Installation — 31 Sites</span>
+      <span class="cat-pct pct-done">100%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">MPLS router installation — all 31 sites</div>
+          <div class="row-detail">Nokia 7705 SAR-8 nodes physically installed, powered, and cabled at all Phase 1 substations</div>
+          <div class="row-source">Source: Alex Lenox email March 16, 2026 — "Installation completed by January"</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>Hawkeye</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">Cat 6 cabling — Hicksville</div>
+          <div class="row-detail">Confirmed complete March 16, 2026. Physical Ethernet cabling from Cisco 9300s to Nokia in place across all Phase 1 sites (interfaces shut down pending BGP config).</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>Hawkeye</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">CWDM filter installation + fiber integration — 31 sites</div>
+          <div class="row-detail">JMUX OC-48 circuits and Nokia MPLS over CWDM filters installed. Parallel MPLS links established. OTDR wavelength test at Hicksville-Syosset confirmed green link light after filter replacement.</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>PSEG LI / B&M</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">CWDM cutovers — October 2025 to February 2026</div>
+          <div class="row-detail">All CWDM cutovers completed across Phase 1 sites within the Oct–Feb window. Nokia running parallel with JMUX as redundant path.</div>
+          <div class="row-source">Source: Alex Lenox email — "Installation and CWDM cutovers completed by January"</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>PSEG LI / B&M</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">NSP fiber installation (physical)</div>
+          <div class="row-detail">Physical fiber run for NSP connectivity is installed and reported weekly as complete. NSP SOFTWARE setup and remote access configuration still pending (see Pending section).</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE</span>
+        <span class="owner-tag"><strong>PSEG LI</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✅</div>
+        <div class="row-content">
+          <div class="row-title">BGP design approved</div>
+          <div class="row-detail">Jaya gave buy-in on BGP architecture in today's meeting (March 16). Lee Blackman to begin change documentation. ASN allocations confirmed. BGP design folder to be created on network share.</div>
+          <div class="row-source">Source: BGP Architecture Meeting, March 16, 2026</div>
+        </div>
+        <span class="status-badge s-done">COMPLETE TODAY</span>
+        <span class="owner-tag"><strong>Jaya / Lee</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PENDING ===== -->
+  <div class="section-header">
+    <span class="icon">🔴</span>
+    <span class="text">Pending — Phase 1 Must Complete Before Close</span>
+    <span class="count">6 items</span>
+  </div>
+
+  <div class="category">
+    <div class="cat-header pending">
+      <span class="cat-title pending">4. Deployment / Pre-Cutover</span>
+      <span class="cat-pct pct-pending">~5%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">NSP software installation &amp; remote access</div>
+          <div class="row-detail">Nokia NSP platform must be fully configured and remote connectivity established before Lee can remotely access any routers. This is the #1 critical path blocker for ALL remaining Phase 1 work.</div>
+          <div class="row-source">Source: Alex Lenox email — "Waiting for completed NSP installation and remote connectivity"</div>
+        </div>
+        <span class="status-badge s-blocked">BLOCKED — CRITICAL</span>
+        <span class="owner-tag"><strong>Nokia / Network Team</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">BGP / Layer 3 configuration — 31 sites (remote)</div>
+          <div class="row-detail">Lee Blackman to remotely configure Nokia routers at all 31 Phase 1 sites once NSP remote access is available. Estimated ~27 days of effort (1–2 days per site). Brings up Nokia as active BGP path in parallel with JMUX.</div>
+          <div class="row-source">Source: B&M VP Meeting March 13 + BGP Meeting March 16</div>
+        </div>
+        <span class="status-badge s-blocked">BLOCKED — AWAITS NSP</span>
+        <span class="owner-tag"><strong>Lee Blackman / B&M</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">Change documentation — Melville &amp; Hicksville</div>
+          <div class="row-detail">Lee to create change tickets for Melville and Hicksville Nokia integration. Must be submitted and approved before any configuration work can begin on those nodes.</div>
+        </div>
+        <span class="status-badge s-action">IN PROGRESS TODAY</span>
+        <span class="owner-tag"><strong>Lee Blackman</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-header pending">
+      <span class="cat-title pending">5. Application Layer 3 Cutover — ~5 Apps</span>
+      <span class="cat-pct pct-pending">0%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">2-Way Radio + DA Radio</div>
+          <div class="row-detail">Remote configuration only. Eddie is the application owner. Easiest to migrate — pilot plan: cut over Syosset first as test site.</div>
+        </div>
+        <span class="status-badge s-blocked">BLOCKED — AWAITS BGP</span>
+        <span class="owner-tag"><strong>B&M + Eddie</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">dSCADA (Prod &amp; QA)</div>
+          <div class="row-detail">More complex — requires approvals from multiple teams including John's team. Cannot start before BGP Layer 3 is live.</div>
+        </div>
+        <span class="status-badge s-blocked">BLOCKED — AWAITS BGP</span>
+        <span class="owner-tag"><strong>B&M + John's Team</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">MicroPAQ + Security / FEMA DA</div>
+          <div class="row-detail">Rolled under FEMA DA — migrating a FEMA DA site = migrating the micropack. Security radio cutover included in Phase 1 scope (per Vik: "RTU cutover and security/radio are part of Phase One, not separate phases").</div>
+        </div>
+        <span class="status-badge s-blocked">BLOCKED — AWAITS BGP</span>
+        <span class="owner-tag"><strong>B&M + PSEG LI</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-header pending">
+      <span class="cat-title pending">6. RTU / Layer 2 Cutovers</span>
+      <span class="cat-pct pct-pending">0%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">RTU + relay circuit cutover — all Phase 1 sites</div>
+          <div class="row-detail">Physical on-site cable migration. Estimated ~32 days total effort. Must follow Layer 3 BGP completion — hard sequential dependency. Requires PSEG Relay team on-site at each location.</div>
+        </div>
+        <span class="status-badge s-blocked">BLOCKED — AWAITS LAYER 3</span>
+        <span class="owner-tag"><strong>PSEG LI Relay Team</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-header pending">
+      <span class="cat-title pending">7. As-Built Documentation — 31 Sites</span>
+      <span class="cat-pct pct-pending">0%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">Record drawings for all 31 Phase 1 sites</div>
+          <div class="row-detail">Cannot be finalized until construction AND cutover are complete. Per Vik: exclude as-built dates from weekly reporting due to frequent changes. Funding for as-builts and decommissioning sits in 2027 budget.</div>
+        </div>
+        <span class="status-badge s-blocked">DEFERRED — 2027</span>
+        <span class="owner-tag"><strong>B&M</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-header pending">
+      <span class="cat-title pending">8. JMUX Ring 1 Decommission</span>
+      <span class="cat-pct pct-pending">0%</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">🔴</div>
+        <div class="row-content">
+          <div class="row-title">Physical JMUX removal from all Phase 1 sites</div>
+          <div class="row-detail">JMUX Ring 1 cannot be decommissioned until ALL three phases are fully migrated. JMUX runs in parallel as failback until every circuit/application has moved to Nokia. This is a post-Phase 3 activity.</div>
+        </div>
+        <span class="status-badge s-defer">POST-PHASE 3</span>
+        <span class="owner-tag"><strong>Hawkeye</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VIK'S PHASE 2/3 DIRECTIVES ===== -->
+  <div class="section-header">
+    <span class="icon">⬆️</span>
+    <span class="text">Vik's Directives — What to Pull In &amp; What to Cut</span>
+    <span class="count">Phase 2 &amp; 3</span>
+  </div>
+
+  <div class="category">
+    <div class="cat-header action">
+      <span class="cat-title action">PULL INTO PHASE 2 — Accelerate from Phase 3</span>
+      <span class="cat-pct" style="color:#004085;">ACTION</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">⬆️</div>
+        <div class="row-content">
+          <div class="row-title">Phase 3 IFRs — ~30 sites</div>
+          <div class="row-detail">Vik's direct instruction: pull Phase 3 IFRs into Phase 2 while B&M resources (Ethan/Grant) are already deployed and doing Phase 2 surveys. Avoids full 2027 remobilization cost. Requires PCR/SOW amendment. Need to confirm Phase 3 site list with Alex and get Vik/Jaya funding alignment first.</div>
+          <div class="row-source">Est. value: ~30 sites × $16,695 = ~$500,850</div>
+        </div>
+        <span class="status-badge s-pull">PULL IN</span>
+        <span class="owner-tag"><strong>Jaya + Vik → Alex</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">⬆️</div>
+        <div class="row-content">
+          <div class="row-title">Phase 3 site surveys — bundle with Phase 2</div>
+          <div class="row-detail">While B&M is doing Phase 2 site surveys, simultaneously conduct Phase 3 surveys. Same team, same travel, marginal added cost vs. full remobilization in 2027.</div>
+        </div>
+        <span class="status-badge s-pull">PULL IN</span>
+        <span class="owner-tag"><strong>Jaya + Alex</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">⬆️</div>
+        <div class="row-content">
+          <div class="row-title">Application cutover PREP work (5 apps)</div>
+          <div class="row-detail">Vik confirmed: production traffic migration stays in Phase 3, but prep work (connectivity plans, Nokia config prep, app owner alignment) accelerates into Phase 2. Must be clearly delineated in SOW amendment — "prep only, no production traffic migration."</div>
+        </div>
+        <span class="status-badge s-pull">PULL IN — PREP ONLY</span>
+        <span class="owner-tag"><strong>B&M + App Owners</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-header" style="background:#fce4ec;">
+      <span class="cat-title" style="color:#880e4f;">CUT / NOT BILLING IN PHASE 2 — Vik's Direction</span>
+      <span class="cat-pct" style="color:#880e4f;">REDUCE</span>
+    </div>
+    <div class="cat-body">
+      <div class="row">
+        <div class="row-icon">✂️</div>
+        <div class="row-content">
+          <div class="row-title">Bill's contract — reduce engagement duration</div>
+          <div class="row-detail">Bill at $61,350/month. Vik raised: "Need to see where there are opportunities to reduce this cost. Need to know when he is needed and for how long." Phase 2 construction won't start until IFCs are approved — mid-2026 at earliest. Don't pay for Bill until Hawkeye actually mobilizes.</div>
+        </div>
+        <span class="status-badge s-defer">CUT / REDUCE</span>
+        <span class="owner-tag"><strong>Jaya → Alex</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✂️</div>
+        <div class="row-content">
+          <div class="row-title">Phase 2 staging — negotiate from 2 weeks to 1 week</div>
+          <div class="row-detail">Phase 1 staging at $57,300 for >5 days. Vik: equipment was already racked/stacked, Hawkeye mainly did cabling and testing. "Negotiate with Alex to reduce to one week." Phase 2 same setup = same justification.</div>
+        </div>
+        <span class="status-badge s-defer">NEGOTIATE DOWN</span>
+        <span class="owner-tag"><strong>Jaya → Alex</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✂️</div>
+        <div class="row-content">
+          <div class="row-title">Production traffic migration — stays in Phase 3</div>
+          <div class="row-detail">Vik was clear: "The production application transition is not done and that will be done under Phase Two" was walked back — production traffic migration stays Phase 3. Only PREP moves to Phase 2. Do NOT bill for full app migration scope in Phase 2.</div>
+        </div>
+        <span class="status-badge s-defer">STAY IN PHASE 3</span>
+        <span class="owner-tag"><strong>Jaya + B&M</strong></span>
+      </div>
+      <div class="row">
+        <div class="row-icon">✂️</div>
+        <div class="row-content">
+          <div class="row-title">As-built payments — don't pay until work physically complete</div>
+          <div class="row-detail">$1,192/site × 36 = $42,912 in Phase 2 as-built costs. Cannot be triggered until construction and cutover done. Funding and decommissioning in 2027. Don't advance this payment milestone early.</div>
+        </div>
+        <span class="status-badge s-defer">DEFER TO 2027</span>
+        <span class="owner-tag"><strong>Jaya</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINANCIAL SUMMARY -->
+  <div class="section-header">
+    <span class="icon">💰</span>
+    <span class="text">Financial — What Vik Said Needs to Be Fixed</span>
+    <span class="count">Cost Control</span>
+  </div>
+
+  <div class="fin-callout">
+    <div class="title">💬 Vik's exact words on financials: "Everything looks green — how long is that going to last? We need complete understanding and active reporting. There is $250,000 of power solution that was not planned. The current forecast is spreading a PO across all of 2026 which is why the numbers are all over the place. It will take 4–5 days to chart this whole thing down."</div>
+    <div class="fin-rows">
+      <div class="fin-row">
+        <span class="fin-header">Item</span>
+        <span class="fin-header">Current Exposure</span>
+        <span class="fin-header">Target / Action</span>
+      </div>
+      <div class="fin-row">
+        <span class="item-name">Bill's contract (Phase 2)</span>
+        <span class="cur">$368,100 (6 mo.)</span>
+        <span class="tgt">Reduce to ~3–4 mo. → save ~$120K</span>
+      </div>
+      <div class="fin-row">
+        <span class="item-name">Phase 2 staging support</span>
+        <span class="cur">$57,300 (2 weeks)</span>
+        <span class="tgt">Negotiate to 1 week → save ~$28K</span>
+      </div>
+      <div class="fin-row">
+        <span class="item-name">Unplanned power solution</span>
+        <span class="cur">$250,000 unplanned</span>
+        <span class="tgt">Identify source, raise PCR or budget augmentation</span>
+      </div>
+      <div class="fin-row">
+        <span class="item-name">Phase 3 SOW (no contract)</span>
+        <span class="cur">Unpriced / unknown</span>
+        <span class="tgt">Get Alex to draft SOW + cost estimate NOW</span>
+      </div>
+      <div class="fin-row">
+        <span class="item-name">Phase 1 leftover equipment</span>
+        <span class="cur">Unknown — at Hawkeye staging</span>
+        <span class="tgt">Vinnie inventory → offset Phase 2 procurement</span>
+      </div>
+      <div class="fin-row">
+        <span class="item-name">PO forecast spreading issue</span>
+        <span class="cur">Numbers "all over the place"</span>
+        <span class="tgt">Reconcile PO vs. actual spend — 4–5 day exercise</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>JMUX Replacement — Vik's Phase Breakdown | PSEG LI / LIPA | March 16, 2026 | Confidential</footer>
+
+</body>
+</html>
