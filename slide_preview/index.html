@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slide 3 — Phase 1 Micro-Phase Breakdown</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #2a2a2a; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; padding: 20px; font-family: 'Segoe UI', Arial, sans-serif; }
+
+  .slide-label {
+    color: #aaa;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* 16:9 slide container */
+  .slide {
+    width: 900px;
+    height: 506px;
+    background: #fff;
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    overflow: hidden;
+  }
+
+  /* PSEG blue header bar */
+  .slide-header {
+    background: #003387;
+    width: 100%;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    gap: 12px;
+  }
+  .slide-header .title { color: #fff; font-size: 17px; font-weight: 700; }
+  .slide-header .subtitle { color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 2px; }
+  .orange-bar { height: 4px; background: #F7941D; width: 100%; }
+
+  .slide-body {
+    display: grid;
+    grid-template-columns: 290px 1fr;
+    gap: 0;
+    height: calc(100% - 56px - 22px);
+    padding: 10px 14px 8px;
+  }
+
+  /* LEFT — accomplishments */
+  .left-col { padding-right: 12px; border-right: 1px solid #e2e6f0; }
+  .section-label {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #003387;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #F7941D;
+  }
+
+  .accomplishment {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 4px 0;
+    border-bottom: 1px solid #f0f2f7;
+    font-size: 9px;
+    color: #333;
+    line-height: 1.3;
+  }
+  .accomplishment:last-child { border-bottom: none; }
+  .check { color: #28a745; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin: 8px 0 5px;
+  }
+  .stat-box {
+    background: #f8f9fc;
+    border-radius: 5px;
+    padding: 5px 4px;
+    text-align: center;
+    border-top: 3px solid #003387;
+  }
+  .stat-box.amber { border-top-color: #F7941D; }
+  .stat-box .num { font-size: 15px; font-weight: 800; color: #003387; }
+  .stat-box.amber .num { color: #F7941D; }
+  .stat-box .lbl { font-size: 7px; color: #666; font-weight: 600; text-transform: uppercase; }
+
+  /* RIGHT — micro-phase table */
+  .right-col { padding-left: 12px; }
+  .micro-label {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #003387;
+    letter-spacing: 0.8px;
+    margin-bottom: 5px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #F7941D;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .micro-label .vik-tag {
+    background: #fff3cd;
+    color: #856404;
+    font-size: 7px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 700;
+  }
+
+  table.micro { width: 100%; border-collapse: collapse; }
+  table.micro th {
+    background: #003387;
+    color: #fff;
+    font-size: 7.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 5px 7px;
+    text-align: left;
+  }
+  table.micro th:nth-child(1) { width: 22px; text-align: center; }
+  table.micro th:nth-child(2) { width: 150px; }
+  table.micro th:nth-child(3) { width: 80px; text-align: center; }
+  table.micro th:nth-child(4) { }
+
+  table.micro td {
+    font-size: 8.5px;
+    padding: 5px 7px;
+    border-bottom: 1px solid #f0f2f7;
+    vertical-align: middle;
+    line-height: 1.35;
+  }
+  table.micro td:nth-child(1) { text-align: center; font-weight: 800; }
+  table.micro td:nth-child(3) { text-align: center; font-weight: 700; font-size: 8px; }
+
+  .row-green td { background: #d4edda; }
+  .row-green td:nth-child(1),
+  .row-green td:nth-child(2),
+  .row-green td:nth-child(3) { color: #155724; }
+  .row-green td:nth-child(4) { background: #f8fff9; color: #333; }
+
+  .row-red td { background: #f8d7da; }
+  .row-red td:nth-child(1),
+  .row-red td:nth-child(2),
+  .row-red td:nth-child(3) { color: #721c24; }
+  .row-red td:nth-child(4) { background: #fff8f8; color: #333; }
+
+  .row-amber td { background: #fff3cd; }
+  .row-amber td:nth-child(1),
+  .row-amber td:nth-child(2),
+  .row-amber td:nth-child(3) { color: #856404; }
+  .row-amber td:nth-child(4) { background: #fffdf0; color: #333; }
+
+  .row-total td {
+    background: #003387;
+    color: #fff;
+    font-weight: 700;
+    font-size: 9px;
+  }
+  .row-total td:nth-child(3) { color: #F7941D; }
+  .row-total td:nth-child(4) { color: #F7941D; font-size: 8px; }
+
+  .status-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 7px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .pill-green { background: #28a745; color: #fff; }
+  .pill-red { background: #dc3545; color: #fff; }
+  .pill-amber { background: #F7941D; color: #fff; }
+  .pill-gray { background: #6c757d; color: #fff; }
+  .pill-blue { background: #003387; color: #fff; }
+
+  .blocker-tag {
+    background: #dc3545;
+    color: #fff;
+    font-size: 6.5px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 4px;
+    text-transform: uppercase;
+  }
+
+  /* footer bar */
+  .slide-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #003387;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    justify-content: space-between;
+  }
+  .slide-footer span { color: rgba(255,255,255,0.6); font-size: 7px; }
+
+  /* Overall progress bar */
+  .progress-wrap { margin: 6px 0 4px; }
+  .progress-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+  .progress-row .p-label { font-size: 7px; color: #555; width: 90px; flex-shrink: 0; font-weight: 600; }
+  .progress-track { flex: 1; height: 7px; background: #e2e6f0; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; }
+  .p-pct { font-size: 7px; font-weight: 800; width: 28px; text-align: right; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="slide-label">Slide 3 — Phase 1 Accomplishments (Updated v5 · March 16, 2026)</div>
+
+<div class="slide">
+
+  <!-- Header -->
+  <div class="slide-header">
+    <div>
+      <div class="title">Phase 1 Accomplishments</div>
+      <div class="subtitle">31 Substations &nbsp;|&nbsp; Micro-Phase Status per Vik Vohra · Mar 16, 2026</div>
+    </div>
+  </div>
+  <div class="orange-bar"></div>
+
+  <div class="slide-body">
+
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+      <div class="section-label">Key Accomplishments</div>
+
+      <div class="accomplishment"><span class="check">✅</span><span>Staging completed at Hawkeye Warehouse — 9/29/2025</span></div>
+      <div class="accomplishment"><span class="check">✅</span><span>Nokia Phase 2 equipment delivered — 2/19/2026</span></div>
+      <div class="accomplishment"><span class="check">✅</span><span>Complete CWDM cutover at Hicksville and ACC</span></div>
+      <div class="accomplishment"><span class="check">✅</span><span>Routers installed in primary & secondary cabinets — all 31 sites</span></div>
+      <div class="accomplishment"><span class="check">✅</span><span>NSP racked & powered up in Melville and Hicksville</span></div>
+      <div class="accomplishment"><span class="check">✅</span><span>CMDB document updated and added to database</span></div>
+      <div class="accomplishment"><span class="check">✅</span><span>OTDR testing Hicksville–Syosset — bad filter replaced, green link confirmed</span></div>
+      <div class="accomplishment"><span class="check">✅</span><span>Cat 6 cabling complete at Hicksville — 03/04/2026</span></div>
+      <div class="accomplishment"><span class="check" style="color:#003387">✅</span><span><strong>BGP design approved — 03/16/2026</strong> (Lee Blackman to begin change docs)</span></div>
+
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="num">31/31</div>
+          <div class="lbl">Sites Installed</div>
+        </div>
+        <div class="stat-box amber">
+          <div class="num">~65%</div>
+          <div class="lbl">Phase 1 Complete</div>
+        </div>
+        <div class="stat-box amber">
+          <div class="num">Jun '26</div>
+          <div class="lbl">Phase 1 Target</div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-row">
+          <span class="p-label">Engineering</span>
+          <div class="progress-track"><div class="progress-fill" style="width:100%;background:#28a745;"></div></div>
+          <span class="p-pct" style="color:#28a745;">100%</span>
+        </div>
+        <div class="progress-row">
+          <span class="p-label">Procurement</span>
+          <div class="progress-track"><div class="progress-fill" style="width:100%;background:#28a745;"></div></div>
+          <span class="p-pct" style="color:#28a745;">100%</span>
+        </div>
+        <div class="progress-row">
+          <span class="p-label">Construction</span>
+          <div class="progress-track"><div class="progress-fill" style="width:100%;background:#28a745;"></div></div>
+          <span class="p-pct" style="color:#28a745;">100%</span>
+        </div>
+        <div class="progress-row">
+          <span class="p-label">Deployment</span>
+          <div class="progress-track"><div class="progress-fill" style="width:5%;background:#dc3545;"></div></div>
+          <span class="p-pct" style="color:#dc3545;">5%</span>
+        </div>
+        <div class="progress-row">
+          <span class="p-label">App Cutover</span>
+          <div class="progress-track"><div class="progress-fill" style="width:0%;background:#dc3545;"></div></div>
+          <span class="p-pct" style="color:#dc3545;">0%</span>
+        </div>
+        <div class="progress-row">
+          <span class="p-label">RTU Cutover</span>
+          <div class="progress-track"><div class="progress-fill" style="width:0%;background:#dc3545;"></div></div>
+          <span class="p-pct" style="color:#dc3545;">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN — MICRO-PHASE TABLE -->
+    <div class="right-col">
+      <div class="micro-label">
+        Phase 1 — Micro-Phase Breakdown
+        <span class="vik-tag">📋 Vik Vohra directive · Mar 16, 2026</span>
+      </div>
+
+      <table class="micro">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Micro-Phase</th>
+            <th>% Status</th>
+            <th>Detail / Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-green">
+            <td>1</td>
+            <td>Engineering &amp; Design</td>
+            <td><span class="status-pill pill-green">✅ 100%</span></td>
+            <td>Site surveys, IFRs, IFCs, HLD — all 31 sites complete</td>
+          </tr>
+          <tr class="row-green">
+            <td>2</td>
+            <td>Procurement &amp; Staging</td>
+            <td><span class="status-pill pill-green">✅ 100%</span></td>
+            <td>Equipment delivered &amp; staged (9/29/25). Ph2 equip rcvd 2/19/26</td>
+          </tr>
+          <tr class="row-green">
+            <td>3</td>
+            <td>Construction &amp; Installation</td>
+            <td><span class="status-pill pill-green">✅ 100%</span></td>
+            <td>31/31 sites installed. CWDM cutovers complete Oct–Jan. Cat6 done.</td>
+          </tr>
+          <tr class="row-red">
+            <td>4</td>
+            <td>Deployment / Pre-Cutover</td>
+            <td><span class="status-pill pill-red">🔴 ~5%</span></td>
+            <td>BGP approved ✅ 3/16 · <span class="blocker-tag">BLOCKED</span> NSP software install (Critical Path)</td>
+          </tr>
+          <tr class="row-red">
+            <td>5</td>
+            <td>Application Layer 3 Cutover</td>
+            <td><span class="status-pill pill-red">🔴 0%</span></td>
+            <td>5 apps pending · Blocked on BGP/NSP · Est. Jun 2026</td>
+          </tr>
+          <tr class="row-red">
+            <td>6</td>
+            <td>RTU / Layer 2 Cutover</td>
+            <td><span class="status-pill pill-red">🔴 0%</span></td>
+            <td>On-site only · Sequential dependency on Layer 3 completion</td>
+          </tr>
+          <tr class="row-amber">
+            <td>7</td>
+            <td>As-Builts &amp; Decommission</td>
+            <td><span class="status-pill pill-gray">⏳ 2027</span></td>
+            <td>Funding in 2027 · JMUX decommission post-Phase 3 only</td>
+          </tr>
+          <tr class="row-total">
+            <td></td>
+            <td>PHASE 1 OVERALL</td>
+            <td>🟡 ~65%</td>
+            <td>Target: June 2026 &nbsp;|&nbsp; Critical path: NSP installation (Nokia)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Footnote -->
+      <div style="margin-top:7px; background:#fff8e1; border-left:3px solid #F7941D; padding:5px 8px; border-radius:0 4px 4px 0;">
+        <span style="font-size:7.5px; color:#5a4000; line-height:1.4;">
+          <strong>⚠ Note to CIO:</strong> "100% complete" applies to installation only. Phase 1 is not fully complete. 
+          NSP is the single critical path item — once resolved, BGP config (~27 days), App cutovers, and RTU cutovers can proceed. 
+          Phase 1 close-out target: <strong>June 2026</strong>.
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="slide-footer">
+    <span>PSEG Long Island | JMUX Replacement Program | Confidential | March 2026</span>
+    <span>PRJ13797 &nbsp;|&nbsp; v5 — Updated per Vik Vohra Mar 16, 2026</span>
+  </div>
+
+</div>
+
+<div style="color:#888; font-size:10px; margin-top:12px; text-align:center;">
+  Slide 3 of 14 &nbsp;|&nbsp; PRJ13797_JMUX_CIO_Update_March_v5.pptx
+</div>
+
+</body>
+</html>
