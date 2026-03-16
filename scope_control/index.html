@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JMUX Replacement – Phase 2 Scope Control Sheet</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fa; color: #222; font-size: 13px; }
+
+  .header {
+    background: #003387;
+    color: white;
+    padding: 18px 28px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.3px; }
+  .header .sub { font-size: 12px; opacity: 0.8; margin-top: 3px; }
+  .header .date { font-size: 11px; background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 20px; }
+
+  .orange-bar { height: 4px; background: #F7941D; }
+
+  .tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 2px solid #e2e6f0;
+    padding: 0 28px;
+    gap: 4px;
+  }
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    color: #666;
+    transition: all 0.2s;
+  }
+  .tab.active { border-bottom-color: #003387; color: #003387; }
+  .tab:hover:not(.active) { color: #003387; border-bottom-color: #ccd6f0; }
+
+  .content { padding: 20px 28px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Summary Cards */
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .card { background: #fff; border-radius: 8px; padding: 16px 18px; border-top: 4px solid #ccc; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .card.blue { border-top-color: #003387; }
+  .card.green { border-top-color: #28a745; }
+  .card.orange { border-top-color: #F7941D; }
+  .card.red { border-top-color: #dc3545; }
+  .card .label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+  .card .value { font-size: 22px; font-weight: 700; color: #222; }
+  .card .sub { font-size: 11px; color: #666; margin-top: 3px; }
+
+  /* Tables */
+  .table-wrap { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow: hidden; margin-bottom: 20px; }
+  .table-title {
+    background: #003387;
+    color: white;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .table-title .badge {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f0f3fa; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: #444; text-transform: uppercase; border-bottom: 1px solid #dde3f0; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f2f7; font-size: 12px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9fafe; }
+
+  /* Status Badges */
+  .badge-stay { background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-pull { background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-defer { background: #f8d7da; color: #721c24; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-negotiate { background: #cce5ff; color: #004085; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-tbd { background: #e2e3e5; color: #383d41; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-open { background: #ffeeba; color: #856404; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-done { background: #d4edda; color: #155724; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .badge-blocked { background: #f8d7da; color: #721c24; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+  .priority-high { color: #dc3545; font-weight: 700; }
+  .priority-med { color: #F7941D; font-weight: 600; }
+  .priority-low { color: #28a745; }
+
+  .note { font-size: 11px; color: #666; font-style: italic; }
+  .dollar { font-weight: 700; color: #003387; }
+  .saving { font-weight: 700; color: #28a745; }
+  .cost { font-weight: 700; color: #dc3545; }
+
+  .section-note {
+    background: #fff8e1;
+    border-left: 4px solid #F7941D;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #5a4000;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Phase 1 Outstanding */
+  .ph1-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f0f2f7; }
+  .ph1-item:last-child { border-bottom: none; }
+  .ph1-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .dot-red { background: #dc3545; }
+  .dot-orange { background: #F7941D; }
+  .dot-blue { background: #003387; }
+  .ph1-item .owner { font-size: 11px; color: #888; margin-top: 2px; }
+  .ph1-item .title { font-size: 12px; font-weight: 600; color: #222; }
+
+  footer { text-align: center; color: #aaa; font-size: 10px; padding: 16px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="h1" style="font-size:18px;font-weight:700;">JMUX Replacement — Phase 2 Scope Control Sheet</div>
+    <div class="sub">PSEG LI / LIPA &nbsp;|&nbsp; Prepared: March 16, 2026 &nbsp;|&nbsp; PM: Dhananjaya Gunaratne</div>
+  </div>
+  <div class="date">⚠️ Phase 1 NOT 100% Complete</div>
+</div>
+<div class="orange-bar"></div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('overview')">📊 Overview</div>
+  <div class="tab" onclick="showTab('phase1')">🔴 Phase 1 Outstanding</div>
+  <div class="tab" onclick="showTab('ph2stay')">✅ Phase 2 — Stay</div>
+  <div class="tab" onclick="showTab('ph2pull')">⬆️ Pull into Phase 2</div>
+  <div class="tab" onclick="showTab('ph2defer')">✂️ Defer to Phase 3</div>
+  <div class="tab" onclick="showTab('financial')">💰 Financial Levers</div>
+  <div class="tab" onclick="showTab('vendor')">🤝 Vendor Discussions</div>
+</div>
+
+<div class="content">
+
+  <!-- OVERVIEW -->
+  <div id="overview" class="section active">
+    <div class="cards">
+      <div class="card blue">
+        <div class="label">B&M Phase 2 SOW Total</div>
+        <div class="value">$1.37M</div>
+        <div class="sub">36 sites | Fixed price</div>
+      </div>
+      <div class="card orange">
+        <div class="label">Phase 1 Completion</div>
+        <div class="value">~65%</div>
+        <div class="sub">Installation ✅ | BGP/NSP/As-Builts ❌</div>
+      </div>
+      <div class="card green">
+        <div class="label">Potential Savings (Identified)</div>
+        <div class="value">~$150K+</div>
+        <div class="sub">Bill contract + Staging negotiation</div>
+      </div>
+      <div class="card red">
+        <div class="label">Phase 1 Slip</div>
+        <div class="value">~5 mo.</div>
+        <div class="sub">Jan 2026 → Jun 2026 baseline</div>
+      </div>
+    </div>
+
+    <div class="section-note">
+      📌 <strong>Vik's directive (Mar 16 meeting):</strong> Pull Phase 3 IFRs into Phase 2 while B&M resources are already engaged. Identify what WON'T be billed in Phase 2 to manage cost exposure. Everything appearing "green" financially needs to be challenged now.
+    </div>
+
+    <div class="two-col">
+      <div class="table-wrap">
+        <div class="table-title">Phase 2 SOW — Milestone Summary <span class="badge">B&M | $1,370,040</span></div>
+        <table>
+          <thead><tr><th>#</th><th>Milestone</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Phase 1 Staging Support</td><td class="dollar">$57,300</td><td>8/22/2025</td><td><span class="badge-done">DONE</span></td></tr>
+            <tr><td>2</td><td>Phase 1 Construction Support Coord. (Bill)</td><td class="dollar">$368,100</td><td>Aug–Jan monthly</td><td><span class="badge-negotiate">REVIEW</span></td></tr>
+            <tr><td>3</td><td>Substation Site Surveys (36 sites)</td><td class="dollar">$86,040</td><td>2/27/2026</td><td><span class="badge-open">IN PROGRESS</span></td></tr>
+            <tr><td>4</td><td>MPLS Network Node Design (36 sites)</td><td class="dollar">$858,600</td><td>See Schedule</td><td><span class="badge-open">IN PROGRESS</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-title">Per-Site Cost Breakdown</div>
+        <table>
+          <thead><tr><th>Line Item</th><th>Per Site</th><th>36 Sites Total</th></tr></thead>
+          <tbody>
+            <tr><td>IFR (Issued for Review)</td><td class="dollar">$16,695</td><td class="dollar">$601,020</td></tr>
+            <tr><td>IFC (Issued for Construction)</td><td class="dollar">$5,963</td><td class="dollar">$214,668</td></tr>
+            <tr><td>As-Built</td><td class="dollar">$1,192</td><td class="dollar">$42,912</td></tr>
+            <tr style="background:#f0f3fa;"><td><strong>Total per site</strong></td><td class="dollar"><strong>$23,850</strong></td><td class="dollar"><strong>$858,600</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-title">Phase 2 — All 36 Sites (SOW Appendix D)</div>
+      <table>
+        <thead><tr><th>Code</th><th>Site Name</th><th>IFR Cost</th><th>IFC Cost</th><th>As-Built</th><th>Total</th><th>IFR Status</th></tr></thead>
+        <tbody>
+          <tr><td>2H</td><td>Far Rockaway</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-done">IFR RECEIVED</span></td></tr>
+          <tr><td>2K</td><td>Valley Stream</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-done">IFR RECEIVED</span></td></tr>
+          <tr><td>2KB</td><td>Cedarhurst</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-done">IFR RECEIVED</span></td></tr>
+          <tr><td>2R</td><td>Hewlett</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>2R1</td><td>Hewlett Shelter</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>2RB</td><td>Green Acres</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>2WB</td><td>Barrett Power Plant</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>2ZB</td><td>Barrett PS (EF Barrett)</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>3J</td><td>Whiteside</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>4M</td><td>Baldwin</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>4M1</td><td>Baldwin Shelter</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>6H</td><td>Hauppauge</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>6H1</td><td>Hauppauge Tower Shelter</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>6K</td><td>State School</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>6S</td><td>Kings Hwy</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-done">IFR RECEIVED</span></td></tr>
+          <tr><td>7BH</td><td>Bohemia</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-done">IFR RECEIVED</span></td></tr>
+          <tr><td>7D</td><td>West Babylon</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7D1</td><td>West Babylon Shelter</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7H</td><td>Babylon</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7H1</td><td>Babylon Shelter</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7J</td><td>Sterling</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7M</td><td>MacArthur</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7R</td><td>Sayville</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7RM</td><td>Bayport</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7UM</td><td>South Farmingdale</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7W</td><td>Berry St.</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7XM</td><td>Great River</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7XM1</td><td>Great River Shelter</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>7Z</td><td>Lindenhurst</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>8AX</td><td>Patchogue</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>8AX1</td><td>Patchogue Shelter</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>D.O.</td><td>Brentwood D.O.</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>D.O.</td><td>Hewlett Headquarters</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>5HK</td><td>Hicksville Primary</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>6U</td><td>Ruland Road</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr><td>ACC</td><td>Alternate Control Center</td><td>$16,695</td><td>$5,963</td><td>$1,192</td><td class="dollar">$23,850</td><td><span class="badge-open">PENDING</span></td></tr>
+          <tr style="background:#f0f3fa;font-weight:700;"><td colspan="2"><strong>TOTAL</strong></td><td>$601,020</td><td>$214,668</td><td>$42,912</td><td class="dollar">$858,600</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PHASE 1 OUTSTANDING -->
+  <div id="phase1" class="section">
+    <div class="section-note">
+      🔴 <strong>Phase 1 is NOT 100% complete.</strong> Per meeting minutes Mar 16, 2026 and Alex Lenox (B&M) email — current Phase 1 completion date: <strong>June 2026</strong>. Baseline was January 2026.
+    </div>
+    <div class="table-wrap">
+      <div class="table-title">Phase 1 — Outstanding Items (All must complete before Phase 1 can close)</div>
+      <table>
+        <thead><tr><th>Item</th><th>Description</th><th>Owner</th><th>Blocker</th><th>ETA</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>NSP Installation</strong></td>
+            <td>Nokia NSP remote access setup — prerequisite for ALL Layer 3 work</td>
+            <td>Nokia / Internal network team</td>
+            <td>Critical path</td>
+            <td>TBD</td>
+            <td><span class="badge-blocked">BLOCKED</span></td>
+          </tr>
+          <tr>
+            <td><strong>BGP / Layer 3 Config</strong></td>
+            <td>Remote configuration of Nokia routers at all 31 Phase 1 sites via NSP</td>
+            <td>Lee Blackman / B&M</td>
+            <td>Awaiting NSP</td>
+            <td>June 2026</td>
+            <td><span class="badge-blocked">BLOCKED</span></td>
+          </tr>
+          <tr>
+            <td><strong>CWDM Cutovers — 31 sites</strong></td>
+            <td>Production traffic cutover from JMUX to Nokia MPLS per site. Requires PSEG Change Management approval per cutover.</td>
+            <td>PSEGLI + B&M jointly</td>
+            <td>Awaiting BGP config</td>
+            <td>Post-June 2026</td>
+            <td><span class="badge-blocked">BLOCKED</span></td>
+          </tr>
+          <tr>
+            <td><strong>Application Layer 3 Cutovers</strong></td>
+            <td>~5 apps: 2-way radio, DA radio, dSCADA, MicroPAQ, Security. Per-site, per-app with application owners (Eddie = radio, John = dSCADA)</td>
+            <td>B&M + App Owners</td>
+            <td>Awaiting BGP config</td>
+            <td>Post-June 2026</td>
+            <td><span class="badge-blocked">BLOCKED</span></td>
+          </tr>
+          <tr>
+            <td><strong>RTU / Layer 2 Cutovers</strong></td>
+            <td>Physical on-site cable migration. Requires personnel on-site. Estimated ~32 days total.</td>
+            <td>PSEGLI Relay Team</td>
+            <td>Must follow Layer 3</td>
+            <td>Post-Layer 3</td>
+            <td><span class="badge-blocked">BLOCKED</span></td>
+          </tr>
+          <tr>
+            <td><strong>As-Builts — 31 sites</strong></td>
+            <td>Final record drawings. Cannot be finalized until construction + cutover complete. Excluded from weekly reporting per meeting direction.</td>
+            <td>B&M (Engineering)</td>
+            <td>Awaiting cutover completion</td>
+            <td>2027</td>
+            <td><span class="badge-tbd">DEFERRED</span></td>
+          </tr>
+          <tr>
+            <td><strong>JMUX Ring 1 Decommission</strong></td>
+            <td>Cannot decommission until ALL phases complete across all rings.</td>
+            <td>Hawkeye</td>
+            <td>All phases must complete</td>
+            <td>Post-Phase 3</td>
+            <td><span class="badge-tbd">LONG TAIL</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PHASE 2 STAY -->
+  <div id="ph2stay" class="section">
+    <div class="section-note">
+      ✅ These items are already in the Phase 2 SOW, funded, and should proceed as planned. No changes needed — just execute and manage PSEG LI review turnaround to keep billing milestones on track.
+    </div>
+    <div class="table-wrap">
+      <div class="table-title">✅ Stay in Phase 2 — Proceed As Planned <span class="badge">Core SOW Scope</span></div>
+      <table>
+        <thead><tr><th>Item</th><th>Vendor</th><th>Value</th><th>Action for Jaya</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Site Surveys — 36 Phase 2 sites</strong></td>
+            <td>B&M (Ethan Koch, PE)</td>
+            <td class="dollar">$86,040</td>
+            <td>Ensure escorts are arranged; each delayed escort = schedule + cost impact per SOW</td>
+            <td class="priority-high">HIGH</td>
+          </tr>
+          <tr>
+            <td><strong>IFR Design — Far Rockaway, Valley Stream, Cedarhurst, Kings Hwy, Bohemia</strong></td>
+            <td>B&M</td>
+            <td class="dollar">$83,475 (5 sites)</td>
+            <td>IFRs already received — complete PSEG LI reviews within 10 working days per SOW to unlock IFC billing</td>
+            <td class="priority-high">HIGH</td>
+          </tr>
+          <tr>
+            <td><strong>IFC Design — All 36 Phase 2 sites</strong></td>
+            <td>B&M</td>
+            <td class="dollar">$214,668</td>
+            <td>IFC billing unlocked only after PSEG LI approves IFR. Review turnaround is your primary lever.</td>
+            <td class="priority-high">HIGH</td>
+          </tr>
+          <tr>
+            <td><strong>IFR Design — Remaining 31 Phase 2 sites</strong></td>
+            <td>B&M</td>
+            <td class="dollar">$517,545</td>
+            <td>Surveys must complete first. Keep survey schedule on track. Site schedule per SOW 2.2.</td>
+            <td class="priority-med">MED</td>
+          </tr>
+          <tr>
+            <td><strong>Construction + Installation Support (Hawkeye)</strong></td>
+            <td>Hawkeye</td>
+            <td class="dollar">TBD (Phase 2 PO)</td>
+            <td>Coordinate with Phase 2 IFCs completion. Don't mobilize Hawkeye before IFCs are approved.</td>
+            <td class="priority-med">MED</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 2 Staging Support</strong></td>
+            <td>B&M / Hawkeye</td>
+            <td class="dollar">$57,300 (SOW rate)</td>
+            <td>🔑 Negotiate down to 1 week based on Phase 1 experience. See Financial Levers tab.</td>
+            <td class="priority-high">HIGH — Negotiation Opportunity</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PULL INTO PHASE 2 -->
+  <div id="ph2pull" class="section">
+    <div class="section-note">
+      ⬆️ <strong>Vik's direction:</strong> Pull Phase 3 IFRs and accelerated scope into Phase 2 while B&M resources are already mobilized. This avoids remobilization costs and keeps the project moving. Each item below requires a SOW amendment / PCR.
+    </div>
+    <div class="table-wrap">
+      <div class="table-title">⬆️ Pull into Phase 2 — Accelerate from Phase 3 <span class="badge">Requires SOW Amendment</span></div>
+      <table>
+        <thead><tr><th>Item</th><th>Currently In</th><th>Rationale</th><th>Est. Value</th><th>Action Required</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Phase 3 IFRs</strong><br><span class="note">~30 Phase 3 sites</span></td>
+            <td>Phase 3</td>
+            <td>B&M (Ethan/Grant) already surveying and designing. Do Phase 3 site surveys + IFRs now while team is deployed. Avoids full remobilization in 2027.</td>
+            <td class="dollar">~$500,850<br><span class="note">(30 sites × $16,695)</span></td>
+            <td>Get Phase 3 site list from B&M. Issue PCR to add IFR scope to Phase 2 SOW. Confirm funding availability with Vik.</td>
+            <td class="priority-high">HIGH</td>
+          </tr>
+          <tr>
+            <td><strong>Application Cutover Prep (5 apps)</strong><br><span class="note">Originally Phase 3</span></td>
+            <td>Phase 3</td>
+            <td>Meeting confirmed: move app migration PREP work to Phase 2. Nokia running parallel — ideal time to prep migration plans while JMUX still live.</td>
+            <td class="dollar">TBD<br><span class="note">Needs SOW pricing</span></td>
+            <td>Define prep scope with B&M and app owners (Eddie, John). Issue SOW amendment. Must not start before NSP is up.</td>
+            <td class="priority-med">MED</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 3 Substation Site Surveys</strong></td>
+            <td>Phase 3</td>
+            <td>$86,040 for 36 Phase 2 sites = $2,390/site average. Phase 3 (~30 sites) survey cost could be bundled now. No separate mobilization fee.</td>
+            <td class="dollar">~$71,700<br><span class="note">Est. 30 sites × ~$2,390</span></td>
+            <td>Confirm Phase 3 site list. Add to survey scope while team is already doing Phase 2 surveys. High efficiency gain.</td>
+            <td class="priority-high">HIGH</td>
+          </tr>
+          <tr>
+            <td><strong>CWDM Equipment Needs Assessment (Phase 3)</strong></td>
+            <td>Phase 3</td>
+            <td>Ethan to confirm Phase 2 CWDM needs. While doing that, identify Phase 3 CWDM needs too — avoid separate procurement event and potential price increases.</td>
+            <td class="dollar">Equipment cost TBD</td>
+            <td>Ethan + Vinnie + Jaya meeting. Confirm Phase 2 needs, identify Phase 3 needs simultaneously. Check Phase 1 leftover inventory first.</td>
+            <td class="priority-high">HIGH — Procurement Alignment</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DEFER TO PHASE 3 -->
+  <div id="ph2defer" class="section">
+    <div class="section-note">
+      ✂️ These items should NOT be billed in Phase 2 or can be pushed out. Removing them from Phase 2 scope = cost reduction + cleaner financial reporting for the CIO.
+    </div>
+    <div class="table-wrap">
+      <div class="table-title">✂️ Defer / Cut from Phase 2 — Push to Phase 3 or Eliminate <span class="badge">Cost Reduction</span></div>
+      <table>
+        <thead><tr><th>Item</th><th>Current Phase</th><th>Rationale to Defer</th><th>Est. Savings</th><th>Action Required</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>As-Built Documentation — Phase 2 sites</strong></td>
+            <td>Phase 2</td>
+            <td>As-builts can only be finalized AFTER construction + cutover. Phase 2 construction not starting until IFCs done. Don't pay for as-builts until work is physically complete.</td>
+            <td class="saving">$42,912 deferred</td>
+            <td>Confirm with B&M that as-built milestone payment is tied to physical completion date, not design submission. Track separately.</td>
+            <td class="priority-med">MED</td>
+          </tr>
+          <tr>
+            <td><strong>Bill (Construction Support Coord.) — Phase 2 extension beyond need</strong></td>
+            <td>Phase 2</td>
+            <td>Bill at $61,350/month. Phase 2 construction won't start until IFCs approved (~mid-2026 at earliest). Reduce or pause Bill's engagement until construction actually starts.</td>
+            <td class="saving">~$60K–$120K savings<br><span class="note">if reduced 1–2 months</span></td>
+            <td>Negotiate with Alex at next B&M session. Define exact months Bill is needed for Phase 2. Get revised SOW language.</td>
+            <td class="priority-high">HIGH</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 3 IFC Designs</strong></td>
+            <td>Phase 3</td>
+            <td>IFCs for Phase 3 cannot begin until IFRs are done and reviewed. Pull IFRs into Phase 2 (see Pull tab) but keep IFCs in Phase 3 — that's the right sequencing.</td>
+            <td class="saving">~$178,740 deferred<br><span class="note">(30 sites × $5,963)</span></td>
+            <td>Make clear in PCR that Phase 3 IFR accelerates into Phase 2 but IFC stays in Phase 3 SOW. Prevents scope creep.</td>
+            <td class="priority-med">MED</td>
+          </tr>
+          <tr>
+            <td><strong>JMUX Decommission (All Sites)</strong></td>
+            <td>All Phases</td>
+            <td>JMUX Ring 1 cannot be decommissioned until ALL phases complete. No point in budgeting or scheduling this in Phase 2. Push to 2027/Phase 3 closeout.</td>
+            <td class="saving">Hawkeye cost deferred</td>
+            <td>Remove from Phase 2 financial reporting. Flag to CIO that decommission is a 2027 item — this also means funding currently showing as Phase 2 may be freed up.</td>
+            <td class="priority-med">MED</td>
+          </tr>
+          <tr>
+            <td><strong>Production Traffic Migration (5 apps)</strong></td>
+            <td>Phase 3 → was being moved to Ph2</td>
+            <td>Meeting minutes confirmed: production APPLICATION TRANSITION stays in Phase 3. Only PREP work moves to Phase 2. Don't pay for full cutover scope in Phase 2.</td>
+            <td class="saving">Funding stays in Phase 3</td>
+            <td>Clearly delineate in SOW amendment: "prep work only" moves to Phase 2. Full migration billing stays Phase 3. Prevents premature billing.</td>
+            <td class="priority-high">HIGH</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FINANCIAL LEVERS -->
+  <div id="financial" class="section">
+    <div class="section-note">
+      💰 <strong>These are the items YOU control.</strong> The NSP/BGP dependency is out of your hands — but these cost levers are yours to negotiate, adjust, and manage.
+    </div>
+    <div class="table-wrap">
+      <div class="table-title">💰 Financial Control Levers — What You Can Act On Now</div>
+      <table>
+        <thead><tr><th>Lever</th><th>Current Cost</th><th>Target</th><th>Potential Savings</th><th>How</th><th>Next Action</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>🔑 Bill's Contract (Construction Coord.)</strong></td>
+            <td class="cost">$61,350/mo × 6 mo = $368,100</td>
+            <td>Reduce to 4 months (actual construction period)</td>
+            <td class="saving">~$120,000</td>
+            <td>Define exact months Bill is needed for Phase 2 construction. He is NOT needed until IFCs are approved and Hawkeye mobilizes.</td>
+            <td class="priority-high">Discuss with Alex at next B&M session</td>
+          </tr>
+          <tr>
+            <td><strong>🔑 Phase 2 Staging Support</strong></td>
+            <td class="cost">$57,300 (>5 days)</td>
+            <td>Reduce to 1 week (based on Phase 1 learnings)</td>
+            <td class="saving">~$28,650</td>
+            <td>Phase 1 staging: equipment was already racked/stacked, Hawkeye mainly did cabling + testing. Phase 2 scope is same. Negotiate 1-week rate.</td>
+            <td class="priority-high">Raise with Alex at next meeting</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 1 Over-Purchased Equipment</strong></td>
+            <td class="cost">Unknown — at Hawkeye staging</td>
+            <td>Apply to Phase 2 procurement</td>
+            <td class="saving">TBD (could offset $50K+)</td>
+            <td>Vinnie has inventory list at staging. Identify leftover nodes, patch panels, SFPs, cables before Phase 2 procurement is issued.</td>
+            <td class="priority-high">Ethan + Vinnie + Jaya meeting ASAP</td>
+          </tr>
+          <tr>
+            <td><strong>IFR Review Turnaround (PSEG LI)</strong></td>
+            <td class="cost">10 working days per SOW</td>
+            <td>Stay at 10 days or faster</td>
+            <td class="saving">Schedule + billing cycle acceleration</td>
+            <td>Every IFR review delay = delayed IFC = delayed construction = delayed billing milestone. This is your biggest schedule lever on the B&M side.</td>
+            <td class="priority-high">Prioritize IFR reviews for Far Rockaway, Valley Stream, Cedarhurst NOW</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 3 IFR Acceleration (Bundled)</strong></td>
+            <td class="cost">Full remobilization in 2027</td>
+            <td>Bundle into Phase 2 while B&M deployed</td>
+            <td class="saving">Avoid remobilization: ~$30K–50K est.</td>
+            <td>B&M already on-site doing Phase 2 surveys. Adding Phase 3 IFRs now = same travel, same team, marginal added cost vs. full 2027 remobilization.</td>
+            <td class="priority-high">Issue PCR after confirming Phase 3 site list with Alex</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 3 SOW (doesn't exist yet)</strong></td>
+            <td class="cost">Unpriced / uncontrolled</td>
+            <td>Get Phase 3 design cost priced NOW</td>
+            <td class="saving">Cost control before scope locks</td>
+            <td>No SOW exists for Phase 3 MPLS design. Get Alex to price it while Phase 2 contract is active — more leverage now than later.</td>
+            <td class="priority-med">Request Phase 3 SOW draft from Alex at next meeting</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-title">Financial Exposure Summary</div>
+      <table>
+        <thead><tr><th>Category</th><th>Committed</th><th>Remaining</th><th>Risk Level</th></tr></thead>
+        <tbody>
+          <tr><td>B&M Phase 2 SOW Total</td><td class="dollar">$1,370,040</td><td class="dollar">~$1,250,000+</td><td><span class="badge-blocked">HIGH EXPOSURE</span></td></tr>
+          <tr><td>Bill's Contract (if not renegotiated)</td><td class="dollar">$368,100</td><td class="dollar">$120,000+ unneeded</td><td><span class="badge-negotiate">NEGOTIABLE</span></td></tr>
+          <tr><td>Phase 3 SOW (no contract yet)</td><td class="dollar">$0</td><td class="dollar">Unknown</td><td><span class="badge-open">UNCONTROLLED</span></td></tr>
+          <tr><td>Phase 1 Leftover Equipment</td><td class="dollar">Paid</td><td class="dollar">Offset TBD</td><td><span class="badge-negotiate">OPPORTUNITY</span></td></tr>
+          <tr><td>Phase 2 Staging (if not renegotiated)</td><td class="dollar">$57,300</td><td class="dollar">~$28K reducible</td><td><span class="badge-negotiate">NEGOTIABLE</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VENDOR DISCUSSIONS -->
+  <div id="vendor" class="section">
+    <div class="section-note">
+      🤝 Talking points for your next B&M (Alex) and Hawkeye meetings. Be specific — come with data.
+    </div>
+    <div class="two-col">
+      <div class="table-wrap">
+        <div class="table-title">🤝 B&M Discussion Points (Alex Lenox)</div>
+        <table>
+          <thead><tr><th>Topic</th><th>Your Position</th><th>Target Outcome</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Bill's engagement duration</strong></td>
+              <td>Phase 1 ran Aug–Jan (originally). Phase 2 construction won't start until IFCs approved — likely mid-2026. Bill shouldn't be on the clock until Hawkeye mobilizes.</td>
+              <td>Reduce Phase 2 Construction Coord. from 6 months to 3–4 months. Save ~$60K–$120K.</td>
+            </tr>
+            <tr>
+              <td><strong>Phase 2 Staging — 1 week vs. 2 weeks</strong></td>
+              <td>Phase 1 staging: equipment already racked, Hawkeye handled cabling/testing. Phase 2 same setup. 2 weeks is not justified.</td>
+              <td>Negotiate staging support down to 1 week = ~$28K saving.</td>
+            </tr>
+            <tr>
+              <td><strong>Phase 3 IFRs pulled into Phase 2</strong></td>
+              <td>Vik's directive. Team is deployed. Cost of doing Phase 3 IFRs now vs. remobilizing in 2027 is significantly lower.</td>
+              <td>PCR/SOW amendment to add Phase 3 IFR scope to Phase 2. Price to be agreed before issuing.</td>
+            </tr>
+            <tr>
+              <td><strong>Phase 3 SOW — no contract exists</strong></td>
+              <td>Phase 3 design needs site surveys and IFRs. No SOW = no cost control. Need pricing now.</td>
+              <td>Alex to draft Phase 3 SOW outline with cost estimate. Align on scope before Phase 2 is complete.</td>
+            </tr>
+            <tr>
+              <td><strong>Schedule SPI — June 2026 vs. January 2026</strong></td>
+              <td>Alex's own email confirms 5-month slip. Need updated SPI for CIO reporting.</td>
+              <td>Alex to provide updated Phase 1 SPI for CIO deck. New SPI = 487 days / ~640 days ≈ 0.76.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-title">🤝 Hawkeye + Ethan/Vinnie Discussion Points</div>
+        <table>
+          <thead><tr><th>Topic</th><th>Your Position</th><th>Target Outcome</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Phase 1 leftover equipment inventory</strong></td>
+              <td>Over-purchased equipment sitting at staging. Need full inventory before Phase 2 procurement is issued.</td>
+              <td>Vinnie to provide inventory list. Identify nodes, patch panels, SFPs, cables that can offset Phase 2 procurement cost.</td>
+            </tr>
+            <tr>
+              <td><strong>Phase 2 CWDM equipment needs</strong></td>
+              <td>Ethan confirmed CWDM discussion needed. Phase 2 has different fiber topologies that may require additional CWDM filters/equipment.</td>
+              <td>Ethan + Vinnie + Jaya alignment meeting. Confirm Phase 2 CWDM needs. Simultaneously assess Phase 3 needs.</td>
+            </tr>
+            <tr>
+              <td><strong>Phase 2 construction readiness timeline</strong></td>
+              <td>Hawkeye should NOT be mobilized until IFCs are approved. IFCs depend on IFR review completion.</td>
+              <td>Agree on a construction start trigger = "IFC approved for X sites." Avoid paying for Hawkeye standby time.</td>
+            </tr>
+            <tr>
+              <td><strong>CWDM cutover sequencing — Bill involvement</strong></td>
+              <td>12-part CWDM cutover remaining. Meeting raised question: is Bill needed for this or can Hawkeye / PSEG handle it?</td>
+              <td>Define whether Bill (B&M) needs to be present for CWDM cutovers. If not, reduce his engagement period accordingly.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-title">📋 Open Action Items — From March 16 Meeting</div>
+      <table>
+        <thead><tr><th>#</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Ethan + Vinnie + Jaya meeting — Phase 2 CWDM equipment alignment + Phase 1 leftover inventory</td><td>Jaya</td><td>This week</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>2</td><td>Define exact months Bill is needed for Phase 2 — bring to next B&M session with Alex</td><td>Jaya</td><td>Next B&M meeting</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>3</td><td>Negotiate Phase 2 staging from 2 weeks to 1 week with Alex</td><td>Jaya</td><td>Next B&M meeting</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>4</td><td>Issue PCR for Phase 3 IFRs to be pulled into Phase 2 scope</td><td>Jaya + Alex</td><td>After site list confirmed</td><td><span class="badge-tbd">TBD</span></td></tr>
+          <tr><td>5</td><td>Request Phase 3 SOW outline + cost estimate from B&M</td><td>Jaya → Alex</td><td>Next B&M meeting</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>6</td><td>Complete PSEG LI IFR reviews for Far Rockaway, Valley Stream, Cedarhurst, Kings Hwy, Bohemia</td><td>Jaya</td><td>Within 10 business days of receipt</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>7</td><td>Update CIO presentation: Phase 1 NOT complete, June 2026 completion date, corrected SPI</td><td>Jaya</td><td>This week</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>8</td><td>Confirm whether Bill needed for 12-part CWDM cutover</td><td>Jaya + Alex</td><td>Next B&M meeting</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>9</td><td>Vik to align with Jaya on Phase 3 IFR acceleration and funding movement before issuing PCR</td><td>Vik + Jaya</td><td>ASAP</td><td><span class="badge-open">OPEN</span></td></tr>
+          <tr><td>10</td><td>Update weekly status report with Phase 1 micro-phase breakdown (Engineering 100%, Deployment 5%)</td><td>Jaya</td><td>This Tuesday</td><td><span class="badge-open">OPEN</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>JMUX Replacement — Phase 2 Scope Control Sheet &nbsp;|&nbsp; PSEG LI / LIPA &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; March 16, 2026</footer>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
