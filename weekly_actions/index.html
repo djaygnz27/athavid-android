@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JMUX — Urgent Action Items | Week of March 16, 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fa; color: #222; font-size: 13px; }
+
+  .header {
+    background: #003387;
+    color: white;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h1 { font-size: 17px; font-weight: 700; }
+  .header .sub { font-size: 11px; opacity: 0.75; margin-top: 3px; }
+  .header .week { font-size: 11px; background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 20px; white-space: nowrap; }
+  .orange-bar { height: 4px; background: #F7941D; }
+
+  .container { padding: 20px 28px; max-width: 1100px; margin: 0 auto; }
+
+  .top-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .stat { background: #fff; border-radius: 8px; padding: 14px 16px; border-top: 4px solid; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+  .stat.red { border-top-color: #dc3545; }
+  .stat.orange { border-top-color: #F7941D; }
+  .stat.blue { border-top-color: #003387; }
+  .stat.green { border-top-color: #28a745; }
+  .stat .num { font-size: 28px; font-weight: 800; }
+  .stat .lbl { font-size: 10px; color: #777; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #003387;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 20px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e6f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+
+  .item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    border-left: 5px solid #ccc;
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .item.critical { border-left-color: #dc3545; }
+  .item.high { border-left-color: #F7941D; }
+  .item.medium { border-left-color: #003387; }
+
+  .item-num {
+    font-size: 15px;
+    font-weight: 800;
+    color: #bbb;
+    padding-top: 2px;
+  }
+  .item.critical .item-num { color: #dc3545; }
+  .item.high .item-num { color: #F7941D; }
+  .item.medium .item-num { color: #003387; }
+
+  .item-body {}
+  .item-title { font-size: 13px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .item-desc { font-size: 12px; color: #555; line-height: 1.5; }
+  .item-why { font-size: 11px; color: #888; margin-top: 5px; font-style: italic; }
+
+  .item-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    min-width: 110px;
+  }
+
+  .badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-critical { background: #f8d7da; color: #721c24; }
+  .badge-high { background: #fff3cd; color: #856404; }
+  .badge-medium { background: #cce5ff; color: #004085; }
+  .badge-today { background: #dc3545; color: #fff; }
+  .badge-tue { background: #003387; color: #fff; }
+  .badge-week { background: #6c757d; color: #fff; }
+  .badge-ongoing { background: #d4edda; color: #155724; }
+
+  .owner {
+    font-size: 10px;
+    color: #888;
+    background: #f4f6fa;
+    padding: 2px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+  .owner strong { color: #003387; }
+
+  .blocker-box {
+    background: #fff8e1;
+    border-left: 4px solid #F7941D;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    color: #5a4000;
+  }
+
+  footer { text-align: center; color: #aaa; font-size: 10px; padding: 16px 0 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div style="font-size:17px;font-weight:700;">JMUX Replacement — Urgent Action Items</div>
+    <div class="sub">PSEG LI / LIPA &nbsp;|&nbsp; PM: Dhananjaya Gunaratne</div>
+  </div>
+  <div class="week">📅 Week of March 16, 2026</div>
+</div>
+<div class="orange-bar"></div>
+
+<div class="container">
+
+  <div class="top-summary">
+    <div class="stat red"><div class="num">3</div><div class="lbl">🔴 Critical This Week</div></div>
+    <div class="stat orange"><div class="num">4</div><div class="lbl">🟠 High Priority</div></div>
+    <div class="stat blue"><div class="num">3</div><div class="lbl">🔵 Schedule/Reporting</div></div>
+    <div class="stat green"><div class="num">June 2026</div><div class="lbl">Phase 1 New Target Date</div></div>
+  </div>
+
+  <div class="blocker-box">
+    ⚠️ <strong>Master Blocker:</strong> NSP installation and remote connectivity is the single critical path item blocking BGP config, CWDM cutovers, and all application Layer 3 cutovers. Phase 1 cannot close until this is resolved. <strong>June 2026 is the current target per B&M (Alex Lenox email, March 16, 2026).</strong>
+  </div>
+
+  <!-- CRITICAL -->
+  <div class="section-title">🔴 Critical — Must Address This Week</div>
+  <div class="items">
+
+    <div class="item critical">
+      <div class="item-num">1</div>
+      <div class="item-body">
+        <div class="item-title">Push NSP Setup — Escalate to Nokia / Lee Blackman</div>
+        <div class="item-desc">NSP installation is the single item blocking ALL Phase 1 remaining work. BGP config, CWDM cutovers, and app Layer 3 cutovers are all waiting on this. Lee Blackman approved BGP design today — he needs NSP access to proceed. Confirm Nokia's timeline for NSP delivery and escalate if no firm date exists.</div>
+        <div class="item-why">Without NSP: Phase 1 stays at ~65% complete. June 2026 target is at risk.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-today">TODAY</span>
+        <span class="badge badge-critical">CRITICAL</span>
+        <span class="owner">Owner: <strong>Jaya → Lee / Nokia</strong></span>
+      </div>
+    </div>
+
+    <div class="item critical">
+      <div class="item-num">2</div>
+      <div class="item-body">
+        <div class="item-title">IFR Reviews — Far Rockaway, Valley Stream, Cedarhurst, Kings Hwy, Bohemia</div>
+        <div class="item-desc">5 Phase 2 IFRs already received. SOW requires PSEG LI to review and respond within 10 working days. The IFC cannot be issued (and billing milestone cannot be invoiced) until PSEG LI approves the IFR. Every day of delay on your end = direct delay to IFC issuance and construction start. Start reviews this week — target completion by March 30.</div>
+        <div class="item-why">Per SOW: 5% service credit penalty if B&M misses IFC milestone due to PSEG LI delay on reviews. Protecting this is your financial control lever.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-week">By Mar 30</span>
+        <span class="badge badge-critical">CRITICAL</span>
+        <span class="owner">Owner: <strong>Jaya (PSEG LI)</strong></span>
+      </div>
+    </div>
+
+    <div class="item critical">
+      <div class="item-num">3</div>
+      <div class="item-body">
+        <div class="item-title">Update CIO Presentation — Phase 1 Status Correction</div>
+        <div class="item-desc">CIO deck currently shows Phase 1 status inaccurately. Must be corrected before next CIO touchpoint: (a) Phase 1 is NOT complete — only installation and CWDM cutover are done; (b) new Phase 1 completion target = June 2026; (c) Phase 1 micro-phase breakdown — Engineering 100%, Construction 100%, Deployment ~5%, As-Builts 0%; (d) updated SPI ~0.76 (Jan baseline vs. June actuals); (e) NSP dependency flagged as critical path.</div>
+        <div class="item-why">Reporting Phase 1 as "done" when it isn't is a transparency risk with the CIO. The meeting made clear this must be corrected immediately.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-tue">By Tue Mar 17</span>
+        <span class="badge badge-critical">CRITICAL</span>
+        <span class="owner">Owner: <strong>Jaya</strong></span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- HIGH PRIORITY -->
+  <div class="section-title">🟠 High Priority — Complete This Week</div>
+  <div class="items">
+
+    <div class="item high">
+      <div class="item-num">4</div>
+      <div class="item-body">
+        <div class="item-title">Schedule Ethan + Vinnie + Jaya Meeting — Phase 2 Equipment Alignment</div>
+        <div class="item-desc">Two critical outcomes needed from this meeting: (1) Confirm Phase 2 CWDM equipment needs — Ethan to provide requirements; (2) Vinnie to inventory all leftover Phase 1 equipment at Hawkeye staging. Do NOT issue Phase 2 procurement until this is done. Over-ordered Phase 1 equipment sitting at staging could offset Phase 2 procurement costs significantly.</div>
+        <div class="item-why">Issuing Phase 2 procurement without knowing what's already there = potential double-spend.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-week">This Week</span>
+        <span class="badge badge-high">HIGH</span>
+        <span class="owner">Owner: <strong>Jaya → Ethan/Vinnie</strong></span>
+      </div>
+    </div>
+
+    <div class="item high">
+      <div class="item-num">5</div>
+      <div class="item-body">
+        <div class="item-title">Prep B&M Financial Discussion — Bill's Contract + Phase 2 Staging</div>
+        <div class="item-desc">Before the next B&M session with Alex: define exactly which months Bill (Construction Support Coordinator) is needed for Phase 2. He should NOT be on the clock until IFCs are approved and Hawkeye mobilizes (likely mid-2026 at earliest). Also prepare to negotiate Phase 2 staging support from 2 weeks down to 1 week based on Phase 1 learnings. Potential combined savings: ~$120K–$150K.</div>
+        <div class="item-why">Bill is $61,350/month. Every unnecessary month = $61K burn. Phase 2 staging at $57,300 for 2 weeks vs. 1 week = ~$28K reducible.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-week">Next B&M Meeting</span>
+        <span class="badge badge-high">HIGH</span>
+        <span class="owner">Owner: <strong>Jaya → Alex (B&M)</strong></span>
+      </div>
+    </div>
+
+    <div class="item high">
+      <div class="item-num">6</div>
+      <div class="item-body">
+        <div class="item-title">Align with Vik on Phase 3 IFR Acceleration into Phase 2</div>
+        <div class="item-desc">Vik directed today that Phase 3 IFRs should be pulled into Phase 2 while B&M resources are deployed. Before issuing a PCR to Alex, Vik and Jaya must align internally: confirm which Phase 3 sites to accelerate, confirm 2026 budget has room to absorb ~$500K additional IFR scope, and agree on SOW amendment approach. Do this before the next B&M session.</div>
+        <div class="item-why">Remobilizing B&M in 2027 for Phase 3 IFRs will cost significantly more. Window to act is now while team is deployed.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-week">This Week</span>
+        <span class="badge badge-high">HIGH</span>
+        <span class="owner">Owner: <strong>Jaya + Vik</strong></span>
+      </div>
+    </div>
+
+    <div class="item high">
+      <div class="item-num">7</div>
+      <div class="item-body">
+        <div class="item-title">Request Phase 3 SOW Draft + Cost Estimate from B&M (Alex)</div>
+        <div class="item-desc">No Phase 3 SOW exists. Phase 3 involves ~30 sites with full engineering design including site surveys, IFRs, IFCs, and as-builts. Getting Alex to price this now — while Phase 2 contract is active and B&M has leverage — gives PSEG LI better cost control. Add this as a formal agenda item for the next B&M meeting. Ask for a draft SOW outline with cost estimate within 2 weeks.</div>
+        <div class="item-why">Without a Phase 3 SOW, scope and cost are completely uncontrolled going into 2027.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-week">Next B&M Meeting</span>
+        <span class="badge badge-high">HIGH</span>
+        <span class="owner">Owner: <strong>Jaya → Alex (B&M)</strong></span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCHEDULE / REPORTING -->
+  <div class="section-title">🔵 Schedule & Reporting — Due This Week</div>
+  <div class="items">
+
+    <div class="item medium">
+      <div class="item-num">8</div>
+      <div class="item-body">
+        <div class="item-title">Update Weekly Status Report — Micro-Phase Breakdown Format</div>
+        <div class="item-desc">Per today's meeting direction: revamp the weekly one-pager to show Phase 1 broken into micro-phases with % completion by category: Engineering (100%), Procurement/Staging (100%), Construction/Installation (100%), Deployment/Pre-Cutover (~5%), Application Cutover (0%), As-Builts (0%). Remove as-built dates. Add columns for construction status and application cutover status. Report major accomplishments since last update + what's coming in next 2 weeks.</div>
+        <div class="item-why">"Reporting isn't aligned with how the project is running" — direct quote from meeting. Must fix before next distribution.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-tue">Tue Mar 17</span>
+        <span class="badge badge-medium">REPORTING</span>
+        <span class="owner">Owner: <strong>Jaya</strong></span>
+      </div>
+    </div>
+
+    <div class="item medium">
+      <div class="item-num">9</div>
+      <div class="item-body">
+        <div class="item-title">Lee Blackman — BGP Change Documentation for Melville + Hicksville</div>
+        <div class="item-desc">BGP design approved today by Jaya. Lee to start creating change documentation for Melville and Hicksville Nokia integration. Lee also needs to build a separate NSP integration tab in the BGP design document showing Nokia devices, ASN assignments, and OSPF redistribution diagram. BGP design folder to be created on network share under: Operations &gt; 2026 &gt; Network Strategy &gt; BGP Strategy. Confirm with Lee that this is in motion by end of week.</div>
+        <div class="item-why">Change documentation must be submitted before any router configurations can be executed.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-week">By Fri Mar 20</span>
+        <span class="badge badge-medium">SCHEDULE</span>
+        <span class="owner">Owner: <strong>Lee Blackman</strong></span>
+      </div>
+    </div>
+
+    <div class="item medium">
+      <div class="item-num">10</div>
+      <div class="item-body">
+        <div class="item-title">Confirm Phase 2 Site Survey Schedule — Hawkeye Escort Coordination</div>
+        <div class="item-desc">Phase 2 substation site surveys are due 2/27/2026 (already past per SOW — check actual status with Alex). Site surveys are CPS Milestone #3 ($86,040). Per SOW, if a PSEG LI escort is late or unavailable, it triggers a schedule and cost impact. Confirm with Ahsan Mazharullah and site contacts that escorts are arranged for all remaining Phase 2 survey sites. Identify which sites still need surveys done.</div>
+        <div class="item-why">Survey milestone gate is already past its SOW date. Late escorting by PSEG LI voids service credit protection per SOW Section 1.3.</div>
+      </div>
+      <div class="item-meta">
+        <span class="badge badge-week">This Week</span>
+        <span class="badge badge-medium">SCHEDULE</span>
+        <span class="owner">Owner: <strong>Jaya + Ahsan</strong></span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>JMUX Replacement — Urgent Actions | Week of March 16, 2026 | PSEG LI / LIPA | Confidential</footer>
+
+</body>
+</html>
