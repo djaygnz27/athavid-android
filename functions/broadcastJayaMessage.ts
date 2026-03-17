@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     
     // Broadcast via built-in messenger
-    await base44.asServiceRole.messenger.broadcast({
+    await base44.messenger.broadcast({
       message: body.message,
       channels: ["whatsapp"]
     });
