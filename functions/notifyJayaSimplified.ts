@@ -5,12 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
     
-    // Simplest possible broadcast logic
-    // Assuming channels is available or defaults to all.
-    // Based on the error 'Cannot read properties of undefined (reading 'send')', 
-    // the previous attempts were likely missing a properly initialized messaging client.
-    
-    // Try using base44.messaging.broadcast
+    // Updated to use the correct messaging broadcast method
     await base44.asServiceRole.messaging.broadcast({
       message: body.message,
       channels: ["whatsapp"]
