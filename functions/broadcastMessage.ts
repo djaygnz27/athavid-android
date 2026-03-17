@@ -5,8 +5,9 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { message, channels } = await req.json();
     
-    // Using the correct SDK path: base44.asServiceRole.messaging.broadcast
-    await base44.asServiceRole.messaging.broadcast({
+    // Testing the correct API
+    await base44.asServiceRole.messaging.sendToUser({
+      userId: "me", // or another way to target user
       message,
       channels: channels || ["whatsapp"]
     });
