@@ -1,11 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 Deno.serve(async (req) => {
-  const base44 = createClientFromRequest(req);
-  const { message, channels } = await req.json();
-  
   try {
-    await base44.asServiceRole.notifications.broadcast({
+    const base44 = createClientFromRequest(req);
+    const { message, channels } = await req.json();
+    
+    // Using the correct SDK path: base44.asServiceRole.messaging.broadcast
+    await base44.asServiceRole.messaging.broadcast({
       message,
       channels: channels || ["whatsapp"]
     });
