@@ -3,15 +3,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { message, channels } = await req.json();
+    const { message } = await req.json();
     
-    // Testing the correct API
-    await base44.asServiceRole.messaging.sendToUser({
-      userId: "me", // or another way to target user
-      message,
-      channels: channels || ["whatsapp"]
-    });
-    return Response.json({ status: "success" });
+    // Attempting simple console log or any other way
+    console.log(JSON.stringify(base44));
+    
+    return Response.json({ ok: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
