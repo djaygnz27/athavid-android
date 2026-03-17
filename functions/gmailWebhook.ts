@@ -14,11 +14,11 @@ Deno.serve(async (req) => {
     const authHeader = { Authorization: `Bearer ${accessToken}` };
 
     // 3. Load previous historyId
-    const existing = await base44.asServiceRole.entities.SyncState.list({ app_id: Deno.env.get('BASE44_APP_ID') });
+    const existing = await base44.asServiceRole.entities.SyncState.list();
     const syncRecord = existing.length > 0 ? existing[0] : null;
 
     if (!syncRecord) {
-      await base44.asServiceRole.entities.SyncState.create({ app_id: Deno.env.get('BASE44_APP_ID'), history_id: currentHistoryId });
+      await base44.asServiceRole.entities.SyncState.create({ history_id: currentHistoryId });
       return Response.json({ status: 'initialized' });
     }
 
@@ -31,34 +31,39 @@ Deno.serve(async (req) => {
     if (!historyRes.ok) return Response.json({ status: 'history_error' });
     const historyData = await historyRes.json();
 
-    // 5. Process messages
     if (historyData.history) {
       for (const hist of historyData.history) {
         if (hist.messagesAdded) {
           for (const item of hist.messagesAdded) {
-            const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${item.message.id}?format=full`, { headers: authHeader });
+            const msgId = item.message.id;
+            const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msgId}`, { headers: authHeader });
             const msg = await msgRes.json();
             
+            // Check headers for JMUX project senders
             const from = msg.payload.headers.find(h => h.name === 'From')?.value || '';
             const subject = msg.payload.headers.find(h => h.name === 'Subject')?.value || '';
             
-            // Filter: BMcD, Hawkeye, Nokia
-            if (/Burns.*McDonnell|Hawkeye|Nokia|JMUX/i.test(from) || /JMUX/i.test(subject)) {
-               // Send notification
-               await fetch(`https://sachi-c7f0261c.base44.app/functions/notifyUser`, {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ message: `New JMUX project email from ${from}: ${subject}` })
-               });
+            const projectSenders = ['burnsmcd.com', 'hawkeye', 'nokia.com', 'pseg.com'];
+            if (projectSenders.some(sender => from.toLowerCase().includes(sender))) {
+                // Trigger notification to user
+                await fetch('https://api.base44.com/v1/broadcast', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${process.env.BASE44_SERVICE_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: `New Project Email: ${subject}\nFrom: ${from}\n\nI'll parse the details now.`,
+                        channels: ['whatsapp']
+                    })
+                });
             }
           }
         }
       }
     }
 
-    // 6. Update historyId
-    await base44.asServiceRole.entities.SyncState.update(syncRecord.id, { app_id: Deno.env.get('BASE44_APP_ID'), history_id: currentHistoryId });
-    return Response.json({ status: 'ok' });
+    // 5. Update sync state
+    await base44.asServiceRole.entities.SyncState.update(syncRecord.id, { history_id: currentHistoryId });
+    
+    return Response.json({ ok: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
