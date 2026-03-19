@@ -1,0 +1,55 @@
+📋 JMUX CIO DECK REVIEW SUMMARY
+
+From: Jay Guns (jaygnz27@gmail.com)
+To: Dhananjaya Gunaratne (PSEG LI)
+Date: March 18, 2026, 11:23 PM
+
+KEY FINDINGS:
+
+✅ SLIDE 1 – Title: OK
+- PRJ13797, PM name, March 2026 all correct
+
+🟠 SLIDE 2 – Goals & Objectives: FIXED
+- IFR and IFC were incorrectly marked "In Progress" — CORRECTED
+- Actual status: IFR = 31/31 Complete, IFC = 31/31 Complete
+- Phase 2 site surveys also confirmed complete
+
+🟠 SLIDE 3 – Accomplishments: FIXED  
+- Cat 6 cables: Previously showed "needs to be run" — CORRECTED (already complete)
+- ILO Detail: Bill (B&M) coordinating with Rahiq — console cable & firmware issue
+- Now correctly shows ILO as "Work in Progress" ⏳
+
+✅ SLIDE 4 – Layer 1–3 Config Table: OK
+- Initial Installation ✓, Fiber Integration ✓, Layer 3/1 cutover correctly shown as in-progress/planned
+
+✅ SLIDES 5–8 – Substation Schedules: OK
+- Phase 2 site surveys marked complete, schedule data intact
+
+🟠 SLIDE 9 – Schedule Status / SPI: FIXED + FILLED
+- Recovery Actions: Removed internal Vik quote
+- Updated to reflect ILO as #1 blocker (not NSP)
+- Added Northport resolved note
+
+📊 SPI TABLE UPDATED:
+- Northport Fuse Issue (2/26): 1 ✓ 0 = 0.00 weekly SPI, cumulative 0.75
+- OTDR Hicksville–Syosset (3/9): 1 ✓ 1 = 1.00 weekly, cumulative 0.75  
+- NSP Cable Run & Terminated (3/10): 1 ✓ 1 = 1.00 weekly, cumulative 0.76
+- BGP Design Approved (3/16): 1 ✓ 1 = 1.00 weekly, cumulative 0.76
+- Equipment to Hawkeye Trailer (3/10): 0 ✓ 0.5 = N/A, cumulative 0.76
+
+💡 NOTE FOR JAYA: The 0.00 SPI for Northport week dragged down cumulative SPI. The 3 consecutive 1.00 weeks after stabilized it at 0.76.
+
+⚠️ SLIDE 10 – Financials: ⚠️ MANUAL VERIFICATION NEEDED
+- Contains embedded OLE objects (Excel tables) — could not verify content
+- ACTION: Review financial figures manually against reconciled PO data before sending to CIO
+
+✅ SLIDE 11 – Risks & Next Steps: FIXED
+- Removed outdated OTDR reference (already complete)
+- Updated sequence to:
+  1. Northport ✓ RESOLVED
+  2. ILO 🔧 IN PROGRESS
+  3. BGP Config 🔧 IN PROGRESS  
+  4. Remote Access (31 routers) 🔧 IN PROGRESS
+
+---
+REVIEWED BY: Sachi ≈ JMUX Project Assistant ≈ PRJ13797 ≈ Mar 18, 2026
