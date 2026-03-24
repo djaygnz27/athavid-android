@@ -1,0 +1,11 @@
+📊 JMUX Status Confirmed — Mar 24, 2:12 PM EDT
+
+Latest update still the 11:45 AM one-pager. BGP design locked ✅, schedule YELLOW (cables pending).
+
+**Next critical dates**:
+• Phase 2 call → Mar 26
+• Nokia training dates → Due Mar 27
+• BGP execution → Apr 1–2 (on-site)
+• BGP peer review + CRB → Due Mar 31
+
+No new updates since this morning. Cable delivery remains the primary risk.
