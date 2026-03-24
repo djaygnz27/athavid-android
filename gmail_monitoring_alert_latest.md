@@ -1,35 +1,22 @@
-# Gmail JMUX Monitoring — Latest Scan
+# Gmail Webhook Scan #105
 
-**Date/Time:** March 23, 2026, 13:47 EDT (17:47 UTC)
-**Trigger:** Webhook (history ID 2403487)
+**Date:** 2026-03-24 02:58 EDT / 06:58 UTC  
+**History ID:** 2405267 (prev: 2405176)  
+**Result:** NO NEW JMUX EMAILS
 
-## Summary
-✗ **NO NEW JMUX EMAILS**
+**Latest JMUX Email:**
+- Subject: JMUX Project Meeting Analysis — Action Items & Summary (Mar 23, 2026)
+- From: jaygnz27@gmail.com  
+- Date: Mon, 23 Mar 2026 14:00:08 -0500
 
-### Most Recent JMUX Activity
-- **Email:** (PRJ13797) JMUX Replacement Update -March-Draft.pptx
-- **From:** DHANANJAYA.GUNARATNE@psegliny.com
-- **Date:** March 19, 2026 @ 03:16 UTC (Mar 18 @ 11:16 PM EDT)
-- **Silence Duration:** 4 days, 14 hours, 31 minutes
+**Status:** Project remains quiet. No new communications since internal analysis email on Mar 23 2:00 PM.
 
-### History Scan Result
-- History ID Movement: 2403391 → 2403487 (96 record change)
-- History Records Checked: 14
-- JMUX-Related Changes: 0
-- Other Email Activity: 7 (non-JMUX)
+**Action Items (From Mar 23 Analysis):**
+- Confirm exact hourly rate with Chad ($65 vs $66 vs $70)
+- Ask Burns & Mac: relay team % vs supervisor % breakdown
+- Ask if work can be scheduled 9-to-5 to avoid OT
+- Document Melville antenna requirement formally
+- CIO presentation ready with Vic's feedback applied
 
-### Notification
-✓ Broadcast sent to WhatsApp: No new JMUX activity
-
-### Status
-- Monitoring active
-- Next scan: Automated (webhook-triggered)
-
----
-
-**Scan #93 — Mar 23, 2026 @ 18:35 UTC (14:35 EDT)**
-- History: 2403713 → 2403913
-- New JMUX emails: **0**
-- Status: No activity since Mar 19 (14+ day silence)
-- Action: Continue monitoring
-
+**Blockers:**
+- ILO: 4 console cables still being purchased by Bill
