@@ -1,0 +1,28 @@
+JMUX Gmail Webhook Automation — Mar 24, 2:26 PM EDT
+========================================
+
+Event Trigger: gmail_project_monitor connector automation
+History ID: 2409021 → 2409683 (662 IDs processed)
+
+NEW JMUX EMAILS DETECTED (3 total):
+
+1. Fwd: PRJ13797 JMUX — Final Presentation v2 + CIO Oral Presentation Script
+   From: Jay Guns <jaygnz27@gmail.com>
+   Date: Tue, 24 Mar 2026 14:26:17 -0400 (your own forward)
+   Status: READY FOR REVIEW
+
+2. (PRJ13797) JMUX Replacement Update -March-final_v1a.pptx
+   From: Dhananjaya Gunaratne <DHANANJAYA.GUNARATNE@psegliny.com>
+   Date: Tue, 24 Mar 2026 18:12:45 +0000 (2:12 PM EDT)
+   Status: FINAL PRESENTATION FROM PSEG LI
+
+3. PRJ13797 JMUX — Final Presentation v2 + CIO Oral Presentation Script
+   From: jaygnz27@gmail.com
+   Status: Original email draft
+
+NOTIFICATION SENT:
+✅ WhatsApp + Web broadcast active
+✅ Notification: "JMUX Final Presentation Received — Review and align final deck with script"
+
+ACTION: Review final_v1a.pptx and cross-reference with your CIO oral presentation script
+AUTOMATION SYNCED: History ID 2409683
