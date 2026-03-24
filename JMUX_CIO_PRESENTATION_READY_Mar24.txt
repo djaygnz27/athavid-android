@@ -1,0 +1,120 @@
+═══════════════════════════════════════════════════════════════════════════════
+🎯 JMUX CIO PRESENTATION — READY TO GO
+═══════════════════════════════════════════════════════════════════════════════
+
+TIMESTAMP: Tuesday, March 24, 2026 | 2:25 PM EDT (6:25 PM UTC)
+
+FILES RECEIVED:
+✓ PRJ13797_JMUX_CIO_Update_March_Final_v2.pptx (main deck)
+✓ PRJ13797_JMUX_CIO_OralPresentation_Mar24.md (full speaker script)
+✓ PRJ13797_JMUX_CIO_SpeakerNotes_v7.pptx
+✓ PRJ13797_JMUX_CIO_TalkingPoints_v7.docx
+
+───────────────────────────────────────────────────────────────────────────────
+✅ PROJECT STATUS — ALL SYSTEMS CONFIRMED
+───────────────────────────────────────────────────────────────────────────────
+
+ACCOMPLISHMENTS (LOCKED IN):
+  • Phase 1: All 31 Nokia router installations COMPLETE
+  • Hicksville-Syosset fiber link FULLY ACTIVE
+  • NSP equipment wiring at Hicksville DONE (today — Mar 24)
+  • BGP Architecture APPROVED (Vikas Vohra, Mar 16) — peer review underway
+  • Northport DC power issue RESOLVED (Mar 18) — site cleared for ILO work
+  • Phase 2: 36 substations — all site surveys complete, IFR/IFC rolling weekly
+  • Budget: $6.6M approved, $4.55M spent, $2.05M estimate — ON BUDGET, ZERO variance
+
+SCHEDULE STATUS: YELLOW (SPI 0.76)
+  ⚠️  Root causes: SSP documentation delay + CMDB coordination (administrative, not technical)
+  ✅ Recovery plan: BGP execution Apr 1-2 at Hicksville & Melville
+  ✅ Upon BGP completion → Schedule returns to GREEN
+
+───────────────────────────────────────────────────────────────────────────────
+🚨 CRITICAL PATH — NEXT 2 WEEKS
+───────────────────────────────────────────────────────────────────────────────
+
+THIS WEEK (Mar 24-28):
+  📌 Rahiq & Brianna: iLO console configuration at Hicksville & Melville
+  📌 Phase 2 staging & equipment call → THURSDAY, MAR 26 @ 3 PM
+  ⚠️  BLOCKER WATCH: iLO console cable delivery (Bill purchasing 4 units)
+
+MAR 27:
+  📌 Nokia training dates finalized (Glenn Leaming approval expected)
+  📌 NSP remote access setup upon iLO & BGP completion
+
+MAR 30:
+  📌 IFR packages due: Green Acres + Berry Street (feeds Phase 2 construction schedule)
+  📌 OTDR trace file deadline (Hawkeye splicers, or close item)
+
+MAR 31:
+  📌 BGP Change Review Board approval (FINAL gate before execution)
+
+APR 1-2 (RECOVERY MILESTONE):
+  📌 BGP EXECUTION — Apr 1 Hicksville, Apr 2 Melville
+  📌 Lead: Lee Blackman | On-site console: Rahiq & Brianna
+  📌 Upon completion → SPI GREEN, full speed into Phase 2
+
+───────────────────────────────────────────────────────────────────────────────
+⚠️  TOP RISKS (Presenter Priority Order)
+───────────────────────────────────────────────────────────────────────────────
+
+1. LEGACY JMUX EQUIPMENT (25+ years old)
+   → Brittle fiber, faulty connectors, risk of damage during cutover
+   → Mitigation: Handle with extreme care, test before final migration
+
+2. WEATHER DELAYS & SUBSTATION ACCESS CONFLICTS
+   → Tracked weekly with Hawkeye construction team
+
+3. CONCURRENT MAJOR PROJECTS AT SAME SUBSTATIONS
+   → Coordination required to avoid resource/access conflicts
+
+4. iLO CONSOLE CABLE DELIVERY (OPERATIONAL BLOCKER THIS WEEK)
+   → Dependency: Bill purchasing 4 units
+   → Required by: Mar 28 for config window (Mar 24-28)
+   → Impact if late: Delays iLO config, pushes BGP timeline
+   → Status: HIGHEST WATCH ITEM
+
+───────────────────────────────────────────────────────────────────────────────
+📋 TALKING POINTS FOR CIO/SVP
+───────────────────────────────────────────────────────────────────────────────
+
+"We have clear line of sight to recovery. The BGP execution on April 1st and 2nd 
+is the key milestone. Once that is done, remote connectivity is established, and 
+we accelerate into Phase 2 at full speed."
+
+ON SPI 0.76:
+"The delays were administrative — SSP security review queue and CMDB coordination. 
+The physical and technical work has been executing well. BGP approval and execution 
+by April 2nd is the recovery event."
+
+ON BUDGET ($6.6M):
+"We are tracking within the $6.6M approved budget. We are monitoring Phase 2 labor 
+costs closely — specifically the PAR controls field labor estimate — and will have 
+a firmer number at the next update."
+
+ON JMUX DECOMMISSION:
+"Our earliest consideration for JMUX decommissioning is April 2026 for Phase 1 
+sites. We will not touch JMUX until Nokia is fully validated and remote access 
+is confirmed."
+
+ON PAR CONTROLS (Phase Angle Regulator):
+"We are integrating PAR controls into the Nokia network using new INIVEA interface 
+devices. Pilgrim is our first beta site, with delivery expected in April. This 
+work runs in parallel to the main JMUX replacement and does not impact our primary 
+schedule."
+
+───────────────────────────────────────────────────────────────────────────────
+📌 ADDITIONAL NOTES
+───────────────────────────────────────────────────────────────────────────────
+
+• Northport: 1x additional C37.94 card + SFP required (minor add, Phase 2 misc 
+  order, zero schedule impact)
+
+• PAR circuit pilot: Bench test INIVEA devices post-delivery in April before 
+  going live
+
+• Post-BGP operations: Nokia ownership transfers to Vic's team (IT) including 
+  Rahiq & Brianna — training actively being scheduled
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ PRESENTATION STATUS: READY FOR DELIVERY
+═══════════════════════════════════════════════════════════════════════════════
