@@ -1,7 +1,4 @@
-import { base44 } from '@base44/backend';
-
-export const handler = async (req: Request) => {
-  const message = `🚨 JMUX UPDATE — March 24, 2026 (11:45 AM EDT)
+🚨 **JMUX UPDATE — March 24, 2026 (11:45 AM EDT)**
 
 **CURRENT PERIOD SUMMARY**
 ✅ DC power: Northport COMPLETE
@@ -22,13 +19,4 @@ export const handler = async (req: Request) => {
 → 4/2: BGP execution Melville (on-site)
 
 **SCHEDULE STATUS: 🟡 YELLOW**
-BGP execution 4/1–4/2 on track. ILO config in progress this week. Recovery to GREEN upon BGP completion.`;
-
-  try {
-    await base44.broadcast({ message, channels: ['whatsapp', 'web'] });
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (error) {
-    console.error('Broadcast error:', error);
-    return new Response(JSON.stringify({ error: String(error) }), { status: 500 });
-  }
-};
+BGP execution 4/1–4/2 on track. ILO config in progress this week. Recovery to GREEN upon BGP completion.
