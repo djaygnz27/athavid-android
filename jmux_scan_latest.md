@@ -1,17 +1,12 @@
-# Gmail Monitoring Scan #32
-**Date:** 2026-03-22 22:16:44 UTC (18:16 EDT)  
-**Webhook Trigger:** historyId 2399266 → 2399299 (delta: +33)
+# JMUX Email Scan - 2026-03-26 12:49:13
 
-## Result
-✅ **NO NEW JMUX EMAILS**
+**New emails (24h):** 2
 
-History window returned `{ "historyId": "2399299" }` with no message entries.
-This indicates **no new messages were added** since the last scan at 21:49 EDT.
+- PRJ13797 — SPI Calculator UPDATED (EV & PV Deep Dive tab added)
+  From: jaygnz27@gmail.com
+  Time: 19.3h ago
 
-## Timeline
-- **Last JMUX Email:** Mar 19 @ 3:16 AM UTC (11:16 PM EDT Mar 18) — "JMUX Replacement Update -March-Draft.pptx"
-- **Time Elapsed:** 4 days + 11 hours (as of 22:16 UTC Mar 22)
-- **Status:** No new project communications
+- PRJ13797 — SPI Calculator (Excel) for Team Training
+  From: jaygnz27@gmail.com
+  Time: 19.6h ago
 
----
-**Next Scan:** Automated — triggered on next Gmail webhook event
