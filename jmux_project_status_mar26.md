@@ -1,56 +1,72 @@
 # PRJ13797 JMUX Replacement — Project Status Update
-**Updated:** March 26, 2026 | 9:32 PM EDT
+**Updated:** March 26, 2026 | 9:45 PM EDT
 
 ---
 
-## 🔴 CRITICAL PATH — NEXT 2 WEEKS
+## ✅ LATEST UPDATE — ILO COMPLETE
 
-| Item | Status | Due Date | Notes |
-|------|--------|----------|-------|
-| BGP Execution — Hicksville | ⏳ SCHEDULED | **March 31** | Confirmed ✅ |
-| BGP Execution — Melville | ⏳ SCHEDULED | **March 31** | Confirmed ✅ |
-| IFR Package (Far Rockaway, Valley Stream, Cedarhurst) | ✅ COMPLETE | Done | Approved & submitted |
-| ILO Configuration (remote server access) | ⏳ IN PROGRESS | Before BGP | Console cables being sourced by Bill — required for remote access to server |
-| Nokia NSP Remote Access Configuration | ⏳ PENDING | **AFTER BGP** | Starts AFTER BGP execution at Hicksville & Melville — NOT a pre-BGP dependency |
+**ILO Configuration: ✅ DONE**
+- Ports enabled and configured ✅
+- Remote access into servers: ✅ CONFIRMED & ACTIVE
+- Console cables no longer a blocker — risk removed
 
 ---
 
-## ✅ CORRECTIONS APPLIED (Mar 26)
+## 🔴 CRITICAL PATH — NEXT 7 DAYS
 
-1. **BGP Execution date confirmed: March 31** (previously shown as Apr 1-2 — updated per Jay)
-2. **IFR Package: CLOSED** — already approved and submitted, remove from open actions
-3. **Nokia NSP Remote Access: AFTER BGP** — this is a POST-BGP activity, not pre-BGP
-4. **ILO (I-L-O) Configuration** = the actual pre-BGP dependency for remote server access — NOT Nokia NSP
+| Item | Status | Date | Details |
+|------|--------|------|---------|
+| Change Management Approval | ⏳ SCHEDULED | **March 30 (Mon)** | Go in front of Change Board to get approval for BGP work |
+| BGP Configuration & Execution — Hicksville | ⏳ SCHEDULED | **March 31 (Wed)** | Lee (remote) + Brianna & Raheek on site with console cables |
+| BGP Configuration & Execution — Melville | ⏳ SCHEDULED | **April 1 (Thu)** | Lee (remote) + Brianna & Raheek on site with console cables |
+| Nokia NSP Remote Access | ⏳ POST-BGP | After Apr 1 | Remote access into Nokia NSP enabled after BGP + ILO complete |
+| Phase 1 Node Configuration (31 nodes) | ⏳ POST-NSP | After NSP access | Configure all 31 nodes installed in Phase 1 via Nokia NSP |
+
+---
+
+## 👥 BGP EXECUTION TEAM
+
+| Role | Person | Location |
+|------|--------|----------|
+| Solution Architect / BGP Lead | Lee Blackman | Remote |
+| On-site Tech | Brianna | On site — console cables backup |
+| On-site Tech | Raheek | On site — console cables backup |
+
+---
+
+## 📋 SEQUENCE OF EVENTS (CONFIRMED)
+
+```
+✅ Step 1 — ILO Configured → Remote server access ACTIVE
+⏳ Step 2 — Change Mgmt Approval (March 30)
+⏳ Step 3 — BGP Execution (March 31 Hicksville | April 1 Melville)
+⏳ Step 4 — Nokia NSP Remote Access (after BGP complete)
+⏳ Step 5 — Configure 31 Phase 1 nodes via Nokia NSP
+```
 
 ---
 
 ## 📋 PHASE 1 STATUS SUMMARY
 
-| Site | Status |
+| Item | Status |
 |------|--------|
 | Northport — DC Power & Router Install | ✅ COMPLETE |
 | Hicksville-Syosset Fiber Link | ✅ ACTIVE |
 | Hicksville Cabling | ✅ COMPLETE |
 | BGP Design & Peer Review | ✅ APPROVED |
-| ILO Configuration | ⏳ IN PROGRESS (pre-BGP) |
-| BGP Execution — Hicksville & Melville | ⏳ March 31 |
-| Nokia NSP Remote Access | ⏳ POST-BGP |
+| ILO Configuration | ✅ COMPLETE — remote access confirmed |
+| Change Management Approval | ⏳ March 30 |
+| BGP Execution — Hicksville | ⏳ March 31 |
+| BGP Execution — Melville | ⏳ April 1 |
+| Nokia NSP Remote Access | ⏳ Post-BGP |
+| Phase 1 Node Configuration (31 nodes) | ⏳ Post-NSP |
 
 ---
 
-## 🗓️ UPCOMING MILESTONES
-
-| Date | Milestone |
-|------|-----------|
-| March 31 | BGP Execution — Hicksville & Melville ⭐ |
-| After March 31 | Nokia NSP Remote Access Configuration |
-| TBD | Phase 2 Staging & Equipment Procurement |
+## 🟡 RISK STATUS: YELLOW → trending GREEN
+- ILO blocker: ✅ REMOVED
+- BGP execution pending Change Board approval March 30
+- Recovery to 🟢 GREEN upon BGP completion April 1
 
 ---
-
-## 🟨 RISK STATUS: YELLOW
-- ILO console cables (Bill) still being sourced — must be complete before BGP execution on March 31
-- Recovery to 🟢 GREEN upon successful BGP completion
-
----
-*Updated per Jay verbal clarification — March 26, 2026*
+*Updated per Jay verbal clarification — March 26, 2026 9:45 PM EDT*
