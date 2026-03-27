@@ -1,0 +1,54 @@
+{
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "date_of_birth": {
+      "type": "string"
+    },
+    "is_verified": {
+      "type": "boolean"
+    },
+    "is_18_plus": {
+      "type": "boolean"
+    },
+    "location": {
+      "type": "string"
+    },
+    "followers_count": {
+      "type": "number"
+    },
+    "following_count": {
+      "type": "number"
+    },
+    "videos_count": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "pending_verification"
+      ]
+    }
+  },
+  "required": [],
+  "name": "AthaVidUser"
+}

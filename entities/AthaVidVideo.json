@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "hashtags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "likes_count": {
+      "type": "number"
+    },
+    "comments_count": {
+      "type": "number"
+    },
+    "views_count": {
+      "type": "number"
+    },
+    "shares_count": {
+      "type": "number"
+    },
+    "is_archived": {
+      "type": "boolean"
+    },
+    "is_ai_detected": {
+      "type": "boolean"
+    },
+    "is_approved": {
+      "type": "boolean"
+    },
+    "archive_date": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "AthaVidVideo"
+}
