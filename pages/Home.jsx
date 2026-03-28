@@ -349,7 +349,9 @@ function UploadPage({ onVideoPosted }) {
       const cleanUsername = form.username.trim().replace(/^@/,"");
 
       setProgress(85);
-      await AthaVidVideo.create({
+      let createResult;
+      try {
+        createResult = await AthaVidVideo.create({
         username: cleanUsername,
         display_name: cleanUsername,
         avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanUsername}`,
@@ -367,15 +369,23 @@ function UploadPage({ onVideoPosted }) {
         archive_date: archiveDate,
         duration_seconds: 0,
       });
+      } catch(createErr) {
+        throw new Error("Entity save failed: " + (createErr?.message || JSON.stringify(createErr) || String(createErr)));
+      }
 
       setProgress(100);
       await new Promise(r => setTimeout(r, 300));
       setDone(true);
       if (onVideoPosted) onVideoPosted();
     } catch (err) {
-      const msg = err?.message || err?.toString() || "Unknown error";
-      setError("Failed: " + msg);
-      console.error("POST ERROR:", err);
+      let msg = "Unknown error";
+      try { msg = JSON.stringify(err); } catch(e2) {}
+      if (err?.message) msg = err.message;
+      if (err?.response) {
+        try { const rb = await err.response.json(); msg += " | " + JSON.stringify(rb); } catch(e3) {}
+      }
+      setError("❌ " + msg);
+      console.error("POST ERROR full:", err, JSON.stringify(err));
     } finally {
       setUploading(false);
     }
