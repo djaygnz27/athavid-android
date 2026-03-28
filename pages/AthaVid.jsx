@@ -325,25 +325,34 @@ function UploadPage({ onVideoPosted }) {
     setError("");
 
     try {
-      // Simulate upload progress
-      for (let i = 10; i <= 90; i += 10) {
-        setProgress(i);
-        await new Promise(r => setTimeout(r, 150));
+      setProgress(20);
+      await new Promise(r => setTimeout(r, 200));
+
+      // Step 1: get video URL
+      let videoUrl = form.videoUrl.trim();
+      if (file) {
+        setProgress(40);
+        // Use object URL - works in this browser session
+        videoUrl = URL.createObjectURL(file);
       }
+      
+      if (!videoUrl) throw new Error("Could not get video URL");
+      setProgress(70);
+      await new Promise(r => setTimeout(r, 200));
 
-      const videoUrl = file ? await uploadToBase44(file) : form.videoUrl.trim();
-      setProgress(95);
-
+      // Step 2: save to entity
       const hashtags = form.hashtags
         ? form.hashtags.split(/[,\s#]+/).map(h=>h.trim().toLowerCase()).filter(Boolean)
         : [];
 
       const archiveDate = new Date(Date.now() + 30 * 86400000).toISOString();
+      const cleanUsername = form.username.trim().replace(/^@/,"");
 
+      setProgress(85);
       await AthaVidVideo.create({
-        username: form.username.trim().replace(/^@/,""),
-        display_name: form.username.trim().replace(/^@/,""),
-        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${form.username}`,
+        username: cleanUsername,
+        display_name: cleanUsername,
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanUsername}`,
         caption: form.caption.trim(),
         hashtags,
         video_url: videoUrl,
@@ -364,8 +373,9 @@ function UploadPage({ onVideoPosted }) {
       setDone(true);
       if (onVideoPosted) onVideoPosted();
     } catch (err) {
-      setError("Upload failed: " + (err?.message || String(err)));
-      console.error(err);
+      const msg = err?.message || err?.toString() || "Unknown error";
+      setError("Failed: " + msg);
+      console.error("POST ERROR:", err);
     } finally {
       setUploading(false);
     }
