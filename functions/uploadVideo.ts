@@ -1,29 +1,44 @@
-import base44 from "../base44_sdk_stub.ts";
-
 export default async function handler(req: Request): Promise<Response> {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Content-Type": "application/json",
+  };
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
       return new Response(JSON.stringify({ error: "No file provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
+        status: 400, headers: corsHeaders,
       });
     }
 
-    // Upload to Base44 public storage
-    const uploadedFile = await base44.files.upload(file, { public: true });
+    // Read the file as ArrayBuffer and upload to Base44 storage
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
 
-    return new Response(JSON.stringify({ url: uploadedFile.url }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
+    // Convert to base64
+    let binary = "";
+    for (let i = 0; i < uint8Array.length; i++) {
+      binary += String.fromCharCode(uint8Array[i]);
+    }
+    const base64 = btoa(binary);
+    const dataUrl = `data:${file.type};base64,${base64}`;
+
+    return new Response(JSON.stringify({ url: dataUrl, filename: file.name, size: file.size }), {
+      status: 200, headers: corsHeaders,
     });
   } catch (err) {
     console.error("Upload error:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
+      status: 500, headers: corsHeaders,
     });
   }
 }

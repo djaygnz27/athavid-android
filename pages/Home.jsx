@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { AthaVidVideo } from "../api/entities";
-import { uploadFile } from "@/api/storage";
 
 function formatCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -283,7 +282,7 @@ function FeedPage({ likedVideos, onLike, onShare }) {
 // ── UPLOAD ────────────────────────────────────────────────────────────────────
 function UploadPage({ onVideoPosted }) {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ username:"", caption:"", hashtags:"" });
+  const [form, setForm] = useState({ username:"", caption:"", hashtags:"", videoUrl:"" });
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -305,22 +304,20 @@ function UploadPage({ onVideoPosted }) {
   const handleDrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 
   const uploadToBase44 = async (f) => {
-    try {
-      const { file_url } = await uploadFile(f);
-      return file_url;
-    } catch(e) {
-      // Fallback to base64 if storage upload fails
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => resolve(ev.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(f);
-      });
+    // Store as persistent base64 - works for clips under ~8MB
+    if (f.size > 8 * 1024 * 1024) {
+      throw new Error(`Video too large (${(f.size/1024/1024).toFixed(1)}MB). Please use a clip under 8MB or paste a video URL instead.`);
     }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result);
+      reader.onerror = () => reject(new Error("Could not read file"));
+      reader.readAsDataURL(f);
+    });
   };
 
   const handlePost = async () => {
-    if (!file) { setError("Please select a video first."); return; }
+    if (!file && !form.videoUrl.trim()) { setError("Please select a video file OR paste a video URL."); return; }
     if (!form.username.trim()) { setError("Please enter a username."); return; }
     if (!form.caption.trim()) { setError("Please add a caption."); return; }
 
@@ -334,7 +331,7 @@ function UploadPage({ onVideoPosted }) {
         await new Promise(r => setTimeout(r, 150));
       }
 
-      const videoUrl = await uploadToBase44(file);
+      const videoUrl = file ? await uploadToBase44(file) : form.videoUrl.trim();
       setProgress(95);
 
       const hashtags = form.hashtags
@@ -455,6 +452,14 @@ function UploadPage({ onVideoPosted }) {
             <label style={{ color:"#666",fontSize:12,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:8 }}>Your Username *</label>
             <input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="@yourname" style={{ width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:14,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box" }} />
           </div>
+
+          {!file && (
+          <div style={{ marginBottom:16 }}>
+            <label style={{ color:"#666",fontSize:12,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:8 }}>🔗 Video URL (paste a direct .mp4 link)</label>
+            <input value={form.videoUrl} onChange={e=>setForm({...form,videoUrl:e.target.value})} placeholder="https://example.com/video.mp4" style={{ width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(108,99,255,0.3)",borderRadius:16,padding:14,color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box" }} />
+            <div style={{ color:"#444",fontSize:11,marginTop:6 }}>Or go back to Step 1 and select a file (max 8MB)</div>
+          </div>
+          )}
 
           <div style={{ marginBottom:16 }}>
             <label style={{ color:"#666",fontSize:12,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:8 }}>Caption *</label>
