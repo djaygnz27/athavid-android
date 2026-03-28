@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AthaVidVideo } from "../api/entities";
+import { useCurrentUser } from "../api/auth";
 
 function formatCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -290,8 +291,18 @@ function FeedPage({ likedVideos, onLike, onShare }) {
 
 // ── UPLOAD ────────────────────────────────────────────────────────────────────
 function UploadPage({ onVideoPosted }) {
+  const { currentUser } = useCurrentUser();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ username:"", caption:"", hashtags:"", videoUrl:"" });
+
+  // Auto-fill username from logged-in user
+  useEffect(() => {
+    if (currentUser) {
+      const autoUsername = currentUser.username || currentUser.full_name?.toLowerCase().replace(/\s+/g,"_") || currentUser.email?.split("@")[0] || "";
+      const autoDisplay = currentUser.full_name || autoUsername;
+      setForm(f => ({ ...f, username: f.username || autoUsername, display_name: autoDisplay }));
+    }
+  }, [currentUser]);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -517,8 +528,10 @@ function UploadPage({ onVideoPosted }) {
           )}
 
           <div style={{ marginBottom:16 }}>
-            <label style={{ color:"#666",fontSize:12,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:8 }}>Your Username *</label>
-            <input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="@yourname" style={{ width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:14,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box" }} />
+            <label style={{ color:"#666",fontSize:12,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:8 }}>
+              Your Username * {currentUser && <span style={{ color:"#4caf50",fontSize:10,fontWeight:600,marginLeft:6 }}>✓ auto-filled</span>}
+            </label>
+            <input value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="@yourname" style={{ width:"100%",background: currentUser ? "rgba(76,175,80,0.08)" : "rgba(255,255,255,0.04)",border: currentUser ? "1px solid rgba(76,175,80,0.4)" : "1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:14,color:"#fff",fontSize:14,outline:"none",boxSizing:"border-box" }} />
           </div>
 
           {!file && (
