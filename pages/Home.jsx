@@ -375,39 +375,22 @@ function UploadPage({ onVideoPosted }) {
       
       let saveResult;
       try {
-        // Call the app's own internal API - works without user auth
-        const resp = await fetch("https://api.base44.com/api/apps/69bafc2c944948084350efb0/entities/AthaVidVideo/", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "X-API-Key": "public"
-          },
-          body: JSON.stringify(videoData),
-        });
-        if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({}));
-          // If API fails, save to localStorage as fallback so video shows in feed
-          const existing = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
-          const localRecord = { ...videoData, id: "local_" + Date.now(), created_date: new Date().toISOString() };
-          existing.unshift(localRecord);
-          localStorage.setItem("athavid_videos", JSON.stringify(existing.slice(0, 50)));
-          saveResult = localRecord;
-        } else {
-          saveResult = await resp.json();
-        }
+        saveResult = await AthaVidVideo.create(videoData);
       } catch(createErr) {
-        // Network error - save locally
+        // Fallback: save to localStorage so video shows in feed on this device
         const existing = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
         const localRecord = { ...videoData, id: "local_" + Date.now(), created_date: new Date().toISOString() };
         existing.unshift(localRecord);
         localStorage.setItem("athavid_videos", JSON.stringify(existing.slice(0, 50)));
         saveResult = localRecord;
+        console.log("Saved to localStorage:", localRecord.id);
       }
 
       setProgress(100);
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 500));
       setDone(true);
-      if (onVideoPosted) onVideoPosted();
+      // Also add to feed immediately
+      if (onVideoPosted) onVideoPosted(saveResult);
     } catch (err) {
       let msg = "Unknown error";
       try { msg = JSON.stringify(err); } catch(e2) {}
@@ -422,19 +405,27 @@ function UploadPage({ onVideoPosted }) {
     }
   };
 
+  useEffect(() => {
+    if (done) {
+      // Auto-go to feed after 2.5 seconds
+      const t = setTimeout(() => { if (onVideoPosted) onVideoPosted(); }, 2500);
+      return () => clearTimeout(t);
+    }
+  }, [done]);
+
   if (done) return (
     <div style={{ minHeight:"100%",background:"#050510",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,textAlign:"center" }}>
-      <style>{`@keyframes checkPop{0%{transform:scale(0) rotate(-45deg)}70%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}}`}</style>
-      <div style={{ fontSize:80,animation:"checkPop 0.6s cubic-bezier(.175,.885,.32,1.275) forwards",marginBottom:24 }}>🎉</div>
-      <div style={{ color:"#a78bfa",fontSize:26,fontWeight:800,marginBottom:8 }}>Video Posted!</div>
-      <div style={{ color:"#555",fontSize:14,lineHeight:1.7,marginBottom:28 }}>Your video is live on AthaVid!<br/>Go to the feed to see it 🌍</div>
-      <div style={{ background:"rgba(76,175,80,0.1)",border:"1px solid rgba(76,175,80,0.3)",borderRadius:16,padding:16,width:"100%",marginBottom:28 }}>
-        <div style={{ color:"#4caf50",fontSize:13,fontWeight:700,marginBottom:4 }}>✅ Live for 30 days</div>
-        <div style={{ color:"#555",fontSize:12 }}>Your video will auto-archive after 30 days.</div>
+      <style>{`@keyframes checkPop{0%{transform:scale(0) rotate(-45deg)}70%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0)}} @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <div style={{ fontSize:90,animation:"checkPop 0.6s cubic-bezier(.175,.885,.32,1.275) forwards",marginBottom:24 }}>🎉</div>
+      <div style={{ color:"#a78bfa",fontSize:28,fontWeight:800,marginBottom:8,animation:"fadeIn 0.5s 0.3s both" }}>Video Posted!</div>
+      <div style={{ color:"#aaa",fontSize:15,lineHeight:1.7,marginBottom:28,animation:"fadeIn 0.5s 0.5s both" }}>Your video is live on AthaVid!<br/>Taking you to the feed... 🌍</div>
+      <div style={{ background:"rgba(76,175,80,0.1)",border:"1px solid rgba(76,175,80,0.3)",borderRadius:16,padding:16,width:"100%",marginBottom:28,animation:"fadeIn 0.5s 0.7s both" }}>
+        <div style={{ color:"#4caf50",fontSize:14,fontWeight:700,marginBottom:4 }}>✅ Live for 30 days</div>
+        <div style={{ color:"#888",fontSize:13 }}>Your video will auto-archive after 30 days.</div>
       </div>
-      <button onClick={()=>{setDone(false);setStep(1);setForm({username:"",caption:"",hashtags:""});setFile(null);setPreview(null);setProgress(0)}}
-        style={{ background:"linear-gradient(135deg,#6c63ff,#a78bfa)",border:"none",borderRadius:30,padding:"14px 40px",color:"#fff",fontSize:16,cursor:"pointer",fontWeight:700,boxShadow:"0 8px 30px rgba(108,99,255,0.4)" }}>
-        Post Another 🎬
+      <button onClick={()=>{ if (onVideoPosted) onVideoPosted(); }}
+        style={{ background:"linear-gradient(135deg,#6c63ff,#a78bfa)",border:"none",borderRadius:30,padding:"14px 40px",color:"#fff",fontSize:16,cursor:"pointer",fontWeight:700,boxShadow:"0 8px 30px rgba(108,99,255,0.4)",animation:"fadeIn 0.5s 0.9s both" }}>
+        Go to Feed 🏠
       </button>
     </div>
   );
@@ -719,7 +710,11 @@ export default function AthaVid() {
   }, []);
 
   const handleLike = id => setLikedVideos(prev => { const n = new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
-  const handleVideoPosted = () => setActiveTab("feed");
+  const [feedKey, setFeedKey] = useState(0);
+  const handleVideoPosted = () => { 
+    setActiveTab("feed"); 
+    setFeedKey(k => k + 1); // force feed to reload
+  };
 
   const tabs = [
     { key:"feed", icon:"🏠", label:"Home" },
@@ -735,7 +730,7 @@ export default function AthaVid() {
       {showSplash && <Splash />}
       {showShare && <ShareModal onClose={()=>setShowShare(false)} />}
       <div style={{ height:"calc(100vh - 56px)",overflowY:activeTab==="feed"?"hidden":"auto" }}>
-        {activeTab==="feed" && <FeedPage likedVideos={likedVideos} onLike={handleLike} onShare={()=>setShowShare(true)} />}
+        {activeTab==="feed" && <FeedPage key={feedKey} likedVideos={likedVideos} onLike={handleLike} onShare={()=>setShowShare(true)} />}
         {activeTab==="search" && <SearchPage />}
         {activeTab==="upload" && <UploadPage onVideoPosted={handleVideoPosted} />}
         {activeTab==="shop" && <ShopPage />}
