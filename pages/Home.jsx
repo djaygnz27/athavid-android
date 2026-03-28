@@ -56,7 +56,7 @@ function Splash() {
 
 // ── SHARE MODAL ───────────────────────────────────────────────────────────────
 function ShareModal({ onClose }) {
-  const appUrl = "https://alpha-view-stream.base44.app";
+  const appUrl = "https://sachi-app-4350efb0.base44.app/AthaVid";
   const [copied, setCopied] = useState(false);
   const copy = () => { try { navigator.clipboard.writeText(appUrl); } catch(e) {} setCopied(true); setTimeout(()=>setCopied(false),2000); };
   const shareOptions = [
