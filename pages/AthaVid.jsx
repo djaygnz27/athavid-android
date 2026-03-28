@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AthaVidVideo } from "../api/entities";
-import { uploadFile } from "../api/storage";
+import { uploadFile } from "@/api/storage";
 
 function formatCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -305,8 +305,18 @@ function UploadPage({ onVideoPosted }) {
   const handleDrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 
   const uploadToBase44 = async (f) => {
-    const { file_url } = await uploadFile(f);
-    return file_url;
+    try {
+      const { file_url } = await uploadFile(f);
+      return file_url;
+    } catch(e) {
+      // Fallback to base64 if storage upload fails
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(f);
+      });
+    }
   };
 
   const handlePost = async () => {
@@ -357,7 +367,7 @@ function UploadPage({ onVideoPosted }) {
       setDone(true);
       if (onVideoPosted) onVideoPosted();
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError("Upload failed: " + (err?.message || String(err)));
       console.error(err);
     } finally {
       setUploading(false);
