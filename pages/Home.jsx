@@ -222,27 +222,32 @@ function FeedPage({ likedVideos, onLike, onShare }) {
     // Load from localStorage first (local posts)
     const localVids = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
     
-    AthaVidVideo.list().then(records => {
-      if (records && records.length > 0) {
-        const mapped = records.map(r => ({
-          id: r.id,
-          username: r.username || "unknown",
-          display_name: r.display_name || r.username || "User",
-          avatar_url: r.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.username}`,
-          caption: r.caption || "",
-          hashtags: r.hashtags || [],
-          likes_count: r.likes_count || 0,
-          comments_count: r.comments_count || 0,
-          views_count: r.views_count || 0,
-          shares_count: r.shares_count || 0,
-          created_date: r.created_date,
-          _source: "entity",
-          video_url: r.video_url || null,
-          thumbnail_url: r.thumbnail_url || `https://picsum.photos/seed/${r.id}/500/880`,
-        }));
-        setVideos([...mapped, ...DEMO_VIDEOS]);
-      }
-    }).catch(()=>{});
+    AthaVidVideo.filter({ is_archived: false }, { sort: "-created_date", limit: 100 }).then(records => {
+      const allRecords = records && records.length > 0 ? records : [];
+      const mapped = allRecords.map(r => ({
+        id: r.id,
+        username: r.username || "unknown",
+        display_name: r.display_name || r.username || "User",
+        avatar_url: r.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.username}`,
+        caption: r.caption || "",
+        hashtags: r.hashtags || [],
+        likes_count: r.likes_count || 0,
+        comments_count: r.comments_count || 0,
+        views_count: r.views_count || 0,
+        shares_count: r.shares_count || 0,
+        created_date: r.created_date,
+        _source: "entity",
+        video_url: r.video_url || null,
+        thumbnail_url: r.thumbnail_url || `https://picsum.photos/seed/${r.id}/500/880`,
+      }));
+      // Merge localStorage videos (local device posts not yet in DB)
+      const localMerged = localVids.filter(lv => !mapped.find(m => m.id === lv.id));
+      // Newest real videos first, then demo
+      setVideos([...localMerged, ...mapped, ...DEMO_VIDEOS]);
+    }).catch(() => {
+      const localMerged = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
+      setVideos([...localMerged, ...DEMO_VIDEOS]);
+    });
   }, []);
 
   const handleTouchStart = e => { startY.current = e.touches[0].clientY; };
