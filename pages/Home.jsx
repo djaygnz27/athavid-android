@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AthaVidVideo } from "../api/entities";
+import { uploadFile } from "../api/storage";
 
 function formatCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -304,10 +305,8 @@ function UploadPage({ onVideoPosted }) {
   const handleDrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 
   const uploadToBase44 = async (f) => {
-    // Convert file to base64 and use the entities to store a reference
-    // Since we can't upload binary files directly, we store the object URL for demo
-    // and save metadata to the entity
-    return URL.createObjectURL(f);
+    const { file_url } = await uploadFile(f);
+    return file_url;
   };
 
   const handlePost = async () => {
