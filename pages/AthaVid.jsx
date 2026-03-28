@@ -1,51 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AthaVidVideo } from "../api/entities";
 
-// AthaVid App ID (public app)
-const ATHAVID_APP_ID = "69c73ee93905e715096e4dfa";
-
-// Save video to AthaVid public app
-const saveVideoPublic = async (data) => {
-  // Map AthaVidVideo fields to AthaVid app Video entity fields
-  const mapped = {
-    title: data.caption || "Untitled",
-    description: (data.hashtags || []).map(h => "#" + h).join(" "),
-    thumbnail_url: data.thumbnail_url,
-    video_url: data.video_url,
-    category: "general",
-    tags: data.hashtags || [],
-    duration: data.duration_seconds || 0,
-    views: 0,
-    likes: 0,
-    visibility: "public",
-    // extra fields stored as-is if schema allows
-    username: data.username,
-    display_name: data.display_name,
-    avatar_url: data.avatar_url,
-    caption: data.caption,
-    hashtags: data.hashtags,
-    likes_count: 0,
-    comments_count: 0,
-    views_count: 0,
-    shares_count: 0,
-    is_archived: false,
-    is_ai_detected: false,
-    is_approved: true,
-    archive_date: data.archive_date,
-    duration_seconds: data.duration_seconds || 0,
-  };
-  const resp = await fetch(`https://api.base44.com/api/apps/${ATHAVID_APP_ID}/entities/Video`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(mapped),
-  });
-  const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    throw new Error(json?.message || json?.error || "Save failed: HTTP " + resp.status);
-  }
-  return json;
-};
-
 function formatCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
@@ -416,7 +371,7 @@ function UploadPage({ onVideoPosted }) {
       
       let saveResult;
       try {
-        saveResult = await saveVideoPublic(videoData);
+        saveResult = await AthaVidVideo.create(videoData);
       } catch(createErr) {
         throw new Error("Save failed: " + (createErr?.message || String(createErr)));
       }
