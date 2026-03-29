@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { AthaVidVideo, AthaVidComment } from "../api/entities";
+import { AthaVidVideo, AthaVidComment, User } from "../api/entities";
 import { base44 } from "../api/base44Client";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -682,12 +682,15 @@ function SoundPicker({ selected, onSelect, onClose }) {
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────
-function UploadPage({ onVideoPosted }) {
+function UploadPage({ onVideoPosted, currentUser }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
-  const [username, setUsername] = useState("");
+  const [username] = useState(() => {
+    if (!currentUser) return "";
+    return (currentUser.username || currentUser.full_name || currentUser.email?.split("@")[0] || "").replace(/^@/,"").replace(/\s+/g,"_").toLowerCase();
+  });
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressMsg, setProgressMsg] = useState("");
@@ -706,7 +709,6 @@ function UploadPage({ onVideoPosted }) {
   const submit = async () => {
     if (!file) return setError("Please select a video");
     if (!caption.trim()) return setError("Please add a caption");
-    if (!username.trim()) return setError("Please enter a username");
     setError(""); setUploading(true); setProgress(10);
     try {
       setProgress(10);
@@ -772,8 +774,19 @@ function UploadPage({ onVideoPosted }) {
           </>
         )}
       </label>
+      {/* Locked username display */}
+      <div style={{ marginBottom:14 }}>
+        <div style={{ color:"#888", fontSize:12, fontWeight:600, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>Posting as</div>
+        <div style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,107,107,0.3)", borderRadius:10, padding:"12px 14px" }}>
+          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} style={{ width:32, height:32, borderRadius:"50%" }} />
+          <div>
+            <div style={{ color:"#ff8e53", fontWeight:700, fontSize:14 }}>@{username}</div>
+            <div style={{ color:"#555", fontSize:11 }}>Username is permanent · cannot be changed</div>
+          </div>
+          <span style={{ marginLeft:"auto", fontSize:16 }}>🔒</span>
+        </div>
+      </div>
       {[
-        { label:"Your username", val:username, set:setUsername, ph:"e.g. jaygnz27" },
         { label:"Caption", val:caption, set:setCaption, ph:"What's this video about?" },
         { label:"Hashtags", val:hashtags, set:setHashtags, ph:"sachi reallife nj" },
       ].map(({ label, val, set, ph }) => (
@@ -816,15 +829,6 @@ function UploadPage({ onVideoPosted }) {
 }
 
 // ── Profile ───────────────────────────────────────────────────────────────────
-function ProfilePage() {
-  return (
-    <div style={{ padding:32, textAlign:"center", paddingTop:80 }}>
-      <div style={{ fontSize:64, marginBottom:16 }}>👤</div>
-      <div style={{ color:"#ff8e53", fontSize:20, fontWeight:700 }}>Your Profile</div>
-      <div style={{ color:"#666", fontSize:14, marginTop:8 }}>Coming soon</div>
-    </div>
-  );
-}
 
 // ── Explore ───────────────────────────────────────────────────────────────────
 function ExplorePage() {
@@ -837,8 +841,167 @@ function ExplorePage() {
   );
 }
 
+
+// ── Auth Gate ─────────────────────────────────────────────────────────────────
+function AuthGate({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [mode, setMode] = useState("login"); // "login" | "signup"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [error, setError] = useState("");
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    User.me().then(u => { setUser(u); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  const login = async () => {
+    if (!email.trim() || !password.trim()) return setError("Enter email and password");
+    setWorking(true); setError("");
+    try {
+      await User.login({ email: email.trim(), password });
+      const u = await User.me();
+      setUser(u);
+    } catch(e) { setError(e.message || "Login failed. Check your email and password."); }
+    finally { setWorking(false); }
+  };
+
+  const signup = async () => {
+    if (!email.trim() || !password.trim()) return setError("Enter email and password");
+    if (!username.trim()) return setError("Choose a username");
+    if (password.length < 6) return setError("Password must be at least 6 characters");
+    setWorking(true); setError("");
+    try {
+      const clean = username.trim().replace(/^@/, "").replace(/\s+/g, "_").toLowerCase();
+      await User.register({ email: email.trim(), password, full_name: displayName.trim() || clean });
+      const u = await User.me();
+      // Save username in the user profile
+      try { await User.updateMyUserData({ username: clean, display_name: displayName.trim() || clean }); } catch(e) {}
+      setUser(u);
+    } catch(e) { setError(e.message || "Sign up failed. Try a different email."); }
+    finally { setWorking(false); }
+  };
+
+  const logout = async () => {
+    await User.logout().catch(() => {});
+    setUser(null);
+    setEmail(""); setPassword(""); setDisplayName(""); setUsername("");
+  };
+
+  if (loading) return (
+    <div style={{ background:"#050510", minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ fontSize:40 }}>⏳</div>
+    </div>
+  );
+
+  if (!user) return (
+    <div style={{ background:"#050510", minHeight:"100vh", maxWidth:480, margin:"0 auto", fontFamily:"'Inter',-apple-system,sans-serif", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32 }}>
+      <style>{`* { box-sizing: border-box } body { background: #050510; margin: 0 }`}</style>
+      <img src="https://media.base44.com/images/public/69b2ee18a8e6fb58c7f0261c/99914c9a7_generated_image.png" alt="Sachi" style={{ width:72, height:72, borderRadius:18, marginBottom:12, boxShadow:"0 8px 30px rgba(255,107,107,0.4)" }} />
+      <div style={{ fontSize:36, fontWeight:900, letterSpacing:"-1px", background:"linear-gradient(135deg,#ff6b6b,#ff8e53,#ffd93d)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", marginBottom:4 }}>sachi</div>
+      <div style={{ color:"#555", fontSize:12, letterSpacing:"3px", textTransform:"uppercase", marginBottom:32 }}>real moments. real you.</div>
+
+      <div style={{ width:"100%", background:"rgba(255,255,255,0.04)", borderRadius:16, padding:24 }}>
+        <div style={{ display:"flex", gap:8, marginBottom:24 }}>
+          {["login","signup"].map(m => (
+            <button key={m} onClick={() => { setMode(m); setError(""); }}
+              style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:"pointer", fontWeight:700, fontSize:14,
+                background: mode === m ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.06)",
+                color: mode === m ? "#fff" : "#666" }}>
+              {m === "login" ? "Log In" : "Sign Up"}
+            </button>
+          ))}
+        </div>
+
+        {mode === "signup" && (
+          <>
+            <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display name (e.g. Libi Sachi)"
+              style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"12px 14px", color:"#fff", fontSize:14, marginBottom:12, outline:"none" }} />
+            <div style={{ position:"relative", marginBottom:12 }}>
+              <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", color:"#ff8e53", fontWeight:700 }}>@</span>
+              <input value={username} onChange={e => setUsername(e.target.value.replace(/[^a-zA-Z0-9_.]/g,""))} placeholder="username"
+                style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"12px 14px 12px 28px", color:"#fff", fontSize:14, outline:"none" }} />
+            </div>
+          </>
+        )}
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email"
+          style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"12px 14px", color:"#fff", fontSize:14, marginBottom:12, outline:"none" }} />
+        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password"
+          onKeyDown={e => e.key === "Enter" && (mode === "login" ? login() : signup())}
+          style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"12px 14px", color:"#fff", fontSize:14, marginBottom:16, outline:"none" }} />
+
+        {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
+
+        <button onClick={mode === "login" ? login : signup} disabled={working}
+          style={{ width:"100%", padding:"14px", background: working ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:12, color:"#fff", fontSize:16, fontWeight:700, cursor: working ? "not-allowed" : "pointer" }}>
+          {working ? "..." : mode === "login" ? "Log In" : "Create Account"}
+        </button>
+      </div>
+    </div>
+  );
+
+  return children(user, logout);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
+// ── Profile Page ──────────────────────────────────────────────────────────────
+function ProfilePage({ currentUser, onLogout }) {
+  const username = (currentUser?.username || currentUser?.full_name || currentUser?.email?.split("@")[0] || "").replace(/^@/,"").replace(/\s+/g,"_").toLowerCase();
+  const [videos, setVideos] = useState([]);
+
+  useEffect(() => {
+    AthaVidVideo.filter({ username }).then(setVideos).catch(() => {});
+  }, [username]);
+
+  return (
+    <div style={{ padding:"60px 20px 20px", minHeight:"100%" }}>
+      {/* Avatar & info */}
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:28 }}>
+        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} style={{ width:88, height:88, borderRadius:"50%", border:"3px solid #ff8e53", marginBottom:12 }} />
+        <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser?.full_name || username}</div>
+        <div style={{ color:"#ff8e53", fontSize:14, marginTop:2 }}>@{username}</div>
+        <div style={{ color:"#555", fontSize:12, marginTop:4 }}>{currentUser?.email}</div>
+        <div style={{ display:"flex", gap:24, marginTop:16 }}>
+          <div style={{ textAlign:"center" }}>
+            <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{videos.length}</div>
+            <div style={{ color:"#666", fontSize:11 }}>Videos</div>
+          </div>
+        </div>
+      </div>
+      {/* My Videos grid */}
+      <div style={{ color:"#888", fontSize:12, fontWeight:700, letterSpacing:"1px", textTransform:"uppercase", marginBottom:12 }}>My Videos</div>
+      {videos.length === 0 ? (
+        <div style={{ textAlign:"center", color:"#444", padding:32 }}>No videos yet — post your first one!</div>
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:3 }}>
+          {videos.map(v => (
+            <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden" }}>
+              <video src={v.video_url} poster={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline />
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Logout */}
+      <button onClick={onLogout}
+        style={{ width:"100%", marginTop:32, padding:"14px", background:"rgba(255,107,107,0.1)", border:"1px solid rgba(255,107,107,0.3)", borderRadius:12, color:"#ff6b6b", fontSize:15, fontWeight:600, cursor:"pointer" }}>
+        Log Out
+      </button>
+    </div>
+  );
+}
+
 export default function AthaVid() {
+  return (
+    <AuthGate>
+      {(currentUser, logout) => <SachiApp currentUser={currentUser} onLogout={logout} />}
+    </AuthGate>
+  );
+}
+
+function SachiApp({ currentUser, onLogout }) {
   const [tab, setTab] = useState("feed");
   const [liked, setLiked] = useState(new Set());
   const [splash, setSplash] = useState(true);
@@ -866,8 +1029,8 @@ export default function AthaVid() {
       <div style={{ height:"calc(100vh - 56px)", overflowY:"auto" }}>
         {tab === "feed"    && <FeedPage key={feedKey} likedVideos={liked} onLike={onLike} />}
         {tab === "explore" && <ExplorePage />}
-        {tab === "upload"  && <UploadPage onVideoPosted={onPosted} />}
-        {tab === "profile" && <ProfilePage />}
+        {tab === "upload"  && <UploadPage onVideoPosted={onPosted} currentUser={currentUser} />}
+        {tab === "profile" && <ProfilePage currentUser={currentUser} onLogout={onLogout} />}
       </div>
       {/* Bottom nav */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(5,5,16,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-around", padding:"6px 0 10px", zIndex:200 }}>
