@@ -216,7 +216,6 @@ function VideoCard({ video, liked, onLike, onShare, active }) {
 function FeedPage({ likedVideos, onLike, onShare }) {
   const [videos, setVideos] = useState(DEMO_VIDEOS);
   const [current, setCurrent] = useState(0);
-  const [newBanner, setNewBanner] = useState(false);
   const startY = useRef(null);
   const containerRef = useRef(null);
 
@@ -241,12 +240,7 @@ function FeedPage({ likedVideos, onLike, onShare }) {
         thumbnail_url: r.thumbnail_url || `https://picsum.photos/seed/${r.id}/500/880`,
       }));
       const localMerged = localVids.filter(lv => !mapped.find(m => m.id === lv.id));
-      setVideos(prev => {
-        const newList = [...localMerged, ...mapped, ...DEMO_VIDEOS];
-        // Only update if count changed (new video arrived) — keep current scroll position
-        if (newList.length > prev.length) { setNewBanner(true); setTimeout(() => setNewBanner(false), 5000); }
-        return newList;
-      });
+      setVideos([...localMerged, ...mapped, ...DEMO_VIDEOS]);
     }).catch(() => {
       const localMerged = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
       setVideos([...localMerged, ...DEMO_VIDEOS]);
@@ -259,7 +253,6 @@ function FeedPage({ likedVideos, onLike, onShare }) {
     return () => clearInterval(interval);
   }, []);
 
-  const goToTop = () => { setCurrent(0); setNewBanner(false); };
   const handleTouchStart = e => { startY.current = e.touches[0].clientY; };
   const handleTouchEnd = e => {
     if (startY.current === null) return;
@@ -270,12 +263,6 @@ function FeedPage({ likedVideos, onLike, onShare }) {
   };
 
   return (
-    <div style={{ position:"relative", height:"100%" }}>
-      {newBanner && (
-        <div onClick={goToTop} style={{ position:"absolute",top:12,left:"50%",transform:"translateX(-50%)",zIndex:999,background:"linear-gradient(135deg,#6c63ff,#a78bfa)",borderRadius:30,padding:"10px 20px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 20px rgba(108,99,255,0.5)",whiteSpace:"nowrap",animation:"fadeIn 0.3s ease" }}>
-          🔄 New videos! Tap to go to top
-        </div>
-      )}
     <div ref={containerRef} style={{ position:"relative",height:"calc(100vh - 56px)",overflow:"hidden" }}
       onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {/* Top bar */}
@@ -592,7 +579,6 @@ function UploadPage({ onVideoPosted }) {
       )}
     </div>
   );
-    </div>
 }
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
