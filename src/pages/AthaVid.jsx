@@ -220,7 +220,7 @@ function FeedPage({ likedVideos, onLike }) {
 
   useEffect(() => {
     AthaVidVideo.list()
-      .then(r => setVideos(Array.isArray(r) ? r.filter(v => !v.is_archived) : []))
+      .then(r => setVideos(Array.isArray(r) ? r.filter(v => !v.is_archived).sort((a,b) => new Date(b.created_date) - new Date(a.created_date)) : []))
       .catch(() => setVideos([]))
       .finally(() => setLoading(false));
   }, []);
@@ -422,7 +422,7 @@ export default function AthaVid() {
       {/* Bottom nav */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(5,5,16,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-around", padding:"6px 0 10px", zIndex:200 }}>
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key} onClick={() => { if (t.key === "feed") setFeedKey(k => k + 1); setTab(t.key); }}
             style={{ background: t.key === "upload" ? "linear-gradient(135deg,#6c63ff,#a78bfa)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding: t.key === "upload" ? "10px 20px" : "8px 16px", borderRadius: t.key === "upload" ? 20 : 10, transform: t.key === "upload" ? "translateY(-12px)" : "none", boxShadow: t.key === "upload" ? "0 8px 25px rgba(108,99,255,0.5)" : "none" }}>
             <span style={{ fontSize: t.key === "upload" ? 24 : 22 }}>{t.icon}</span>
             <span style={{ fontSize:10, fontWeight:600, color: t.key === "upload" ? "#fff" : tab === t.key ? "#a78bfa" : "#555" }}>{t.label}</span>
