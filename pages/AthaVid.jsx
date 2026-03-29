@@ -8,13 +8,6 @@ function formatCount(n) {
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
   return String(n);
 }
-function timeAgo(d) {
-  const s = Math.floor((Date.now() - new Date(d)) / 1000);
-  if (s < 60) return s + "s";
-  if (s < 3600) return Math.floor(s/60) + "m";
-  if (s < 86400) return Math.floor(s/3600) + "h";
-  return Math.floor(s/86400) + "d";
-}
 
 // ── Upload helper ─────────────────────────────────────────────────────────────
 async function uploadVideoFile(file) {
@@ -42,8 +35,112 @@ function Splash() {
   );
 }
 
+// ── Comment Sheet ─────────────────────────────────────────────────────────────
+function CommentSheet({ video, onClose }) {
+  const [comments, setComments] = useState([]);
+  const [text, setText] = useState("");
+  const [name, setName] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    if (!video) return;
+    AthaVidComment.filter({ video_id: video.id })
+      .then(r => setComments(Array.isArray(r) ? r : []))
+      .catch(() => setComments([]))
+      .finally(() => setLoading(false));
+  }, [video?.id]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [comments]);
+
+  const post = async () => {
+    if (!text.trim()) return;
+    if (!name.trim()) return;
+    setPosting(true);
+    try {
+      const c = await AthaVidComment.create({
+        video_id: video.id,
+        username: name.trim().replace(/^@/, ""),
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.trim()}`,
+        comment_text: text.trim(),
+        likes_count: 0,
+      });
+      setComments(prev => [...prev, c]);
+      setText("");
+      // bump comment count on video
+      await AthaVidVideo.update(video.id, { comments_count: (video.comments_count || 0) + 1 });
+    } catch(e) {
+      alert("Could not post comment: " + e.message);
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:500, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+      {/* backdrop */}
+      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)" }} />
+      {/* sheet */}
+      <div style={{ position:"relative", background:"#111", borderRadius:"20px 20px 0 0", padding:"16px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column" }}>
+        {/* handle */}
+        <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 14px" }} />
+        <div style={{ color:"#fff", fontWeight:700, fontSize:16, textAlign:"center", marginBottom:12 }}>
+          💬 Comments {comments.length > 0 && `(${comments.length})`}
+        </div>
+
+        {/* list */}
+        <div style={{ flex:1, overflowY:"auto", padding:"0 16px" }}>
+          {loading && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Loading...</div>}
+          {!loading && comments.length === 0 && (
+            <div style={{ color:"#555", textAlign:"center", padding:32 }}>
+              <div style={{ fontSize:36, marginBottom:8 }}>💬</div>
+              <div>No comments yet. Be first!</div>
+            </div>
+          )}
+          {comments.map(c => (
+            <div key={c.id} style={{ display:"flex", gap:10, marginBottom:16 }}>
+              <img src={c.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.username}`} style={{ width:36, height:36, borderRadius:"50%", flexShrink:0 }} />
+              <div>
+                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:2 }}>@{c.username}</div>
+                <div style={{ color:"#eee", fontSize:14 }}>{c.comment_text}</div>
+              </div>
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* input */}
+        <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", padding:"12px 16px", paddingBottom:"max(12px, env(safe-area-inset-bottom))", display:"flex", flexDirection:"column", gap:8 }}>
+          <input
+            value={name} onChange={e => setName(e.target.value)}
+            placeholder="Your name / @username"
+            style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:13, outline:"none", width:"100%" }}
+          />
+          <div style={{ display:"flex", gap:8 }}>
+            <input
+              value={text} onChange={e => setText(e.target.value)}
+              placeholder="Add a comment..."
+              onKeyDown={e => e.key === "Enter" && post()}
+              style={{ flex:1, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:14, outline:"none" }}
+            />
+            <button
+              onClick={post} disabled={posting || !text.trim() || !name.trim()}
+              style={{ background: (posting || !text.trim() || !name.trim()) ? "#333" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:10, padding:"0 18px", color:"#fff", fontWeight:700, fontSize:14, cursor: posting ? "not-allowed" : "pointer" }}
+            >
+              {posting ? "..." : "Post"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Video Card ────────────────────────────────────────────────────────────────
-function VideoCard({ video, liked, onLike }) {
+function VideoCard({ video, liked, onLike, onComment }) {
   const vidRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -51,11 +148,11 @@ function VideoCard({ video, liked, onLike }) {
   const toggle = () => {
     if (!vidRef.current) return;
     if (playing) { vidRef.current.pause(); setPlaying(false); }
-    else { vidRef.current.play(); setPlaying(true); }
+    else { vidRef.current.play().then(() => setPlaying(true)).catch(() => {}); }
   };
 
   return (
-    <div style={{ position:"relative", width:"100%", height:"100vh", background:"#000", flexShrink:0, overflow:"hidden" }}>
+    <div style={{ position:"relative", width:"100%", height:"calc(100vh - 56px)", background:"#000", flexShrink:0, overflow:"hidden" }}>
       <video
         ref={vidRef}
         src={video.video_url}
@@ -64,33 +161,34 @@ function VideoCard({ video, liked, onLike }) {
         style={{ width:"100%", height:"100%", objectFit:"cover" }}
         onClick={toggle}
       />
-      {/* Overlay */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)", pointerEvents:"none" }} />
-      {/* Info */}
-      <div style={{ position:"absolute", bottom:80, left:16, right:80, color:"#fff" }}>
+      {/* gradient */}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)", pointerEvents:"none" }} />
+      {/* info */}
+      <div style={{ position:"absolute", bottom:24, left:16, right:72, color:"#fff" }}>
         <div style={{ fontWeight:700, fontSize:15, marginBottom:4 }}>@{video.username}</div>
-        <div style={{ fontSize:13, opacity:0.9, marginBottom:6 }}>{video.caption}</div>
-        {video.hashtags?.map(h => (
+        <div style={{ fontSize:13, opacity:0.9, marginBottom:6, lineHeight:1.4 }}>{video.caption}</div>
+        {(video.hashtags || []).map(h => (
           <span key={h} style={{ color:"#a78bfa", fontSize:12, marginRight:6 }}>#{h}</span>
         ))}
       </div>
-      {/* Actions */}
-      <div style={{ position:"absolute", right:12, bottom:100, display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
-        <button onClick={onLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-          <span style={{ fontSize:32 }}>{liked ? "❤️" : "🤍"}</span>
-          <span style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount((video.likes_count||0) + (liked?1:0))}</span>
+      {/* actions */}
+      <div style={{ position:"absolute", right:12, bottom:30, display:"flex", flexDirection:"column", alignItems:"center", gap:22 }}>
+        <button onClick={onLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+          <span style={{ fontSize:30 }}>{liked ? "❤️" : "🤍"}</span>
+          <span style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount((video.likes_count || 0) + (liked ? 1 : 0))}</span>
         </button>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+        <button onClick={onComment} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
           <span style={{ fontSize:28 }}>💬</span>
           <span style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount(video.comments_count)}</span>
-        </div>
-        <button onClick={() => setMuted(m => !m)} style={{ background:"none", border:"none", cursor:"pointer" }}>
-          <span style={{ fontSize:28 }}>{muted ? "🔇" : "🔊"}</span>
+        </button>
+        <button onClick={() => setMuted(m => !m)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+          <span style={{ fontSize:26 }}>{muted ? "🔇" : "🔊"}</span>
+          <span style={{ color:"#fff", fontSize:10 }}>{muted ? "Unmute" : "Mute"}</span>
         </button>
       </div>
-      {/* Play indicator */}
+      {/* play indicator */}
       {!playing && (
-        <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", fontSize:60, opacity:0.7, pointerEvents:"none" }}>▶️</div>
+        <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", fontSize:56, opacity:0.6, pointerEvents:"none" }}>▶️</div>
       )}
     </div>
   );
@@ -100,6 +198,7 @@ function VideoCard({ video, liked, onLike }) {
 function FeedPage({ likedVideos, onLike }) {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeComment, setActiveComment] = useState(null);
 
   useEffect(() => {
     AthaVidVideo.list()
@@ -121,13 +220,23 @@ function FeedPage({ likedVideos, onLike }) {
   );
 
   return (
-    <div style={{ height:"calc(100vh - 56px)", overflowY:"scroll", scrollSnapType:"y mandatory" }}>
-      {videos.map(v => (
-        <div key={v.id} style={{ scrollSnapAlign:"start" }}>
-          <VideoCard video={v} liked={likedVideos.has(v.id)} onLike={() => onLike(v.id)} />
-        </div>
-      ))}
-    </div>
+    <>
+      <div style={{ height:"calc(100vh - 56px)", overflowY:"scroll", scrollSnapType:"y mandatory" }}>
+        {videos.map(v => (
+          <div key={v.id} style={{ scrollSnapAlign:"start" }}>
+            <VideoCard
+              video={v}
+              liked={likedVideos.has(v.id)}
+              onLike={() => onLike(v.id)}
+              onComment={() => setActiveComment(v)}
+            />
+          </div>
+        ))}
+      </div>
+      {activeComment && (
+        <CommentSheet video={activeComment} onClose={() => setActiveComment(null)} />
+      )}
+    </>
   );
 }
 
@@ -159,7 +268,7 @@ function UploadPage({ onVideoPosted }) {
       setProgress(30);
       const videoUrl = await uploadVideoFile(file);
       setProgress(70);
-      const clean = username.trim().replace(/^@/,"");
+      const clean = username.trim().replace(/^@/, "");
       const record = await AthaVidVideo.create({
         username: clean,
         display_name: clean,
@@ -170,13 +279,13 @@ function UploadPage({ onVideoPosted }) {
         thumbnail_url: `https://picsum.photos/seed/${Date.now()}/500/880`,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_archived: false, is_ai_detected: false, is_approved: true,
-        archive_date: new Date(Date.now() + 30*86400000).toISOString(),
+        archive_date: new Date(Date.now() + 30 * 86400000).toISOString(),
         duration_seconds: 0,
       });
       setProgress(100);
       setDone(true);
       setTimeout(() => onVideoPosted && onVideoPosted(record), 2000);
-    } catch(err) {
+    } catch (err) {
       setError(err.message || "Upload failed");
     } finally {
       setUploading(false);
@@ -194,8 +303,6 @@ function UploadPage({ onVideoPosted }) {
   return (
     <div style={{ padding:24, paddingTop:60, minHeight:"100%" }}>
       <div style={{ color:"#fff", fontSize:22, fontWeight:800, marginBottom:24 }}>Post a Video</div>
-      
-      {/* File picker */}
       <label style={{ display:"block", border:"2px dashed #6c63ff", borderRadius:16, padding:32, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
         <input type="file" accept="video/*" onChange={pickFile} style={{ display:"none" }} />
         {preview ? (
@@ -208,8 +315,6 @@ function UploadPage({ onVideoPosted }) {
           </>
         )}
       </label>
-
-      {/* Fields */}
       {[
         { label:"Your username", val:username, set:setUsername, ph:"e.g. jaygnz27" },
         { label:"Caption", val:caption, set:setCaption, ph:"What's this video about?" },
@@ -223,18 +328,15 @@ function UploadPage({ onVideoPosted }) {
           />
         </div>
       ))}
-
       {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12 }}>{error}</div>}
-
       {uploading && (
         <div style={{ marginBottom:16 }}>
           <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:99, height:6 }}>
-            <div style={{ background:"linear-gradient(90deg,#6c63ff,#a78bfa)", borderRadius:99, height:6, width:progress+"%", transition:"width 0.4s" }} />
+            <div style={{ background:"linear-gradient(90deg,#6c63ff,#a78bfa)", borderRadius:99, height:6, width:progress + "%", transition:"width 0.4s" }} />
           </div>
           <div style={{ color:"#a78bfa", fontSize:12, marginTop:6, textAlign:"center" }}>{progress < 60 ? "Uploading video..." : "Saving to feed..."}</div>
         </div>
       )}
-
       <button
         onClick={submit} disabled={uploading}
         style={{ width:"100%", padding:"16px", background: uploading ? "#333" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:14, color:"#fff", fontSize:16, fontWeight:700, cursor: uploading ? "not-allowed" : "pointer" }}
@@ -267,7 +369,7 @@ function ExplorePage() {
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function AthaVid() {
   const [tab, setTab] = useState("feed");
   const [liked, setLiked] = useState(new Set());
@@ -280,7 +382,7 @@ export default function AthaVid() {
   }, []);
 
   const onLike = id => setLiked(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const onPosted = () => { setFeedKey(k => k+1); setTab("feed"); };
+  const onPosted = () => { setFeedKey(k => k + 1); setTab("feed"); };
 
   const tabs = [
     { key:"feed",    icon:"🏠", label:"Home"    },
@@ -291,24 +393,21 @@ export default function AthaVid() {
 
   return (
     <div style={{ background:"#050510", minHeight:"100vh", maxWidth:480, margin:"0 auto", fontFamily:"'Inter',-apple-system,sans-serif", position:"relative" }}>
-      <style>{`*{box-sizing:border-box} ::-webkit-scrollbar{display:none} body{background:#050510;margin:0}`}</style>
-
+      <style>{`* { box-sizing: border-box } ::-webkit-scrollbar { display: none } body { background: #050510; margin: 0 }`}</style>
       {splash && <Splash />}
-
       <div style={{ height:"calc(100vh - 56px)", overflowY:"auto" }}>
         {tab === "feed"    && <FeedPage key={feedKey} likedVideos={liked} onLike={onLike} />}
         {tab === "explore" && <ExplorePage />}
         {tab === "upload"  && <UploadPage onVideoPosted={onPosted} />}
         {tab === "profile" && <ProfilePage />}
       </div>
-
       {/* Bottom nav */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(5,5,16,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-around", padding:"6px 0 10px", zIndex:200 }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            style={{ background: t.key==="upload" ? "linear-gradient(135deg,#6c63ff,#a78bfa)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding: t.key==="upload" ? "10px 20px" : "8px 16px", borderRadius: t.key==="upload" ? 20 : 10, transform: t.key==="upload" ? "translateY(-12px)" : "none", boxShadow: t.key==="upload" ? "0 8px 25px rgba(108,99,255,0.5)" : "none" }}>
-            <span style={{ fontSize: t.key==="upload" ? 24 : 22 }}>{t.icon}</span>
-            <span style={{ fontSize:10, fontWeight:600, color: t.key==="upload" ? "#fff" : tab===t.key ? "#a78bfa" : "#555" }}>{t.label}</span>
+            style={{ background: t.key === "upload" ? "linear-gradient(135deg,#6c63ff,#a78bfa)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding: t.key === "upload" ? "10px 20px" : "8px 16px", borderRadius: t.key === "upload" ? 20 : 10, transform: t.key === "upload" ? "translateY(-12px)" : "none", boxShadow: t.key === "upload" ? "0 8px 25px rgba(108,99,255,0.5)" : "none" }}>
+            <span style={{ fontSize: t.key === "upload" ? 24 : 22 }}>{t.icon}</span>
+            <span style={{ fontSize:10, fontWeight:600, color: t.key === "upload" ? "#fff" : tab === t.key ? "#a78bfa" : "#555" }}>{t.label}</span>
           </button>
         ))}
       </div>
