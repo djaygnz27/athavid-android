@@ -64,8 +64,11 @@ function CommentSheet({ video, onClose }) {
       });
       setComments(prev => [...prev, c]);
       setText("");
+      setName("");
       // bump comment count on video
       await AthaVidVideo.update(video.id, { comments_count: (video.comments_count || 0) + 1 });
+      // close sheet after posting
+      setTimeout(() => onClose(), 800);
     } catch(e) {
       alert("Could not post comment: " + e.message);
     } finally {
@@ -110,29 +113,27 @@ function CommentSheet({ video, onClose }) {
         </div>
 
         {/* input area — always visible, never hidden */}
-        <div style={{ flexShrink:0, borderTop:"1px solid rgba(255,255,255,0.08)", background:"#1a1a2e", padding:"12px 16px 24px" }}>
+        <div style={{ flexShrink:0, borderTop:"1px solid rgba(255,255,255,0.1)", background:"#12122a", padding:"14px 16px 28px" }}>
           <input
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Your name or @username"
-            style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(108,99,255,0.3)", borderRadius:10, padding:"10px 14px", color:"#fff", fontSize:13, outline:"none", marginBottom:8, display:"block" }}
+            style={{ width:"100%", background:"rgba(255,255,255,0.09)", border:"1.5px solid rgba(108,99,255,0.4)", borderRadius:12, padding:"11px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10, display:"block" }}
           />
-          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-            <input
-              value={text}
-              onChange={e => setText(e.target.value)}
-              placeholder="Write a comment..."
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); post(); } }}
-              style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(108,99,255,0.3)", borderRadius:10, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none" }}
-            />
-            <button
-              onClick={post}
-              disabled={posting || !text.trim() || !name.trim()}
-              style={{ flexShrink:0, background: (posting || !text.trim() || !name.trim()) ? "#2a2a3e" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:10, padding:"10px 18px", color: (posting || !text.trim() || !name.trim()) ? "#555" : "#fff", fontWeight:700, fontSize:14, cursor: (posting || !text.trim() || !name.trim()) ? "not-allowed" : "pointer", whiteSpace:"nowrap" }}
-            >
-              {posting ? "..." : "Post"}
-            </button>
-          </div>
+          <input
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Write your comment here..."
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); post(); } }}
+            style={{ width:"100%", background:"rgba(255,255,255,0.09)", border:"1.5px solid rgba(108,99,255,0.4)", borderRadius:12, padding:"11px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:12, display:"block" }}
+          />
+          <button
+            onClick={post}
+            disabled={posting || !text.trim() || !name.trim()}
+            style={{ width:"100%", padding:"14px", background: (posting || !text.trim() || !name.trim()) ? "#2a2a3e" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:12, color: (posting || !text.trim() || !name.trim()) ? "#555" : "#fff", fontWeight:700, fontSize:16, cursor: (posting || !text.trim() || !name.trim()) ? "not-allowed" : "pointer", letterSpacing:"0.3px" }}
+          >
+            {posting ? "Posting..." : "💬 Post Comment"}
+          </button>
         </div>
       </div>
     </div>
