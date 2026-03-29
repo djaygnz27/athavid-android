@@ -11,6 +11,58 @@ function formatCount(n) {
 }
 
 // ── Upload helper ─────────────────────────────────────────────────────────────
+async function captureVideoThumbnail(file) {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.onloadeddata = () => {
+      // seek to 1 second in (or 10% of duration)
+      video.currentTime = Math.min(1, video.duration * 0.1);
+    };
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 500;
+        canvas.height = 888; // 9:16 portrait
+        const ctx = canvas.getContext("2d");
+        // center-crop the frame to 9:16
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        const targetRatio = 500 / 888;
+        const srcRatio = vw / vh;
+        let sx = 0, sy = 0, sw = vw, sh = vh;
+        if (srcRatio > targetRatio) {
+          sw = vh * targetRatio;
+          sx = (vw - sw) / 2;
+        } else {
+          sh = vw / targetRatio;
+          sy = (vh - sh) / 2;
+        }
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 500, 888);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(async (blob) => {
+          if (!blob) return resolve(null);
+          const thumbFile = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
+          try {
+            const { file_url } = await base44.integrations.Core.UploadFile({ file: thumbFile });
+            resolve(file_url);
+          } catch {
+            resolve(null);
+          }
+        }, "image/jpeg", 0.85);
+      } catch {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      }
+    };
+    video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+  });
+}
+
 async function uploadVideoFile(file) {
   // Use Base44 SDK built-in UploadFile — works directly in the browser
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
@@ -283,8 +335,12 @@ function UploadPage({ onVideoPosted }) {
     if (!username.trim()) return setError("Please enter a username");
     setError(""); setUploading(true); setProgress(10);
     try {
-      setProgress(30);
-      const videoUrl = await uploadVideoFile(file);
+      setProgress(20);
+      // upload video + capture thumbnail in parallel
+      const [videoUrl, thumbnailUrl] = await Promise.all([
+        uploadVideoFile(file),
+        captureVideoThumbnail(file),
+      ]);
       setProgress(70);
       const clean = username.trim().replace(/^@/, "");
       const record = await AthaVidVideo.create({
@@ -294,7 +350,7 @@ function UploadPage({ onVideoPosted }) {
         caption: caption.trim(),
         hashtags: hashtags.split(/[\s,#]+/).filter(Boolean),
         video_url: videoUrl,
-        thumbnail_url: `https://picsum.photos/seed/${Date.now()}/500/880`,
+        thumbnail_url: thumbnailUrl || `https://picsum.photos/seed/${Date.now()}/500/880`,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_archived: false, is_ai_detected: false, is_approved: true,
         archive_date: new Date(Date.now() + 30 * 86400000).toISOString(),
