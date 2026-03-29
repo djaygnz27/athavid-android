@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useCurrentUser } from "../api/auth";
 import { AthaVidVideo as _AV, AthaVidComment as _AC } from "../api/entities";
-import { base44 } from "../api/base44Client";
-
 const AthaVidVideo = {
   list: () => _AV.filter({is_archived: false}, { sort: "-created_date", limit: 100 }),
   create: (data) => _AV.create(data),
@@ -14,19 +12,21 @@ const AthaVidComment = {
 
 async function uploadVideoFile(file) {
   if (file.size > 200 * 1024 * 1024) throw new Error("File too large. Max 200MB.");
-  try {
-    const result = await base44.storage.upload(file);
-    return result.file_url || result.url;
-  } catch(e) {
-    // fallback: read as base64 data URL (works for files under 10MB)
-    if (file.size > 10 * 1024 * 1024) throw new Error("Video too large for direct upload. Please use a clip under 10MB.");
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result);
-      reader.onerror = () => reject(new Error("Could not read file"));
-      reader.readAsDataURL(file);
-    });
+  // Use multipart upload via Base44 storage API
+  const formData = new FormData();
+  formData.append("file", file);
+  const appId = "69b2ee18a8e6fb58c7f0261c";
+  const res = await fetch(`https://api.base44.com/api/apps/${appId}/storage/upload`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error("Upload failed: " + txt);
   }
+  const data = await res.json();
+  return data.file_url || data.url || data.public_url;
 }
 
 function formatCount(n) {
