@@ -208,22 +208,41 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
 function VideoCard({ video, liked, onLike, onComment }) {
   const vidRef = useRef(null);
   const audioRef = useRef(null);
+  const containerRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
 
-  // set up sound track audio element
+  // Create sound track audio element
   useEffect(() => {
-    if (video.sound_url) {
-      audioRef.current = new Audio(video.sound_url);
-      audioRef.current.loop = true;
-      audioRef.current.volume = 0.6;
-    }
+    if (!video.sound_url) return;
+    const a = new Audio(video.sound_url);
+    a.loop = true;
+    a.volume = 0.7;
+    a.preload = "auto";
+    audioRef.current = a;
     return () => {
-      audioRef.current?.pause();
+      a.pause();
+      a.src = "";
       audioRef.current = null;
     };
   }, [video.sound_url]);
 
+  // Pause when scrolled out of view
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) {
+        vidRef.current?.pause();
+        audioRef.current?.pause();
+        setPlaying(false);
+      }
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // Tap to play/pause — must be direct user gesture for audio to work
   const toggle = () => {
     if (!vidRef.current) return;
     if (playing) {
@@ -233,39 +252,21 @@ function VideoCard({ video, liked, onLike, onComment }) {
     } else {
       vidRef.current.play().then(() => {
         setPlaying(true);
-        if (audioRef.current) audioRef.current.play().catch(() => {});
-      }).catch(() => {});
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(e => console.warn("Sound blocked:", e));
+        }
+      }).catch(e => console.warn("Video failed:", e));
     }
   };
 
   const toggleMute = (e) => {
     e.stopPropagation();
-    const newMuted = !muted;
-    setMuted(newMuted);
-    if (vidRef.current) vidRef.current.muted = newMuted;
-    if (audioRef.current) audioRef.current.muted = newMuted;
+    const nm = !muted;
+    setMuted(nm);
+    if (vidRef.current) vidRef.current.muted = nm;
+    if (audioRef.current) audioRef.current.muted = nm;
   };
-
-  // Auto-play when scrolled into view, pause when out
-  const containerRef = useRef(null);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        vidRef.current?.play().then(() => {
-          setPlaying(true);
-          if (audioRef.current) audioRef.current.play().catch(() => {});
-        }).catch(() => {});
-      } else {
-        vidRef.current?.pause();
-        audioRef.current?.pause();
-        setPlaying(false);
-      }
-    }, { threshold: 0.7 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
 
   return (
     <div ref={containerRef} style={{ position:"relative", width:"100%", height:"calc(100vh - 56px)", background:"#000", flexShrink:0, overflow:"hidden" }}>
@@ -277,32 +278,71 @@ function VideoCard({ video, liked, onLike, onComment }) {
         style={{ width:"100%", height:"100%", objectFit:"cover" }}
         onClick={toggle}
       />
-      {/* gradient */}
+      {/* gradient overlay */}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)", pointerEvents:"none" }} />
-      {/* info */}
-      <div style={{ position:"absolute", bottom:24, left:16, right:72, color:"#fff" }}>
-        <div style={{ fontWeight:700, fontSize:15, marginBottom:4 }}>@{video.username}</div>
-        <div style={{ fontSize:13, opacity:0.9, marginBottom:6, lineHeight:1.4 }}>{video.caption}</div>
-        {(video.hashtags || []).map(h => (
-          <span key={h} style={{ color:"#a78bfa", fontSize:12, marginRight:6 }}>#{h}</span>
-        ))}
+
+      {/* mute btn */}
+      <button onClick={toggleMute}
+        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {muted ? "🔇" : "🔊"}
+      </button>
+
+      {/* right action bar */}
+      <div style={{ position:"absolute", right:12, bottom:100, display:"flex", flexDirection:"column", gap:20, alignItems:"center" }}>
+        {/* like */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+          <button onClick={e => { e.stopPropagation(); onLike(); }}
+            style={{ background:"none", border:"none", fontSize:32, cursor:"pointer", filter: liked ? "none" : "grayscale(1)", transition:"transform 0.15s", transform: liked ? "scale(1.2)" : "scale(1)" }}>
+            ❤️
+          </button>
+          <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{(video.likes_count||0) + (liked?1:0)}</span>
+        </div>
+        {/* comment */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+          <button onClick={e => { e.stopPropagation(); onComment(); }}
+            style={{ background:"none", border:"none", fontSize:32, cursor:"pointer" }}>
+            💬
+          </button>
+          <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{video.comments_count||0}</span>
+        </div>
+        {/* share */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+          <button onClick={e => { e.stopPropagation(); navigator.share?.({ url: window.location.href }).catch(()=>{}); }}
+            style={{ background:"none", border:"none", fontSize:32, cursor:"pointer" }}>
+            ↗️
+          </button>
+          <span style={{ color:"#fff", fontSize:12, fontWeight:700 }}>Share</span>
+        </div>
       </div>
-      {/* actions */}
-      <div style={{ position:"absolute", right:12, bottom:30, display:"flex", flexDirection:"column", alignItems:"center", gap:22 }}>
-        <button onClick={onLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <span style={{ fontSize:30 }}>{liked ? "❤️" : "🤍"}</span>
-          <span style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount((video.likes_count || 0) + (liked ? 1 : 0))}</span>
-        </button>
-        <button onClick={onComment} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <span style={{ fontSize:28 }}>💬</span>
-          <span style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount(video.comments_count)}</span>
-        </button>
-        <button onClick={() => setMuted(m => !m)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <span style={{ fontSize:26 }}>{muted ? "🔇" : "🔊"}</span>
-          <span style={{ color:"#fff", fontSize:10 }}>{muted ? "Unmute" : "Mute"}</span>
-        </button>
+
+      {/* bottom info */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:60, padding:"0 16px 80px" }}>
+        {/* avatar + username */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+          <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
+            style={{ width:42, height:42, borderRadius:"50%", border:"2px solid #fff", objectFit:"cover" }} />
+          <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>@{video.username}</span>
+        </div>
+        {/* caption */}
+        <div style={{ color:"#fff", fontSize:14, fontWeight:500, lineHeight:1.4, marginBottom:8 }}>{video.caption}</div>
+        {/* sound ticker */}
+        {video.sound_title && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, background:"rgba(0,0,0,0.45)", borderRadius:99, padding:"5px 12px", width:"fit-content", backdropFilter:"blur(4px)" }}>
+            <span style={{ fontSize:13, display:"inline-block", animation: playing ? "spin 3s linear infinite" : "none" }}>💿</span>
+            <span style={{ color:"#fff", fontSize:12, fontWeight:600 }}>{video.sound_title} · {video.sound_artist}</span>
+          </div>
+        )}
+        {/* hashtags */}
+        {video.hashtags?.length > 0 && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+            {video.hashtags.map((h,i) => (
+              <span key={i} style={{ color:"#a78bfa", fontSize:13, fontWeight:600 }}>#{h}</span>
+            ))}
+          </div>
+        )}
       </div>
-      {/* play indicator */}
+
+      {/* play/pause indicator */}
       {!playing && (
         <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", fontSize:56, opacity:0.6, pointerEvents:"none" }}>▶️</div>
       )}
