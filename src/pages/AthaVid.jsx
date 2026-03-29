@@ -63,65 +63,79 @@ async function captureVideoThumbnail(file) {
   });
 }
 
+// Compress video via canvas + MediaRecorder before uploading
+async function compressVideo(file, onProgress) {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
+
+    video.onloadedmetadata = () => {
+      // Target max 720p
+      const MAX_W = 720;
+      const scale = Math.min(1, MAX_W / video.videoWidth);
+      const w = Math.round(video.videoWidth * scale);
+      const h = Math.round(video.videoHeight * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+
+      const stream = canvas.captureStream(30);
+      const chunks = [];
+      // Pick best supported codec
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9"
+        : MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
+        ? "video/webm;codecs=vp8"
+        : "video/webm";
+
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1_500_000 });
+      } catch (e) {
+        // If MediaRecorder fails, just return original
+        URL.revokeObjectURL(video.src);
+        resolve(file);
+        return;
+      }
+
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.onstop = () => {
+        URL.revokeObjectURL(video.src);
+        const blob = new Blob(chunks, { type: mimeType });
+        // Only use compressed if it's actually smaller
+        const compressed = blob.size < file.size
+          ? new File([blob], "compressed.webm", { type: mimeType })
+          : file;
+        resolve(compressed);
+      };
+
+      recorder.start();
+      video.currentTime = 0;
+      video.play();
+
+      const draw = () => {
+        if (video.ended || video.paused) { recorder.stop(); return; }
+        ctx.drawImage(video, 0, 0, w, h);
+        requestAnimationFrame(draw);
+      };
+      video.onplay = () => requestAnimationFrame(draw);
+      video.onended = () => recorder.stop();
+    };
+
+    video.onerror = () => resolve(file); // fallback
+    video.load();
+  });
+}
+
 async function uploadVideoFile(file) {
   // Use Base44 SDK built-in UploadFile — works directly in the browser
   const { file_url } = await base44.integrations.Core.UploadFile({ file });
   if (!file_url) throw new Error("Upload succeeded but no URL returned");
   return file_url;
-}
-
-// Merge audio track into video using FFmpeg.wasm (runs in browser)
-async function mergeAudioIntoVideo(videoFile, audioUrl, onProgress) {
-  try {
-    onProgress && onProgress(5, "Loading audio mixer...");
-    // Dynamically load FFmpeg.wasm from CDN
-    const { createFFmpeg, fetchFile } = await import("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js");
-    const ffmpeg = createFFmpeg({
-      log: false,
-      corePath: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js",
-    });
-    await ffmpeg.load();
-    onProgress && onProgress(20, "Loading audio track...");
-
-    // Write video file
-    ffmpeg.FS("writeFile", "input.mp4", await fetchFile(videoFile));
-
-    // Fetch and write audio file
-    const audioResp = await fetch(audioUrl);
-    const audioBlob = await audioResp.blob();
-    ffmpeg.FS("writeFile", "audio.mp3", await fetchFile(audioBlob));
-
-    onProgress && onProgress(40, "Mixing audio into video...");
-
-    // Mix: use shortest flag so video length wins; loop audio if needed
-    await ffmpeg.run(
-      "-i", "input.mp4",
-      "-stream_loop", "-1", "-i", "audio.mp3",
-      "-map", "0:v:0",
-      "-map", "1:a:0",
-      "-c:v", "copy",
-      "-c:a", "aac",
-      "-b:a", "128k",
-      "-shortest",
-      "-y", "output.mp4"
-    );
-
-    onProgress && onProgress(75, "Finalising video...");
-    const data = ffmpeg.FS("readFile", "output.mp4");
-    const mergedBlob = new Blob([data.buffer], { type: "video/mp4" });
-    const mergedFile = new File([mergedBlob], "merged.mp4", { type: "video/mp4" });
-
-    // Clean up
-    ffmpeg.FS("unlink", "input.mp4");
-    ffmpeg.FS("unlink", "audio.mp3");
-    ffmpeg.FS("unlink", "output.mp4");
-
-    onProgress && onProgress(85, "Uploading merged video...");
-    return mergedFile;
-  } catch (err) {
-    console.error("FFmpeg merge failed, uploading original:", err);
-    return videoFile; // fallback — upload original if merge fails
-  }
 }
 
 // ── Splash ────────────────────────────────────────────────────────────────────
@@ -674,19 +688,16 @@ function UploadPage({ onVideoPosted }) {
     if (!username.trim()) return setError("Please enter a username");
     setError(""); setUploading(true); setProgress(10);
     try {
-      setProgress(15);
-      let finalFile = file;
-      if (selectedSound) {
-        // Merge music into video before upload
-        finalFile = await mergeAudioIntoVideo(file, selectedSound.url, (pct, msg) => {
-          setProgress(pct);
-          setProgressMsg(msg);
-        });
-      }
+      setProgress(10);
+      setProgressMsg("Compressing video...");
+      const compressed = await compressVideo(file, setProgress);
+      const savedPct = file.size > 0 ? Math.round((1 - compressed.size / file.size) * 100) : 0;
+      console.log(`Compression: ${(file.size/1024/1024).toFixed(1)}MB → ${(compressed.size/1024/1024).toFixed(1)}MB (${savedPct}% smaller)`);
+      setProgress(40);
       setProgressMsg("Uploading...");
-      // upload video + capture thumbnail in parallel
+      // Upload video + thumbnail in parallel
       const [videoUrl, thumbnailUrl] = await Promise.all([
-        uploadVideoFile(finalFile),
+        uploadVideoFile(compressed),
         captureVideoThumbnail(file),
       ]);
       setProgress(90);
