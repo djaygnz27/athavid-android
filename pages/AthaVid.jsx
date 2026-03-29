@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useCurrentUser } from "../api/auth";
 import { AthaVidVideo as _AV, AthaVidComment as _AC } from "../api/entities";
 const AthaVidVideo = {
-  list: () => _AV.filter({is_archived: false}, { sort: "-created_date", limit: 100 }),
+  list: () => _AV.list(),
   create: (data) => _AV.create(data),
 };
 const AthaVidComment = {
