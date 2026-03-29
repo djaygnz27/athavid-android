@@ -41,7 +41,15 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
   useEffect(() => {
     if (!video) return;
     AthaVidComment.filter({ video_id: video.id })
-      .then(r => setComments(Array.isArray(r) ? r : []))
+      .then(r => {
+        const list = Array.isArray(r) ? r : [];
+        setComments(list);
+        // sync real count back to feed and DB if it's off
+        if (list.length !== (video.comments_count || 0)) {
+          AthaVidVideo.update(video.id, { comments_count: list.length }).catch(() => {});
+          if (onCommentPosted) onCommentPosted(video.id, list.length);
+        }
+      })
       .catch(() => setComments([]))
       .finally(() => setLoading(false));
   }, [video?.id]);
@@ -62,7 +70,8 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
         comment_text: text.trim(),
         likes_count: 0,
       });
-      const newCount = (video.comments_count || 0) + 1;
+      // count will be set accurately after list re-renders
+      const newCount = comments.length + 1;
       setComments(prev => [...prev, c]);
       setText("");
       setName("");
