@@ -30,7 +30,7 @@ function Splash() {
 }
 
 // ── Comment Sheet ─────────────────────────────────────────────────────────────
-function CommentSheet({ video, onClose }) {
+function CommentSheet({ video, onClose, onCommentPosted }) {
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
   const [name, setName] = useState("");
@@ -62,11 +62,14 @@ function CommentSheet({ video, onClose }) {
         comment_text: text.trim(),
         likes_count: 0,
       });
+      const newCount = (video.comments_count || 0) + 1;
       setComments(prev => [...prev, c]);
       setText("");
       setName("");
-      // bump comment count on video
-      await AthaVidVideo.update(video.id, { comments_count: (video.comments_count || 0) + 1 });
+      // bump comment count in DB
+      await AthaVidVideo.update(video.id, { comments_count: newCount });
+      // update count in feed immediately
+      if (onCommentPosted) onCommentPosted(video.id, newCount);
       // close sheet after posting
       setTimeout(() => onClose(), 800);
     } catch(e) {
@@ -201,6 +204,11 @@ function FeedPage({ likedVideos, onLike }) {
   const [loading, setLoading] = useState(true);
   const [activeComment, setActiveComment] = useState(null);
 
+  const handleCommentPosted = (videoId, newCount) => {
+    setVideos(prev => prev.map(v => v.id === videoId ? { ...v, comments_count: newCount } : v));
+    setActiveComment(prev => prev && prev.id === videoId ? { ...prev, comments_count: newCount } : prev);
+  };
+
   useEffect(() => {
     AthaVidVideo.list()
       .then(r => setVideos(Array.isArray(r) ? r.filter(v => !v.is_archived) : []))
@@ -235,7 +243,7 @@ function FeedPage({ likedVideos, onLike }) {
         ))}
       </div>
       {activeComment && (
-        <CommentSheet video={activeComment} onClose={() => setActiveComment(null)} />
+        <CommentSheet video={activeComment} onClose={() => setActiveComment(null)} onCommentPosted={handleCommentPosted} />
       )}
     </>
   );
