@@ -70,6 +70,60 @@ async function uploadVideoFile(file) {
   return file_url;
 }
 
+// Merge audio track into video using FFmpeg.wasm (runs in browser)
+async function mergeAudioIntoVideo(videoFile, audioUrl, onProgress) {
+  try {
+    onProgress && onProgress(5, "Loading audio mixer...");
+    // Dynamically load FFmpeg.wasm from CDN
+    const { createFFmpeg, fetchFile } = await import("https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js");
+    const ffmpeg = createFFmpeg({
+      log: false,
+      corePath: "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js",
+    });
+    await ffmpeg.load();
+    onProgress && onProgress(20, "Loading audio track...");
+
+    // Write video file
+    ffmpeg.FS("writeFile", "input.mp4", await fetchFile(videoFile));
+
+    // Fetch and write audio file
+    const audioResp = await fetch(audioUrl);
+    const audioBlob = await audioResp.blob();
+    ffmpeg.FS("writeFile", "audio.mp3", await fetchFile(audioBlob));
+
+    onProgress && onProgress(40, "Mixing audio into video...");
+
+    // Mix: use shortest flag so video length wins; loop audio if needed
+    await ffmpeg.run(
+      "-i", "input.mp4",
+      "-stream_loop", "-1", "-i", "audio.mp3",
+      "-map", "0:v:0",
+      "-map", "1:a:0",
+      "-c:v", "copy",
+      "-c:a", "aac",
+      "-b:a", "128k",
+      "-shortest",
+      "-y", "output.mp4"
+    );
+
+    onProgress && onProgress(75, "Finalising video...");
+    const data = ffmpeg.FS("readFile", "output.mp4");
+    const mergedBlob = new Blob([data.buffer], { type: "video/mp4" });
+    const mergedFile = new File([mergedBlob], "merged.mp4", { type: "video/mp4" });
+
+    // Clean up
+    ffmpeg.FS("unlink", "input.mp4");
+    ffmpeg.FS("unlink", "audio.mp3");
+    ffmpeg.FS("unlink", "output.mp4");
+
+    onProgress && onProgress(85, "Uploading merged video...");
+    return mergedFile;
+  } catch (err) {
+    console.error("FFmpeg merge failed, uploading original:", err);
+    return videoFile; // fallback — upload original if merge fails
+  }
+}
+
 // ── Splash ────────────────────────────────────────────────────────────────────
 function Splash() {
   return (
@@ -601,6 +655,7 @@ function UploadPage({ onVideoPosted }) {
   const [username, setUsername] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressMsg, setProgressMsg] = useState("");
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [selectedSound, setSelectedSound] = useState(null);
@@ -619,13 +674,22 @@ function UploadPage({ onVideoPosted }) {
     if (!username.trim()) return setError("Please enter a username");
     setError(""); setUploading(true); setProgress(10);
     try {
-      setProgress(20);
+      setProgress(15);
+      let finalFile = file;
+      if (selectedSound) {
+        // Merge music into video before upload
+        finalFile = await mergeAudioIntoVideo(file, selectedSound.url, (pct, msg) => {
+          setProgress(pct);
+          setProgressMsg(msg);
+        });
+      }
+      setProgressMsg("Uploading...");
       // upload video + capture thumbnail in parallel
       const [videoUrl, thumbnailUrl] = await Promise.all([
-        uploadVideoFile(file),
+        uploadVideoFile(finalFile),
         captureVideoThumbnail(file),
       ]);
-      setProgress(70);
+      setProgress(90);
       const clean = username.trim().replace(/^@/, "");
       const record = await AthaVidVideo.create({
         username: clean,
@@ -706,7 +770,7 @@ function UploadPage({ onVideoPosted }) {
           <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:99, height:6 }}>
             <div style={{ background:"linear-gradient(90deg,#6c63ff,#a78bfa)", borderRadius:99, height:6, width:progress + "%", transition:"width 0.4s" }} />
           </div>
-          <div style={{ color:"#a78bfa", fontSize:12, marginTop:6, textAlign:"center" }}>{progress < 60 ? "Uploading video..." : "Saving to feed..."}</div>
+          <div style={{ color:"#a78bfa", fontSize:12, marginTop:6, textAlign:"center" }}>{progressMsg || (progress < 60 ? "Uploading video..." : "Saving to feed...")}</div>
         </div>
       )}
       <button
