@@ -5,17 +5,17 @@
     "TheWatchers": {
       "title": "TheWatchers"
     },
-    "AthaVid": {
-      "title": "AthaVid"
-    },
-    "TaycanFinder": {
-      "title": "TaycanFinder"
-    },
     "SPICalculator": {
       "title": "SPICalculator"
     },
+    "AthaVid": {
+      "title": "AthaVid"
+    },
     "Home": {
       "title": "Home"
+    },
+    "TaycanFinder": {
+      "title": "TaycanFinder"
     }
   }
 }
