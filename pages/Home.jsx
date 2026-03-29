@@ -1,6 +1,16 @@
 import { useState, useEffect, useRef } from "react";
-import { AthaVidVideo } from "../api/entities";
 import { useCurrentUser } from "../api/auth";
+
+import { AthaVidVideo as _AV, AthaVidComment as _AC } from "../api/entities";
+
+const AthaVidVideo = {
+  list: () => _AV.filter({is_archived: false}, { sort: "-created_date", limit: 100 }),
+  create: (data) => _AV.create(data),
+};
+const AthaVidComment = {
+  list: (videoId) => _AC.filter({ video_id: videoId }),
+  create: (data) => _AC.create(data),
+};
 
 function formatCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -222,7 +232,7 @@ function CommentSheet({ video, onClose }) {
 
   useEffect(() => {
     if (!video) return;
-    AthaVidComment.list(`q={"video_id":"${video.id}"}&sort=-created_date&limit=50`)
+    AthaVidComment.list(video.id)
       .then(r => setComments(Array.isArray(r) ? r : []))
       .catch(() => setComments([]));
   }, [video?.id]);
@@ -295,7 +305,7 @@ function FeedPage({ likedVideos, onLike, onShare }) {
   const containerRef = useRef(null);
 
   const loadVideos = () => {
-    AthaVidVideo.list("sort=-created_date&limit=100").then(records => {
+    AthaVidVideo.list().then(records => {
       const mapped = (Array.isArray(records) ? records : [])
         .filter(r => !r.is_archived)
         .map(r => ({
@@ -631,7 +641,7 @@ function SearchPage() {
   const [allVideos, setAllVideos] = useState(DEMO_VIDEOS);
 
   useEffect(() => {
-    AthaVidVideo.list("sort=-created_date&limit=100").then(records => {
+    AthaVidVideo.list().then(records => {
       const mapped = (Array.isArray(records) ? records : []).map(r => ({ id:r.id, username:r.username||"user", caption:r.caption||"", hashtags:r.hashtags||[], views_count:r.views_count||0, thumbnail_url:r.thumbnail_url||`https://picsum.photos/seed/${r.id}/400/600` }));
       if (mapped.length > 0) setAllVideos([...mapped, ...DEMO_VIDEOS]);
     }).catch(()=>{});
