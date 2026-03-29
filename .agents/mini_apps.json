@@ -2,20 +2,20 @@
   "app_id": "69b2ee18a8e6fb58c7f0261c",
   "slug": "sachi-c7f0261c",
   "pages": {
+    "TheWatchers": {
+      "title": "TheWatchers"
+    },
     "AthaVid": {
       "title": "AthaVid"
-    },
-    "Home": {
-      "title": "Home"
-    },
-    "SPICalculator": {
-      "title": "SPICalculator"
     },
     "TaycanFinder": {
       "title": "TaycanFinder"
     },
-    "TheWatchers": {
-      "title": "TheWatchers"
+    "SPICalculator": {
+      "title": "SPICalculator"
+    },
+    "Home": {
+      "title": "Home"
     }
   }
 }
