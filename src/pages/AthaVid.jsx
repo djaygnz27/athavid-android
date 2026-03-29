@@ -207,17 +207,68 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
 // ── Video Card ────────────────────────────────────────────────────────────────
 function VideoCard({ video, liked, onLike, onComment }) {
   const vidRef = useRef(null);
+  const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
+
+  // set up sound track audio element
+  useEffect(() => {
+    if (video.sound_url) {
+      audioRef.current = new Audio(video.sound_url);
+      audioRef.current.loop = true;
+      audioRef.current.volume = 0.6;
+    }
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
+  }, [video.sound_url]);
 
   const toggle = () => {
     if (!vidRef.current) return;
-    if (playing) { vidRef.current.pause(); setPlaying(false); }
-    else { vidRef.current.play().then(() => setPlaying(true)).catch(() => {}); }
+    if (playing) {
+      vidRef.current.pause();
+      audioRef.current?.pause();
+      setPlaying(false);
+    } else {
+      vidRef.current.play().then(() => {
+        setPlaying(true);
+        if (audioRef.current) audioRef.current.play().catch(() => {});
+      }).catch(() => {});
+    }
   };
 
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    const newMuted = !muted;
+    setMuted(newMuted);
+    if (vidRef.current) vidRef.current.muted = newMuted;
+    if (audioRef.current) audioRef.current.muted = newMuted;
+  };
+
+  // Auto-play when scrolled into view, pause when out
+  const containerRef = useRef(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        vidRef.current?.play().then(() => {
+          setPlaying(true);
+          if (audioRef.current) audioRef.current.play().catch(() => {});
+        }).catch(() => {});
+      } else {
+        vidRef.current?.pause();
+        audioRef.current?.pause();
+        setPlaying(false);
+      }
+    }, { threshold: 0.7 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <div style={{ position:"relative", width:"100%", height:"calc(100vh - 56px)", background:"#000", flexShrink:0, overflow:"hidden" }}>
+    <div ref={containerRef} style={{ position:"relative", width:"100%", height:"calc(100vh - 56px)", background:"#000", flexShrink:0, overflow:"hidden" }}>
       <video
         ref={vidRef}
         src={video.video_url}
