@@ -585,43 +585,59 @@ function FeedPage({ likedVideos, onLike }) {
 
 // ── Royalty-Free Sounds Library ───────────────────────────────────────────────
 const SOUNDS = [
-  { id:"s1", title:"Summer Bounce",    artist:"Pixabay", genre:"Pop",       mood:"Happy",    duration:"2:34", url:"https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" },
-  { id:"s2", title:"Ambient Chill",    artist:"Pixabay", genre:"Ambient",   mood:"Chill",    duration:"3:12", url:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_8cb749d84a.mp3" },
-  { id:"s3", title:"Hip Hop Groove",   artist:"Pixabay", genre:"Hip-Hop",   mood:"Hype",     duration:"2:18", url:"https://cdn.pixabay.com/download/audio/2023/03/07/audio_b456c3be67.mp3" },
-  { id:"s4", title:"Lofi Dreaming",    artist:"Pixabay", genre:"Lo-Fi",     mood:"Relaxed",  duration:"3:45", url:"https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3" },
-  { id:"s5", title:"Epic Cinematic",   artist:"Pixabay", genre:"Cinematic", mood:"Dramatic", duration:"2:58", url:"https://cdn.pixabay.com/download/audio/2022/08/02/audio_2dde668d05.mp3" },
-  { id:"s6", title:"Dance Floor",      artist:"Pixabay", genre:"Electronic",mood:"Energy",   duration:"3:02", url:"https://cdn.pixabay.com/download/audio/2022/10/30/audio_ce1e40b1a4.mp3" },
-  { id:"s7", title:"Acoustic Morning", artist:"Pixabay", genre:"Acoustic",  mood:"Calm",     duration:"2:47", url:"https://cdn.pixabay.com/download/audio/2023/01/18/audio_d0c6ff1c4b.mp3" },
-  { id:"s8", title:"Trap Vibes",       artist:"Pixabay", genre:"Trap",      mood:"Hype",     duration:"2:22", url:"https://cdn.pixabay.com/download/audio/2022/12/14/audio_9a85c2e3a7.mp3" },
+  { id:"s1", title:"Summer Bounce",    artist:"SoundHelix", genre:"Pop",        mood:"Happy",    duration:"3:45", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { id:"s2", title:"Chill Vibes",      artist:"SoundHelix", genre:"Ambient",    mood:"Chill",    duration:"4:12", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { id:"s3", title:"Hip Hop Groove",   artist:"SoundHelix", genre:"Hip-Hop",    mood:"Hype",     duration:"3:28", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+  { id:"s4", title:"Lofi Dreaming",    artist:"SoundHelix", genre:"Lo-Fi",      mood:"Relaxed",  duration:"3:02", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+  { id:"s5", title:"Night Drive",      artist:"SoundHelix", genre:"Electronic", mood:"Energy",   duration:"3:18", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+  { id:"s6", title:"Acoustic Morning", artist:"SoundHelix", genre:"Acoustic",   mood:"Calm",     duration:"3:55", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
+  { id:"s7", title:"Epic Cinematic",   artist:"SoundHelix", genre:"Cinematic",  mood:"Dramatic", duration:"4:30", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" },
 ];
 
 const MOOD_COLORS = { Happy:"#FFD700", Chill:"#00CED1", Hype:"#FF4500", Relaxed:"#7CFC00", Dramatic:"#8A2BE2", Energy:"#FF1493", Calm:"#87CEEB" };
 
 function SoundPicker({ selected, onSelect, onClose }) {
   const [playing, setPlaying] = useState(null);
+  const [loading, setLoading] = useState(null);
   const audioRef = useRef(null);
 
   const togglePlay = (sound) => {
-    if (playing === sound.id) {
-      audioRef.current?.pause();
-      setPlaying(null);
-    } else {
-      if (audioRef.current) audioRef.current.pause();
-      audioRef.current = new Audio(sound.url);
-      audioRef.current.play().catch(() => {});
-      audioRef.current.onended = () => setPlaying(null);
-      setPlaying(sound.id);
+    // Stop current track
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
     }
+    if (playing === sound.id) {
+      setPlaying(null);
+      setLoading(null);
+      return;
+    }
+    // Start new track
+    setLoading(sound.id);
+    setPlaying(null);
+    const a = new Audio();
+    a.preload = "auto";
+    a.oncanplay = () => {
+      setLoading(null);
+      setPlaying(sound.id);
+      a.play().catch(e => { console.warn("Audio play blocked:", e); setPlaying(null); setLoading(null); });
+    };
+    a.onended = () => { setPlaying(null); setLoading(null); };
+    a.onerror = () => { setLoading(null); setPlaying(null); console.warn("Audio load error"); };
+    a.src = sound.url;
+    audioRef.current = a;
   };
 
   const pick = (sound) => {
-    audioRef.current?.pause();
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
     setPlaying(null);
+    setLoading(null);
     onSelect(sound);
     onClose();
   };
 
-  useEffect(() => () => audioRef.current?.pause(), []);
+  useEffect(() => () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; } }, []);
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:300, display:"flex", flexDirection:"column" }}>
@@ -637,9 +653,12 @@ function SoundPicker({ selected, onSelect, onClose }) {
               background: selected?.id === s.id ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.04)",
               border: selected?.id === s.id ? "1px solid #6c63ff" : "1px solid transparent", cursor:"pointer" }}>
             <button onClick={e => { e.stopPropagation(); togglePlay(s); }}
-              style={{ width:40, height:40, borderRadius:"50%", background: playing === s.id ? "#a78bfa" : "rgba(255,255,255,0.1)",
-                border:"none", color:"#fff", fontSize:16, cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              {playing === s.id ? "⏸" : "▶"}
+              style={{ width:40, height:40, borderRadius:"50%",
+                background: playing === s.id ? "#a78bfa" : loading === s.id ? "#6c63ff44" : "rgba(255,255,255,0.1)",
+                border: loading === s.id ? "2px solid #a78bfa" : "none",
+                color:"#fff", fontSize:16, cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.2s" }}>
+              {loading === s.id ? "⏳" : playing === s.id ? "⏸" : "▶"}
             </button>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ color:"#fff", fontWeight:700, fontSize:14, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.title}</div>
