@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AthaVidVideo, AthaVidComment } from "../api/entities";
+import { base44 } from "../api/base44Client";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatCount(n) {
@@ -11,14 +12,10 @@ function formatCount(n) {
 
 // ── Upload helper ─────────────────────────────────────────────────────────────
 async function uploadVideoFile(file) {
-  // Read file as base64 data URL (works up to ~50MB in modern browsers)
-  if (file.size > 50 * 1024 * 1024) throw new Error("File too large for direct upload. Please use a video under 50MB, or paste a video URL instead.");
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.onerror = () => reject(new Error("Could not read file"));
-    reader.readAsDataURL(file);
-  });
+  // Use Base44 SDK built-in UploadFile — works directly in the browser
+  const { file_url } = await base44.integrations.Core.UploadFile({ file });
+  if (!file_url) throw new Error("Upload succeeded but no URL returned");
+  return file_url;
 }
 
 // ── Splash ────────────────────────────────────────────────────────────────────
@@ -255,26 +252,21 @@ function UploadPage({ onVideoPosted }) {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
-  const [videoUrlInput, setVideoUrlInput] = useState("");
-  const [useUrl, setUseUrl] = useState(false);
-
   const pickFile = (e) => {
     const f = e.target.files[0];
     if (!f) return;
     setFile(f);
     setPreview(URL.createObjectURL(f));
-    setUseUrl(false);
   };
 
   const submit = async () => {
-    if (!useUrl && !file) return setError("Please select a video or paste a URL");
-    if (useUrl && !videoUrlInput.trim()) return setError("Please paste a video URL");
+    if (!file) return setError("Please select a video");
     if (!caption.trim()) return setError("Please add a caption");
     if (!username.trim()) return setError("Please enter a username");
     setError(""); setUploading(true); setProgress(10);
     try {
       setProgress(30);
-      const videoUrl = useUrl ? videoUrlInput.trim() : await uploadVideoFile(file);
+      const videoUrl = await uploadVideoFile(file);
       setProgress(70);
       const clean = username.trim().replace(/^@/, "");
       const record = await AthaVidVideo.create({
@@ -311,35 +303,18 @@ function UploadPage({ onVideoPosted }) {
   return (
     <div style={{ padding:24, paddingTop:60, minHeight:"100%" }}>
       <div style={{ color:"#fff", fontSize:22, fontWeight:800, marginBottom:24 }}>Post a Video</div>
-      {/* Toggle: upload vs URL */}
-      <div style={{ display:"flex", background:"rgba(255,255,255,0.06)", borderRadius:12, padding:4, marginBottom:16, gap:4 }}>
-        <button onClick={() => setUseUrl(false)} style={{ flex:1, padding:"8px", borderRadius:10, border:"none", background: !useUrl ? "linear-gradient(135deg,#6c63ff,#a78bfa)" : "transparent", color:"#fff", fontWeight:600, fontSize:13, cursor:"pointer" }}>📁 Upload File</button>
-        <button onClick={() => setUseUrl(true)}  style={{ flex:1, padding:"8px", borderRadius:10, border:"none", background:  useUrl ? "linear-gradient(135deg,#6c63ff,#a78bfa)" : "transparent", color:"#fff", fontWeight:600, fontSize:13, cursor:"pointer" }}>🔗 Paste URL</button>
-      </div>
-
-      {!useUrl ? (
-        <label style={{ display:"block", border:"2px dashed #6c63ff", borderRadius:16, padding:32, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
-          <input type="file" accept="video/*" onChange={pickFile} style={{ display:"none" }} />
-          {preview ? (
-            <video src={preview} style={{ width:"100%", maxHeight:200, borderRadius:8, objectFit:"cover" }} muted />
-          ) : (
-            <>
-              <div style={{ fontSize:48 }}>📹</div>
-              <div style={{ color:"#a78bfa", fontWeight:600, marginTop:8 }}>Tap to select video</div>
-              <div style={{ color:"#666", fontSize:12, marginTop:4 }}>MP4, MOV up to 50MB</div>
-            </>
-          )}
-        </label>
-      ) : (
-        <div style={{ marginBottom:16 }}>
-          <input
-            value={videoUrlInput} onChange={e => setVideoUrlInput(e.target.value)}
-            placeholder="https://example.com/video.mp4"
-            style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(108,99,255,0.5)", borderRadius:10, padding:"12px 14px", color:"#fff", fontSize:13, outline:"none" }}
-          />
-          <div style={{ color:"#666", fontSize:11, marginTop:4 }}>Paste a direct .mp4 link or any publicly accessible video URL</div>
-        </div>
-      )}
+      <label style={{ display:"block", border:"2px dashed #6c63ff", borderRadius:16, padding:32, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
+        <input type="file" accept="video/*" onChange={pickFile} style={{ display:"none" }} />
+        {preview ? (
+          <video src={preview} style={{ width:"100%", maxHeight:200, borderRadius:8, objectFit:"cover" }} muted />
+        ) : (
+          <>
+            <div style={{ fontSize:48 }}>📹</div>
+            <div style={{ color:"#a78bfa", fontWeight:600, marginTop:8 }}>Tap to select video</div>
+            <div style={{ color:"#666", fontSize:12, marginTop:4 }}>MP4, MOV — any size</div>
+          </>
+        )}
+      </label>
       {[
         { label:"Your username", val:username, set:setUsername, ph:"e.g. jaygnz27" },
         { label:"Caption", val:caption, set:setCaption, ph:"What's this video about?" },

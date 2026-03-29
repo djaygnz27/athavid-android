@@ -1,4 +1,4 @@
-import base44 from "../app/base44_client.ts";
+import { base44 } from "npm:@base44/sdk";
 
 export default async function handler(req: Request): Promise<Response> {
   const headers = {
@@ -7,9 +7,7 @@ export default async function handler(req: Request): Promise<Response> {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { status: 200, headers });
 
   try {
     const formData = await req.formData();
@@ -17,19 +15,33 @@ export default async function handler(req: Request): Promise<Response> {
 
     if (!file) {
       return new Response(JSON.stringify({ error: "No file provided" }), {
-        status: 400, headers: { ...headers, "Content-Type": "application/json" }
+        status: 400,
+        headers: { ...headers, "Content-Type": "application/json" },
       });
     }
 
-    // Upload to base44 storage
-    const uploadResult = await base44.storage.upload(file);
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
 
-    return new Response(JSON.stringify({ file_url: uploadResult.file_url || uploadResult.url }), {
-      status: 200, headers: { ...headers, "Content-Type": "application/json" }
+    // Upload to Base44 public storage
+    const client = base44({ appId: "69b2ee18a8e6fb58c7f0261c" });
+    const result = await client.storage.uploadPublic(bytes, {
+      filename: file.name || "video.mp4",
+      contentType: file.type || "video/mp4",
+    });
+
+    const url = result?.url || result?.file_url || result?.public_url;
+    if (!url) throw new Error("No URL returned from storage");
+
+    return new Response(JSON.stringify({ url }), {
+      status: 200,
+      headers: { ...headers, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || "Upload failed" }), {
-      status: 500, headers: { ...headers, "Content-Type": "application/json" }
+    console.error("Upload error:", err?.message || err);
+    return new Response(JSON.stringify({ error: err?.message || "Upload failed" }), {
+      status: 500,
+      headers: { ...headers, "Content-Type": "application/json" },
     });
   }
 }
