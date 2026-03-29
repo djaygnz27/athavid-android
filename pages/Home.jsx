@@ -1,37 +1,32 @@
 import { useState, useEffect, useRef } from "react";
 import { useCurrentUser } from "../api/auth";
-
-// ── AthaVid data lives in Sachi app ──────────────────────────────────────────
-const AV_APP = "69b2ee18a8e6fb58c7f0261c";
-const AV_BASE = `https://base44.app/api/apps/${AV_APP}/entities`;
-const AV_STORAGE = `https://base44.app/api/apps/${AV_APP}/storage/upload`;
-
-async function avFetch(path, method = "GET", body = null) {
-  const opts = { method, credentials: "include", headers: {} };
-  if (body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
-  const res = await fetch(AV_BASE + path, opts);
-  const text = await res.text();
-  if (!res.ok) throw new Error(text);
-  return text ? JSON.parse(text) : {};
-}
+import { AthaVidVideo as _AV, AthaVidComment as _AC } from "../api/entities";
+import { base44 } from "../api/base44Client";
 
 const AthaVidVideo = {
-  list: () => avFetch("/AthaVidVideo?sort=-created_date&limit=100"),
-  create: (data) => avFetch("/AthaVidVideo", "POST", data),
+  list: () => _AV.filter({is_archived: false}, { sort: "-created_date", limit: 100 }),
+  create: (data) => _AV.create(data),
 };
 const AthaVidComment = {
-  list: (videoId) => avFetch(`/AthaVidComment?q=${encodeURIComponent(JSON.stringify({video_id: videoId}))}`),
-  create: (data) => avFetch("/AthaVidComment", "POST", data),
+  list: (videoId) => _AC.filter({ video_id: videoId }),
+  create: (data) => _AC.create(data),
 };
 
 async function uploadVideoFile(file) {
   if (file.size > 200 * 1024 * 1024) throw new Error("File too large. Max 200MB.");
-  const formData = new FormData();
-  formData.append("file", file);
-  const res = await fetch(AV_STORAGE, { method: "POST", credentials: "include", body: formData });
-  if (!res.ok) { const t = await res.text(); throw new Error("Upload failed: " + t); }
-  const data = await res.json();
-  return data.file_url || data.url || data.public_url;
+  try {
+    const result = await base44.storage.upload(file);
+    return result.file_url || result.url;
+  } catch(e) {
+    // fallback: read as base64 data URL (works for files under 10MB)
+    if (file.size > 10 * 1024 * 1024) throw new Error("Video too large for direct upload. Please use a clip under 10MB.");
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result);
+      reader.onerror = () => reject(new Error("Could not read file"));
+      reader.readAsDataURL(file);
+    });
+  }
 }
 
 function formatCount(n) {
