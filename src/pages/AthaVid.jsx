@@ -77,55 +77,61 @@ function CommentSheet({ video, onClose }) {
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:500, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
       {/* backdrop */}
-      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.6)" }} />
-      {/* sheet */}
-      <div style={{ position:"relative", background:"#111", borderRadius:"20px 20px 0 0", padding:"16px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column" }}>
-        {/* handle */}
-        <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 14px" }} />
-        <div style={{ color:"#fff", fontWeight:700, fontSize:16, textAlign:"center", marginBottom:12 }}>
-          💬 Comments {comments.length > 0 && `(${comments.length})`}
+      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)" }} />
+      {/* sheet — sits above everything including bottom nav */}
+      <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"80vh", display:"flex", flexDirection:"column", zIndex:1001 }}>
+        {/* handle + header */}
+        <div style={{ padding:"12px 16px 0", flexShrink:0 }}>
+          <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 12px" }} />
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>💬 Comments {comments.length > 0 && `(${comments.length})`}</div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer", fontSize:16 }}>✕</button>
+          </div>
         </div>
 
-        {/* list */}
-        <div style={{ flex:1, overflowY:"auto", padding:"0 16px" }}>
+        {/* comment list */}
+        <div style={{ flex:1, overflowY:"auto", padding:"0 16px 8px" }}>
           {loading && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Loading...</div>}
           {!loading && comments.length === 0 && (
-            <div style={{ color:"#555", textAlign:"center", padding:32 }}>
+            <div style={{ color:"#555", textAlign:"center", padding:40 }}>
               <div style={{ fontSize:36, marginBottom:8 }}>💬</div>
-              <div>No comments yet. Be first!</div>
+              <div style={{ fontSize:14 }}>No comments yet. Be first!</div>
             </div>
           )}
           {comments.map(c => (
-            <div key={c.id} style={{ display:"flex", gap:10, marginBottom:16 }}>
-              <img src={c.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.username}`} style={{ width:36, height:36, borderRadius:"50%", flexShrink:0 }} />
-              <div>
-                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:2 }}>@{c.username}</div>
-                <div style={{ color:"#eee", fontSize:14 }}>{c.comment_text}</div>
+            <div key={c.id} style={{ display:"flex", gap:10, marginBottom:16, alignItems:"flex-start" }}>
+              <img src={c.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.username}`} style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, border:"2px solid rgba(108,99,255,0.3)" }} />
+              <div style={{ flex:1 }}>
+                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:3 }}>@{c.username}</div>
+                <div style={{ color:"#eee", fontSize:14, lineHeight:1.4 }}>{c.comment_text}</div>
               </div>
             </div>
           ))}
           <div ref={bottomRef} />
         </div>
 
-        {/* input */}
-        <div style={{ borderTop:"1px solid rgba(255,255,255,0.08)", padding:"12px 16px", paddingBottom:"max(12px, env(safe-area-inset-bottom))", display:"flex", flexDirection:"column", gap:8 }}>
+        {/* input area — always visible, never hidden */}
+        <div style={{ flexShrink:0, borderTop:"1px solid rgba(255,255,255,0.08)", background:"#1a1a2e", padding:"12px 16px 24px" }}>
           <input
-            value={name} onChange={e => setName(e.target.value)}
-            placeholder="Your name / @username"
-            style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:13, outline:"none", width:"100%" }}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Your name or @username"
+            style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(108,99,255,0.3)", borderRadius:10, padding:"10px 14px", color:"#fff", fontSize:13, outline:"none", marginBottom:8, display:"block" }}
           />
-          <div style={{ display:"flex", gap:8 }}>
+          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
             <input
-              value={text} onChange={e => setText(e.target.value)}
-              placeholder="Add a comment..."
-              onKeyDown={e => e.key === "Enter" && post()}
-              style={{ flex:1, background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"9px 12px", color:"#fff", fontSize:14, outline:"none" }}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              placeholder="Write a comment..."
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); post(); } }}
+              style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(108,99,255,0.3)", borderRadius:10, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none" }}
             />
             <button
-              onClick={post} disabled={posting || !text.trim() || !name.trim()}
-              style={{ background: (posting || !text.trim() || !name.trim()) ? "#333" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:10, padding:"0 18px", color:"#fff", fontWeight:700, fontSize:14, cursor: posting ? "not-allowed" : "pointer" }}
+              onClick={post}
+              disabled={posting || !text.trim() || !name.trim()}
+              style={{ flexShrink:0, background: (posting || !text.trim() || !name.trim()) ? "#2a2a3e" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:10, padding:"10px 18px", color: (posting || !text.trim() || !name.trim()) ? "#555" : "#fff", fontWeight:700, fontSize:14, cursor: (posting || !text.trim() || !name.trim()) ? "not-allowed" : "pointer", whiteSpace:"nowrap" }}
             >
               {posting ? "..." : "Post"}
             </button>
