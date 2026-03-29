@@ -95,7 +95,7 @@ function ShareModal({ onClose }) {
 }
 
 // ── VIDEO PLAYER CARD ─────────────────────────────────────────────────────────
-function VideoCard({ video, liked, onLike, onShare, active }) {
+function VideoCard({ video, liked, onLike, onShare, onComment, active }) {
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
@@ -173,7 +173,7 @@ function VideoCard({ video, liked, onLike, onShare, active }) {
           </div>
           <span style={{ color:"#fff",fontSize:11,fontWeight:600 }}>{formatCount(video.likes_count+(liked?1:0))}</span>
         </button>
-        <button style={{ background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+        <button onClick={onComment} style={{ background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
           <div style={{ width:46,height:46,borderRadius:"50%",background:"rgba(255,255,255,0.12)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid rgba(255,255,255,0.2)",fontSize:22 }}>💬</div>
           <span style={{ color:"#fff",fontSize:11,fontWeight:600 }}>{formatCount(video.comments_count)}</span>
         </button>
@@ -212,44 +212,117 @@ function VideoCard({ video, liked, onLike, onShare, active }) {
   );
 }
 
+
+// ── COMMENT SHEET ─────────────────────────────────────────────────────────────
+function CommentSheet({ video, onClose }) {
+  const { currentUser } = useCurrentUser();
+  const [comments, setComments] = useState([]);
+  const [text, setText] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  useEffect(() => {
+    if (!video) return;
+    AthaVidComment.list(`q={"video_id":"${video.id}"}&sort=-created_date&limit=50`)
+      .then(r => setComments(Array.isArray(r) ? r : []))
+      .catch(() => setComments([]));
+  }, [video?.id]);
+
+  const postComment = async () => {
+    if (!text.trim()) return;
+    setPosting(true);
+    const username = currentUser?.full_name?.toLowerCase().replace(/\s+/g,"_") || currentUser?.email?.split("@")[0] || "anonymous";
+    try {
+      const c = await AthaVidComment.create({
+        video_id: video.id,
+        user_id: currentUser?.id || null,
+        username,
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+        comment_text: text.trim(),
+        likes_count: 0,
+      });
+      setComments(prev => [c, ...prev]);
+      setText("");
+    } catch(e) { alert("Could not post comment: " + e.message); }
+    setPosting(false);
+  };
+
+  if (!video) return null;
+  return (
+    <div style={{ position:"fixed",inset:0,zIndex:2000,display:"flex",flexDirection:"column",justifyContent:"flex-end" }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:"linear-gradient(180deg,#0f0f20,#050510)",borderRadius:"24px 24px 0 0",maxHeight:"70vh",display:"flex",flexDirection:"column",border:"1px solid rgba(255,255,255,0.08)" }}>
+        {/* Header */}
+        <div style={{ padding:"14px 20px",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+          <span style={{ color:"#fff",fontWeight:700,fontSize:16 }}>💬 Comments</span>
+          <button onClick={onClose} style={{ background:"none",border:"none",color:"#666",fontSize:22,cursor:"pointer" }}>✕</button>
+        </div>
+        {/* Comments list */}
+        <div style={{ overflowY:"auto",flex:1,padding:"12px 16px" }}>
+          {comments.length === 0 && <div style={{ color:"#444",textAlign:"center",padding:30 }}>No comments yet. Be the first!</div>}
+          {comments.map(c => (
+            <div key={c.id} style={{ display:"flex",gap:10,marginBottom:16 }}>
+              <img src={c.avatar_url||`https://api.dicebear.com/7.x/avataaars/svg?seed=${c.username}`} alt="" style={{ width:36,height:36,borderRadius:"50%",border:"1px solid rgba(108,99,255,0.4)",flexShrink:0 }} />
+              <div>
+                <span style={{ color:"#a78bfa",fontWeight:700,fontSize:13 }}>@{c.username}</span>
+                <p style={{ color:"#ddd",fontSize:14,margin:"4px 0 0",lineHeight:1.5 }}>{c.comment_text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Input */}
+        <div style={{ padding:"12px 16px",borderTop:"1px solid rgba(255,255,255,0.07)",display:"flex",gap:10,alignItems:"center" }}>
+          <input
+            value={text}
+            onChange={e=>setText(e.target.value)}
+            onKeyDown={e=>e.key==="Enter" && postComment()}
+            placeholder="Add a comment..."
+            style={{ flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(108,99,255,0.3)",borderRadius:20,padding:"10px 16px",color:"#fff",fontSize:14,outline:"none" }}
+          />
+          <button onClick={postComment} disabled={posting||!text.trim()} style={{ background:"linear-gradient(135deg,#6c63ff,#a78bfa)",border:"none",borderRadius:20,padding:"10px 18px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",opacity:posting||!text.trim()?0.5:1 }}>
+            {posting ? "…" : "Post"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── FEED ──────────────────────────────────────────────────────────────────────
 function FeedPage({ likedVideos, onLike, onShare }) {
   const [videos, setVideos] = useState(DEMO_VIDEOS);
   const [current, setCurrent] = useState(0);
+  const [commentVideo, setCommentVideo] = useState(null);
   const startY = useRef(null);
   const containerRef = useRef(null);
 
   const loadVideos = () => {
-    const localVids = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
-    AthaVidVideo.filter({ is_archived: false }, { sort: "-created_date", limit: 100 }).then(records => {
-      const allRecords = records && records.length > 0 ? records : [];
-      const mapped = allRecords.map(r => ({
-        id: r.id,
-        username: r.username || "unknown",
-        display_name: r.display_name || r.username || "User",
-        avatar_url: r.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.username}`,
-        caption: r.caption || "",
-        hashtags: r.hashtags || [],
-        likes_count: r.likes_count || 0,
-        comments_count: r.comments_count || 0,
-        views_count: r.views_count || 0,
-        shares_count: r.shares_count || 0,
-        created_date: r.created_date,
-        _source: "entity",
-        video_url: r.video_url || null,
-        thumbnail_url: r.thumbnail_url || `https://picsum.photos/seed/${r.id}/500/880`,
-      }));
-      const localMerged = localVids.filter(lv => !mapped.find(m => m.id === lv.id));
-      setVideos([...localMerged, ...mapped, ...DEMO_VIDEOS]);
-    }).catch(() => {
-      const localMerged = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
-      setVideos([...localMerged, ...DEMO_VIDEOS]);
+    AthaVidVideo.list("sort=-created_date&limit=100").then(records => {
+      const mapped = (Array.isArray(records) ? records : [])
+        .filter(r => !r.is_archived)
+        .map(r => ({
+          id: r.id,
+          username: r.username || "unknown",
+          display_name: r.display_name || r.username || "User",
+          avatar_url: r.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.username}`,
+          caption: r.caption || "",
+          hashtags: r.hashtags || [],
+          likes_count: r.likes_count || 0,
+          comments_count: r.comments_count || 0,
+          views_count: r.views_count || 0,
+          shares_count: r.shares_count || 0,
+          created_date: r.created_date,
+          _source: "entity",
+          video_url: r.video_url || null,
+          thumbnail_url: r.thumbnail_url || `https://picsum.photos/seed/${r.id}/500/880`,
+        }));
+      setVideos(mapped.length > 0 ? [...mapped, ...DEMO_VIDEOS] : DEMO_VIDEOS);
+    }).catch(err => {
+      console.error("Feed load error:", err);
     });
   };
 
   useEffect(() => {
-    loadVideos(); // initial load
-    const interval = setInterval(loadVideos, 30000); // refresh every 30 seconds
+    loadVideos();
+    const interval = setInterval(loadVideos, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -285,8 +358,10 @@ function FeedPage({ likedVideos, onLike, onShare }) {
         liked={likedVideos.has(videos[current]?.id)}
         onLike={onLike}
         onShare={onShare}
+        onComment={() => setCommentVideo(videos[current])}
         active={true}
       />
+      {commentVideo && <CommentSheet video={commentVideo} onClose={() => setCommentVideo(null)} />}
     </div>
   );
 }
@@ -391,39 +466,8 @@ function UploadPage({ onVideoPosted }) {
         duration_seconds: 0,
       };
       
-      let saveResult;
-      try {
-        // Try SDK first
-        saveResult = await AthaVidVideo.create(videoData);
-        console.log("✅ Saved to DB via SDK:", saveResult?.id);
-      } catch(sdkErr) {
-        console.warn("SDK create failed, trying direct API:", sdkErr?.message || sdkErr);
-        try {
-          // Direct API call with no-auth header
-          const resp = await fetch("https://api.base44.com/api/apps/69bafc2c944948084350efb0/entities/AthaVidVideo/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-User-Email": "anonymous@athavid.app" },
-            body: JSON.stringify(videoData),
-          });
-          const respText = await resp.text();
-          console.log("Direct API response:", resp.status, respText);
-          if (resp.ok) {
-            saveResult = JSON.parse(respText);
-            console.log("✅ Saved to DB via direct API:", saveResult?.id);
-          } else {
-            throw new Error("API " + resp.status + ": " + respText);
-          }
-        } catch(apiErr) {
-          console.error("❌ Both SDK and direct API failed:", apiErr?.message || apiErr);
-          // Last resort: localStorage
-          const existing = JSON.parse(localStorage.getItem("athavid_videos") || "[]");
-          const localRecord = { ...videoData, id: "local_" + Date.now(), created_date: new Date().toISOString() };
-          existing.unshift(localRecord);
-          localStorage.setItem("athavid_videos", JSON.stringify(existing.slice(0, 50)));
-          saveResult = localRecord;
-          console.warn("⚠️ Saved to localStorage only:", localRecord.id);
-        }
-      }
+      const saveResult = await AthaVidVideo.create(videoData);
+      console.log("✅ Video saved to DB:", saveResult?.id);
 
       setProgress(100);
       await new Promise(r => setTimeout(r, 500));
@@ -587,11 +631,9 @@ function SearchPage() {
   const [allVideos, setAllVideos] = useState(DEMO_VIDEOS);
 
   useEffect(() => {
-    AthaVidVideo.list().then(records => {
-      if (records && records.length > 0) {
-        const mapped = records.map(r => ({ id:r.id, username:r.username||"user", caption:r.caption||"", hashtags:r.hashtags||[], views_count:r.views_count||0, thumbnail_url:r.thumbnail_url||`https://picsum.photos/seed/${r.id}/400/600` }));
-        setAllVideos([...mapped, ...DEMO_VIDEOS]);
-      }
+    AthaVidVideo.list("sort=-created_date&limit=100").then(records => {
+      const mapped = (Array.isArray(records) ? records : []).map(r => ({ id:r.id, username:r.username||"user", caption:r.caption||"", hashtags:r.hashtags||[], views_count:r.views_count||0, thumbnail_url:r.thumbnail_url||`https://picsum.photos/seed/${r.id}/400/600` }));
+      if (mapped.length > 0) setAllVideos([...mapped, ...DEMO_VIDEOS]);
     }).catch(()=>{});
   }, []);
 
