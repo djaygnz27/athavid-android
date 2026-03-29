@@ -310,6 +310,84 @@ function FeedPage({ likedVideos, onLike }) {
   );
 }
 
+
+// ── Royalty-Free Sounds Library ───────────────────────────────────────────────
+const SOUNDS = [
+  { id:"s1", title:"Summer Bounce",    artist:"Pixabay", genre:"Pop",       mood:"Happy",    duration:"2:34", url:"https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" },
+  { id:"s2", title:"Ambient Chill",    artist:"Pixabay", genre:"Ambient",   mood:"Chill",    duration:"3:12", url:"https://cdn.pixabay.com/download/audio/2022/03/15/audio_8cb749d84a.mp3" },
+  { id:"s3", title:"Hip Hop Groove",   artist:"Pixabay", genre:"Hip-Hop",   mood:"Hype",     duration:"2:18", url:"https://cdn.pixabay.com/download/audio/2023/03/07/audio_b456c3be67.mp3" },
+  { id:"s4", title:"Lofi Dreaming",    artist:"Pixabay", genre:"Lo-Fi",     mood:"Relaxed",  duration:"3:45", url:"https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3" },
+  { id:"s5", title:"Epic Cinematic",   artist:"Pixabay", genre:"Cinematic", mood:"Dramatic", duration:"2:58", url:"https://cdn.pixabay.com/download/audio/2022/08/02/audio_2dde668d05.mp3" },
+  { id:"s6", title:"Dance Floor",      artist:"Pixabay", genre:"Electronic",mood:"Energy",   duration:"3:02", url:"https://cdn.pixabay.com/download/audio/2022/10/30/audio_ce1e40b1a4.mp3" },
+  { id:"s7", title:"Acoustic Morning", artist:"Pixabay", genre:"Acoustic",  mood:"Calm",     duration:"2:47", url:"https://cdn.pixabay.com/download/audio/2023/01/18/audio_d0c6ff1c4b.mp3" },
+  { id:"s8", title:"Trap Vibes",       artist:"Pixabay", genre:"Trap",      mood:"Hype",     duration:"2:22", url:"https://cdn.pixabay.com/download/audio/2022/12/14/audio_9a85c2e3a7.mp3" },
+];
+
+const MOOD_COLORS = { Happy:"#FFD700", Chill:"#00CED1", Hype:"#FF4500", Relaxed:"#7CFC00", Dramatic:"#8A2BE2", Energy:"#FF1493", Calm:"#87CEEB" };
+
+function SoundPicker({ selected, onSelect, onClose }) {
+  const [playing, setPlaying] = useState(null);
+  const audioRef = useRef(null);
+
+  const togglePlay = (sound) => {
+    if (playing === sound.id) {
+      audioRef.current?.pause();
+      setPlaying(null);
+    } else {
+      if (audioRef.current) audioRef.current.pause();
+      audioRef.current = new Audio(sound.url);
+      audioRef.current.play().catch(() => {});
+      audioRef.current.onended = () => setPlaying(null);
+      setPlaying(sound.id);
+    }
+  };
+
+  const pick = (sound) => {
+    audioRef.current?.pause();
+    setPlaying(null);
+    onSelect(sound);
+    onClose();
+  };
+
+  useEffect(() => () => audioRef.current?.pause(), []);
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:300, display:"flex", flexDirection:"column" }}>
+      <div onClick={() => { audioRef.current?.pause(); onClose(); }} style={{ flex:1, background:"rgba(0,0,0,0.6)" }} />
+      <div style={{ background:"#0d0d1a", borderRadius:"24px 24px 0 0", padding:"20px 16px 32px", maxHeight:"75vh", overflowY:"auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div style={{ color:"#fff", fontSize:18, fontWeight:800 }}>🎵 Sounds</div>
+          <div style={{ color:"#555", fontSize:11 }}>All royalty-free · Safe to post</div>
+        </div>
+        {SOUNDS.map(s => (
+          <div key={s.id} onClick={() => pick(s)}
+            style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 10px", borderRadius:12, marginBottom:8,
+              background: selected?.id === s.id ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.04)",
+              border: selected?.id === s.id ? "1px solid #6c63ff" : "1px solid transparent", cursor:"pointer" }}>
+            <button onClick={e => { e.stopPropagation(); togglePlay(s); }}
+              style={{ width:40, height:40, borderRadius:"50%", background: playing === s.id ? "#a78bfa" : "rgba(255,255,255,0.1)",
+                border:"none", color:"#fff", fontSize:16, cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              {playing === s.id ? "⏸" : "▶"}
+            </button>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ color:"#fff", fontWeight:700, fontSize:14, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.title}</div>
+              <div style={{ color:"#888", fontSize:11, marginTop:2 }}>{s.artist} · {s.duration}</div>
+            </div>
+            <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+              <span style={{ background:(MOOD_COLORS[s.mood]||"#888")+"33", color:MOOD_COLORS[s.mood]||"#888", fontSize:10, fontWeight:700, padding:"3px 8px", borderRadius:99 }}>{s.mood}</span>
+              <span style={{ background:"rgba(255,255,255,0.08)", color:"#aaa", fontSize:10, padding:"3px 8px", borderRadius:99 }}>{s.genre}</span>
+            </div>
+          </div>
+        ))}
+        <button onClick={() => { audioRef.current?.pause(); onClose(); }}
+          style={{ width:"100%", marginTop:8, padding:14, background:"rgba(255,255,255,0.07)", border:"none", borderRadius:12, color:"#888", fontSize:14, cursor:"pointer" }}>
+          No music
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Upload ────────────────────────────────────────────────────────────────────
 function UploadPage({ onVideoPosted }) {
   const [file, setFile] = useState(null);
@@ -321,6 +399,8 @@ function UploadPage({ onVideoPosted }) {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [selectedSound, setSelectedSound] = useState(null);
+  const [showSoundPicker, setShowSoundPicker] = useState(false);
 
   const pickFile = (e) => {
     const f = e.target.files[0];
@@ -351,6 +431,9 @@ function UploadPage({ onVideoPosted }) {
         hashtags: hashtags.split(/[\s,#]+/).filter(Boolean),
         video_url: videoUrl,
         thumbnail_url: thumbnailUrl || `https://picsum.photos/seed/${Date.now()}/500/880`,
+        sound_title: selectedSound ? selectedSound.title : null,
+        sound_artist: selectedSound ? selectedSound.artist : null,
+        sound_url: selectedSound ? selectedSound.url : null,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_archived: false, is_ai_detected: false, is_approved: true,
         archive_date: new Date(Date.now() + 30 * 86400000).toISOString(),
@@ -402,6 +485,17 @@ function UploadPage({ onVideoPosted }) {
           />
         </div>
       ))}
+      {/* Sound picker */}
+      <div style={{ marginBottom:14 }}>
+        <div style={{ color:"#aaa", fontSize:12, marginBottom:4 }}>Sound</div>
+        <button onClick={() => setShowSoundPicker(true)}
+          style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, padding:"12px 14px", color: selectedSound ? "#a78bfa" : "#555", fontSize:14, textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:18 }}>🎵</span>
+          <span style={{ flex:1 }}>{selectedSound ? `${selectedSound.title} — ${selectedSound.artist}` : "Add a sound (royalty-free)"}</span>
+          {selectedSound && <span onClick={e => { e.stopPropagation(); setSelectedSound(null); }} style={{ color:"#ff6b6b", fontSize:18, lineHeight:1 }}>✕</span>}
+        </button>
+      </div>
+      {showSoundPicker && <SoundPicker selected={selectedSound} onSelect={setSelectedSound} onClose={() => setShowSoundPicker(false)} />}
       {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12 }}>{error}</div>}
       {uploading && (
         <div style={{ marginBottom:16 }}>
@@ -467,7 +561,7 @@ export default function AthaVid() {
 
   return (
     <div style={{ background:"#050510", minHeight:"100vh", maxWidth:480, margin:"0 auto", fontFamily:"'Inter',-apple-system,sans-serif", position:"relative" }}>
-      <style>{`* { box-sizing: border-box } ::-webkit-scrollbar { display: none } body { background: #050510; margin: 0 }`}</style>
+      <style>{`* { box-sizing: border-box } ::-webkit-scrollbar { display: none } body { background: #050510; margin: 0 } @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
       {splash && <Splash />}
       <div style={{ height:"calc(100vh - 56px)", overflowY:"auto" }}>
         {tab === "feed"    && <FeedPage key={feedKey} likedVideos={liked} onLike={onLike} />}
