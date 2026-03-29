@@ -1,16 +1,38 @@
 import { useState, useEffect, useRef } from "react";
 import { useCurrentUser } from "../api/auth";
 
-import { AthaVidVideo as _AV, AthaVidComment as _AC } from "../api/entities";
+// ── AthaVid data lives in Sachi app ──────────────────────────────────────────
+const AV_APP = "69b2ee18a8e6fb58c7f0261c";
+const AV_BASE = `https://base44.app/api/apps/${AV_APP}/entities`;
+const AV_STORAGE = `https://base44.app/api/apps/${AV_APP}/storage/upload`;
+
+async function avFetch(path, method = "GET", body = null) {
+  const opts = { method, credentials: "include", headers: {} };
+  if (body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const res = await fetch(AV_BASE + path, opts);
+  const text = await res.text();
+  if (!res.ok) throw new Error(text);
+  return text ? JSON.parse(text) : {};
+}
 
 const AthaVidVideo = {
-  list: () => _AV.filter({is_archived: false}, { sort: "-created_date", limit: 100 }),
-  create: (data) => _AV.create(data),
+  list: () => avFetch("/AthaVidVideo?sort=-created_date&limit=100"),
+  create: (data) => avFetch("/AthaVidVideo", "POST", data),
 };
 const AthaVidComment = {
-  list: (videoId) => _AC.filter({ video_id: videoId }),
-  create: (data) => _AC.create(data),
+  list: (videoId) => avFetch(`/AthaVidComment?q=${encodeURIComponent(JSON.stringify({video_id: videoId}))}`),
+  create: (data) => avFetch("/AthaVidComment", "POST", data),
 };
+
+async function uploadVideoFile(file) {
+  if (file.size > 200 * 1024 * 1024) throw new Error("File too large. Max 200MB.");
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(AV_STORAGE, { method: "POST", credentials: "include", body: formData });
+  if (!res.ok) { const t = await res.text(); throw new Error("Upload failed: " + t); }
+  const data = await res.json();
+  return data.file_url || data.url || data.public_url;
+}
 
 function formatCount(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -410,24 +432,7 @@ function UploadPage({ onVideoPosted }) {
 
   const handleDrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 
-  const uploadToBase44 = async (f) => {
-    if (f.size > 200 * 1024 * 1024) {
-      throw new Error(`File too large. Max 200MB.`);
-    }
-    const formData = new FormData();
-    formData.append("file", f);
-    const res = await fetch(`https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/storage/upload`, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error("Upload failed: " + txt);
-    }
-    const data = await res.json();
-    return data.file_url || data.url || data.public_url;
-  };
+  const uploadToBase44 = async (f) => uploadVideoFile(f);
 
   const handlePost = async () => {
     if (!file && !form.videoUrl.trim()) { setError("Please select a video file OR paste a video URL."); return; }
