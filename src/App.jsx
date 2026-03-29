@@ -1,9 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import TheWatchers from './pages/TheWatchers';
-import AthaVid from './pages/AthaVid';
-import TaycanFinder from './pages/TaycanFinder';
 import SPICalculator from './pages/SPICalculator';
+import AthaVid from './pages/AthaVid';
 import Home from './pages/Home';
+import TaycanFinder from './pages/TaycanFinder';
 
 function App() {
   return (
@@ -11,10 +11,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/Home" replace />} />
         <Route path="/TheWatchers" element={<TheWatchers />} />
-        <Route path="/AthaVid" element={<AthaVid />} />
-        <Route path="/TaycanFinder" element={<TaycanFinder />} />
         <Route path="/SPICalculator" element={<SPICalculator />} />
+        <Route path="/AthaVid" element={<AthaVid />} />
         <Route path="/Home" element={<Home />} />
+        <Route path="/TaycanFinder" element={<TaycanFinder />} />
       </Routes>
     </BrowserRouter>
   )
