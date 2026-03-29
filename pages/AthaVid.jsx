@@ -143,7 +143,9 @@ function Splash() {
   return (
     <div style={{ position:"fixed",inset:0,background:"#050510",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:9999 }}>
       <div style={{ fontSize:64, marginBottom:16 }}>🎬</div>
-      <div style={{ fontSize:36, fontWeight:900, background:"linear-gradient(135deg,#6c63ff,#a78bfa)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>AthaVid</div>
+      <img src="https://media.base44.com/images/public/69b2ee18a8e6fb58c7f0261c/99914c9a7_generated_image.png" alt="Sachi" style={{ width:80, height:80, borderRadius:20, marginBottom:8, boxShadow:"0 8px 30px rgba(255,107,107,0.4)" }} />
+      <div style={{ fontSize:42, fontWeight:900, letterSpacing:"-1px", background:"linear-gradient(135deg,#ff6b6b,#ff8e53,#ffd93d)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</div>
+      <div style={{ color:"#888", fontSize:12, letterSpacing:"3px", textTransform:"uppercase", marginTop:4 }}>real moments. real you.</div>
       <div style={{ color:"#666", fontSize:14, marginTop:8 }}>Real People. Real Moments.</div>
     </div>
   );
@@ -236,7 +238,7 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
             <div key={c.id} style={{ display:"flex", gap:10, marginBottom:16, alignItems:"flex-start" }}>
               <img src={c.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.username}`} style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, border:"2px solid rgba(108,99,255,0.3)" }} />
               <div style={{ flex:1 }}>
-                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:3 }}>@{c.username}</div>
+                <div style={{ color:"#ff8e53", fontSize:12, fontWeight:700, marginBottom:3 }}>@{c.username}</div>
                 <div style={{ color:"#eee", fontSize:14, lineHeight:1.4 }}>{c.comment_text}</div>
               </div>
             </div>
@@ -262,7 +264,7 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
           <button
             onClick={post}
             disabled={posting || !text.trim() || !name.trim()}
-            style={{ width:"100%", padding:"14px", background: (posting || !text.trim() || !name.trim()) ? "#2a2a3e" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:12, color: (posting || !text.trim() || !name.trim()) ? "#555" : "#fff", fontWeight:700, fontSize:16, cursor: (posting || !text.trim() || !name.trim()) ? "not-allowed" : "pointer", letterSpacing:"0.3px" }}
+            style={{ width:"100%", padding:"14px", background: (posting || !text.trim() || !name.trim()) ? "#2a2a3e" : "linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:12, color: (posting || !text.trim() || !name.trim()) ? "#555" : "#fff", fontWeight:700, fontSize:16, cursor: (posting || !text.trim() || !name.trim()) ? "not-allowed" : "pointer", letterSpacing:"0.3px" }}
           >
             {posting ? "Posting..." : "💬 Post Comment"}
           </button>
@@ -275,7 +277,7 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
 // ── Share Sheet ───────────────────────────────────────────────────────────────
 function ShareSheet({ video, onClose }) {
   const videoUrl = `${window.location.origin}/AthaVid?v=${video.id}`;
-  const text = `Check out this video on AthaVid: "${video.caption}" ${videoUrl}`;
+  const text = `Check out this video on Sachi: "${video.caption}" ${videoUrl}`;
   const [copied, setCopied] = useState(false);
 
   const copyLink = (e) => {
@@ -298,7 +300,7 @@ function ShareSheet({ video, onClose }) {
 
   const shareOptions = [
     {
-      icon: "🔗", label: "Copy Link", color: "#6c63ff",
+      icon: "🔗", label: "Copy Link", color: "#ff6b6b",
       action: copyLink,
     },
     {
@@ -307,7 +309,7 @@ function ShareSheet({ video, onClose }) {
     },
     {
       icon: "📧", label: "Email", color: "#00ADEF",
-      action: (e) => { e.stopPropagation(); window.open(`mailto:?subject=${encodeURIComponent("Check out this AthaVid!")}&body=${encodeURIComponent(text)}`); onClose(); },
+      action: (e) => { e.stopPropagation(); window.open(`mailto:?subject=${encodeURIComponent("Check out this Sachi video!")}&body=${encodeURIComponent(text)}`); onClose(); },
     },
     {
       icon: "🟢", label: "WhatsApp", color: "#25D366",
@@ -329,7 +331,7 @@ function ShareSheet({ video, onClose }) {
       icon: "📱", label: "More Options", color: "#888",
       action: (e) => {
         e.stopPropagation();
-        navigator.share ? navigator.share({ title: "AthaVid", text: video.caption, url: videoUrl }).catch(()=>{}) : copyLink(e);
+        navigator.share ? navigator.share({ title: "Sachi", text: video.caption, url: videoUrl }).catch(()=>{}) : copyLink(e);
         onClose();
       },
     },
@@ -502,7 +504,7 @@ function VideoCard({ video, liked, onLike, onComment }) {
         {video.hashtags?.length > 0 && (
           <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
             {video.hashtags.map((h,i) => (
-              <span key={i} style={{ color:"#a78bfa", fontSize:13, fontWeight:600 }}>#{h}</span>
+              <span key={i} style={{ color:"#ff8e53", fontSize:13, fontWeight:600 }}>#{h}</span>
             ))}
           </div>
         )}
@@ -550,13 +552,13 @@ function FeedPage({ likedVideos, onLike }) {
   }, []);
 
   if (loading) return (
-    <div style={{ color:"#a78bfa", textAlign:"center", paddingTop:200, fontSize:18 }}>Loading...</div>
+    <div style={{ color:"#ff8e53", textAlign:"center", paddingTop:200, fontSize:18 }}>Loading...</div>
   );
 
   if (!videos.length) return (
     <div style={{ color:"#666", textAlign:"center", paddingTop:200 }}>
       <div style={{ fontSize:48, marginBottom:16 }}>🎬</div>
-      <div style={{ fontSize:18, color:"#a78bfa", fontWeight:700 }}>No videos yet</div>
+      <div style={{ fontSize:18, color:"#ff8e53", fontWeight:700 }}>No videos yet</div>
       <div style={{ fontSize:14, marginTop:8 }}>Be the first to post!</div>
     </div>
   );
@@ -650,12 +652,12 @@ function SoundPicker({ selected, onSelect, onClose }) {
         {SOUNDS.map(s => (
           <div key={s.id} onClick={() => pick(s)}
             style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 10px", borderRadius:12, marginBottom:8,
-              background: selected?.id === s.id ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.04)",
-              border: selected?.id === s.id ? "1px solid #6c63ff" : "1px solid transparent", cursor:"pointer" }}>
+              background: selected?.id === s.id ? "rgba(255,107,107,0.2)" : "rgba(255,255,255,0.04)",
+              border: selected?.id === s.id ? "1px solid #ff6b6b" : "1px solid transparent", cursor:"pointer" }}>
             <button onClick={e => { e.stopPropagation(); togglePlay(s); }}
               style={{ width:40, height:40, borderRadius:"50%",
-                background: playing === s.id ? "#a78bfa" : loading === s.id ? "#6c63ff44" : "rgba(255,255,255,0.1)",
-                border: loading === s.id ? "2px solid #a78bfa" : "none",
+                background: playing === s.id ? "#ff8e53" : loading === s.id ? "#ff6b6b44" : "rgba(255,255,255,0.1)",
+                border: loading === s.id ? "2px solid #ff8e53" : "none",
                 color:"#fff", fontSize:16, cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
                 transition:"all 0.2s" }}>
               {loading === s.id ? "⏳" : playing === s.id ? "⏸" : "▶"}
@@ -750,7 +752,7 @@ function UploadPage({ onVideoPosted }) {
   if (done) return (
     <div style={{ minHeight:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
       <div style={{ fontSize:80, marginBottom:16 }}>🎉</div>
-      <div style={{ color:"#a78bfa", fontSize:26, fontWeight:800 }}>Video Posted!</div>
+      <div style={{ color:"#ff8e53", fontSize:26, fontWeight:800 }}>Video Posted!</div>
       <div style={{ color:"#888", fontSize:14, marginTop:8 }}>Returning to feed...</div>
     </div>
   );
@@ -758,14 +760,14 @@ function UploadPage({ onVideoPosted }) {
   return (
     <div style={{ padding:24, paddingTop:60, minHeight:"100%" }}>
       <div style={{ color:"#fff", fontSize:22, fontWeight:800, marginBottom:24 }}>Post a Video</div>
-      <label style={{ display:"block", border:"2px dashed #6c63ff", borderRadius:16, padding:32, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
+      <label style={{ display:"block", border:"2px dashed #ff6b6b", borderRadius:16, padding:32, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
         <input type="file" accept="video/*" onChange={pickFile} style={{ display:"none" }} />
         {preview ? (
           <video src={preview} style={{ width:"100%", maxHeight:200, borderRadius:8, objectFit:"cover" }} muted />
         ) : (
           <>
             <div style={{ fontSize:48 }}>📹</div>
-            <div style={{ color:"#a78bfa", fontWeight:600, marginTop:8 }}>Tap to select video</div>
+            <div style={{ color:"#ff8e53", fontWeight:600, marginTop:8 }}>Tap to select video</div>
             <div style={{ color:"#666", fontSize:12, marginTop:4 }}>MP4, MOV — any size</div>
           </>
         )}
@@ -773,7 +775,7 @@ function UploadPage({ onVideoPosted }) {
       {[
         { label:"Your username", val:username, set:setUsername, ph:"e.g. jaygnz27" },
         { label:"Caption", val:caption, set:setCaption, ph:"What's this video about?" },
-        { label:"Hashtags", val:hashtags, set:setHashtags, ph:"athavid reallife nj" },
+        { label:"Hashtags", val:hashtags, set:setHashtags, ph:"sachi reallife nj" },
       ].map(({ label, val, set, ph }) => (
         <div key={label} style={{ marginBottom:14 }}>
           <div style={{ color:"#aaa", fontSize:12, marginBottom:4 }}>{label}</div>
@@ -787,7 +789,7 @@ function UploadPage({ onVideoPosted }) {
       <div style={{ marginBottom:14 }}>
         <div style={{ color:"#aaa", fontSize:12, marginBottom:4 }}>Sound</div>
         <button onClick={() => setShowSoundPicker(true)}
-          style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, padding:"12px 14px", color: selectedSound ? "#a78bfa" : "#555", fontSize:14, textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
+          style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, padding:"12px 14px", color: selectedSound ? "#ff8e53" : "#555", fontSize:14, textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
           <span style={{ fontSize:18 }}>🎵</span>
           <span style={{ flex:1 }}>{selectedSound ? `${selectedSound.title} — ${selectedSound.artist}` : "Add a sound (royalty-free)"}</span>
           {selectedSound && <span onClick={e => { e.stopPropagation(); setSelectedSound(null); }} style={{ color:"#ff6b6b", fontSize:18, lineHeight:1 }}>✕</span>}
@@ -798,14 +800,14 @@ function UploadPage({ onVideoPosted }) {
       {uploading && (
         <div style={{ marginBottom:16 }}>
           <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:99, height:6 }}>
-            <div style={{ background:"linear-gradient(90deg,#6c63ff,#a78bfa)", borderRadius:99, height:6, width:progress + "%", transition:"width 0.4s" }} />
+            <div style={{ background:"linear-gradient(90deg,#ff6b6b,#ffd93d)", borderRadius:99, height:6, width:progress + "%", transition:"width 0.4s" }} />
           </div>
-          <div style={{ color:"#a78bfa", fontSize:12, marginTop:6, textAlign:"center" }}>{progressMsg || (progress < 60 ? "Uploading video..." : "Saving to feed...")}</div>
+          <div style={{ color:"#ff8e53", fontSize:12, marginTop:6, textAlign:"center" }}>{progressMsg || (progress < 60 ? "Uploading video..." : "Saving to feed...")}</div>
         </div>
       )}
       <button
         onClick={submit} disabled={uploading}
-        style={{ width:"100%", padding:"16px", background: uploading ? "#333" : "linear-gradient(135deg,#6c63ff,#a78bfa)", border:"none", borderRadius:14, color:"#fff", fontSize:16, fontWeight:700, cursor: uploading ? "not-allowed" : "pointer" }}
+        style={{ width:"100%", padding:"16px", background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, color:"#fff", fontSize:16, fontWeight:700, cursor: uploading ? "not-allowed" : "pointer" }}
       >
         {uploading ? "Posting..." : "🚀 Post Video"}
       </button>
@@ -818,7 +820,7 @@ function ProfilePage() {
   return (
     <div style={{ padding:32, textAlign:"center", paddingTop:80 }}>
       <div style={{ fontSize:64, marginBottom:16 }}>👤</div>
-      <div style={{ color:"#a78bfa", fontSize:20, fontWeight:700 }}>Your Profile</div>
+      <div style={{ color:"#ff8e53", fontSize:20, fontWeight:700 }}>Your Profile</div>
       <div style={{ color:"#666", fontSize:14, marginTop:8 }}>Coming soon</div>
     </div>
   );
@@ -829,7 +831,7 @@ function ExplorePage() {
   return (
     <div style={{ padding:32, textAlign:"center", paddingTop:80 }}>
       <div style={{ fontSize:64, marginBottom:16 }}>🔍</div>
-      <div style={{ color:"#a78bfa", fontSize:20, fontWeight:700 }}>Explore</div>
+      <div style={{ color:"#ff8e53", fontSize:20, fontWeight:700 }}>Explore</div>
       <div style={{ color:"#666", fontSize:14, marginTop:8 }}>Coming soon</div>
     </div>
   );
@@ -871,9 +873,9 @@ export default function AthaVid() {
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(5,5,16,0.97)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-around", padding:"6px 0 10px", zIndex:200 }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => { if (t.key === "feed") setFeedKey(k => k + 1); setTab(t.key); }}
-            style={{ background: t.key === "upload" ? "linear-gradient(135deg,#6c63ff,#a78bfa)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding: t.key === "upload" ? "10px 20px" : "8px 16px", borderRadius: t.key === "upload" ? 20 : 10, transform: t.key === "upload" ? "translateY(-12px)" : "none", boxShadow: t.key === "upload" ? "0 8px 25px rgba(108,99,255,0.5)" : "none" }}>
+            style={{ background: t.key === "upload" ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding: t.key === "upload" ? "10px 20px" : "8px 16px", borderRadius: t.key === "upload" ? 20 : 10, transform: t.key === "upload" ? "translateY(-12px)" : "none", boxShadow: t.key === "upload" ? "0 8px 25px rgba(255,107,107,0.5)" : "none" }}>
             <span style={{ fontSize: t.key === "upload" ? 24 : 22 }}>{t.icon}</span>
-            <span style={{ fontSize:10, fontWeight:600, color: t.key === "upload" ? "#fff" : tab === t.key ? "#a78bfa" : "#555" }}>{t.label}</span>
+            <span style={{ fontSize:10, fontWeight:600, color: t.key === "upload" ? "#fff" : tab === t.key ? "#ff8e53" : "#555" }}>{t.label}</span>
           </button>
         ))}
       </div>
