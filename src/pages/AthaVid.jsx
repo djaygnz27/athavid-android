@@ -204,6 +204,103 @@ function CommentSheet({ video, onClose, onCommentPosted }) {
   );
 }
 
+// ── Share Sheet ───────────────────────────────────────────────────────────────
+function ShareSheet({ video, onClose }) {
+  const videoUrl = `${window.location.origin}/AthaVid?v=${video.id}`;
+  const text = `Check out this video on AthaVid: "${video.caption}" ${videoUrl}`;
+  const [copied, setCopied] = useState(false);
+
+  const copyLink = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(videoUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = videoUrl;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const shareOptions = [
+    {
+      icon: "🔗", label: "Copy Link", color: "#6c63ff",
+      action: copyLink,
+    },
+    {
+      icon: "💬", label: "SMS / iMessage", color: "#34C759",
+      action: (e) => { e.stopPropagation(); window.open(`sms:?&body=${encodeURIComponent(text)}`); onClose(); },
+    },
+    {
+      icon: "📧", label: "Email", color: "#00ADEF",
+      action: (e) => { e.stopPropagation(); window.open(`mailto:?subject=${encodeURIComponent("Check out this AthaVid!")}&body=${encodeURIComponent(text)}`); onClose(); },
+    },
+    {
+      icon: "🟢", label: "WhatsApp", color: "#25D366",
+      action: (e) => { e.stopPropagation(); window.open(`https://wa.me/?text=${encodeURIComponent(text)}`); onClose(); },
+    },
+    {
+      icon: "🐦", label: "X (Twitter)", color: "#1DA1F2",
+      action: (e) => { e.stopPropagation(); window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`); onClose(); },
+    },
+    {
+      icon: "📘", label: "Facebook", color: "#1877F2",
+      action: (e) => { e.stopPropagation(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(videoUrl)}`); onClose(); },
+    },
+    {
+      icon: "💼", label: "LinkedIn", color: "#0A66C2",
+      action: (e) => { e.stopPropagation(); window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(videoUrl)}`); onClose(); },
+    },
+    {
+      icon: "📱", label: "More Options", color: "#888",
+      action: (e) => {
+        e.stopPropagation();
+        navigator.share ? navigator.share({ title: "AthaVid", text: video.caption, url: videoUrl }).catch(()=>{}) : copyLink(e);
+        onClose();
+      },
+    },
+  ];
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:400, display:"flex", flexDirection:"column" }} onClick={onClose}>
+      <div style={{ flex:1, background:"rgba(0,0,0,0.5)" }} />
+      <div onClick={e => e.stopPropagation()} style={{ background:"#0d0d1a", borderRadius:"24px 24px 0 0", padding:"20px 16px 40px" }}>
+        {/* handle */}
+        <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"0 auto 16px" }} />
+        <div style={{ color:"#fff", fontWeight:800, fontSize:17, marginBottom:4 }}>Share</div>
+        <div style={{ color:"#555", fontSize:12, marginBottom:20, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{videoUrl}</div>
+
+        {/* grid of share options */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:16, marginBottom:16 }}>
+          {shareOptions.map(opt => (
+            <div key={opt.label} onClick={opt.action}
+              style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, cursor:"pointer" }}>
+              <div style={{ width:56, height:56, borderRadius:16, background: opt.label === "Copy Link" && copied ? "#22c55e" : opt.color + "22",
+                border:`1.5px solid ${opt.color}44`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>
+                {opt.label === "Copy Link" && copied ? "✓" : opt.icon}
+              </div>
+              <span style={{ color:"#aaa", fontSize:11, textAlign:"center", lineHeight:1.2 }}>
+                {opt.label === "Copy Link" && copied ? "Copied!" : opt.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={onClose}
+          style={{ width:"100%", padding:14, background:"rgba(255,255,255,0.07)", border:"none", borderRadius:12, color:"#888", fontSize:15, cursor:"pointer", marginTop:4 }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Video Card ────────────────────────────────────────────────────────────────
 function VideoCard({ video, liked, onLike, onComment }) {
   const vidRef = useRef(null);
@@ -211,6 +308,7 @@ function VideoCard({ video, liked, onLike, onComment }) {
   const containerRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   // Create sound track audio element
   useEffect(() => {
@@ -307,7 +405,7 @@ function VideoCard({ video, liked, onLike, onComment }) {
         </div>
         {/* share */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-          <button onClick={e => { e.stopPropagation(); navigator.share?.({ url: window.location.href }).catch(()=>{}); }}
+          <button onClick={e => { e.stopPropagation(); setShowShare(true); }}
             style={{ background:"none", border:"none", fontSize:32, cursor:"pointer" }}>
             ↗️
           </button>
@@ -346,6 +444,8 @@ function VideoCard({ video, liked, onLike, onComment }) {
       {!playing && (
         <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", fontSize:56, opacity:0.6, pointerEvents:"none" }}>▶️</div>
       )}
+      {/* share sheet */}
+      {showShare && <ShareSheet video={video} onClose={() => setShowShare(false)} />}
     </div>
   );
 }
@@ -355,6 +455,7 @@ function FeedPage({ likedVideos, onLike }) {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeComment, setActiveComment] = useState(null);
+  const videoRefs = useRef({});
 
   const handleCommentPosted = (videoId, newCount) => {
     setVideos(prev => prev.map(v => v.id === videoId ? { ...v, comments_count: newCount } : v));
@@ -363,7 +464,19 @@ function FeedPage({ likedVideos, onLike }) {
 
   useEffect(() => {
     AthaVidVideo.list()
-      .then(r => setVideos(Array.isArray(r) ? r.filter(v => !v.is_archived).sort((a,b) => new Date(b.created_date) - new Date(a.created_date)) : []))
+      .then(r => {
+        const sorted = Array.isArray(r) ? r.filter(v => !v.is_archived).sort((a,b) => new Date(b.created_date) - new Date(a.created_date)) : [];
+        setVideos(sorted);
+        // deep link: scroll to ?v=VIDEO_ID
+        const params = new URLSearchParams(window.location.search);
+        const deepId = params.get("v");
+        if (deepId) {
+          setTimeout(() => {
+            const el = document.getElementById("vid-" + deepId);
+            if (el) el.scrollIntoView({ behavior:"smooth" });
+          }, 400);
+        }
+      })
       .catch(() => setVideos([]))
       .finally(() => setLoading(false));
   }, []);
@@ -384,7 +497,7 @@ function FeedPage({ likedVideos, onLike }) {
     <>
       <div style={{ height:"calc(100vh - 56px)", overflowY:"scroll", scrollSnapType:"y mandatory" }}>
         {videos.map(v => (
-          <div key={v.id} style={{ scrollSnapAlign:"start" }}>
+          <div key={v.id} id={"vid-" + v.id} style={{ scrollSnapAlign:"start" }}>
             <VideoCard
               video={v}
               liked={likedVideos.has(v.id)}
