@@ -411,16 +411,22 @@ function UploadPage({ onVideoPosted }) {
   const handleDrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
 
   const uploadToBase44 = async (f) => {
-    // Store as persistent base64 - works for clips under ~8MB
-    if (f.size > 8 * 1024 * 1024) {
-      throw new Error(`Video too large (${(f.size/1024/1024).toFixed(1)}MB). Please use a clip under 8MB or paste a video URL instead.`);
+    if (f.size > 200 * 1024 * 1024) {
+      throw new Error(`File too large. Max 200MB.`);
     }
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result);
-      reader.onerror = () => reject(new Error("Could not read file"));
-      reader.readAsDataURL(f);
+    const formData = new FormData();
+    formData.append("file", f);
+    const res = await fetch(`https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/storage/upload`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
     });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error("Upload failed: " + txt);
+    }
+    const data = await res.json();
+    return data.file_url || data.url || data.public_url;
   };
 
   const handlePost = async () => {
@@ -435,15 +441,16 @@ function UploadPage({ onVideoPosted }) {
       setProgress(20);
       await new Promise(r => setTimeout(r, 200));
 
-      // Step 1: get video URL
+      // Step 1: get video URL — upload file to persistent storage
       let videoUrl = form.videoUrl.trim();
       if (file) {
-        setProgress(40);
-        // Use object URL - works in this browser session
-        videoUrl = URL.createObjectURL(file);
+        setProgress(30);
+        videoUrl = await uploadToBase44(file);
+        if (!videoUrl) throw new Error("Upload returned no URL");
+        setProgress(60);
       }
-      
-      if (!videoUrl) throw new Error("Could not get video URL");
+
+      if (!videoUrl) throw new Error("Please select a video file or paste a URL.");
       setProgress(70);
       await new Promise(r => setTimeout(r, 200));
 
@@ -594,7 +601,7 @@ function UploadPage({ onVideoPosted }) {
           <div style={{ marginBottom:16 }}>
             <label style={{ color:"#666",fontSize:12,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:8 }}>🔗 Video URL (paste a direct .mp4 link)</label>
             <input value={form.videoUrl} onChange={e=>setForm({...form,videoUrl:e.target.value})} placeholder="https://example.com/video.mp4" style={{ width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(108,99,255,0.3)",borderRadius:16,padding:14,color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box" }} />
-            <div style={{ color:"#444",fontSize:11,marginTop:6 }}>Or go back to Step 1 and select a file (max 8MB)</div>
+            <div style={{ color:"#444",fontSize:11,marginTop:6 }}>Or go back to Step 1 and select a video file</div>
           </div>
           )}
 
