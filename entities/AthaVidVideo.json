@@ -54,6 +54,15 @@
     },
     "duration_seconds": {
       "type": "number"
+    },
+    "sound_title": {
+      "type": "string"
+    },
+    "sound_artist": {
+      "type": "string"
+    },
+    "sound_url": {
+      "type": "string"
     }
   },
   "required": [],
