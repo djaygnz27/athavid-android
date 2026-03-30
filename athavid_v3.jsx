@@ -192,6 +192,70 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted }) {
   );
 }
 
+// ── Direct Inbox Sheet ────────────────────────────────────────────────────────
+function DirectInboxSheet({ video, currentUser, onClose }) {
+  const [recipientName, setRecipientName] = useState("");
+  const [note, setNote] = useState("");
+  const [sent, setSent] = useState(false);
+  const videoUrl = `${window.location.origin}/AthaVid?v=${video.id}`;
+  const autoName = (currentUser?.username || currentUser?.full_name || currentUser?.email?.split("@")[0] || "").replace(/^@/,"").replace(/\s+/g,"_").toLowerCase();
+
+  const send = () => {
+    if (!recipientName.trim()) return;
+    const sub = encodeURIComponent(`@${autoName} shared a video with you on Sachi`);
+    const body = encodeURIComponent(`Hey ${recipientName},\n\n@${autoName} sent you a video on Sachi:\n"${video.caption}"\n\n${videoUrl}\n\n${note ? `Note: ${note}` : ""}`);
+    window.open(`mailto:?subject=${sub}&body=${body}`);
+    setSent(true);
+    setTimeout(() => onClose(), 1200);
+  };
+
+  return (
+    <div style={{ position:"fixed",inset:0,zIndex:1000,display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
+      <div onClick={onClose} style={{ position:"absolute",inset:0,background:"rgba(0,0,0,0.85)" }} />
+      <div style={{ position:"relative",background:"#111",borderTop:"2px solid #e63946",zIndex:1001,padding:"20px 20px 40px" }}>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
+          <div>
+            <div style={{ color:"#fff",fontWeight:900,fontSize:14,letterSpacing:"3px",textTransform:"uppercase" }}>SEND TO INBOX</div>
+            <div style={{ color:"#444",fontSize:10,letterSpacing:"1px",marginTop:2 }}>Share this video with someone you follow</div>
+          </div>
+          <button onClick={onClose} style={{ background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:4,width:28,height:28,color:"#666",cursor:"pointer",fontSize:14 }}>✕</button>
+        </div>
+
+        {/* Video preview strip */}
+        <div style={{ display:"flex",alignItems:"center",gap:12,padding:"12px",background:"#0d0d0d",border:"1px solid #1f1f1f",borderRadius:4,marginBottom:16 }}>
+          <video src={video.video_url} poster={video.thumbnail_url} style={{ width:44,height:72,objectFit:"cover",borderRadius:3,flexShrink:0 }} muted playsInline />
+          <div style={{ flex:1,minWidth:0 }}>
+            <div style={{ color:"#e63946",fontSize:10,fontWeight:700,letterSpacing:"1px",textTransform:"uppercase",marginBottom:3 }}>@{video.username}</div>
+            <div style={{ color:"#888",fontSize:12,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{video.caption}</div>
+          </div>
+        </div>
+
+        {sent ? (
+          <div style={{ textAlign:"center",padding:"20px 0" }}>
+            <div style={{ color:"#e63946",fontSize:22,fontWeight:900,letterSpacing:"-1px",marginBottom:4 }}>SENT.</div>
+            <div style={{ color:"#444",fontSize:11,letterSpacing:"2px",textTransform:"uppercase" }}>Video shared to inbox</div>
+          </div>
+        ) : (
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"#1a1a1a",borderRadius:4 }}>
+              <div style={{ color:"#444",fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>From:</div>
+              <div style={{ color:"#e63946",fontSize:11,fontWeight:700,letterSpacing:"1px" }}>@{autoName}</div>
+            </div>
+            <input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Send to: @username or email"
+              style={{ background:"#0d0d0d",border:"1px solid #2a2a2a",borderRadius:4,padding:"12px 14px",color:"#fff",fontSize:13,outline:"none",letterSpacing:"0.5px" }} />
+            <input value={note} onChange={e => setNote(e.target.value)} placeholder="Add a note... (optional)"
+              style={{ background:"#0d0d0d",border:"1px solid #2a2a2a",borderRadius:4,padding:"12px 14px",color:"#fff",fontSize:13,outline:"none",letterSpacing:"0.5px" }} />
+            <button onClick={send} disabled={!recipientName.trim()}
+              style={{ padding:"14px",background:!recipientName.trim()?"#0d0d0d":"#e63946",border:`1px solid ${!recipientName.trim()?"#1a1a1a":"#e63946"}`,borderRadius:4,color:!recipientName.trim()?"#333":"#fff",fontSize:11,fontWeight:800,letterSpacing:"4px",textTransform:"uppercase",cursor:!recipientName.trim()?"not-allowed":"pointer" }}>
+              SEND VIDEO
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Share Sheet ───────────────────────────────────────────────────────────────
 function ShareSheet({ video, onClose }) {
   const videoUrl = `${window.location.origin}/AthaVid?v=${video.id}`;
@@ -233,7 +297,7 @@ function ShareSheet({ video, onClose }) {
 }
 
 // ── Video Card ────────────────────────────────────────────────────────────────
-function VideoCard({ video, liked, onLike, onComment, currentUser }) {
+function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }) {
   const vidRef = useRef(null);
   const containerRef = useRef(null);
   const [playing, setPlaying] = useState(false);
@@ -301,10 +365,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser }) {
             <div style={{ color:"#fff",fontWeight:800,fontSize:14,letterSpacing:"0.5px" }}>{video.display_name || username}</div>
             <div style={{ color:"rgba(255,255,255,0.5)",fontSize:11,letterSpacing:"1px",textTransform:"uppercase" }}>@{username}</div>
           </div>
-          <button onClick={(e) => { e.stopPropagation(); setFollowed(f => !f); }}
-            style={{ padding:"7px 14px",background:followed?"#e63946":"transparent",border:`1px solid ${followed?"#e63946":"rgba(255,255,255,0.5)"}`,borderRadius:3,color:"#fff",fontSize:11,fontWeight:800,letterSpacing:"2px",cursor:"pointer",textTransform:"uppercase",transition:"all 0.2s",flexShrink:0 }}>
-            {followed ? "✓ FOLLOW" : "+ FOLLOW"}
-          </button>
+
         </div>
 
         {/* Caption */}
@@ -338,14 +399,23 @@ function VideoCard({ video, liked, onLike, onComment, currentUser }) {
             <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>{formatCount(video.comments_count||0)}</span>
           </button>
 
-          {/* CONTACT */}
-          <button onClick={(e) => { e.stopPropagation(); const sub=encodeURIComponent(`Message for @${username} on Sachi`); const bod=encodeURIComponent(`Hi ${video.display_name||username},\n\nSaw your video on Sachi!\n\n`); window.open(`mailto:${OWNER_EMAIL}?subject=${sub}&body=${bod}`); }}
+          {/* INBOX — send video to followers */}
+          <button onClick={(e) => { e.stopPropagation(); if (onOpenInbox) onOpenInbox(video); }}
             style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"12px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
+              <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
             </svg>
-            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>MSG</span>
+            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>INBOX</span>
+          </button>
+
+          {/* FOLLOW */}
+          <button onClick={(e) => { e.stopPropagation(); setFollowed(f => !f); }}
+            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"12px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill={followed?"#e63946":"none"} stroke={followed?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+            <span style={{ color:followed?"#e63946":"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>{followed?"FOLLOWING":"FOLLOW"}</span>
           </button>
 
           {/* SHARE */}
@@ -372,6 +442,7 @@ function FeedPage({ feedKey, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(new Set());
   const [commentVideo, setCommentVideo] = useState(null);
+  const [inboxVideo, setInboxVideo] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -406,11 +477,12 @@ function FeedPage({ feedKey, currentUser }) {
       <div style={{ height:"100%",overflowY:"scroll",scrollSnapType:"y mandatory",scrollbarWidth:"none" }}>
         {videos.map(v => (
           <div key={v.id} style={{ scrollSnapAlign:"start",height:"100svh" }}>
-            <VideoCard video={v} liked={liked.has(v.id)} onLike={onLike} onComment={setCommentVideo} currentUser={currentUser} />
+            <VideoCard video={v} liked={liked.has(v.id)} onLike={onLike} onComment={setCommentVideo} currentUser={currentUser} onOpenInbox={setInboxVideo} />
           </div>
         ))}
       </div>
       {commentVideo && <CommentSheet video={commentVideo} currentUser={currentUser} onClose={() => setCommentVideo(null)} onCommentPosted={onCommentPosted} />}
+      {inboxVideo && <DirectInboxSheet video={inboxVideo} currentUser={currentUser} onClose={() => setInboxVideo(null)} />}
     </>
   );
 }
