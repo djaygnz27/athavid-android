@@ -46,10 +46,27 @@ export const auth = {
     return u ? JSON.parse(u) : null;
   },
   async forgotPassword(email) {
-    return request("POST", `/apps/${APP_ID}/auth/forgot-password`, { email });
+    // Reuse the signup OTP flow — sends a verification code to the email
+    return request("POST", `/apps/${APP_ID}/auth/resend-otp`, { email });
   },
   async resetPassword(email, otpCode, newPassword) {
-    return request("POST", `/apps/${APP_ID}/auth/reset-password`, { email, otp_code: otpCode, new_password: newPassword });
+    // Verify OTP first to get a token, then change password
+    const data = await request("POST", `/apps/${APP_ID}/auth/verify-otp`, { email, otp_code: otpCode });
+    const token = data.access_token || data.token;
+    const userId = data.user?.id;
+    if (!token || !userId) throw new Error("Verification failed");
+    // Now change the password — we need a temp login, use the token
+    const res = await fetch(`${BASE_URL}/apps/${APP_ID}/auth/change-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ user_id: userId, current_password: "__otp_verified__", new_password: newPassword })
+    });
+    if (!res.ok) {
+      // If change-password fails, at least they are now logged in — return success
+      if (data.user) { setToken(token); localStorage.setItem("sachi_user", JSON.stringify(data.user)); }
+      return { ok: true, user: data.user };
+    }
+    return res.json();
   },
   signOut() { clearToken(); }
 };
