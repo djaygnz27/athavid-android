@@ -21,7 +21,6 @@ async function request(method, path, body) {
 }
 
 export const auth = {
-  // Login with email + password
   async signIn(email, password) {
     const data = await request("POST", `/apps/${APP_ID}/auth/login`, { email, password });
     const token = data.access_token || data.token;
@@ -29,11 +28,9 @@ export const auth = {
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
-  // Register — sends OTP to email, returns { requires_otp: true }
   async signUp(email, password, fullName) {
     return request("POST", `/apps/${APP_ID}/auth/register`, { email, password, full_name: fullName });
   },
-  // Verify OTP after register
   async verifyOtp(email, otpCode) {
     const data = await request("POST", `/apps/${APP_ID}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
@@ -52,22 +49,34 @@ export const auth = {
 };
 
 export const videos = {
-  async list() { return request("GET", "/entities/AthaVidVideo?is_approved=true&is_archived=false&sort=-created_date"); },
-  async create(data) { return request("POST", "/entities/AthaVidVideo", data); },
-  async update(id, data) { return request("PUT", `/entities/AthaVidVideo/${id}`, data); },
-  async myVideos(userId) { return request("GET", `/entities/AthaVidVideo?user_id=${userId}`); },
+  async list() {
+    return request("GET", `/apps/${APP_ID}/entities/AthaVidVideo?is_approved=true&is_archived=false&sort=-created_date`);
+  },
+  async create(data) {
+    return request("POST", `/apps/${APP_ID}/entities/AthaVidVideo`, data);
+  },
+  async update(id, data) {
+    return request("PUT", `/apps/${APP_ID}/entities/AthaVidVideo/${id}`, data);
+  },
+  async myVideos(userId) {
+    return request("GET", `/apps/${APP_ID}/entities/AthaVidVideo?user_id=${userId}`);
+  },
 };
 
 export const comments = {
-  async list(videoId) { return request("GET", `/entities/AthaVidComment?video_id=${videoId}`); },
-  async create(data) { return request("POST", "/entities/AthaVidComment", data); },
+  async list(videoId) {
+    return request("GET", `/apps/${APP_ID}/entities/AthaVidComment?video_id=${videoId}`);
+  },
+  async create(data) {
+    return request("POST", `/apps/${APP_ID}/entities/AthaVidComment`, data);
+  },
 };
 
 export async function uploadFile(file) {
   const token = getToken();
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE_URL}/integrations/core/upload-file`, {
+  const res = await fetch(`${BASE_URL}/apps/${APP_ID}/integrations/core/upload-file`, {
     method: "POST",
     headers: token ? { "Authorization": `Bearer ${token}` } : {},
     body: form
