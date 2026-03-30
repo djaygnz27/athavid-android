@@ -46,24 +46,10 @@ export const auth = {
     return u ? JSON.parse(u) : null;
   },
   async forgotPassword(email) {
-    const res = await fetch("https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/functions/athaVidPasswordReset?action=request", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ email })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to send reset code");
-    return data;
+    return request("POST", `/apps/${APP_ID}/auth/forgot-password`, { email });
   },
   async resetPassword(email, otpCode, newPassword) {
-    const res = await fetch("https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/functions/athaVidPasswordReset?action=reset", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ email, code: otpCode, new_password: newPassword })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to reset password");
-    return data;
+    return request("POST", `/apps/${APP_ID}/auth/reset-password`, { email, otp_code: otpCode, new_password: newPassword });
   },
   signOut() { clearToken(); }
 };
