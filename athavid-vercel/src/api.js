@@ -76,7 +76,7 @@ export async function uploadFile(file) {
   const token = getToken();
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE_URL}/apps/${APP_ID}/integrations/core/upload-file`, {
+  const res = await fetch(`https://sachi-c7f0261c.base44.app/functions/athaVidUpload`, {
     method: "POST",
     headers: token ? { "Authorization": `Bearer ${token}` } : {},
     body: form
