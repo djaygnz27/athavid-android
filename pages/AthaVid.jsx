@@ -881,10 +881,9 @@ function AuthGate({ children }) {
     try {
       const clean = username.trim().replace(/^@/, "").replace(/\s+/g, "_").toLowerCase();
       await User.register({ email: email.trim(), password, full_name: displayName.trim() || clean });
-      setPendingUsername(clean);
-      setPendingDisplayName(displayName.trim() || clean);
-      setAwaitingVerification(true);
-      setError("");
+      const u = await User.me();
+      try { await User.updateMyUserData({ username: clean, display_name: displayName.trim() || clean }); } catch(e) {}
+      setUser(u);
     } catch(e) { setError(e.message || "Sign up failed. Try a different email."); }
     finally { setWorking(false); }
   };
