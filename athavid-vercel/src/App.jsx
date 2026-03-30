@@ -345,7 +345,7 @@ export default function App() {
         {currentUser
           ? <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} style={{ width:34, height:34, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
-              <button onClick={() => { auth.signOut(); setCurrentUser(null); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:20, padding:"5px 12px", color:"#aaa", fontSize:12, cursor:"pointer" }}>Out</button>
+              <button onClick={() => { auth.signOut(); setCurrentUser(null); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:20, padding:"5px 12px", color:"#aaa", fontSize:12, cursor:"pointer" }}>⏻</button>
             </div>
           : <button onClick={() => setShowAuth(true)} style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:20, padding:"6px 16px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}>Log In</button>
         }
