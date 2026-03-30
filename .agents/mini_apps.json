@@ -5,11 +5,11 @@
     "Home": {
       "title": "Home"
     },
+    "SPICalculator": {
+      "title": "SPICalculator"
+    },
     "CodeCopy": {
       "title": "CodeCopy"
-    },
-    "TheWatchers": {
-      "title": "TheWatchers"
     },
     "AthaVid": {
       "title": "AthaVid"
@@ -17,8 +17,8 @@
     "TaycanFinder": {
       "title": "TaycanFinder"
     },
-    "SPICalculator": {
-      "title": "SPICalculator"
+    "TheWatchers": {
+      "title": "TheWatchers"
     }
   }
 }
