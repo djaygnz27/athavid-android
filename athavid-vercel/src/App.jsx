@@ -141,6 +141,7 @@ const MUSIC_LIBRARY = [
 function UploadModal({ currentUser, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState("");
+  const [maxDuration, setMaxDuration] = useState(60);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [previewTrack, setPreviewTrack] = useState(null);
@@ -152,6 +153,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   const upload = async () => {
     if (!file) return;
+    // Check video duration
+    try {
+      const dur = await new Promise((res, rej) => {
+        const v = document.createElement("video");
+        v.preload = "metadata";
+        v.onloadedmetadata = () => { URL.revokeObjectURL(v.src); res(v.duration); };
+        v.onerror = rej;
+        v.src = URL.createObjectURL(file);
+      });
+      if (dur > maxDuration) {
+        alert(`⚠️ Your video is ${Math.round(dur)}s long. The limit for this format is ${maxDuration === 600 ? "10 minutes" : maxDuration + " seconds"}. Please trim it and try again.`);
+        return;
+      }
+    } catch {}
     setUploading(true); setProgress(10);
     try {
       setStep("Uploading video...");
@@ -186,10 +201,34 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)" }} />
       <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:2001 }}>
         <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 20px" }} />
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>📹 Post a Video</div>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:32, height:32, color:"#fff", cursor:"pointer" }}>✕</button>
         </div>
+
+        {/* Duration Selector */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ color:"#aaa", fontSize:12, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:1 }}>Video Length</div>
+          <div style={{ display:"flex", gap:8 }}>
+            {[
+              { label:"15s", val:15, icon:"⚡" },
+              { label:"60s", val:60, icon:"🎬" },
+              { label:"10 min", val:600, icon:"🎥" },
+            ].map(opt => (
+              <button key={opt.val} onClick={() => setMaxDuration(opt.val)}
+                style={{
+                  flex:1, padding:"10px 0", borderRadius:12, border: maxDuration === opt.val ? "2px solid #ff6b6b" : "1px solid rgba(255,255,255,0.1)",
+                  background: maxDuration === opt.val ? "rgba(255,107,107,0.18)" : "rgba(255,255,255,0.05)",
+                  color: maxDuration === opt.val ? "#ff6b6b" : "#aaa",
+                  fontWeight:700, fontSize:14, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3
+                }}>
+                <span style={{ fontSize:18 }}>{opt.icon}</span>
+                <span>{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {!file ? (
           <div onClick={() => fileRef.current?.click()}
             style={{ border:"2px dashed rgba(255,107,107,0.4)", borderRadius:16, padding:48, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
