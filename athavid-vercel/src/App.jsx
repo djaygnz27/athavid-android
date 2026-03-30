@@ -125,10 +125,26 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   );
 }
 
+// ── Music Library ─────────────────────────────────────────────────────────────
+const MUSIC_LIBRARY = [
+  { id:"m1", title:"Blinding Lights (Instrumental)", artist:"Royalty Free", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", emoji:"🎸" },
+  { id:"m2", title:"Summer Vibes", artist:"Free Beats", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", emoji:"🌊" },
+  { id:"m3", title:"Midnight Drive", artist:"Lo-Fi Studio", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", emoji:"🌙" },
+  { id:"m4", title:"Energy Boost", artist:"Epic Sounds", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", emoji:"⚡" },
+  { id:"m5", title:"Chill Wave", artist:"Ambient Lab", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", emoji:"🎵" },
+  { id:"m6", title:"Urban Groove", artist:"Street Beats", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", emoji:"🎤" },
+  { id:"m7", title:"Happy Days", artist:"Feel Good Music", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", emoji:"☀️" },
+  { id:"m8", title:"Deep Focus", artist:"Study Sounds", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", emoji:"🧠" },
+];
+
 // ── Upload Modal ──────────────────────────────────────────────────────────────
 function UploadModal({ currentUser, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState("");
+  const [selectedTrack, setSelectedTrack] = useState(null);
+  const [showMusicPicker, setShowMusicPicker] = useState(false);
+  const [previewTrack, setPreviewTrack] = useState(null);
+  const previewAudioRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState("");
@@ -194,6 +210,47 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
         <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write a caption... #hashtags" rows={3}
           style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:16 }} />
+        {/* Music Picker Button */}
+        <div onClick={() => setShowMusicPicker(s => !s)}
+          style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", marginBottom:12, cursor:"pointer" }}>
+          <div style={{ fontSize:22 }}>🎵</div>
+          <div style={{ flex:1 }}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{selectedTrack ? selectedTrack.title : "Add Sound"}</div>
+            <div style={{ color:"#888", fontSize:12 }}>{selectedTrack ? selectedTrack.artist : "Pick from free music library"}</div>
+          </div>
+          {selectedTrack && <button onClick={e => { e.stopPropagation(); setSelectedTrack(null); }} style={{ background:"none", border:"none", color:"#ff6b6b", fontSize:16, cursor:"pointer" }}>✕</button>}
+          <div style={{ color:"#888", fontSize:18 }}>{showMusicPicker ? "▲" : "▼"}</div>
+        </div>
+
+        {/* Music Library */}
+        {showMusicPicker && (
+          <div style={{ background:"rgba(0,0,0,0.4)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, marginBottom:14, maxHeight:220, overflowY:"auto" }}>
+            {MUSIC_LIBRARY.map(track => (
+              <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
+                <div style={{ fontSize:22 }}>{track.emoji}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ color:"#fff", fontWeight:600, fontSize:13 }}>{track.title}</div>
+                  <div style={{ color:"#888", fontSize:11 }}>{track.artist}</div>
+                </div>
+                <button onClick={e => {
+                  e.stopPropagation();
+                  if (previewTrack === track.id) {
+                    previewAudioRef.current?.pause();
+                    setPreviewTrack(null);
+                  } else {
+                    if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.src = track.url; previewAudioRef.current.play(); }
+                    setPreviewTrack(track.id);
+                  }
+                }} style={{ background:"rgba(255,107,107,0.2)", border:"none", borderRadius:"50%", width:30, height:30, color:"#ff6b6b", cursor:"pointer", fontSize:14 }}>
+                  {previewTrack === track.id ? "⏹" : "▶"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
+
         {uploading && (
           <div style={{ marginBottom:16 }}>
             <div style={{ color:"#aaa", fontSize:13, marginBottom:6 }}>{step}</div>
