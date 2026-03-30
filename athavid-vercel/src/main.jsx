@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import Privacy from './Privacy.jsx'
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
@@ -25,8 +26,17 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// Simple path-based routing (no react-router needed)
+function Root() {
+  const path = window.location.pathname;
+  if (path === '/privacy' || path === '/privacy/') {
+    return <Privacy />;
+  }
+  return <App />;
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <ErrorBoundary>
-    <App />
+    <Root />
   </ErrorBoundary>
 )
