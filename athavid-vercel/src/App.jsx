@@ -344,7 +344,7 @@ export default function App() {
         <div style={{ fontSize:26, fontWeight:900, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</div>
         {currentUser
           ? <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} style={{ width:34, height:34, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
+              
               
             </div>
           : <button onClick={() => setShowAuth(true)} style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:20, padding:"6px 16px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}>Log In</button>
