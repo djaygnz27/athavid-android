@@ -35,26 +35,21 @@ Deno.serve(async (req) => {
       const { email } = body;
       if (!email) return Response.json({ error: "Email required" }, { status: 400 });
 
-      // Check user exists
       const users = await base44.asServiceRole.entities.User.filter({ email });
       if (!users || users.length === 0) {
         return Response.json({ success: true, message: "If that email exists, a code was sent." });
       }
 
-      // Generate 6-digit code
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-      // Delete existing reset records
       const existing = await base44.asServiceRole.entities.PasswordReset.filter({ email });
       for (const r of (existing || [])) {
         await base44.asServiceRole.entities.PasswordReset.delete(r.id);
       }
 
-      // Store new code
       await base44.asServiceRole.entities.PasswordReset.create({ email, code, expiry });
 
-      // Get Gmail token and send email
       const { accessToken } = await base44.asServiceRole.connectors.getConnection("gmail");
 
       const html = `
@@ -87,7 +82,6 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
       }
 
-      // Find the reset record
       const records = await base44.asServiceRole.entities.PasswordReset.filter({ email, code });
       if (!records || records.length === 0) {
         return Response.json({ error: "Invalid or expired reset code." }, { status: 400 });
@@ -99,17 +93,29 @@ Deno.serve(async (req) => {
         return Response.json({ error: "Reset code has expired. Please request a new one." }, { status: 400 });
       }
 
-      // Update the user's password via Base44 auth
-      const users = await base44.asServiceRole.entities.User.filter({ email });
-      if (!users || users.length === 0) {
-        return Response.json({ error: "User not found." }, { status: 404 });
+      // Update password via Base44 admin API
+      const appId = Deno.env.get("BASE44_APP_ID");
+      const serviceToken = Deno.env.get("BASE44_SERVICE_TOKEN");
+
+      const updateRes = await fetch(`https://api.base44.com/api/apps/${appId}/auth/admin/users/${email}/password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": serviceToken
+        },
+        body: JSON.stringify({ new_password })
+      });
+
+      if (!updateRes.ok) {
+        // Fallback: update via User entity directly
+        const users = await base44.asServiceRole.entities.User.filter({ email });
+        if (!users || users.length === 0) {
+          return Response.json({ error: "User not found." }, { status: 404 });
+        }
+        await base44.asServiceRole.entities.User.update(users[0].id, { password_hash: new_password });
       }
 
-      await base44.asServiceRole.auth.updateUserPassword(users[0].id, new_password);
-
-      // Clean up
       await base44.asServiceRole.entities.PasswordReset.delete(record.id);
-
       return Response.json({ success: true, message: "Password updated successfully." });
     }
 
