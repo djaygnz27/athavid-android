@@ -446,17 +446,17 @@ function VideoCard({ video, liked, onLike, onComment }) {
         style={{ width:"100%", height:"100%", objectFit:"cover" }}
         onClick={toggle}
       />
-      {/* gradient overlay */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)", pointerEvents:"none" }} />
+      {/* gradient overlay — fades out when playing */}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)", pointerEvents:"none", opacity:playing?0:1, transition:"opacity 0.4s ease" }} />
 
       {/* mute btn */}
       <button onClick={toggleMute}
-        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:playing?0:1, transition:"opacity 0.4s ease", pointerEvents:playing?"none":"auto" }}>
         {muted ? "🔇" : "🔊"}
       </button>
 
       {/* right action bar */}
-      <div style={{ position:"absolute", right:12, bottom:100, display:"flex", flexDirection:"column", gap:20, alignItems:"center" }}>
+      <div style={{ position:"absolute", right:12, bottom:100, display:"flex", flexDirection:"column", gap:20, alignItems:"center", opacity:playing?0:1, transition:"opacity 0.4s ease", pointerEvents:playing?"none":"auto" }}>
         {/* like */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
           <button onClick={e => { e.stopPropagation(); onLike(); }}
@@ -484,7 +484,7 @@ function VideoCard({ video, liked, onLike, onComment }) {
       </div>
 
       {/* bottom info */}
-      <div style={{ position:"absolute", bottom:0, left:0, right:60, padding:"0 16px 80px" }}>
+      <div style={{ position:"absolute", bottom:0, left:0, right:60, padding:"0 16px 80px", opacity:playing?0:1, transition:"opacity 0.4s ease", pointerEvents:playing?"none":"auto" }}>
         {/* avatar + username */}
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
