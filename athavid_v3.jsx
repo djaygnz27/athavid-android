@@ -814,11 +814,11 @@ function SachiApp({ currentUser, onLogout }) {
 
   // 5 tabs — text labels only, no bubbles (Gen X style)
   const tabs = [
-    { key:"feed",    label:"HOME"    },
-    { key:"explore", label:"DISCOVER"},
-    { key:"upload",  label:"POST"    },
-    { key:"inbox",   label:"INBOX"   },
-    { key:"profile", label:"ME"      },
+    { key:"feed",    label:"HOME",     icon:"🏠" },
+    { key:"explore", label:"DISCOVER", icon:null },
+    { key:"upload",  label:"POST",     icon:null },
+    { key:"inbox",   label:"INBOX",    icon:null },
+    { key:"profile", label:"ME",       icon:null },
   ];
 
   return (
@@ -855,6 +855,7 @@ function SachiApp({ currentUser, onLogout }) {
                   </svg>
                 </div>
               ) : null}
+              {t.icon && <span style={{ fontSize:18,lineHeight:1,marginBottom:1 }}>{t.icon}</span>}
               <span style={{ fontSize:9,color:tab===t.key?"#fff":"#333",fontWeight:800,letterSpacing:"2px",textTransform:"uppercase",lineHeight:1 }}>
                 {t.label}
               </span>
