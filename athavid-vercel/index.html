@@ -2,11 +2,121 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sachi — Real Moments. Real You.</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>AthaVid — Your Stage</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="AthaVid" />
+    <meta name="description" content="Your stage. Share short videos with the world." />
+    <meta name="theme-color" content="#ff6b6b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AthaVid" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registered'))
+            .catch(err => console.log('SW error:', err));
+        });
+      }
+
+      // Show install prompt on Android Chrome
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Show custom install banner after 3 seconds
+        setTimeout(() => {
+          const banner = document.getElementById('install-banner');
+          if (banner) banner.style.display = 'flex';
+        }, 3000);
+      });
+
+      function installApp() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(() => {
+            deferredPrompt = null;
+            const banner = document.getElementById('install-banner');
+            if (banner) banner.style.display = 'none';
+          });
+        }
+      }
+
+      window.addEventListener('appinstalled', () => {
+        const banner = document.getElementById('install-banner');
+        if (banner) banner.style.display = 'none';
+      });
+    </script>
+
+    <style>
+      #install-banner {
+        display: none;
+        position: fixed;
+        bottom: 80px;
+        left: 16px;
+        right: 16px;
+        background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+        border-radius: 16px;
+        padding: 14px 18px;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 99999;
+        box-shadow: 0 8px 30px rgba(255,107,107,0.5);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      #install-banner .banner-text { color: #fff; font-size: 14px; font-weight: 700; }
+      #install-banner .banner-sub { color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 2px; }
+      #install-banner button {
+        background: #fff;
+        color: #ff6b6b;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 18px;
+        font-weight: 800;
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+        margin-left: 12px;
+      }
+      #install-banner .close-btn {
+        background: transparent;
+        color: rgba(255,255,255,0.7);
+        font-size: 18px;
+        padding: 4px 8px;
+        margin-left: 4px;
+        min-width: unset;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Install Banner (Android Chrome) -->
+    <div id="install-banner">
+      <div>
+        <div class="banner-text">📲 Install AthaVid</div>
+        <div class="banner-sub">Add to your home screen</div>
+      </div>
+      <button onclick="installApp()">Install</button>
+      <button class="close-btn" onclick="document.getElementById('install-banner').style.display='none'">✕</button>
+    </div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
