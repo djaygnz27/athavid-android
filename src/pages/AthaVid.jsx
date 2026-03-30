@@ -893,11 +893,21 @@ function AuthGate({ children }) {
     if (!verifyCode.trim()) return setError("Enter the verification code from your email");
     setWorking(true); setError("");
     try {
-      await User.verifyEmail({ email: email.trim(), code: verifyCode.trim() });
+      await User.confirmEmail({ email: email.trim(), code: verifyCode.trim() });
       const u = await User.me();
       try { await User.updateMyUserData({ username: pendingUsername, display_name: pendingDisplayName }); } catch(e) {}
       setUser(u);
-    } catch(e) { setError(e.message || "Invalid code. Check your email and try again."); }
+    } catch(e) {
+      // Try login directly if confirm fails — some setups auto-verify
+      try {
+        await User.login({ email: email.trim(), password });
+        const u = await User.me();
+        try { await User.updateMyUserData({ username: pendingUsername, display_name: pendingDisplayName }); } catch(e2) {}
+        setUser(u);
+      } catch(e2) {
+        setError("Invalid code or expired. Please try again.");
+      }
+    }
     finally { setWorking(false); }
   };
 
