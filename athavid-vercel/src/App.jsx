@@ -212,8 +212,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 }
 
 // ── Video Card ────────────────────────────────────────────────────────────────
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onNeedAuth }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth }) {
   const videoRef = useRef(null);
+  const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -222,8 +223,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onNeedAuth }) {
     const el = videoRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { el.play().catch(() => {}); setPlaying(true); }
-      else { el.pause(); setPlaying(false); }
+      if (e.isIntersecting) {
+        el.play().catch(() => {});
+        setPlaying(true);
+        if (!viewedRef.current) {
+          viewedRef.current = true;
+          onView && onView(video.id);
+        }
+      } else {
+        el.pause();
+        setPlaying(false);
+      }
     }, { threshold: 0.6 });
     obs.observe(el);
     return () => obs.disconnect();
@@ -335,6 +345,12 @@ export default function App() {
     if (vid) videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count||0)+delta) }).catch(()=>{});
   };
 
+  const handleView = (videoId) => {
+    setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, views_count: (v.views_count||0)+1 } : v));
+    const vid = videoList.find(v => v.id === videoId);
+    if (vid) videos.update(videoId, { views_count: (vid.views_count||0)+1 }).catch(()=>{});
+  };
+
   const handleCommentCount = (videoId, count) => {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, comments_count: count } : v));
   };
@@ -382,6 +398,7 @@ export default function App() {
             <VideoCard key={v.id} video={v} currentUser={currentUser}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
+              onView={handleView}
               onNeedAuth={() => setShowAuth(true)} />
           ))}
         </div>
