@@ -16,8 +16,9 @@ export default function AuthModal({ onClose, onSuccess }) {
     setLoading(true); setError("");
     try {
       if (mode === "login") {
-        await auth.signIn(email, password);
-        onSuccess(auth.getUser());
+        const loginData = await auth.signIn(email, password);
+        const user = loginData.user || auth.getUser();
+        onSuccess(user);
       } else {
         const res = await auth.signUp(email, password, name || email.split("@")[0]);
         // Registration returns a message about verification code
@@ -86,7 +87,7 @@ export default function AuthModal({ onClose, onSuccess }) {
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
               <div style={{ fontSize:40 }}>🎬</div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Join Sachi</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Join AthaVid</div>
               <div style={{ color:"#777", fontSize:14 }}>Create an account to post videos</div>
             </div>
 

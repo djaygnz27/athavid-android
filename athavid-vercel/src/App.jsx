@@ -433,20 +433,6 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
 
-  // Re-check auth state whenever localStorage changes (e.g. after email verification)
-  useEffect(() => {
-    const checkAuth = () => {
-      const user = auth.getUser();
-      if (user && !currentUser) setCurrentUser(user);
-      else if (!user && currentUser) setCurrentUser(null);
-    };
-    // Poll every 2 seconds for auth state changes (catches email verification)
-    const interval = setInterval(checkAuth, 2000);
-    // Also listen for storage events (cross-tab)
-    window.addEventListener('storage', checkAuth);
-    return () => { clearInterval(interval); window.removeEventListener('storage', checkAuth); };
-  }, [currentUser]);
-
   useEffect(() => { loadVideos(); }, []);
 
   const loadVideos = async () => {
