@@ -253,12 +253,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onNeedAuth }) {
           </div>
         </div>
       )}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)", pointerEvents:"none" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)", pointerEvents:"none", opacity: playing ? 0 : 1, transition:"opacity 0.3s" }} />
       <button onClick={() => setMuted(m => !m)}
-        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", cursor:"pointer", fontSize:16, zIndex:10 }}>
+        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", cursor:"pointer", fontSize:16, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
         {muted ? "🔇" : "🔊"}
       </button>
-      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:10 }}>
+      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
             style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
@@ -274,7 +274,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onNeedAuth }) {
           </div>
         )}
       </div>
-      <div style={{ position:"absolute", bottom:90, right:12, display:"flex", flexDirection:"column", alignItems:"center", gap:20, zIndex:10 }}>
+      <div style={{ position:"absolute", bottom:90, right:12, display:"flex", flexDirection:"column", alignItems:"center", gap:20, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
         <button onClick={handleLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
           <div style={{ fontSize:30 }}>{liked ? "❤️" : "🤍"}</div>
           <div style={{ color:"#fff", fontSize:12, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
