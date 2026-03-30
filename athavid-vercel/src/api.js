@@ -1,5 +1,6 @@
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const FUNCTIONS_URL = "https://sachi-c7f0261c.base44.app/functions";
 
 let sessionToken = null;
 
@@ -46,10 +47,24 @@ export const auth = {
     return u ? JSON.parse(u) : null;
   },
   async forgotPassword(email) {
-    return request("POST", `/apps/${APP_ID}/auth/forgot-password`, { email });
+    const res = await fetch(`${FUNCTIONS_URL}/passwordReset?action=request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to send reset code");
+    return data;
   },
   async resetPassword(email, otpCode, newPassword) {
-    return request("POST", `/apps/${APP_ID}/auth/reset-password`, { email, otp_code: otpCode, new_password: newPassword });
+    const res = await fetch(`${FUNCTIONS_URL}/passwordReset?action=reset`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code: otpCode, new_password: newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to reset password");
+    return data;
   },
   signOut() { clearToken(); }
 };
