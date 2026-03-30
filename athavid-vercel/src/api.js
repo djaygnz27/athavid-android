@@ -76,12 +76,12 @@ export async function uploadFile(file) {
   const token = getToken();
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`https://sachi-c7f0261c.base44.app/functions/athaVidUpload`, {
+  const res = await fetch(`${BASE_URL}/apps/${APP_ID}/integration-endpoints/Core/UploadFile`, {
     method: "POST",
     headers: token ? { "Authorization": `Bearer ${token}` } : {},
     body: form
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Upload failed");
+  if (!res.ok) throw new Error(data.message || data.detail || data.error || "Upload failed");
   return data.file_url;
 }
