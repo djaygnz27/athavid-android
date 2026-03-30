@@ -346,7 +346,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
       )}
 
       {/* TOP BAR — mute + logo */}
-      <div style={{ position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",opacity:playing?0:1,transition:"opacity 0.4s ease",pointerEvents:playing?"none":"auto" }}>
+      <div style={{ position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",opacity:playing?0:1,visibility:playing?"hidden":"visible",transition:"opacity 0.3s ease,visibility 0.3s ease",pointerEvents:playing?"none":"auto" }}>
         <div style={{ fontSize:18,fontWeight:900,color:"#fff",letterSpacing:"-1px",textTransform:"uppercase",fontStyle:"italic" }}>SACHI</div>
         <button onClick={(e) => { e.stopPropagation(); if (!vidRef.current) return; vidRef.current.muted = !muted; setMuted(!muted); }}
           style={{ background:"rgba(0,0,0,0.5)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:4,width:36,height:36,color:"#fff",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
@@ -355,7 +355,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
       </div>
 
       {/* BOTTOM SECTION — creator info + action bar */}
-      <div style={{ position:"absolute",bottom:0,left:0,right:0,zIndex:10,padding:"0 0 80px 0",opacity:playing?0:1,transition:"opacity 0.4s ease",pointerEvents:playing?"none":"auto" }}>
+      <div style={{ position:"absolute",bottom:0,left:0,right:0,zIndex:10,padding:"0 0 80px 0",opacity:playing?0:1,visibility:playing?"hidden":"visible",transition:"opacity 0.3s ease,visibility 0.3s ease",pointerEvents:playing?"none":"auto" }}>
 
         {/* Creator strip */}
         <div style={{ padding:"0 16px 12px",display:"flex",alignItems:"center",gap:12 }}>
@@ -384,7 +384,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
           {/* LIKE */}
           <button onClick={(e) => { e.stopPropagation(); onLike(video.id); }}
             style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={liked?"#e63946":"none"} stroke={liked?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill={liked?"#e63946":"none"} stroke={liked?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
             <span style={{ color:liked?"#e63946":"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>{formatCount((video.likes_count||0)+(liked?1:0))}</span>
@@ -393,7 +393,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
           {/* COMMENT */}
           <button onClick={(e) => { e.stopPropagation(); onComment(video); }}
             style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>{formatCount(video.comments_count||0)}</span>
@@ -402,7 +402,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
           {/* INBOX — send video to followers */}
           <button onClick={(e) => { e.stopPropagation(); if (onOpenInbox) onOpenInbox(video); }}
             style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
               <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
             </svg>
             <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>INBOX</span>
@@ -411,7 +411,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
           {/* FOLLOW */}
           <button onClick={(e) => { e.stopPropagation(); setFollowed(f => !f); }}
             style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={followed?"#e63946":"none"} stroke={followed?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill={followed?"#e63946":"none"} stroke={followed?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
               <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
             </svg>
@@ -421,7 +421,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
           {/* SHARE */}
           <button onClick={(e) => { e.stopPropagation(); setShowShare(true); }}
             style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",cursor:"pointer" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
               <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>
@@ -850,7 +850,7 @@ function SachiApp({ currentUser, onLogout }) {
               {/* POST gets special treatment */}
               {t.key==="upload" ? (
                 <div style={{ width:32,height:32,background:"#e63946",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:2 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
                     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                   </svg>
                 </div>
