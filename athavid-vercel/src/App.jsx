@@ -286,7 +286,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
       <div style={{ position:"absolute", bottom:90, right:12, display:"flex", flexDirection:"column", alignItems:"center", gap:22, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
         <button onClick={handleLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <div style={{ fontSize:32 }}>{liked ? "❤️" : "🤍"}</div>
+          <div style={{ fontSize:32, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>{liked ? "❤️" : "🤍"}</div>
           <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
         </button>
         <button onClick={() => onCommentOpen(video)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
@@ -307,7 +307,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 const spinStyle = document.createElement('style');
-spinStyle.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+spinStyle.textContent = `
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes heartbeat {
+    0%   { transform: scale(1); }
+    14%  { transform: scale(1.35); }
+    28%  { transform: scale(1); }
+    42%  { transform: scale(1.25); }
+    56%  { transform: scale(1); }
+    100% { transform: scale(1); }
+  }
+  @keyframes heartpop {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.5); }
+    60%  { transform: scale(0.9); }
+    80%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+`;
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
 
 export default function App() {
