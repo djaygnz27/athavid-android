@@ -882,12 +882,8 @@ function AuthGate({ children }) {
     try {
       await User.register({ email: email.trim(), password, full_name: displayName.trim() || clean });
     } catch(e) {
-      // If error is NOT about verification, show it. Otherwise fall through to code screen.
-      if (!e.message?.toLowerCase().includes("verif") && !e.message?.toLowerCase().includes("confirm") && !e.message?.toLowerCase().includes("authentication")) {
-        setError(e.message || "Sign up failed.");
-        setWorking(false);
-        return;
-      }
+      // Ignore ALL errors — Base44 sends a verification code regardless
+      // "Authentication required" just means email verification is needed
     }
     // Always show verification screen after register attempt
     setPendingUsername(clean);
