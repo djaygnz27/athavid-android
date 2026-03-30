@@ -380,21 +380,21 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         )}
       </div>
-      <div style={{ position:"absolute", bottom:90, right:12, display:"flex", flexDirection:"column", alignItems:"center", gap:22, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
-        <button onClick={handleLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <div style={{ fontSize:32, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>{liked ? "❤️" : "🤍"}</div>
-          <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
+      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
+        <button onClick={handleLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+          <div style={{ fontSize:22, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
+          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
         </button>
-        <button onClick={() => onCommentOpen(video)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <div style={{ fontSize:30 }}>💬</div>
-          <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount(video.comments_count)}</div>
+        <button onClick={() => onCommentOpen(video)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+          <div style={{ fontSize:22 }}>💬</div>
+          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount(video.comments_count)}</div>
         </button>
-        <button onClick={() => { if(navigator.share){ navigator.share({ title: video.caption || "Check this out", url: window.location.href }); } else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); } }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <div style={{ fontSize:28 }}>↗️</div>
-          <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>Share</div>
+        <button onClick={() => { if(navigator.share){ navigator.share({ title: video.caption || "Check this out", url: window.location.href }); } else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); } }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+          <div style={{ fontSize:22 }}>↗️</div>
+          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Share</div>
         </button>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <div style={{ width:38, height:38, borderRadius:"50%", background:"linear-gradient(135deg,#333,#111)", border:"3px solid #555", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, animation: playing ? "spin 3s linear infinite" : "none" }}>🎵</div>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+          <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#333,#111)", border:"2px solid #555", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, animation: playing ? "spin 3s linear infinite" : "none" }}>🎵</div>
         </div>
       </div>
     </div>
