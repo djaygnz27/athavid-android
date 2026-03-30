@@ -45,6 +45,12 @@ export const auth = {
     const u = localStorage.getItem("sachi_user");
     return u ? JSON.parse(u) : null;
   },
+  async forgotPassword(email) {
+    return request("POST", `/apps/${APP_ID}/auth/forgot-password`, { email });
+  },
+  async resetPassword(email, otpCode, newPassword) {
+    return request("POST", `/apps/${APP_ID}/auth/reset-password`, { email, otp_code: otpCode, new_password: newPassword });
+  },
   signOut() { clearToken(); }
 };
 

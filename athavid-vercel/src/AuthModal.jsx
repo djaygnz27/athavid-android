@@ -3,13 +3,41 @@ import { auth } from "./api.js";
 
 export default function AuthModal({ onClose, onSuccess }) {
   const [mode, setMode] = useState("signup");
-  const [step, setStep] = useState("form"); // form | otp
+  const [step, setStep] = useState("form"); // form | otp | forgot | reset
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const submitForgot = async () => {
+    if (!email) return setError("Enter your email address.");
+    setLoading(true); setError("");
+    try {
+      await auth.forgotPassword(email);
+      setStep("reset");
+    } catch (e) {
+      setError(e.message || "Could not send reset code.");
+    } finally { setLoading(false); }
+  };
+
+  const submitReset = async () => {
+    if (!otp || !newPassword) return setError("Enter the code and your new password.");
+    if (newPassword.length < 6) return setError("Password must be at least 6 characters.");
+    setLoading(true); setError("");
+    try {
+      await auth.resetPassword(email, otp, newPassword);
+      setStep("form");
+      setMode("login");
+      setError("");
+      setOtp(""); setNewPassword("");
+      alert("✅ Password reset! Please log in with your new password.");
+    } catch (e) {
+      setError(e.message || "Invalid code. Try again.");
+    } finally { setLoading(false); }
+  };
 
   const submitForm = async () => {
     if (!email || !password) return setError("Please fill in all fields.");
@@ -114,10 +142,67 @@ export default function AuthModal({ onClose, onSuccess }) {
               placeholder="Password" type="password"
               onKeyDown={e => e.key==="Enter" && submitForm()} style={inp} />
 
+            {mode === "login" && (
+              <button onClick={() => { setStep("forgot"); setError(""); }}
+                style={{ display:"block", width:"100%", textAlign:"right", background:"none", border:"none",
+                  color:"#ff8e53", fontSize:13, cursor:"pointer", marginTop:-8, marginBottom:8, padding:0 }}>
+                Forgot password?
+              </button>
+            )}
+
             {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
 
             <button onClick={submitForm} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
               {loading ? "Please wait…" : mode==="signup" ? "Create Account" : "Log In"}
+            </button>
+          </>
+        ) : step === "forgot" ? (
+          <>
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <div style={{ fontSize:40 }}>🔑</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 6px" }}>Reset Password</div>
+              <div style={{ color:"#888", fontSize:14 }}>Enter your email and we'll send a reset code</div>
+            </div>
+            <input value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="Email address" type="email"
+              onKeyDown={e => e.key==="Enter" && submitForgot()} style={inp} />
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
+            <button onClick={submitForgot} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Sending…" : "Send Reset Code"}
+            </button>
+            <button onClick={() => { setStep("form"); setError(""); }}
+              style={{ display:"block", width:"100%", padding:"10px 0", background:"none",
+                border:"none", color:"#555", fontSize:13, cursor:"pointer" }}>
+              ← Back to Log In
+            </button>
+          </>
+        ) : step === "reset" ? (
+          <>
+            <div style={{ textAlign:"center", marginBottom:24 }}>
+              <div style={{ fontSize:40 }}>📧</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 6px" }}>Check your email</div>
+              <div style={{ color:"#888", fontSize:14, lineHeight:1.6 }}>
+                We sent a reset code to<br/>
+                <span style={{ color:"#ff8e53", fontWeight:700 }}>{email}</span>
+              </div>
+            </div>
+            <input autoFocus value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g,"").slice(0,6))}
+              placeholder="000000" inputMode="numeric" maxLength={6}
+              style={{ display:"block", width:"100%", boxSizing:"border-box",
+                background:"rgba(255,255,255,0.08)", border:"2px solid rgba(255,140,83,0.6)",
+                borderRadius:16, padding:"18px 0", color:"#fff", fontSize:36,
+                fontWeight:800, letterSpacing:12, textAlign:"center", outline:"none", marginBottom:16 }} />
+            <input value={newPassword} onChange={e => setNewPassword(e.target.value)}
+              placeholder="New password" type="password"
+              onKeyDown={e => e.key==="Enter" && submitReset()} style={inp} />
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
+            <button onClick={submitReset} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Resetting…" : "Reset Password"}
+            </button>
+            <button onClick={() => { setStep("forgot"); setError(""); setOtp(""); }}
+              style={{ display:"block", width:"100%", padding:"10px 0", background:"none",
+                border:"none", color:"#555", fontSize:13, cursor:"pointer" }}>
+              ← Back
             </button>
           </>
         ) : (
