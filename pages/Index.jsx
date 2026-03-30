@@ -894,7 +894,7 @@ function SachiApp({ currentUser, onLogout }) {
   );
 }
 
-export default function AthaVid() {
+export default function Index() {
   return (
     <AuthGate>
       {(currentUser, logout) => <SachiApp currentUser={currentUser} onLogout={logout} />}
