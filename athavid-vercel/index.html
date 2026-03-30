@@ -133,6 +133,64 @@
         justify-content: center;
       }
 
+      /* First-time welcome popup */
+      #welcome-popup {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.88);
+        z-index: 999998;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      .welcome-box {
+        background: linear-gradient(160deg, #1a1a2e, #16213e);
+        border-radius: 24px;
+        padding: 32px 24px 24px;
+        max-width: 320px;
+        width: 90%;
+        border: 1px solid rgba(255,107,107,0.25);
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      }
+      .welcome-box img { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 14px; box-shadow: 0 6px 20px rgba(255,107,107,0.4); }
+      .welcome-box h2 { color: #ff6b6b; margin: 0 0 6px; font-size: 22px; }
+      .welcome-box .tagline { color: #888; font-size: 13px; margin: 0 0 20px; }
+      .welcome-box .install-hint {
+        background: rgba(107,255,154,0.08);
+        border: 1px solid rgba(107,255,154,0.2);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 18px;
+        color: #ccc;
+        font-size: 13px;
+        line-height: 1.7;
+        text-align: left;
+      }
+      .welcome-box .install-hint strong { color: #6bff9a; }
+      .btn-welcome-install {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        border: none;
+        border-radius: 14px;
+        cursor: pointer;
+        margin-bottom: 10px;
+      }
+      .btn-welcome-skip {
+        width: 100%;
+        padding: 11px;
+        background: transparent;
+        color: #555;
+        font-size: 13px;
+        border: none;
+        cursor: pointer;
+      }
+
       /* Manual install popup */
       #manual-install {
         display: none;
@@ -180,6 +238,20 @@
       </div>
     </div>
 
+    <!-- First-Time Welcome Popup -->
+    <div id="welcome-popup">
+      <div class="welcome-box">
+        <img src="/icon-192.png" alt="AthaVid"/>
+        <h2>Welcome to AthaVid</h2>
+        <p class="tagline">Your stage. Share short videos with the world.</p>
+        <div class="install-hint">
+          💡 <strong>Tip:</strong> Add AthaVid to your home screen for the full app experience — tap the <strong>📲 Install</strong> button in the bottom nav anytime!
+        </div>
+        <button class="btn-welcome-install" onclick="dismissWelcome(true)">📲 Show me how to install</button>
+        <button class="btn-welcome-skip" onclick="dismissWelcome(false)">Maybe later — just browse</button>
+      </div>
+    </div>
+
     <!-- Manual Install Instructions Popup -->
     <div id="manual-install">
       <div class="manual-box">
@@ -213,6 +285,26 @@
     </div>
 
     <script>
+      // First-time welcome
+      window.addEventListener('load', () => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const seen = localStorage.getItem('athavid_welcomed');
+        if (!seen && !isStandalone) {
+          setTimeout(() => {
+            const wp = document.getElementById('welcome-popup');
+            if (wp) wp.style.display = 'flex';
+          }, 1500);
+        }
+      });
+
+      function dismissWelcome(showInstall) {
+        localStorage.setItem('athavid_welcomed', '1');
+        document.getElementById('welcome-popup').style.display = 'none';
+        if (showInstall) {
+          setTimeout(() => window.showInstallInstructions && window.showInstallInstructions(), 200);
+        }
+      }
+
       function showTab(tab, btn) {
         document.getElementById('tab-android').style.display = tab === 'android' ? 'block' : 'none';
         document.getElementById('tab-iphone').style.display = tab === 'iphone' ? 'block' : 'none';
