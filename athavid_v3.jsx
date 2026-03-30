@@ -346,7 +346,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
       )}
 
       {/* TOP BAR — mute + logo */}
-      <div style={{ position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px" }}>
+      <div style={{ position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",opacity:playing?0:1,transition:"opacity 0.4s ease",pointerEvents:playing?"none":"auto" }}>
         <div style={{ fontSize:18,fontWeight:900,color:"#fff",letterSpacing:"-1px",textTransform:"uppercase",fontStyle:"italic" }}>SACHI</div>
         <button onClick={(e) => { e.stopPropagation(); if (!vidRef.current) return; vidRef.current.muted = !muted; setMuted(!muted); }}
           style={{ background:"rgba(0,0,0,0.5)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:4,width:36,height:36,color:"#fff",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
@@ -355,7 +355,7 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
       </div>
 
       {/* BOTTOM SECTION — creator info + action bar */}
-      <div style={{ position:"absolute",bottom:0,left:0,right:0,zIndex:10,padding:"0 0 80px 0" }}>
+      <div style={{ position:"absolute",bottom:0,left:0,right:0,zIndex:10,padding:"0 0 80px 0",opacity:playing?0:1,transition:"opacity 0.4s ease",pointerEvents:playing?"none":"auto" }}>
 
         {/* Creator strip */}
         <div style={{ padding:"0 16px 12px",display:"flex",alignItems:"center",gap:12 }}>
