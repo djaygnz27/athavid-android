@@ -189,17 +189,26 @@
           <button class="tab-btn" onclick="showTab('iphone',this)">🍎 iPhone</button>
         </div>
         <div id="tab-android">
-          <div class="manual-step">1. Tap the <strong>⋮ menu</strong> (top right in Chrome)</div>
+          <div style="background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:12px;padding:14px;margin-bottom:14px;color:#ccc;font-size:13px;line-height:1.7;">
+            Chrome requires you to visit the site <strong style="color:#fff;">twice</strong> before the auto-install kicks in. Here's the fastest way right now:
+          </div>
+          <div class="manual-step">1. Tap <strong>⋮</strong> (3 dots, top right of Chrome)</div>
           <div class="manual-step">2. Tap <strong>"Add to Home screen"</strong></div>
-          <div class="manual-step">3. Tap <strong>Add</strong> ✅</div>
+          <div class="manual-step">3. Tap <strong>Add</strong> — done! ✅</div>
+          <a href="googlechrome://athavid-vercel.vercel.app" 
+             style="display:block;text-align:center;margin-top:14px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;font-weight:800;font-size:14px;padding:12px;border-radius:14px;text-decoration:none;">
+            🌐 Open in Chrome (if not already)
+          </a>
         </div>
         <div id="tab-iphone" style="display:none">
-          <div class="manual-step">1. Open in <strong>Safari</strong></div>
-          <div class="manual-step">2. Tap the <strong>Share icon</strong> (box with ↑)</div>
-          <div class="manual-step">3. Tap <strong>"Add to Home Screen"</strong></div>
-          <div class="manual-step">4. Tap <strong>Add</strong> ✅</div>
+          <div class="manual-step">1. Open in <strong>Safari</strong> (not Chrome)</div>
+          <div class="manual-step">2. Tap the <strong>⬆ Share icon</strong> at the bottom</div>
+          <div class="manual-step">3. Scroll down → tap <strong>"Add to Home Screen"</strong></div>
+          <div class="manual-step">4. Tap <strong>Add</strong> — done! ✅</div>
         </div>
-        <button class="close-manual" onclick="document.getElementById('manual-install').style.display='none'">Got it</button>
+        <button class="close-manual" onclick="document.getElementById('manual-install').style.display='none'" style="background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;font-weight:800;border-radius:14px;border:none;padding:14px;width:100%;font-size:15px;cursor:pointer;margin-top:8px;">
+          Got it — I'll do it now 👍
+        </button>
       </div>
     </div>
 
