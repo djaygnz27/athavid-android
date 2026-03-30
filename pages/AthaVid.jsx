@@ -878,34 +878,39 @@ function AuthGate({ children }) {
     if (!username.trim()) return setError("Choose a username");
     if (password.length < 6) return setError("Password must be at least 6 characters");
     setWorking(true); setError("");
+    const clean = username.trim().replace(/^@/, "").replace(/\s+/g, "_").toLowerCase();
     try {
-      const clean = username.trim().replace(/^@/, "").replace(/\s+/g, "_").toLowerCase();
       await User.register({ email: email.trim(), password, full_name: displayName.trim() || clean });
-      const u = await User.me();
-      try { await User.updateMyUserData({ username: clean, display_name: displayName.trim() || clean }); } catch(e) {}
-      setUser(u);
-    } catch(e) { setError(e.message || "Sign up failed. Try a different email."); }
-    finally { setWorking(false); }
+    } catch(e) {
+      // If error is NOT about verification, show it. Otherwise fall through to code screen.
+      if (!e.message?.toLowerCase().includes("verif") && !e.message?.toLowerCase().includes("confirm") && !e.message?.toLowerCase().includes("authentication")) {
+        setError(e.message || "Sign up failed.");
+        setWorking(false);
+        return;
+      }
+    }
+    // Always show verification screen after register attempt
+    setPendingUsername(clean);
+    setPendingDisplayName(displayName.trim() || clean);
+    setAwaitingVerification(true);
+    setError("");
+    setWorking(false);
   };
 
   const verifyEmail = async () => {
     if (!verifyCode.trim()) return setError("Enter the verification code from your email");
     setWorking(true); setError("");
     try {
-      await User.confirmEmail({ email: email.trim(), code: verifyCode.trim() });
+      // Try verify first, then fall back to login (code may auto-verify the account)
+      try { await User.verifyEmail({ email: email.trim(), code: verifyCode.trim() }); } catch(e) {}
+      try { await User.confirmEmail({ email: email.trim(), code: verifyCode.trim() }); } catch(e) {}
+      // Now login
+      await User.login({ email: email.trim(), password });
       const u = await User.me();
       try { await User.updateMyUserData({ username: pendingUsername, display_name: pendingDisplayName }); } catch(e) {}
       setUser(u);
     } catch(e) {
-      // Try login directly if confirm fails — some setups auto-verify
-      try {
-        await User.login({ email: email.trim(), password });
-        const u = await User.me();
-        try { await User.updateMyUserData({ username: pendingUsername, display_name: pendingDisplayName }); } catch(e2) {}
-        setUser(u);
-      } catch(e2) {
-        setError("Invalid code or expired. Please try again.");
-      }
+      setError("Could not verify. Try logging in directly with your email and password.");
     }
     finally { setWorking(false); }
   };
