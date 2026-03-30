@@ -573,10 +573,7 @@ export default function App() {
           <button key={tab.id}
             onClick={() => {
               if (tab.id === "post") { requireAuth(() => setShowUpload(true)); }
-              else if (tab.id === "install") {
-                if (window._deferredPrompt) { window.installApp && window.installApp(); }
-                else { window.showInstallInstructions && window.showInstallInstructions(); }
-              }
+              else if (tab.id === "install") { window.showInstallInstructions && window.showInstallInstructions(); }
               else { setActiveTab(tab.id); }
             }}
             style={{ flex:1, padding:"10px 0 8px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
