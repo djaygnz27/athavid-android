@@ -91,3 +91,4 @@ export const saveVideo = base44.functions.saveVideo;
 export const createVideo = base44.functions.createVideo;
 export const athaVidApi = base44.functions.athaVidApi;
 export const uploadAthaVidVideo = base44.functions.uploadAthaVidVideo;
+export const athaVidUpload = base44.functions.athaVidUpload;
