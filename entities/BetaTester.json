@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "device": {
+      "type": "string",
+      "enum": [
+        "iPhone",
+        "Android",
+        "Both",
+        "Unknown"
+      ]
+    },
+    "invite_sent": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Invited",
+        "Signed Up",
+        "Active",
+        "No Response"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "BetaTester"
+}
