@@ -46,27 +46,24 @@ export const auth = {
     return u ? JSON.parse(u) : null;
   },
   async forgotPassword(email) {
-    // Reuse the signup OTP flow — sends a verification code to the email
-    return request("POST", `/apps/${APP_ID}/auth/resend-otp`, { email });
+    const res = await fetch("https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/functions/athaVidPasswordReset?action=request", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to send reset code");
+    return data;
   },
   async resetPassword(email, otpCode, newPassword) {
-    // Verify OTP first to get a token, then change password
-    const data = await request("POST", `/apps/${APP_ID}/auth/verify-otp`, { email, otp_code: otpCode });
-    const token = data.access_token || data.token;
-    const userId = data.user?.id;
-    if (!token || !userId) throw new Error("Verification failed");
-    // Now change the password — we need a temp login, use the token
-    const res = await fetch(`${BASE_URL}/apps/${APP_ID}/auth/change-password`, {
+    const res = await fetch("https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/functions/athaVidPasswordReset?action=reset", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ user_id: userId, current_password: "__otp_verified__", new_password: newPassword })
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ email, code: otpCode, new_password: newPassword })
     });
-    if (!res.ok) {
-      // If change-password fails, at least they are now logged in — return success
-      if (data.user) { setToken(token); localStorage.setItem("sachi_user", JSON.stringify(data.user)); }
-      return { ok: true, user: data.user };
-    }
-    return res.json();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to reset password");
+    return data;
   },
   signOut() { clearToken(); }
 };
