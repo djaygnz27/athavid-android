@@ -2,8 +2,8 @@ import { useState } from "react";
 import { auth } from "./api.js";
 
 export default function AuthModal({ onClose, onSuccess }) {
-  const [mode, setMode] = useState("signup"); // signup | login
-  const [step, setStep] = useState("form");   // form | otp
+  const [mode, setMode] = useState("signup");
+  const [step, setStep] = useState("form"); // form | otp
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -20,15 +20,8 @@ export default function AuthModal({ onClose, onSuccess }) {
         onSuccess(auth.getUser());
       } else {
         const res = await auth.signUp(email, password, name || email.split("@")[0]);
-        // If OTP required, show OTP step
-        if (res.requires_otp || res.message?.toLowerCase().includes("verify") || res.detail?.toLowerCase().includes("otp")) {
-          setStep("otp");
-        } else {
-          // Direct signup worked
-          const token = res.access_token || res.token;
-          if (token) { auth.setToken(token); if (res.user) localStorage.setItem("sachi_user", JSON.stringify(res.user)); }
-          onSuccess(auth.getUser() || res.user);
-        }
+        // Registration returns a message about verification code
+        setStep("otp");
       }
     } catch (e) {
       setError(e.message || "Something went wrong.");
@@ -36,88 +29,149 @@ export default function AuthModal({ onClose, onSuccess }) {
   };
 
   const submitOtp = async () => {
-    if (!otp.trim()) return setError("Enter the code from your email.");
+    const code = otp.trim();
+    if (!code) return setError("Enter the code from your email.");
     setLoading(true); setError("");
     try {
-      await auth.verifyOtp(email, otp.trim());
+      await auth.verifyOtp(email, code);
       onSuccess(auth.getUser());
     } catch (e) {
       setError(e.message || "Invalid code. Try again.");
     } finally { setLoading(false); }
   };
 
-  const inputStyle = {
-    width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.12)",
-    borderRadius:12, padding:"13px 16px", color:"#fff", fontSize:15, outline:"none",
-    boxSizing:"border-box", marginBottom:12
+  const inp = {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    borderRadius: 12,
+    padding: "14px 16px",
+    color: "#fff",
+    fontSize: 15,
+    outline: "none",
+    marginBottom: 12,
+  };
+
+  const btn = {
+    display: "block",
+    width: "100%",
+    padding: "14px 0",
+    background: "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+    border: "none",
+    borderRadius: 14,
+    color: "#fff",
+    fontWeight: 800,
+    fontSize: 16,
+    cursor: "pointer",
+    marginBottom: 10,
   };
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"flex-end" }}>
-      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)" }} />
-      <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:3001 }}>
-        <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"0 auto 24px" }} />
+    <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 16px" }}>
+      {/* backdrop */}
+      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.88)" }} />
+
+      {/* card — centred, scrollable */}
+      <div style={{
+        position:"relative", zIndex:3001,
+        background:"#0f0f1a", borderRadius:24,
+        padding:"28px 24px 32px",
+        width:"100%", maxWidth:400,
+        maxHeight:"90vh", overflowY:"auto",
+      }}>
 
         {step === "form" ? (
           <>
-            <div style={{ textAlign:"center", marginBottom:24 }}>
-              <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:22, marginBottom:4 }}>Join Sachi</div>
-              <div style={{ color:"#666", fontSize:14 }}>Create an account to post videos</div>
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <div style={{ fontSize:40 }}>🎬</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Join Sachi</div>
+              <div style={{ color:"#777", fontSize:14 }}>Create an account to post videos</div>
             </div>
 
-            {/* Tab */}
-            <div style={{ display:"flex", background:"rgba(255,255,255,0.06)", borderRadius:12, padding:4, marginBottom:20 }}>
+            {/* tabs */}
+            <div style={{ display:"flex", background:"rgba(255,255,255,0.06)", borderRadius:12, padding:4, marginBottom:18 }}>
               {["signup","login"].map(m => (
                 <button key={m} onClick={() => { setMode(m); setError(""); }}
-                  style={{ flex:1, padding:"10px 0", border:"none", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:14,
-                    background: mode === m ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "transparent",
-                    color: mode === m ? "#fff" : "#666" }}>
-                  {m === "signup" ? "Sign Up" : "Log In"}
+                  style={{ flex:1, padding:"10px 0", border:"none", borderRadius:10, cursor:"pointer",
+                    fontWeight:700, fontSize:14,
+                    background: mode===m ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "transparent",
+                    color: mode===m ? "#fff" : "#666" }}>
+                  {m==="signup" ? "Sign Up" : "Log In"}
                 </button>
               ))}
             </div>
 
-            {mode === "signup" && (
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inputStyle} />
+            {mode==="signup" && (
+              <input value={name} onChange={e => setName(e.target.value)}
+                placeholder="Your name" style={inp} />
             )}
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email" style={inputStyle} />
-            <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password"
-              onKeyDown={e => e.key === "Enter" && submitForm()} style={inputStyle} />
+            <input value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="Email address" type="email" style={inp} />
+            <input value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="Password" type="password"
+              onKeyDown={e => e.key==="Enter" && submitForm()} style={inp} />
 
-            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
 
-            <button onClick={submitForm} disabled={loading}
-              style={{ width:"100%", padding:14, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Please wait..." : mode === "signup" ? "Create Account" : "Log In"}
+            <button onClick={submitForm} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Please wait…" : mode==="signup" ? "Create Account" : "Log In"}
             </button>
           </>
         ) : (
           <>
             <div style={{ textAlign:"center", marginBottom:24 }}>
-              <div style={{ fontSize:36, marginBottom:8 }}>📧</div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:20, marginBottom:4 }}>Check your email</div>
-              <div style={{ color:"#888", fontSize:14, lineHeight:1.5 }}>We sent a verification code to<br/><span style={{ color:"#ff8e53" }}>{email}</span></div>
+              <div style={{ fontSize:40 }}>📧</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 6px" }}>Check your email</div>
+              <div style={{ color:"#888", fontSize:14, lineHeight:1.6 }}>
+                We sent a 6-digit code to<br/>
+                <span style={{ color:"#ff8e53", fontWeight:700 }}>{email}</span>
+              </div>
             </div>
 
-            <input value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter 6-digit code"
-              onKeyDown={e => e.key === "Enter" && submitOtp()}
-              style={{ ...inputStyle, textAlign:"center", fontSize:24, letterSpacing:8, fontWeight:700 }} />
+            {/* BIG OTP INPUT */}
+            <input
+              autoFocus
+              value={otp}
+              onChange={e => setOtp(e.target.value.replace(/\D/g,"").slice(0,6))}
+              placeholder="000000"
+              inputMode="numeric"
+              maxLength={6}
+              onKeyDown={e => e.key==="Enter" && submitOtp()}
+              style={{
+                display:"block",
+                width:"100%",
+                boxSizing:"border-box",
+                background:"rgba(255,255,255,0.08)",
+                border:"2px solid rgba(255,140,83,0.6)",
+                borderRadius:16,
+                padding:"18px 0",
+                color:"#fff",
+                fontSize:36,
+                fontWeight:800,
+                letterSpacing:12,
+                textAlign:"center",
+                outline:"none",
+                marginBottom:16,
+              }}
+            />
 
-            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
 
-            <button onClick={submitOtp} disabled={loading}
-              style={{ width:"100%", padding:14, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", opacity: loading ? 0.7 : 1, marginBottom:12 }}>
-              {loading ? "Verifying..." : "Verify & Continue"}
+            <button onClick={submitOtp} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Verifying…" : "Verify & Enter"}
             </button>
 
             <button onClick={() => auth.resendOtp(email).catch(()=>{})}
-              style={{ width:"100%", padding:12, background:"none", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, color:"#888", fontSize:14, cursor:"pointer" }}>
+              style={{ display:"block", width:"100%", padding:"12px 0", background:"none",
+                border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, color:"#888", fontSize:14, cursor:"pointer", marginBottom:8 }}>
               Resend code
             </button>
 
             <button onClick={() => { setStep("form"); setError(""); setOtp(""); }}
-              style={{ width:"100%", padding:10, background:"none", border:"none", color:"#555", fontSize:13, cursor:"pointer", marginTop:8 }}>
+              style={{ display:"block", width:"100%", padding:"10px 0", background:"none",
+                border:"none", color:"#555", fontSize:13, cursor:"pointer" }}>
               ← Back
             </button>
           </>
