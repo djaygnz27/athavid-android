@@ -301,131 +301,158 @@ function VideoCard({ video, liked, onLike, onComment, currentUser, onOpenInbox }
   const vidRef = useRef(null);
   const containerRef = useRef(null);
   const [playing, setPlaying] = useState(false);
+  const [showUI, setShowUI] = useState(true);
   const [muted, setMuted] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [followed, setFollowed] = useState(false);
-  const [showInfo, setShowInfo] = useState(true);
+  const [heartPulse, setHeartPulse] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) { vidRef.current?.pause(); setPlaying(false); }
+      if (!entry.isIntersecting) { vidRef.current?.pause(); setPlaying(false); setShowUI(true); }
     }, { threshold: 0.6 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
-  const togglePlay = () => {
+  const handleVideoClick = () => {
     if (!vidRef.current) return;
-    if (vidRef.current.paused) { vidRef.current.play().then(() => setPlaying(true)).catch(() => {}); }
-    else { vidRef.current.pause(); setPlaying(false); }
-    setShowInfo(i => !i);
+    if (vidRef.current.paused) {
+      vidRef.current.play().catch(() => {});
+      setShowUI(false);
+    } else {
+      vidRef.current.pause();
+      setShowUI(true);
+    }
+  };
+
+  const handleLike = (e) => {
+    e.stopPropagation();
+    setHeartPulse(true);
+    setTimeout(() => setHeartPulse(false), 600);
+    onLike(video.id);
   };
 
   const username = video.username || "creator";
 
   return (
     <div ref={containerRef} style={{ position:"relative",width:"100%",height:"100svh",background:"#000",flexShrink:0,overflow:"hidden" }}>
+      <style>{`
+        @keyframes heartbeat {
+          0%   { transform: scale(1); }
+          25%  { transform: scale(1.5); }
+          50%  { transform: scale(1.2); }
+          75%  { transform: scale(1.6); }
+          100% { transform: scale(1); }
+        }
+        .heart-pulse { animation: heartbeat 0.6s ease; }
+      `}</style>
+
       {/* Video */}
       <video ref={vidRef} src={video.video_url} poster={video.thumbnail_url} loop playsInline
         style={{ position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover" }}
-        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
-        onClick={togglePlay} />
+        onPlay={() => setPlaying(true)}
+        onPause={() => { setPlaying(false); setShowUI(true); }}
+        onClick={handleVideoClick} />
 
-      {/* Dark cinematic vignette */}
+      {/* Vignette */}
       <div style={{ position:"absolute",inset:0,background:"linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.4) 100%)",pointerEvents:"none",zIndex:1 }} />
 
-      {/* Pause indicator */}
+      {/* Pause indicator — only when paused */}
       {!playing && (
-        <div onClick={togglePlay} style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,cursor:"pointer" }}>
-          <div style={{ width:64,height:64,border:"2px solid rgba(255,255,255,0.6)",borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.4)" }}>
-            <div style={{ width:0,height:0,borderStyle:"solid",borderWidth:"14px 0 14px 24px",borderColor:"transparent transparent transparent rgba(255,255,255,0.9)",marginLeft:4 }} />
+        <div onClick={handleVideoClick} style={{ position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:3,cursor:"pointer" }}>
+          <div style={{ width:56,height:56,border:"2px solid rgba(255,255,255,0.6)",borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.4)" }}>
+            <div style={{ width:0,height:0,borderStyle:"solid",borderWidth:"12px 0 12px 20px",borderColor:"transparent transparent transparent rgba(255,255,255,0.9)",marginLeft:4 }} />
           </div>
         </div>
       )}
 
-      {/* TOP BAR — mute + logo */}
-      <div style={{ position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",opacity:playing?0:1,visibility:playing?"hidden":"visible",transition:"opacity 0.3s ease,visibility 0.3s ease",pointerEvents:playing?"none":"auto" }}>
+      {/* TOP BAR */}
+      <div style={{ position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",
+        opacity:showUI?1:0,visibility:showUI?"visible":"hidden",transition:"opacity 0.25s ease",pointerEvents:showUI?"auto":"none" }}>
         <div style={{ fontSize:18,fontWeight:900,color:"#fff",letterSpacing:"-1px",textTransform:"uppercase",fontStyle:"italic" }}>SACHI</div>
-        <button onClick={(e) => { e.stopPropagation(); if (!vidRef.current) return; vidRef.current.muted = !muted; setMuted(!muted); }}
-          style={{ background:"rgba(0,0,0,0.5)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:4,width:36,height:36,color:"#fff",fontSize:15,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
+        <button onClick={(e) => { e.stopPropagation(); if (!vidRef.current) return; vidRef.current.muted = !muted; setMuted(m=>!m); }}
+          style={{ background:"rgba(0,0,0,0.5)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:4,width:32,height:32,color:"#fff",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>
           {muted ? "🔇" : "🔊"}
         </button>
       </div>
 
-      {/* BOTTOM SECTION — creator info + action bar */}
-      <div style={{ position:"absolute",bottom:0,left:0,right:0,zIndex:10,padding:"0 0 80px 0",opacity:playing?0:1,visibility:playing?"hidden":"visible",transition:"opacity 0.3s ease,visibility 0.3s ease",pointerEvents:playing?"none":"auto" }}>
+      {/* BOTTOM SECTION */}
+      <div style={{ position:"absolute",bottom:0,left:0,right:0,zIndex:10,padding:"0 0 80px 0",
+        opacity:showUI?1:0,visibility:showUI?"visible":"hidden",transition:"opacity 0.25s ease",pointerEvents:showUI?"auto":"none" }}>
 
         {/* Creator strip */}
-        <div style={{ padding:"0 16px 12px",display:"flex",alignItems:"center",gap:12 }}>
+        <div style={{ padding:"0 16px 10px",display:"flex",alignItems:"center",gap:10 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`}
-            style={{ width:40,height:40,borderRadius:4,border:"1px solid rgba(255,255,255,0.3)",flexShrink:0,filter:"grayscale(20%)" }} />
+            style={{ width:36,height:36,borderRadius:4,border:"1px solid rgba(255,255,255,0.3)",flexShrink:0,filter:"grayscale(20%)" }} />
           <div style={{ flex:1,minWidth:0 }}>
-            <div style={{ color:"#fff",fontWeight:800,fontSize:14,letterSpacing:"0.5px" }}>{video.display_name || username}</div>
-            <div style={{ color:"rgba(255,255,255,0.5)",fontSize:11,letterSpacing:"1px",textTransform:"uppercase" }}>@{username}</div>
+            <div style={{ color:"#fff",fontWeight:800,fontSize:13,letterSpacing:"0.5px" }}>{video.display_name || username}</div>
+            <div style={{ color:"rgba(255,255,255,0.5)",fontSize:10,letterSpacing:"1px",textTransform:"uppercase" }}>@{username}</div>
           </div>
-
         </div>
 
         {/* Caption */}
-        <div style={{ padding:"0 16px 10px" }}>
-          <div style={{ color:"rgba(255,255,255,0.85)",fontSize:13,lineHeight:1.6,fontStyle:"italic" }}>{video.caption}</div>
+        <div style={{ padding:"0 16px 8px" }}>
+          <div style={{ color:"rgba(255,255,255,0.85)",fontSize:12,lineHeight:1.5,fontStyle:"italic" }}>{video.caption}</div>
           {video.hashtags?.length > 0 && (
-            <div style={{ display:"flex",flexWrap:"wrap",gap:6,marginTop:6 }}>
-              {video.hashtags.map(h => <span key={h} style={{ color:"#e63946",fontSize:11,fontWeight:700,letterSpacing:"1px" }}>#{h.toUpperCase()}</span>)}
+            <div style={{ display:"flex",flexWrap:"wrap",gap:4,marginTop:4 }}>
+              {video.hashtags.map(h => <span key={h} style={{ color:"#e63946",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>#{h.toUpperCase()}</span>)}
             </div>
           )}
         </div>
 
-        {/* ACTION BAR — horizontal strip at the bottom (NOT TikTok right-side) */}
+        {/* ACTION BAR */}
         <div style={{ display:"flex",borderTop:"1px solid rgba(255,255,255,0.08)",background:"rgba(0,0,0,0.6)",backdropFilter:"blur(10px)" }}>
 
           {/* LIKE */}
-          <button onClick={(e) => { e.stopPropagation(); onLike(video.id); }}
-            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill={liked?"#e63946":"none"} stroke={liked?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
+          <button onClick={handleLike}
+            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"7px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
+            <svg className={heartPulse?"heart-pulse":""} width="11" height="11" viewBox="0 0 24 24"
+              fill={liked?"#e63946":"none"} stroke={liked?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2"
+              style={{ display:"block",transformOrigin:"center" }}>
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
-            <span style={{ color:liked?"#e63946":"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>{formatCount((video.likes_count||0)+(liked?1:0))}</span>
+            <span style={{ color:liked?"#e63946":"rgba(255,255,255,0.6)",fontSize:9,fontWeight:700,letterSpacing:"1px" }}>{formatCount((video.likes_count||0)+(liked?1:0))}</span>
           </button>
 
           {/* COMMENT */}
           <button onClick={(e) => { e.stopPropagation(); onComment(video); }}
-            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
+            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"7px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>{formatCount(video.comments_count||0)}</span>
+            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:9,fontWeight:700,letterSpacing:"1px" }}>{formatCount(video.comments_count||0)}</span>
           </button>
 
-          {/* INBOX — send video to followers */}
+          {/* INBOX */}
           <button onClick={(e) => { e.stopPropagation(); if (onOpenInbox) onOpenInbox(video); }}
-            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
+            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"7px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
               <path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/>
             </svg>
-            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>INBOX</span>
+            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:9,fontWeight:700,letterSpacing:"1px" }}>INBOX</span>
           </button>
 
           {/* FOLLOW */}
-          <button onClick={(e) => { e.stopPropagation(); setFollowed(f => !f); }}
-            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill={followed?"#e63946":"none"} stroke={followed?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
+          <button onClick={(e) => { e.stopPropagation(); setFollowed(f=>!f); }}
+            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"7px 0",background:"none",border:"none",borderRight:"1px solid rgba(255,255,255,0.08)",cursor:"pointer" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill={followed?"#e63946":"none"} stroke={followed?"#e63946":"rgba(255,255,255,0.7)"} strokeWidth="2">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
               <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
             </svg>
-            <span style={{ color:followed?"#e63946":"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>{followed?"FOLLOWING":"FOLLOW"}</span>
+            <span style={{ color:followed?"#e63946":"rgba(255,255,255,0.6)",fontSize:9,fontWeight:700,letterSpacing:"1px" }}>{followed?"FOLLOWING":"FOLLOW"}</span>
           </button>
 
           {/* SHARE */}
           <button onClick={(e) => { e.stopPropagation(); setShowShare(true); }}
-            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"9px 0",background:"none",border:"none",cursor:"pointer" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
+            style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"7px 0",background:"none",border:"none",cursor:"pointer" }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2">
               <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>
-            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,letterSpacing:"1px" }}>SHARE</span>
+            <span style={{ color:"rgba(255,255,255,0.6)",fontSize:9,fontWeight:700,letterSpacing:"1px" }}>SHARE</span>
           </button>
 
         </div>
