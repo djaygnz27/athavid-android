@@ -138,11 +138,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     if (!file) return;
     setUploading(true); setProgress(10);
     try {
-      setStep("Generating thumbnail..."); 
-      const thumbnail_url = await captureThumbnail(file);
-      setProgress(35);
       setStep("Uploading video...");
       const video_url = await uploadFile(file);
+      setProgress(60);
+      setStep("Generating thumbnail...");
+      let thumbnail_url = null;
+      try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
+      setProgress(80);
       setProgress(80);
       setStep("Saving to feed...");
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
@@ -158,7 +160,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
     } catch(e) {
-      alert("Upload failed: " + e.message);
+      alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false); setProgress(0); setStep("");
     }
   };
