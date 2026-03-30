@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "tester_name": {
+      "type": "string"
+    },
+    "tester_email": {
+      "type": "string"
+    },
+    "device": {
+      "type": "string"
+    },
+    "bug_description": {
+      "type": "string"
+    },
+    "steps_to_reproduce": {
+      "type": "string"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "Low",
+        "Medium",
+        "High",
+        "Critical"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "New",
+        "In Progress",
+        "Fixed",
+        "Wont Fix"
+      ]
+    },
+    "screenshot_url": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "BugReport"
+}
