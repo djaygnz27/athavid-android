@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { auth, videos, comments, uploadFile } from "./api.js";
+import AuthModal from "./AuthModal.jsx";
 
 function formatCount(n) {
   if (!n) return "0";
@@ -40,68 +41,6 @@ async function captureThumbnail(file) {
 }
 
 // ── Auth Modal ────────────────────────────────────────────────────────────────
-function AuthModal({ onClose, onSuccess }) {
-  const [mode, setMode] = useState("signup");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const submit = async () => {
-    if (!email || !password) return setError("Please fill in all fields.");
-    setLoading(true); setError("");
-    try {
-      if (mode === "signup") {
-        await auth.signUp(email, password, name || email.split("@")[0]);
-      } else {
-        await auth.signIn(email, password);
-      }
-      const user = auth.getUser();
-      onSuccess(user);
-    } catch (e) {
-      setError(e.message || "Something went wrong.");
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"flex-end" }}>
-      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)" }} />
-      <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:3001 }}>
-        <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"0 auto 24px" }} />
-        <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
-          <div style={{ color:"#fff", fontWeight:900, fontSize:22, marginBottom:4 }}>Join Sachi</div>
-          <div style={{ color:"#666", fontSize:14 }}>Create an account to post videos</div>
-        </div>
-        <div style={{ display:"flex", background:"rgba(255,255,255,0.06)", borderRadius:12, padding:4, marginBottom:20 }}>
-          {["signup","login"].map(m => (
-            <button key={m} onClick={() => { setMode(m); setError(""); }}
-              style={{ flex:1, padding:"10px 0", border:"none", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:14,
-                background: mode === m ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "transparent",
-                color: mode === m ? "#fff" : "#666" }}>
-              {m === "signup" ? "Sign Up" : "Log In"}
-            </button>
-          ))}
-        </div>
-        {mode === "signup" && (
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name"
-            style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"13px 16px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box", marginBottom:12 }} />
-        )}
-        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email"
-          style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"13px 16px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box", marginBottom:12 }} />
-        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password"
-          onKeyDown={e => e.key === "Enter" && submit()}
-          style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"13px 16px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box", marginBottom:16 }} />
-        {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
-        <button onClick={submit} disabled={loading}
-          style={{ width:"100%", padding:14, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", opacity: loading ? 0.7 : 1 }}>
-          {loading ? "Please wait..." : mode === "signup" ? "Create Account" : "Log In"}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ── Comment Sheet ─────────────────────────────────────────────────────────────
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
