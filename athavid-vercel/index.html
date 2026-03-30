@@ -25,97 +25,196 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/icon-192.png" />
 
-    <!-- Service Worker Registration -->
     <script>
+      // Register service worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
-            .then(reg => console.log('SW registered'))
+            .then(() => console.log('SW registered'))
             .catch(err => console.log('SW error:', err));
         });
       }
 
-      // Show install prompt on Android Chrome
-      let deferredPrompt;
+      // Capture install prompt
+      let deferredPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        // Show custom install banner after 3 seconds
-        setTimeout(() => {
-          const banner = document.getElementById('install-banner');
-          if (banner) banner.style.display = 'flex';
-        }, 3000);
+        window._deferredPrompt = e;
+        // Show banner immediately
+        showInstallBanner();
       });
 
+      function showInstallBanner() {
+        // Don't show if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) return;
+        const banner = document.getElementById('install-banner');
+        if (banner) banner.style.display = 'flex';
+      }
+
       function installApp() {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then(() => {
+        const prompt = deferredPrompt || window._deferredPrompt;
+        if (prompt) {
+          prompt.prompt();
+          prompt.userChoice.then(() => {
             deferredPrompt = null;
-            const banner = document.getElementById('install-banner');
-            if (banner) banner.style.display = 'none';
+            window._deferredPrompt = null;
+            hideBanner();
           });
+        } else {
+          // Fallback: show manual instructions
+          document.getElementById('manual-install').style.display = 'block';
+          document.getElementById('install-banner').style.display = 'none';
         }
       }
 
-      window.addEventListener('appinstalled', () => {
-        const banner = document.getElementById('install-banner');
-        if (banner) banner.style.display = 'none';
+      function hideBanner() {
+        const b = document.getElementById('install-banner');
+        if (b) b.style.display = 'none';
+      }
+
+      // Hide banner if already running as installed app
+      window.addEventListener('appinstalled', hideBanner);
+      window.addEventListener('load', () => {
+        if (window.matchMedia('(display-mode: standalone)').matches) hideBanner();
       });
     </script>
 
     <style>
+      body { margin: 0; background: #0f0f1a; }
+
+      /* Install Banner */
       #install-banner {
         display: none;
         position: fixed;
-        bottom: 80px;
-        left: 16px;
-        right: 16px;
+        bottom: 72px;
+        left: 12px;
+        right: 12px;
         background: linear-gradient(135deg, #ff6b6b, #ff8e53);
         border-radius: 16px;
-        padding: 14px 18px;
+        padding: 14px 16px;
         align-items: center;
         justify-content: space-between;
         z-index: 99999;
         box-shadow: 0 8px 30px rgba(255,107,107,0.5);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        animation: slideUp 0.3s ease;
       }
-      #install-banner .banner-text { color: #fff; font-size: 14px; font-weight: 700; }
-      #install-banner .banner-sub { color: rgba(255,255,255,0.8); font-size: 12px; margin-top: 2px; }
-      #install-banner button {
+      @keyframes slideUp {
+        from { transform: translateY(100px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      #install-banner .b-left { display: flex; align-items: center; gap: 10px; }
+      #install-banner .b-icon { font-size: 28px; }
+      #install-banner .b-title { color: #fff; font-size: 14px; font-weight: 800; }
+      #install-banner .b-sub { color: rgba(255,255,255,0.85); font-size: 11px; margin-top: 1px; }
+      #install-banner .b-right { display: flex; align-items: center; gap: 6px; }
+      #install-banner .btn-install {
         background: #fff;
         color: #ff6b6b;
         border: none;
         border-radius: 20px;
-        padding: 8px 18px;
+        padding: 8px 16px;
         font-weight: 800;
         font-size: 13px;
         cursor: pointer;
-        white-space: nowrap;
-        margin-left: 12px;
       }
-      #install-banner .close-btn {
-        background: transparent;
-        color: rgba(255,255,255,0.7);
-        font-size: 18px;
-        padding: 4px 8px;
-        margin-left: 4px;
-        min-width: unset;
+      #install-banner .btn-close {
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
+
+      /* Manual install popup */
+      #manual-install {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 999999;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      #manual-install.show { display: flex; }
+      .manual-box {
+        background: #1a1a2e;
+        border-radius: 20px;
+        padding: 28px 24px;
+        max-width: 320px;
+        width: 90%;
+        border: 1px solid rgba(255,107,107,0.3);
+      }
+      .manual-box h3 { color: #ff6b6b; margin: 0 0 16px; font-size: 18px; }
+      .manual-step { color: #ccc; font-size: 14px; line-height: 2; margin-bottom: 8px; }
+      .manual-step strong { color: #fff; }
+      .tab-btns { display: flex; gap: 8px; margin-bottom: 16px; }
+      .tab-btn { flex: 1; padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #888; font-size: 13px; cursor: pointer; }
+      .tab-btn.active { background: rgba(255,107,107,0.2); border-color: #ff6b6b; color: #ff6b6b; font-weight: 700; }
+      .close-manual { width: 100%; margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.07); border: none; border-radius: 12px; color: #888; font-size: 14px; cursor: pointer; }
     </style>
   </head>
   <body>
     <div id="root"></div>
 
-    <!-- Install Banner (Android Chrome) -->
+    <!-- Install Banner -->
     <div id="install-banner">
-      <div>
-        <div class="banner-text">📲 Install AthaVid</div>
-        <div class="banner-sub">Add to your home screen</div>
+      <div class="b-left">
+        <div class="b-icon">📲</div>
+        <div>
+          <div class="b-title">Install AthaVid</div>
+          <div class="b-sub">Add to home screen — free</div>
+        </div>
       </div>
-      <button onclick="installApp()">Install</button>
-      <button class="close-btn" onclick="document.getElementById('install-banner').style.display='none'">✕</button>
+      <div class="b-right">
+        <button class="btn-install" onclick="installApp()">Install</button>
+        <button class="btn-close" onclick="hideBanner()">✕</button>
+      </div>
     </div>
+
+    <!-- Manual Install Instructions Popup -->
+    <div id="manual-install">
+      <div class="manual-box">
+        <h3>📲 Install AthaVid</h3>
+        <div class="tab-btns">
+          <button class="tab-btn active" onclick="showTab('android',this)">🤖 Android</button>
+          <button class="tab-btn" onclick="showTab('iphone',this)">🍎 iPhone</button>
+        </div>
+        <div id="tab-android">
+          <div class="manual-step">1. Tap the <strong>⋮ menu</strong> (top right in Chrome)</div>
+          <div class="manual-step">2. Tap <strong>"Add to Home screen"</strong></div>
+          <div class="manual-step">3. Tap <strong>Add</strong> ✅</div>
+        </div>
+        <div id="tab-iphone" style="display:none">
+          <div class="manual-step">1. Open in <strong>Safari</strong></div>
+          <div class="manual-step">2. Tap the <strong>Share icon</strong> (box with ↑)</div>
+          <div class="manual-step">3. Tap <strong>"Add to Home Screen"</strong></div>
+          <div class="manual-step">4. Tap <strong>Add</strong> ✅</div>
+        </div>
+        <button class="close-manual" onclick="document.getElementById('manual-install').style.display='none'">Got it</button>
+      </div>
+    </div>
+
+    <script>
+      function showTab(tab, btn) {
+        document.getElementById('tab-android').style.display = tab === 'android' ? 'block' : 'none';
+        document.getElementById('tab-iphone').style.display = tab === 'iphone' ? 'block' : 'none';
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+      // Expose for React app to call
+      window.showInstallInstructions = () => {
+        document.getElementById('manual-install').style.display = 'flex';
+      };
+    </script>
 
     <script type="module" src="/src/main.jsx"></script>
   </body>

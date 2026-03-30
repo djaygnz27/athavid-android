@@ -569,12 +569,19 @@ export default function App() {
 
       {/* Bottom Nav */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,16px)" }}>
-        {[{ id:"feed", icon:"🏠", label:"Home" }, { id:"post", icon:"➕", label:"Post" }, { id:"profile", icon:"👤", label:"Me" }].map(tab => (
+        {[{ id:"feed", icon:"🏠", label:"Home" }, { id:"post", icon:"➕", label:"Post" }, { id:"profile", icon:"👤", label:"Me" }, { id:"install", icon:"📲", label:"Install" }].map(tab => (
           <button key={tab.id}
-            onClick={() => tab.id === "post" ? requireAuth(() => setShowUpload(true)) : setActiveTab(tab.id)}
+            onClick={() => {
+              if (tab.id === "post") { requireAuth(() => setShowUpload(true)); }
+              else if (tab.id === "install") {
+                if (window._deferredPrompt) { window.installApp && window.installApp(); }
+                else { window.showInstallInstructions && window.showInstallInstructions(); }
+              }
+              else { setActiveTab(tab.id); }
+            }}
             style={{ flex:1, padding:"10px 0 8px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
             <div style={{ fontSize:22 }}>{tab.icon}</div>
-            <div style={{ fontSize:10, color: activeTab === tab.id ? "#ff6b6b" : "#555", fontWeight: activeTab === tab.id ? 700 : 400 }}>{tab.label}</div>
+            <div style={{ fontSize:10, color: tab.id === "install" ? "#6bff9a" : activeTab === tab.id ? "#ff6b6b" : "#555", fontWeight: activeTab === tab.id ? 700 : 400 }}>{tab.label}</div>
           </button>
         ))}
       </div>
