@@ -853,6 +853,10 @@ function AuthGate({ children }) {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [pendingUsername, setPendingUsername] = useState("");
+  const [pendingDisplayName, setPendingDisplayName] = useState("");
 
   useEffect(() => {
     User.me().then(u => { setUser(u); setLoading(false); }).catch(() => setLoading(false));
@@ -877,11 +881,23 @@ function AuthGate({ children }) {
     try {
       const clean = username.trim().replace(/^@/, "").replace(/\s+/g, "_").toLowerCase();
       await User.register({ email: email.trim(), password, full_name: displayName.trim() || clean });
-      const u = await User.me();
-      // Save username in the user profile
-      try { await User.updateMyUserData({ username: clean, display_name: displayName.trim() || clean }); } catch(e) {}
-      setUser(u);
+      setPendingUsername(clean);
+      setPendingDisplayName(displayName.trim() || clean);
+      setAwaitingVerification(true);
+      setError("");
     } catch(e) { setError(e.message || "Sign up failed. Try a different email."); }
+    finally { setWorking(false); }
+  };
+
+  const verifyEmail = async () => {
+    if (!verifyCode.trim()) return setError("Enter the verification code from your email");
+    setWorking(true); setError("");
+    try {
+      await User.verifyEmail({ email: email.trim(), code: verifyCode.trim() });
+      const u = await User.me();
+      try { await User.updateMyUserData({ username: pendingUsername, display_name: pendingDisplayName }); } catch(e) {}
+      setUser(u);
+    } catch(e) { setError(e.message || "Invalid code. Check your email and try again."); }
     finally { setWorking(false); }
   };
 
@@ -904,6 +920,25 @@ function AuthGate({ children }) {
       <div style={{ fontSize:36, fontWeight:900, letterSpacing:"-1px", background:"linear-gradient(135deg,#ff6b6b,#ff8e53,#ffd93d)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", marginBottom:4 }}>sachi</div>
       <div style={{ color:"#555", fontSize:12, letterSpacing:"3px", textTransform:"uppercase", marginBottom:32 }}>real moments. real you.</div>
 
+      {awaitingVerification ? (
+        <div style={{ width:"100%", background:"rgba(255,255,255,0.04)", borderRadius:16, padding:24, textAlign:"center" }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>📧</div>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:18, marginBottom:8 }}>Check your email</div>
+          <div style={{ color:"#888", fontSize:13, marginBottom:24 }}>We sent a verification code to<br/><span style={{color:"#ff8e53"}}>{email}</span></div>
+          <input value={verifyCode} onChange={e => setVerifyCode(e.target.value.trim())} placeholder="Enter verification code"
+            onKeyDown={e => e.key === "Enter" && verifyEmail()}
+            style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"14px", color:"#fff", fontSize:18, textAlign:"center", letterSpacing:"4px", marginBottom:16, outline:"none" }} />
+          {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12 }}>{error}</div>}
+          <button onClick={verifyEmail} disabled={working}
+            style={{ width:"100%", padding:"14px", background: working ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:12, color:"#fff", fontSize:16, fontWeight:700, cursor: working ? "not-allowed" : "pointer", marginBottom:12 }}>
+            {working ? "Verifying..." : "Verify & Continue"}
+          </button>
+          <button onClick={() => { setAwaitingVerification(false); setVerifyCode(""); setError(""); }}
+            style={{ background:"none", border:"none", color:"#666", fontSize:13, cursor:"pointer" }}>
+            ← Back to sign up
+          </button>
+        </div>
+      ) : (
       <div style={{ width:"100%", background:"rgba(255,255,255,0.04)", borderRadius:16, padding:24 }}>
         <div style={{ display:"flex", gap:8, marginBottom:24 }}>
           {["login","signup"].map(m => (
@@ -940,6 +975,7 @@ function AuthGate({ children }) {
           {working ? "..." : mode === "login" ? "Log In" : "Create Account"}
         </button>
       </div>
+      )}
     </div>
   );
 
