@@ -22,6 +22,9 @@
     },
     "SPICalculator": {
       "title": "SPICalculator"
+    },
+    "Index": {
+      "title": "Index"
     }
   }
 }
