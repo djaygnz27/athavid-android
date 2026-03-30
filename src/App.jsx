@@ -6,6 +6,7 @@ import AthaVid from './pages/AthaVid';
 import CodeCopy from './pages/CodeCopy';
 import Install from './pages/Install';
 import SPICalculator from './pages/SPICalculator';
+import Index from './pages/Index';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/CodeCopy" element={<CodeCopy />} />
         <Route path="/Install" element={<Install />} />
         <Route path="/SPICalculator" element={<SPICalculator />} />
+        <Route path="/Index" element={<Index />} />
       </Routes>
     </BrowserRouter>
   )
