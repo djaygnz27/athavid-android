@@ -705,38 +705,45 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
-          onClick={togglePlay}>
-          <img src={photoUrls[photoIdx]} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+        <div style={{ width:"100%", height:"100%", position:"relative" }}>
+          {/* Horizontal scroll carousel */}
+          <div
+            onScroll={e => {
+              const idx = Math.round(e.target.scrollLeft / e.target.offsetWidth);
+              setPhotoIdx(idx);
+            }}
+            style={{
+              width:"100%", height:"100%",
+              display:"flex", overflowX:"scroll", overflowY:"hidden",
+              scrollSnapType:"x mandatory",
+              WebkitOverflowScrolling:"touch",
+              scrollbarWidth:"none",
+              msOverflowStyle:"none",
+            }}>
+            <style>{".photo-scroll::-webkit-scrollbar{display:none}"}</style>
+            {photoUrls.map((url, i) => (
+              <div key={i} style={{
+                minWidth:"100%", height:"100%",
+                scrollSnapAlign:"start", flexShrink:0,
+              }}>
+                <img src={url} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+              </div>
+            ))}
+          </div>
+          {/* Dot indicators */}
           {photoUrls.length > 1 && (
-            <>
-              {/* Dot indicators */}
-              <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", display:"flex", gap:5, zIndex:10 }}>
-                {photoUrls.map((_,i) => (
-                  <div key={i} style={{ width: i===photoIdx ? 18 : 6, height:6, borderRadius:99,
-                    background: i===photoIdx ? "#fff" : "rgba(255,255,255,0.4)", transition:"all 0.2s" }} />
-                ))}
-              </div>
-              {/* Prev/Next tap zones */}
-              {photoIdx > 0 && (
-                <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p-1); }}
-                  style={{ position:"absolute", left:0, top:0, width:"35%", height:"100%", zIndex:9 }} />
-              )}
-              {photoIdx < photoUrls.length-1 && (
-                <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p+1); }}
-                  style={{ position:"absolute", right:0, top:0, width:"35%", height:"100%", zIndex:9 }} />
-              )}
-              {/* Arrow hints */}
-              {photoIdx > 0 && (
-                <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:22, color:"rgba(255,255,255,0.7)", zIndex:10, pointerEvents:"none" }}>‹</div>
-              )}
-              {photoIdx < photoUrls.length-1 && (
-                <div style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:22, color:"rgba(255,255,255,0.7)", zIndex:10, pointerEvents:"none" }}>›</div>
-              )}
-              <div style={{ position:"absolute", bottom:100, right:16, background:"rgba(0,0,0,0.6)", borderRadius:99, padding:"3px 10px", fontSize:12, color:"#fff", zIndex:10 }}>
-                {photoIdx+1}/{photoUrls.length}
-              </div>
-            </>
+            <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", display:"flex", gap:5, zIndex:10, pointerEvents:"none" }}>
+              {photoUrls.map((_,i) => (
+                <div key={i} style={{ width: i===photoIdx ? 18 : 6, height:6, borderRadius:99,
+                  background: i===photoIdx ? "#fff" : "rgba(255,255,255,0.4)", transition:"all 0.2s" }} />
+              ))}
+            </div>
+          )}
+          {/* Counter */}
+          {photoUrls.length > 1 && (
+            <div style={{ position:"absolute", bottom:100, right:16, background:"rgba(0,0,0,0.6)", borderRadius:99, padding:"3px 10px", fontSize:12, color:"#fff", zIndex:10, pointerEvents:"none" }}>
+              {photoIdx+1}/{photoUrls.length}
+            </div>
           )}
         </div>
       ) : (
