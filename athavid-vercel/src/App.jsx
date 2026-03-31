@@ -801,15 +801,18 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
         </div>
 
         {/* Avatar grid — scrollable */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:10, maxHeight:280, overflowY:"auto", paddingRight:4 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, maxHeight:300, overflowY:"auto", paddingBottom:4 }}>
           {avatarUrls.map((url, i) => (
-            <div key={i} onClick={() => onSelect(url)}
-              style={{ cursor:"pointer", borderRadius:"50%", border: currentAvatar===url ? "3px solid #ff6b6b" : "3px solid rgba(255,255,255,0.1)",
-                overflow:"hidden", width:54, height:54, margin:"0 auto", transition:"border 0.2s, transform 0.15s",
-                transform: currentAvatar===url ? "scale(1.1)" : "scale(1)",
-                background:"rgba(255,255,255,0.05)" }}>
-              <img src={url} style={{ width:"100%", height:"100%" }} loading="lazy" />
-            </div>
+            <button key={i}
+              onClick={() => onSelect(url)}
+              style={{ background: currentAvatar===url ? "rgba(255,107,107,0.2)" : "rgba(255,255,255,0.04)",
+                border: currentAvatar===url ? "3px solid #ff6b6b" : "3px solid rgba(255,255,255,0.1)",
+                borderRadius:"50%", width:64, height:64, margin:"0 auto", padding:0,
+                cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"border 0.2s, transform 0.15s",
+                transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
+              <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block" }} loading="lazy" />
+            </button>
           ))}
         </div>
       </div>
