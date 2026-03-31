@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile } from "./api.js";
+import { auth, videos, comments, uploadFile, follows } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
 
 function formatDate(d) {
@@ -948,6 +948,39 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   };
 
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [followRecord, setFollowRecord] = useState(null); // the Follow DB record if following
+  const [followLoading, setFollowLoading] = useState(false);
+  const isOwnVideo = currentUser && currentUser.id === video.user_id;
+
+  useEffect(() => {
+    if (!currentUser || isOwnVideo) return;
+    // Check if already following this user
+    follows.getFollowing(currentUser.id).then(res => {
+      const rec = (res.items || res || []).find(r => r.following_id === video.user_id);
+      if (rec) setFollowRecord(rec);
+    }).catch(() => {});
+  }, [currentUser, video.user_id]);
+
+  const handleFollow = async (e) => {
+    e.stopPropagation();
+    if (!currentUser) return;
+    setFollowLoading(true);
+    try {
+      if (followRecord) {
+        await follows.unfollow(followRecord.id);
+        setFollowRecord(null);
+      } else {
+        const rec = await follows.follow(
+          currentUser.id,
+          currentUser.username || currentUser.email?.split("@")[0],
+          video.user_id,
+          video.username
+        );
+        setFollowRecord(rec);
+      }
+    } catch(e) { console.error(e); }
+    setFollowLoading(false);
+  };
   const photoTouchStartX = useRef(0);
   const photoTouchStartY = useRef(0);
   const photoCardRef = useRef(null);
@@ -1266,6 +1299,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feed");
   const [showGoLive, setShowGoLive] = useState(false);
+  const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
+  const [followingVideos, setFollowingVideos] = useState([]);
+  const [followingIds, setFollowingIds] = useState([]);
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
@@ -1276,12 +1312,27 @@ export default function App() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   useEffect(() => { loadVideos(); }, []);
+  useEffect(() => { if (currentUser) loadFollowingVideos(currentUser); }, [currentUser]);
   useEffect(() => {
     if (currentUser) {
       const saved = localStorage.getItem(`avatar_${currentUser.id}`);
       if (saved) setAvatarUrl(saved);
     }
   }, [currentUser]);
+
+  const loadFollowingVideos = async (user) => {
+    if (!user) return;
+    try {
+      const res = await follows.getFollowing(user.id);
+      const items = res.items || res || [];
+      const ids = items.map(r => r.following_id);
+      setFollowingIds(ids);
+      if (ids.length === 0) { setFollowingVideos([]); return; }
+      const allVids = await videos.list();
+      const vids = (allVids.items || allVids || []).filter(v => ids.includes(v.user_id));
+      setFollowingVideos(vids);
+    } catch(e) { console.error(e); }
+  };
 
   const loadVideos = async () => {
     setLoading(true);
@@ -1341,7 +1392,37 @@ export default function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
+        <>
+        {/* Feed tabs */}
+        <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)",
+          width:"100%", maxWidth:480, zIndex:300, display:"flex", justifyContent:"center",
+          gap:0, paddingTop:"env(safe-area-inset-top,12px)", pointerEvents:"none" }}>
+          <div style={{ display:"flex", gap:0, background:"rgba(0,0,0,0.5)",
+            backdropFilter:"blur(12px)", borderRadius:30, padding:"4px", pointerEvents:"auto",
+            marginTop:8, boxShadow:"0 2px 20px rgba(0,0,0,0.4)" }}>
+            {["forYou","following"].map(t => (
+              <button key={t} onClick={() => { setFeedTab(t); if(t==="following" && currentUser) loadFollowingVideos(currentUser); }}
+                style={{ padding:"7px 20px", borderRadius:26, border:"none", cursor:"pointer",
+                  background: feedTab===t ? "linear-gradient(135deg,#ff6b6b,#e53935)" : "transparent",
+                  color: feedTab===t ? "#fff" : "rgba(255,255,255,0.55)",
+                  fontWeight: feedTab===t ? 800 : 500, fontSize:13, transition:"all 0.2s" }}>
+                {t === "forYou" ? "For You" : "Following"}
+              </button>
+            ))}
+          </div>
+        </div>
+        </>
+      )}
+      {activeTab === "feed" && (
         <div data-feed style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory" }}>
+          {feedTab === "following" && followingIds.length === 0 && (
+            <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
+              <div style={{ fontSize:56 }}>👥</div>
+              <div style={{ fontSize:18, fontWeight:700, color:"#fff" }}>Follow someone first</div>
+              <div style={{ fontSize:14 }}>Hit <b>+ Follow</b> on any video to see their posts here</div>
+            </div>
+          )}
           {loading && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:48 }}>🎬</div>
@@ -1359,7 +1440,7 @@ export default function App() {
               </button>
             </div>
           )}
-          {videoList.map(v => (
+          {(feedTab === "forYou" ? videoList : followingVideos).map(v => (
             <VideoCard key={v.id} video={v} currentUser={currentUser}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
