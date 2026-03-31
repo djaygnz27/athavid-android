@@ -240,6 +240,9 @@ const MUSIC_GENRES = ["All", "Pop", "Jazz", "Classic Rock", "Contemporary", "Lo-
 // ── Upload Modal ──────────────────────────────────────────────────────────────
 function UploadModal({ currentUser, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
+  const [uploadTab, setUploadTab] = useState("video");
+  const [photos, setPhotos] = useState([]);
+  const photoRef = useRef();
   const [caption, setCaption] = useState("");
   const [maxDuration, setMaxDuration] = useState(60);
   const [selectedTrack, setSelectedTrack] = useState(null);
@@ -320,6 +323,51 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     if (checkForExplicitContent(f, caption)) { setExplicitBlocked(true); }
   };
 
+  const handlePhotoSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setPhotos(prev => {
+      const combined = [...prev, ...files];
+      return combined.slice(0, 6);
+    });
+  };
+
+  const removePhoto = (idx) => setPhotos(p => p.filter((_,i) => i !== idx));
+
+  const uploadPhotos = async () => {
+    if (!photos.length) return;
+    setUploading(true); setProgress(10);
+    try {
+      setStep("Uploading photos...");
+      const urls = [];
+      for (let i = 0; i < photos.length; i++) {
+        const url = await uploadFile(photos[i]);
+        urls.push(url);
+        setProgress(10 + Math.round(((i+1)/photos.length)*70));
+      }
+      setProgress(85); setStep("Saving to feed...");
+      const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
+      const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
+      await videos.create({
+        user_id: currentUser.id, username,
+        display_name: currentUser.full_name || username,
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+        video_url: urls[0],
+        thumbnail_url: urls[0],
+        photo_urls: JSON.stringify(urls),
+        is_photo: true,
+        caption: caption.trim(), hashtags: tags,
+        likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
+        is_approved: true, is_archived: false, is_ai_detected: false,
+      });
+      setProgress(100); setStep("Posted! 🎉");
+      setTimeout(() => { onUploaded(); onClose(); }, 1000);
+    } catch(e) {
+      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      setUploading(false); setProgress(0); setStep("");
+    }
+  };
+
   const upload = async () => {
     if (!file) return;
     if (checkForExplicitContent(file, caption)) { alert("🔞 Sexual or explicit content is not allowed on AthaVid."); return; }
@@ -379,8 +427,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:2001 }}>
         <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 20px" }} />
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>📹 Post a Video</div>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{uploadTab==="video" ? "📹 Post a Video" : "🖼️ Post Photos"}</div>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:32, height:32, color:"#fff", cursor:"pointer" }}>✕</button>
+        </div>
+        {/* Tab switcher */}
+        <div style={{ display:"flex", gap:8, marginBottom:18, background:"rgba(255,255,255,0.05)", borderRadius:14, padding:4 }}>
+          {[{id:"video",label:"🎬 Video"},{id:"photo",label:"🖼️ Photos"}].map(t => (
+            <button key={t.id} onClick={() => { setUploadTab(t.id); setFile(null); setPhotos([]); }}
+              style={{ flex:1, padding:"10px 0", borderRadius:11, border:"none",
+                background: uploadTab===t.id ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "transparent",
+                color: uploadTab===t.id ? "#fff" : "#888", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Duration Selector */}
@@ -406,6 +465,45 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         </div>
 
+        {uploadTab === "photo" ? (
+          <div style={{ marginBottom:16 }}>
+            {/* Photo grid preview */}
+            {photos.length > 0 && (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:12 }}>
+                {photos.map((p,i) => (
+                  <div key={i} style={{ position:"relative", aspectRatio:"1", borderRadius:10, overflow:"hidden", border:"2px solid rgba(255,107,107,0.3)" }}>
+                    <img src={URL.createObjectURL(p)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    <button onClick={() => removePhoto(i)}
+                      style={{ position:"absolute", top:4, right:4, background:"rgba(0,0,0,0.7)", border:"none",
+                        borderRadius:"50%", width:22, height:22, color:"#fff", fontSize:13, cursor:"pointer",
+                        display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>✕</button>
+                    {i===0 && <div style={{ position:"absolute", bottom:4, left:4, background:"rgba(255,107,107,0.85)", borderRadius:6, padding:"1px 6px", fontSize:10, color:"#fff", fontWeight:700 }}>Cover</div>}
+                  </div>
+                ))}
+                {photos.length < 6 && (
+                  <div onClick={() => photoRef.current?.click()}
+                    style={{ aspectRatio:"1", borderRadius:10, border:"2px dashed rgba(255,255,255,0.2)",
+                      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                      cursor:"pointer", color:"#888", fontSize:12, gap:4 }}>
+                    <span style={{ fontSize:24 }}>＋</span>
+                    <span>Add more</span>
+                  </div>
+                )}
+              </div>
+            )}
+            {photos.length === 0 && (
+              <div onClick={() => photoRef.current?.click()}
+                style={{ border:"2px dashed rgba(255,107,107,0.4)", borderRadius:16, padding:40, textAlign:"center", cursor:"pointer" }}>
+                <div style={{ fontSize:48, marginBottom:10 }}>🖼️</div>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:6 }}>Tap to select photos</div>
+                <div style={{ color:"#666", fontSize:13 }}>Up to 6 photos · JPG, PNG, HEIC</div>
+              </div>
+            )}
+            <input ref={photoRef} type="file" accept="image/*" multiple style={{ display:"none" }} onChange={handlePhotoSelect} />
+            {photos.length > 0 && <div style={{ color:"#888", fontSize:12, textAlign:"center", marginTop:4 }}>{photos.length}/6 photos selected · Tap ✕ to remove</div>}
+          </div>
+        ) : (
+        <>
         {!file ? (
           <div onClick={() => fileRef.current?.click()}
             style={{ border:"2px dashed rgba(255,107,107,0.4)", borderRadius:16, padding:48, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
@@ -423,6 +521,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             </div>
             <button onClick={() => setFile(null)} style={{ background:"none", border:"none", color:"#ff6b6b", cursor:"pointer", fontSize:18 }}>✕</button>
           </div>
+        )}
+        </>
         )}
         <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write a caption... #hashtags" rows={3}
           style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:16 }} />
@@ -524,10 +624,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             </div>
           </div>
         )}
-        <button onClick={upload} disabled={!file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed}
-          style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? 1 : 0.5 }}>
-          {uploading ? step : "🚀 Post Video"}
-        </button>
+        {uploadTab === "photo" ? (
+          <button onClick={uploadPhotos} disabled={!photos.length || uploading}
+            style={{ width:"100%", padding:14, background: photos.length && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: photos.length && !uploading ? "pointer" : "not-allowed", opacity: photos.length && !uploading ? 1 : 0.5 }}>
+            {uploading ? step : `🖼️ Post ${photos.length > 0 ? photos.length : ""} Photo${photos.length !== 1 ? "s" : ""}`}
+          </button>
+        ) : (
+          <button onClick={upload} disabled={!file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed}
+            style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? 1 : 0.5 }}>
+            {uploading ? step : "🚀 Post Video"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -592,11 +699,51 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     onLike(video.id, liked ? -1 : 1);
   };
 
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const photoUrls = video.is_photo && video.photo_urls ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls)) : null;
+
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
+      {photoUrls ? (
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
+          onClick={togglePlay}>
+          <img src={photoUrls[photoIdx]} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          {photoUrls.length > 1 && (
+            <>
+              {/* Dot indicators */}
+              <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", display:"flex", gap:5, zIndex:10 }}>
+                {photoUrls.map((_,i) => (
+                  <div key={i} style={{ width: i===photoIdx ? 18 : 6, height:6, borderRadius:99,
+                    background: i===photoIdx ? "#fff" : "rgba(255,255,255,0.4)", transition:"all 0.2s" }} />
+                ))}
+              </div>
+              {/* Prev/Next tap zones */}
+              {photoIdx > 0 && (
+                <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p-1); }}
+                  style={{ position:"absolute", left:0, top:0, width:"35%", height:"100%", zIndex:9 }} />
+              )}
+              {photoIdx < photoUrls.length-1 && (
+                <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p+1); }}
+                  style={{ position:"absolute", right:0, top:0, width:"35%", height:"100%", zIndex:9 }} />
+              )}
+              {/* Arrow hints */}
+              {photoIdx > 0 && (
+                <div style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", fontSize:22, color:"rgba(255,255,255,0.7)", zIndex:10, pointerEvents:"none" }}>‹</div>
+              )}
+              {photoIdx < photoUrls.length-1 && (
+                <div style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:22, color:"rgba(255,255,255,0.7)", zIndex:10, pointerEvents:"none" }}>›</div>
+              )}
+              <div style={{ position:"absolute", bottom:100, right:16, background:"rgba(0,0,0,0.6)", borderRadius:99, padding:"3px 10px", fontSize:12, color:"#fff", zIndex:10 }}>
+                {photoIdx+1}/{photoUrls.length}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
       <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
         loop playsInline onClick={togglePlay}
         style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+      )}
       {!playing && (
         <div onClick={togglePlay} style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
           <div style={{ background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center" }}>
