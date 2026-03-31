@@ -101,7 +101,7 @@ export default function AuthModal({ onClose, onSuccess }) {
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
               <div style={{ fontSize:40 }}>🎬</div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Join AthaVid</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Join Sachi</div>
               <div style={{ color:"#777", fontSize:14 }}>Create an account to post videos</div>
             </div>
             <div style={{ display:"flex", background:"rgba(255,255,255,0.06)", borderRadius:12, padding:4, marginBottom:18 }}>

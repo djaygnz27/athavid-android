@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AthaVid</string>
-    <string name="title_activity_main">AthaVid</string>
+    <string name="app_name">Sachi</string>
+    <string name="title_activity_main">Sachi</string>
     <string name="package_name">com.jaygnz.athavid</string>
     <string name="custom_url_scheme">com.jaygnz.athavid</string>
 </resources>

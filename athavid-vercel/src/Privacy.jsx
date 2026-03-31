@@ -15,7 +15,7 @@ export default function Privacy() {
       }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>🎬</div>
-          <h1 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 6px", color: "#fff" }}>AthaVid</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 6px", color: "#fff" }}>Sachi</h1>
           <p style={{ color: "#ff6b6b", fontWeight: 600, margin: 0, fontSize: 14 }}>Privacy Policy</p>
         </div>
       </div>
@@ -29,10 +29,10 @@ export default function Privacy() {
         </p>
 
         <Section title="1. Introduction">
-          AthaVid ("we," "our," or "us"), operated by LDNA Consulting, is committed to protecting your privacy.
+          Sachi ("we," "our," or "us"), operated by LDNA Consulting, is committed to protecting your privacy.
           This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you
-          use the AthaVid mobile application and website (collectively, the "Platform").
-          By using AthaVid, you agree to the practices described in this policy.
+          use the Sachi mobile application and website (collectively, the "Platform").
+          By using Sachi, you agree to the practices described in this policy.
         </Section>
 
         <Section title="2. Information We Collect">
@@ -57,7 +57,7 @@ export default function Privacy() {
         <Section title="3. How We Use Your Information">
           We use your information to:
           <ul>
-            <li>Provide, operate, and improve the AthaVid Platform</li>
+            <li>Provide, operate, and improve the Sachi Platform</li>
             <li>Personalize your content feed and recommendations</li>
             <li>Enable social features (following, comments, sharing)</li>
             <li>Ensure platform safety and moderate content</li>
@@ -68,7 +68,7 @@ export default function Privacy() {
         </Section>
 
         <Section title="4. Age Requirements & Parental Consent">
-          AthaVid is intended for users aged <strong>13 and older</strong>. We do not knowingly collect
+          Sachi is intended for users aged <strong>13 and older</strong>. We do not knowingly collect
           personal information from children under 13. If we become aware that a child under 13 has
           provided personal information, we will delete such information promptly.
           <br /><br />
@@ -87,8 +87,8 @@ export default function Privacy() {
         </Section>
 
         <Section title="6. Content You Upload">
-          Videos and other content you post publicly on AthaVid are visible to all users of the Platform.
-          You retain ownership of your content, but grant AthaVid a license to host, display, and distribute
+          Videos and other content you post publicly on Sachi are visible to all users of the Platform.
+          You retain ownership of your content, but grant Sachi a license to host, display, and distribute
           it as part of the Platform's operation. You may delete your content at any time.
         </Section>
 
@@ -117,7 +117,7 @@ export default function Privacy() {
         </Section>
 
         <Section title="10. Cookies & Tracking">
-          AthaVid uses cookies and similar tracking technologies to enhance your experience, remember
+          Sachi uses cookies and similar tracking technologies to enhance your experience, remember
           preferences, and analyze usage. You can control cookies through your browser settings, though
           some features may not function properly if cookies are disabled.
         </Section>
@@ -136,10 +136,10 @@ export default function Privacy() {
         <Section title="13. Contact Us">
           If you have questions or concerns about this Privacy Policy, please contact us:
           <br /><br />
-          <strong>LDNA Consulting / AthaVid</strong><br />
+          <strong>LDNA Consulting / Sachi</strong><br />
           New Providence, NJ 07974<br />
           Email: <a href="mailto:lasanjaya@gmail.com" style={{ color: "#ff6b6b" }}>lasanjaya@gmail.com</a><br />
-          Website: <a href="https://athavid-vercel.vercel.app" style={{ color: "#ff6b6b" }}>athavid-vercel.vercel.app</a>
+          Website: <a href="https://sachi-app.vercel.app" style={{ color: "#ff6b6b" }}>sachi-app.vercel.app</a>
         </Section>
 
       </div>

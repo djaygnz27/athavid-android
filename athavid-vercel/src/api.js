@@ -61,25 +61,25 @@ export const auth = {
 
 export const videos = {
   async list() {
-    return request("GET", `/apps/${APP_ID}/entities/AthaVidVideo?is_approved=true&is_archived=false&sort=-created_date`);
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
   },
   async create(data) {
-    return request("POST", `/apps/${APP_ID}/entities/AthaVidVideo`, data);
+    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
   },
   async update(id, data) {
-    return request("PUT", `/apps/${APP_ID}/entities/AthaVidVideo/${id}`, data);
+    return request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${id}`, data);
   },
   async myVideos(userId) {
-    return request("GET", `/apps/${APP_ID}/entities/AthaVidVideo?user_id=${userId}`);
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}`);
   },
 };
 
 export const comments = {
   async list(videoId) {
-    return request("GET", `/apps/${APP_ID}/entities/AthaVidComment?video_id=${videoId}`);
+    return request("GET", `/apps/${APP_ID}/entities/SachiComment?video_id=${videoId}`);
   },
   async create(data) {
-    return request("POST", `/apps/${APP_ID}/entities/AthaVidComment`, data);
+    return request("POST", `/apps/${APP_ID}/entities/SachiComment`, data);
   },
 };
 
