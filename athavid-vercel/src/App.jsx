@@ -700,49 +700,46 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   };
 
   const [photoIdx, setPhotoIdx] = useState(0);
+  const photoTouchStartX = useRef(0);
   const photoUrls = video.is_photo && video.photo_urls ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls)) : null;
 
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative" }}>
-          {/* Horizontal scroll carousel */}
-          <div
-            onScroll={e => {
-              const idx = Math.round(e.target.scrollLeft / e.target.offsetWidth);
-              setPhotoIdx(idx);
-            }}
-            style={{
-              width:"100%", height:"100%",
-              display:"flex", overflowX:"scroll", overflowY:"hidden",
-              scrollSnapType:"x mandatory",
-              WebkitOverflowScrolling:"touch",
-              scrollbarWidth:"none",
-              msOverflowStyle:"none",
-            }}>
-            <style>{".photo-scroll::-webkit-scrollbar{display:none}"}</style>
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
+          onTouchStart={e => { photoTouchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={e => {
+            const dx = e.changedTouches[0].clientX - photoTouchStartX.current;
+            if (Math.abs(dx) > 40) {
+              if (dx < 0 && photoIdx < photoUrls.length - 1) setPhotoIdx(p => p + 1);
+              if (dx > 0 && photoIdx > 0) setPhotoIdx(p => p - 1);
+            }
+          }}>
+          {/* Slide strip — translate on index change */}
+          <div style={{
+            display:"flex", width:`${photoUrls.length * 100}%`, height:"100%",
+            transform:`translateX(-${(photoIdx / photoUrls.length) * 100}%)`,
+            transition:"transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
+          }}>
             {photoUrls.map((url, i) => (
-              <div key={i} style={{
-                minWidth:"100%", height:"100%",
-                scrollSnapAlign:"start", flexShrink:0,
-              }}>
+              <div key={i} style={{ width:`${100 / photoUrls.length}%`, height:"100%", flexShrink:0 }}>
                 <img src={url} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
               </div>
             ))}
           </div>
           {/* Dot indicators */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", display:"flex", gap:5, zIndex:10, pointerEvents:"none" }}>
+            <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", display:"flex", gap:5, zIndex:20, pointerEvents:"none" }}>
               {photoUrls.map((_,i) => (
                 <div key={i} style={{ width: i===photoIdx ? 18 : 6, height:6, borderRadius:99,
-                  background: i===photoIdx ? "#fff" : "rgba(255,255,255,0.4)", transition:"all 0.2s" }} />
+                  background: i===photoIdx ? "#fff" : "rgba(255,255,255,0.45)", transition:"all 0.25s" }} />
               ))}
             </div>
           )}
-          {/* Counter */}
+          {/* Counter badge */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", bottom:100, right:16, background:"rgba(0,0,0,0.6)", borderRadius:99, padding:"3px 10px", fontSize:12, color:"#fff", zIndex:10, pointerEvents:"none" }}>
-              {photoIdx+1}/{photoUrls.length}
+            <div style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.55)", borderRadius:99, padding:"3px 10px", fontSize:12, color:"#fff", zIndex:20, pointerEvents:"none", backdropFilter:"blur(4px)" }}>
+              {photoIdx+1} / {photoUrls.length}
             </div>
           )}
         </div>
@@ -758,12 +755,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         </div>
       )}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)", pointerEvents:"none", opacity: playing ? 0 : 1, transition:"opacity 0.3s" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)", pointerEvents:"none", opacity: (photoUrls || !playing) ? 1 : 0, transition:"opacity 0.3s" }} />
       <button onClick={handleMuteToggle}
         style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:20, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
         {muted ? "🔇" : "🔊"}
       </button>
-      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
+      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:20, opacity: (photoUrls || !playing) ? 1 : 0, transition:"opacity 0.3s", pointerEvents: (!photoUrls && playing) ? "none" : "auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
             style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
@@ -779,7 +776,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         )}
       </div>
-      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
+      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:20, opacity: (photoUrls || !playing) ? 1 : 0, transition:"opacity 0.3s", pointerEvents: (!photoUrls && playing) ? "none" : "auto" }}>
         <button onClick={handleLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ fontSize:22, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
