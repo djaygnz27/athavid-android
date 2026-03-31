@@ -450,8 +450,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           <div style={{ background:"rgba(255,50,50,0.12)", border:"1px solid rgba(255,50,50,0.4)", borderRadius:12, padding:"14px 16px", marginBottom:12, display:"flex", gap:10, alignItems:"flex-start" }}>
             <div style={{ fontSize:22, flexShrink:0 }}>🚫</div>
             <div>
-              <div style={{ color:"#ff4444", fontWeight:700, fontSize:14, marginBottom:4 }}>AI-Generated Video Detected</div>
-              <div style={{ color:"#cc6666", fontSize:13, lineHeight:1.5 }}>This video appears to be AI-generated. AthaVid does not allow AI videos. Please upload an original, real video.</div>
+              <div style={{ color:"#ff4444", fontWeight:700, fontSize:16, marginBottom:4 }}>Bruh. 💀</div>
+              <div style={{ color:"#cc6666", fontSize:14, lineHeight:1.6 }}>You can't upload AI videos on this site. 🚫🤖<br/>Keep it real — post your own original content.</div>
             </div>
           </div>
         )}
