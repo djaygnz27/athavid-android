@@ -1,5 +1,5 @@
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const BASE_URL = "/api/proxy";
 
 let sessionToken = null;
 
@@ -85,7 +85,7 @@ export async function uploadFile(file) {
   const token = getToken();
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE_URL}/apps/${APP_ID}/integration-endpoints/Core/UploadFile`, {
+  const res = await fetch(`/api/proxy/integration-endpoints/Core/UploadFile`, {
     method: "POST",
     headers: token ? { "Authorization": `Bearer ${token}` } : {},
     body: form
