@@ -82,17 +82,20 @@ export const comments = {
 };
 
 export async function uploadFile(file) {
-  // Upload via Base44 backend function — handles storage + CORS correctly
+  // Upload directly to Base44 storage — CORS is open, no proxy needed
   const token = getToken();
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch("https://sachi-c7f0261c.base44.app/api/functions/athaVidUpload", {
-    method: "POST",
-    headers: token ? { "Authorization": `Bearer ${token}` } : {},
-    body: form
-  });
+  const res = await fetch(
+    `https://sachi-c7f0261c.base44.app/api/apps/${APP_ID}/integration-endpoints/Core/UploadFile`,
+    {
+      method: "POST",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      body: form
+    }
+  );
   const data = await res.json();
-  if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
+  if (!res.ok || data.error) throw new Error(data.error || data.message || "Upload failed");
   return data.file_url;
 }
 
