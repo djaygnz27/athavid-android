@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Landing from "./Landing";
 import { auth, videos, comments, uploadFile } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
 
@@ -821,6 +822,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 }
 
 export default function App() {
+  const [hasEntered, setHasEntered] = useState(() => sessionStorage.getItem("sachi_entered") === "1");
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
   const [videoList, setVideoList] = useState([]);
   const [loading, setLoading] = useState(true);
