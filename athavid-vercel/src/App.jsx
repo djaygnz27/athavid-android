@@ -222,6 +222,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [notAiConfirmed, setNotAiConfirmed] = useState(false);
   const [aiBlocked, setAiBlocked] = useState(false);
 
+  const checkForExplicitContent = (f, cap) => {
+    const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
+    const name = f.name.toLowerCase();
+    const capLower = (cap||"").toLowerCase();
+    return explicit.some(kw => name.includes(kw) || capLower.includes(kw));
+  };
+
   const checkForAiSignatures = (f) => {
     // Check filename for known AI generator names
     const name = f.name.toLowerCase();
@@ -231,17 +238,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     return aiKeywords.some(kw => name.includes(kw));
   };
 
+  const [explicitBlocked, setExplicitBlocked] = useState(false);
+
   const handleFileSelect = (f) => {
     if (!f) return;
     setFile(f);
     setAiBlocked(false);
-    if (checkForAiSignatures(f)) {
-      setAiBlocked(true);
-    }
+    setExplicitBlocked(false);
+    if (checkForAiSignatures(f)) { setAiBlocked(true); return; }
+    if (checkForExplicitContent(f, caption)) { setExplicitBlocked(true); }
   };
 
   const upload = async () => {
     if (!file) return;
+    if (checkForExplicitContent(file, caption)) { alert("🔞 Sexual or explicit content is not allowed on AthaVid."); return; }
     if (aiBlocked) {
       alert("🚫 This video appears to be AI-generated and cannot be posted on AthaVid.");
       return;
@@ -386,6 +396,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
         <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
 
+        {/* Explicit Content Block Warning */}
+        {explicitBlocked && (
+          <div style={{ background:"rgba(255,50,50,0.12)", border:"1px solid rgba(255,50,50,0.4)", borderRadius:12, padding:"14px 16px", marginBottom:12, display:"flex", gap:10, alignItems:"flex-start" }}>
+            <div style={{ fontSize:22, flexShrink:0 }}>🔞</div>
+            <div>
+              <div style={{ color:"#ff4444", fontWeight:700, fontSize:14, marginBottom:4 }}>Explicit Content Not Allowed</div>
+              <div style={{ color:"#cc6666", fontSize:13, lineHeight:1.5 }}>AthaVid does not allow sexual or explicit content. Please upload appropriate videos only.</div>
+            </div>
+          </div>
+        )}
+
         {/* AI Block Warning */}
         {aiBlocked && (
           <div style={{ background:"rgba(255,50,50,0.12)", border:"1px solid rgba(255,50,50,0.4)", borderRadius:12, padding:"14px 16px", marginBottom:12, display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -418,8 +439,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             </div>
           </div>
         )}
-        <button onClick={upload} disabled={!file || uploading || aiBlocked || !notAiConfirmed}
-          style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && notAiConfirmed ? 1 : 0.5 }}>
+        <button onClick={upload} disabled={!file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed}
+          style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? 1 : 0.5 }}>
           {uploading ? step : "🚀 Post Video"}
         </button>
       </div>
@@ -433,6 +454,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
   const [muted, setMuted] = useState(true);
 
   useEffect(() => {
@@ -513,9 +535,82 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ fontSize:22 }}>↪️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Share</div>
         </button>
+        <button onClick={() => setReportTarget(video)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+          <div style={{ fontSize:22 }}>🚩</div>
+          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Report</div>
+        </button>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#333,#111)", border:"2px solid #555", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, animation: playing ? "spin 3s linear infinite" : "none" }}>🎵</div>
         </div>
+      </div>
+      {reportTarget && <ReportModal video={reportTarget} onClose={() => setReportTarget(null)} />}
+    </div>
+  );
+}
+
+// ── Report Modal ─────────────────────────────────────────────────────────────
+const REPORT_REASONS = [
+  { id:"ai",       icon:"🤖", label:"AI-Generated Video",        desc:"This video was made by AI, not a real person" },
+  { id:"sexual",   icon:"🔞", label:"Sexual / Explicit Content",  desc:"Contains nudity or sexual content" },
+  { id:"fake",     icon:"🎭", label:"Fake / Misleading",          desc:"This video is fake or spreading misinformation" },
+  { id:"spam",     icon:"📢", label:"Spam",                       desc:"Repetitive, irrelevant, or promotional spam" },
+  { id:"violence", icon:"⚠️", label:"Violence / Harmful Content", desc:"Contains graphic violence or harmful acts" },
+  { id:"other",    icon:"💬", label:"Other",                      desc:"Something else not listed above" },
+];
+
+function ReportModal({ video, onClose }) {
+  const [selected, setSelected] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const submit = () => {
+    if (!selected) return;
+    // Store report in localStorage for now
+    const key = `reports_${video.id}`;
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    existing.push({ reason: selected, time: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(existing));
+    setSubmitted(true);
+    setTimeout(() => onClose(), 1800);
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.8)" }} />
+      <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, padding:"20px 20px 40px", zIndex:3001 }}>
+        <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 16px" }} />
+
+        {submitted ? (
+          <div style={{ textAlign:"center", padding:"24px 0" }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:18, marginBottom:6 }}>Report Submitted</div>
+            <div style={{ color:"#888", fontSize:14 }}>Thanks for keeping AthaVid safe. We'll review this video.</div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>🚩 Report Video</div>
+              <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ color:"#888", fontSize:13, marginBottom:16 }}>Why are you reporting this video?</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+              {REPORT_REASONS.map(r => (
+                <div key={r.id} onClick={() => setSelected(r.id)}
+                  style={{ display:"flex", gap:12, alignItems:"center", padding:"12px 14px", borderRadius:12, cursor:"pointer", background: selected===r.id ? "rgba(255,107,107,0.15)" : "rgba(255,255,255,0.04)", border:`1px solid ${selected===r.id ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.08)"}`, transition:"all 0.15s" }}>
+                  <div style={{ fontSize:22, flexShrink:0 }}>{r.icon}</div>
+                  <div>
+                    <div style={{ color: selected===r.id ? "#ff6b6b" : "#fff", fontWeight:600, fontSize:14 }}>{r.label}</div>
+                    <div style={{ color:"#666", fontSize:12, marginTop:2 }}>{r.desc}</div>
+                  </div>
+                  <div style={{ marginLeft:"auto", width:18, height:18, borderRadius:"50%", border:`2px solid ${selected===r.id ? "#ff6b6b" : "#444"}`, background: selected===r.id ? "#ff6b6b" : "transparent", flexShrink:0 }} />
+                </div>
+              ))}
+            </div>
+            <button onClick={submit} disabled={!selected}
+              style={{ width:"100%", padding:14, background: selected ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:700, fontSize:15, cursor: selected ? "pointer" : "not-allowed", opacity: selected ? 1 : 0.5 }}>
+              Submit Report
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
