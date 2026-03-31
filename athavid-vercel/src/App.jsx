@@ -1048,11 +1048,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )}
       {/* Tap-to-pause: transparent overlay only active when playing, sits below buttons */}
       {playing && (
-        <div onClick={togglePlay} style={{ position:"absolute", top:0, left:0, right:0, bottom:200, zIndex:12, cursor:"pointer", pointerEvents:"auto" }} />
+        <div onClick={togglePlay} style={{ position:"absolute", top:0, left:0, right:0, bottom:200, zIndex:310, cursor:"pointer", pointerEvents:"auto" }} />
       )}
       {/* Paused indicator: only the circle is interactive */}
       {!playing && (
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:12 }}>
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:310 }}>
           <div onClick={togglePlay} style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer" }}>
             <div style={{ fontSize:30, marginLeft:6 }}>▶</div>
           </div>
@@ -1060,10 +1060,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:55, opacity:1, transition:"opacity 0.3s" }} />
       <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); const el = videoRef.current; if(!el) return; const newMuted = !muted; setMuted(newMuted); el.muted = newMuted; if(!newMuted){ const t = el.currentTime; el.pause(); el.muted = false; el.currentTime = t; el.play().catch(()=>{}); } }}
-        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:80, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
+        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
         {muted ? "🔇" : "🔊"}
       </button>
-      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:70, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
+      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:350, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
             style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
@@ -1104,7 +1104,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         )}
       </div>
-      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:70, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
+      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:350, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
         <button onClick={(e) => { e.stopPropagation(); handleLike(e); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ fontSize:22, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
