@@ -491,6 +491,72 @@ spinStyle.textContent = `
 `;
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
 
+// ── Avatar Picker Modal ───────────────────────────────────────────────────────
+const PRESET_AVATARS = [
+  { id:"a1", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" },
+  { id:"a2", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" },
+  { id:"a3", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Mia" },
+  { id:"a4", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Zara" },
+  { id:"a5", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Leo" },
+  { id:"a6", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Nova" },
+  { id:"a7", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Kira" },
+  { id:"a8", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Blaze" },
+  { id:"a9", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Pixel" },
+  { id:"a10", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Storm" },
+  { id:"a11", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Echo" },
+  { id:"a12", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Sage" },
+];
+
+function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef();
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const url = await uploadFile(file);
+      onSelect(url);
+    } catch { alert("Upload failed, try again."); }
+    finally { setUploading(false); }
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
+      <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, padding:"20px 20px 40px", zIndex:2001 }}>
+        <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 16px" }} />
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>Choose your avatar</div>
+          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
+        </div>
+
+        {/* Upload own photo */}
+        <div style={{ marginBottom:16 }}>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFileUpload} />
+          <button onClick={() => fileRef.current?.click()} disabled={uploading}
+            style={{ width:"100%", padding:"12px", background:"rgba(108,99,255,0.2)", border:"2px dashed rgba(108,99,255,0.5)", borderRadius:12, color:"#6c63ff", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+            {uploading ? "Uploading..." : "📷 Upload your own photo"}
+          </button>
+        </div>
+
+        <div style={{ color:"#666", fontSize:12, marginBottom:12, textAlign:"center" }}>— or pick a preset —</div>
+
+        {/* Preset grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10 }}>
+          {PRESET_AVATARS.map(a => (
+            <div key={a.id} onClick={() => onSelect(a.url)}
+              style={{ cursor:"pointer", borderRadius:"50%", border: currentAvatar===a.url ? "3px solid #ff6b6b" : "3px solid transparent", overflow:"hidden", width:60, height:60, margin:"0 auto", transition:"border 0.2s" }}>
+              <img src={a.url} style={{ width:"100%", height:"100%" }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
   const [videoList, setVideoList] = useState([]);
@@ -500,8 +566,16 @@ export default function App() {
   const [showUpload, setShowUpload] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   useEffect(() => { loadVideos(); }, []);
+  useEffect(() => {
+    if (currentUser) {
+      const saved = localStorage.getItem(`avatar_${currentUser.id}`);
+      if (saved) setAvatarUrl(saved);
+    }
+  }, [currentUser]);
 
   const loadVideos = async () => {
     setLoading(true);
@@ -601,7 +675,10 @@ export default function App() {
           ) : (
             <>
               <div style={{ padding:"20px 20px 0", textAlign:"center" }}>
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", marginBottom:12 }} />
+                <div style={{ position:"relative", display:"inline-block", marginBottom:12 }} onClick={() => setShowAvatarPicker(true)}>
+                  <img src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", cursor:"pointer", display:"block" }} />
+                  <div style={{ position:"absolute", bottom:0, right:0, background:"#ff6b6b", borderRadius:"50%", width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, cursor:"pointer", border:"2px solid #0a0a14" }}>✏️</div>
+                </div>
                 <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
                 <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
                 <div style={{ display:"flex", justifyContent:"center", gap:32, marginTop:20, marginBottom:20 }}>
@@ -654,6 +731,7 @@ export default function App() {
       {commentVideo && <CommentSheet video={commentVideo} currentUser={currentUser} onClose={() => setCommentVideo(null)} onCommentPosted={handleCommentCount} onNeedAuth={() => { setCommentVideo(null); setShowAuth(true); }} />}
       {showUpload && currentUser && <UploadModal currentUser={currentUser} onClose={() => setShowUpload(false)} onUploaded={loadVideos} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); }} />}
+      {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={(url) => { setAvatarUrl(url); if(currentUser) localStorage.setItem(`avatar_${currentUser.id}`, url); setShowAvatarPicker(false); }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
   );
 }
