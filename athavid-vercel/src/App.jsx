@@ -102,10 +102,24 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           )}
           {list.map(c => (
             <div key={c.id} style={{ display:"flex", gap:10, marginBottom:16 }}>
-              <img src={c.avatar_url} style={{ width:36, height:36, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.3)" }} />
-              <div>
+              <img src={c.avatar_url} style={{ width:36, height:36, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.3)", flexShrink:0 }} />
+              <div style={{ flex:1 }}>
                 <div style={{ color:"#ff6b6b", fontWeight:700, fontSize:13 }}>@{c.username}</div>
-                <div style={{ color:"#ccc", fontSize:14 }}>{c.comment_text}</div>
+                <div style={{ color:"#ccc", fontSize:14, marginBottom:6 }}>{c.comment_text}</div>
+                <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+                  <button onClick={() => setList(prev => prev.map(x => x.id === c.id ? {...x, thumbsUp: (x.thumbsUp||0)+1} : x))}
+                    style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:3, color: c.thumbsUp ? "#6bff9a" : "#666", fontSize:13, padding:0 }}>
+                    👍 <span style={{ fontSize:11 }}>{c.thumbsUp || 0}</span>
+                  </button>
+                  <button onClick={() => setList(prev => prev.map(x => x.id === c.id ? {...x, hearts: (x.hearts||0)+1} : x))}
+                    style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:3, color: c.hearts ? "#ff6b6b" : "#666", fontSize:13, padding:0 }}>
+                    ❤️ <span style={{ fontSize:11 }}>{c.hearts || 0}</span>
+                  </button>
+                  <button onClick={() => setList(prev => prev.map(x => x.id === c.id ? {...x, thumbsDown: (x.thumbsDown||0)+1} : x))}
+                    style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:3, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:13, padding:0 }}>
+                    👎 <span style={{ fontSize:11 }}>{c.thumbsDown || 0}</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
