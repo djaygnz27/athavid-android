@@ -1073,11 +1073,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
             style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
-          <div>
+          <div style={{ flex:1 }}>
             <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>@{video.username}</div>
-
           </div>
+          {currentUser && !isOwnVideo && (
+            <button onClick={handleFollow} disabled={followLoading}
+              style={{
+                padding:"5px 14px", borderRadius:20, flexShrink:0,
+                background: followRecord
+                  ? "rgba(255,255,255,0.15)"
+                  : "linear-gradient(135deg,#ff6b6b,#e53935)",
+                border: followRecord ? "1.5px solid rgba(255,255,255,0.4)" : "none",
+                color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer",
+                opacity: followLoading ? 0.6 : 1, whiteSpace:"nowrap",
+                boxShadow: followRecord ? "none" : "0 2px 10px rgba(229,57,53,0.5)"
+              }}>
+              {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
+            </button>
+          )}
         </div>
         <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>{video.caption}</div>
         {video.hashtags?.length > 0 && (
