@@ -48,7 +48,10 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [text, setText] = useState("");
   const [posting, setPosting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [replyingTo, setReplyingTo] = useState(null); // { id, username }
+  const [expandedReplies, setExpandedReplies] = useState({});
   const bottomRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (!video) return;
@@ -60,26 +63,93 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [list]);
 
+  const startReply = (c) => {
+    if (!currentUser) { onNeedAuth(); return; }
+    setReplyingTo({ id: c.id, username: c.username });
+    setText(`@${c.username} `);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const cancelReply = () => { setReplyingTo(null); setText(""); };
+
   const post = async () => {
     if (!currentUser) { onNeedAuth(); return; }
     if (!text.trim()) return;
     setPosting(true);
     try {
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
-      const c = await comments.create({
-        video_id: video.id, username,
-        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-        comment_text: text.trim(), likes_count: 0,
-      });
-      const newCount = list.length + 1;
-      setList(prev => [...prev, c]);
-      setText("");
-      await videos.update(video.id, { comments_count: newCount });
-      if (onCommentPosted) onCommentPosted(video.id, newCount);
-      setTimeout(() => onClose(), 600);
+      if (replyingTo) {
+        // Post as a reply stored locally under the parent comment
+        const reply = { id: Date.now().toString(), username, avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
+        setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
+        setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
+        setReplyingTo(null);
+        setText("");
+      } else {
+        const c = await comments.create({
+          video_id: video.id, username,
+          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+          comment_text: text.trim(), likes_count: 0,
+        });
+        const newCount = list.length + 1;
+        setList(prev => [...prev, c]);
+        setText("");
+        await videos.update(video.id, { comments_count: newCount });
+        if (onCommentPosted) onCommentPosted(video.id, newCount);
+        setTimeout(() => onClose(), 600);
+      }
     } catch(e) { alert("Error: " + e.message); }
     finally { setPosting(false); }
   };
+
+  const reactToComment = (id, reaction, isReply, parentId) => {
+    if (isReply) {
+      setList(prev => prev.map(x => x.id === parentId ? {
+        ...x, replies: (x.replies||[]).map(r => r.id === id ? {...r, [reaction]: (r[reaction]||0)+1} : r)
+      } : x));
+    } else {
+      setList(prev => prev.map(x => x.id === id ? {...x, [reaction]: (x[reaction]||0)+1} : x));
+    }
+  };
+
+  const CommentRow = ({ c, isReply=false, parentId=null }) => (
+    <div style={{ display:"flex", gap:10, marginBottom:12, paddingLeft: isReply ? 44 : 0 }}>
+      <img src={c.avatar_url} style={{ width: isReply?28:36, height: isReply?28:36, borderRadius:"50%", border:`2px solid rgba(108,99,255,${isReply?0.2:0.3})`, flexShrink:0 }} />
+      <div style={{ flex:1 }}>
+        <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
+        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
+        <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+          <button onClick={() => reactToComment(c.id, "thumbsUp", isReply, parentId)}
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsUp ? "#6bff9a" : "#666", fontSize:12, padding:0 }}>
+            👍 <span style={{ fontSize:10 }}>{c.thumbsUp || 0}</span>
+          </button>
+          <button onClick={() => reactToComment(c.id, "hearts", isReply, parentId)}
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.hearts ? "#ff6b6b" : "#666", fontSize:12, padding:0 }}>
+            ❤️ <span style={{ fontSize:10 }}>{c.hearts || 0}</span>
+          </button>
+          <button onClick={() => reactToComment(c.id, "thumbsDown", isReply, parentId)}
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:12, padding:0 }}>
+            👎 <span style={{ fontSize:10 }}>{c.thumbsDown || 0}</span>
+          </button>
+          {!isReply && (
+            <button onClick={() => startReply(c)}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#888", fontSize:12, padding:0, marginLeft:4 }}>
+              💬 Reply
+            </button>
+          )}
+          {!isReply && c.replies?.length > 0 && (
+            <button onClick={() => setExpandedReplies(prev => ({...prev, [c.id]: !prev[c.id]}))}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#6c63ff", fontSize:12, padding:0 }}>
+              {expandedReplies[c.id] ? "▲ Hide" : `▼ ${c.replies.length} repl${c.replies.length===1?"y":"ies"}`}
+            </button>
+          )}
+        </div>
+        {!isReply && expandedReplies[c.id] && (c.replies||[]).map(r => (
+          <CommentRow key={r.id} c={r} isReply={true} parentId={c.id} />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
@@ -100,35 +170,19 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
               <div>No comments yet. Be first!</div>
             </div>
           )}
-          {list.map(c => (
-            <div key={c.id} style={{ display:"flex", gap:10, marginBottom:16 }}>
-              <img src={c.avatar_url} style={{ width:36, height:36, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.3)", flexShrink:0 }} />
-              <div style={{ flex:1 }}>
-                <div style={{ color:"#ff6b6b", fontWeight:700, fontSize:13 }}>@{c.username}</div>
-                <div style={{ color:"#ccc", fontSize:14, marginBottom:6 }}>{c.comment_text}</div>
-                <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-                  <button onClick={() => setList(prev => prev.map(x => x.id === c.id ? {...x, thumbsUp: (x.thumbsUp||0)+1} : x))}
-                    style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:3, color: c.thumbsUp ? "#6bff9a" : "#666", fontSize:13, padding:0 }}>
-                    👍 <span style={{ fontSize:11 }}>{c.thumbsUp || 0}</span>
-                  </button>
-                  <button onClick={() => setList(prev => prev.map(x => x.id === c.id ? {...x, hearts: (x.hearts||0)+1} : x))}
-                    style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:3, color: c.hearts ? "#ff6b6b" : "#666", fontSize:13, padding:0 }}>
-                    ❤️ <span style={{ fontSize:11 }}>{c.hearts || 0}</span>
-                  </button>
-                  <button onClick={() => setList(prev => prev.map(x => x.id === c.id ? {...x, thumbsDown: (x.thumbsDown||0)+1} : x))}
-                    style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:3, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:13, padding:0 }}>
-                    👎 <span style={{ fontSize:11 }}>{c.thumbsDown || 0}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+          {list.map(c => <CommentRow key={c.id} c={c} />)}
           <div ref={bottomRef} />
         </div>
-        <div style={{ padding:"12px 16px 32px", borderTop:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+        <div style={{ padding:"8px 16px 32px", borderTop:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+          {replyingTo && (
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6, padding:"4px 10px", background:"rgba(108,99,255,0.15)", borderRadius:8 }}>
+              <span style={{ color:"#aaa", fontSize:12 }}>Replying to <span style={{ color:"#ff6b6b" }}>@{replyingTo.username}</span></span>
+              <button onClick={cancelReply} style={{ background:"none", border:"none", color:"#666", cursor:"pointer", fontSize:14 }}>✕</button>
+            </div>
+          )}
           <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-            <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === "Enter" && post()}
-              placeholder={currentUser ? "Add a comment..." : "Log in to comment..."}
+            <input ref={inputRef} value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === "Enter" && post()}
+              placeholder={currentUser ? (replyingTo ? `Reply to @${replyingTo.username}...` : "Add a comment...") : "Log in to comment..."}
               style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:"8px 14px", color:"#fff", fontSize:14, outline:"none" }} />
             <button onClick={post} disabled={posting}
               style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", cursor:"pointer", fontSize:16 }}>➤</button>
