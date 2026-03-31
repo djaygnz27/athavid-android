@@ -540,8 +540,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)", pointerEvents:"none", opacity: playing ? 0 : 1, transition:"opacity 0.3s" }} />
-      <button onClick={() => setMuted(m => !m)}
-        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.5)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", cursor:"pointer", fontSize:16, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
+      <button onClick={(e) => { e.stopPropagation(); setMuted(m => !m); }}
+        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.55)", border:"none", borderRadius:"50%", width:42, height:42, color:"#fff", cursor:"pointer", fontSize:18, zIndex:20, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(4px)" }}>
         {muted ? "🔇" : "🔊"}
       </button>
       <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
