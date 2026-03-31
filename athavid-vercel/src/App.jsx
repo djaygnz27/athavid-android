@@ -489,7 +489,7 @@ export default function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory" }}>
+        <div data-feed style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory" }}>
           {loading && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:48 }}>🎬</div>
@@ -574,7 +574,7 @@ export default function App() {
             onClick={() => {
               if (tab.id === "post") { requireAuth(() => setShowUpload(true)); }
               else if (tab.id === "install") { window.showInstallInstructions && window.showInstallInstructions(); }
-              else { setActiveTab(tab.id); }
+              else if (tab.id === "feed") { setActiveTab("feed"); loadVideos(); window.scrollTo(0, 0); document.querySelector("[data-feed]") && (document.querySelector("[data-feed]").scrollTop = 0); } else { setActiveTab(tab.id); }
             }}
             style={{ flex:1, padding:"10px 0 8px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
             <div style={{ fontSize:22 }}>{tab.icon}</div>
