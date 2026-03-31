@@ -515,6 +515,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => obs.disconnect();
   }, []);
 
+  // Directly set .muted on the DOM element — React's muted prop is unreliable
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = muted;
+  }, [muted]);
+
   const togglePlay = () => {
     const el = videoRef.current;
     if (!el) return;
@@ -530,7 +537,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
       <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
-        loop muted={muted} playsInline onClick={togglePlay}
+        loop playsInline onClick={togglePlay}
         style={{ width:"100%", height:"100%", objectFit:"cover" }} />
       {!playing && (
         <div onClick={togglePlay} style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
