@@ -95,7 +95,7 @@ export default function Privacy() {
         <Section title="7. Data Retention">
           We retain your personal information for as long as your account is active or as needed to provide
           services. You may request deletion of your account and associated data by contacting us at
-          <a href="mailto:privacy@athavid.app" style={{ color: "#ff6b6b" }}> lasanjaya@gmail.com</a>.
+          <a href="mailto:lasanjaya@gmail.com" style={{ color: "#ff6b6b" }}> lasanjaya@gmail.com</a>.
         </Section>
 
         <Section title="8. Security">
@@ -139,7 +139,7 @@ export default function Privacy() {
           <strong>LDNA Consulting / Sachi</strong><br />
           New Providence, NJ 07974<br />
           Email: <a href="mailto:lasanjaya@gmail.com" style={{ color: "#ff6b6b" }}>lasanjaya@gmail.com</a><br />
-          Website: <a href="https://sachi-app.vercel.app" style={{ color: "#ff6b6b" }}>sachi-app.vercel.app</a>
+          Website: <a href="https://athavid-vercel.vercel.app" style={{ color: "#ff6b6b" }}>athavid-vercel.vercel.app</a>
         </Section>
 
       </div>
