@@ -94,3 +94,25 @@ export async function uploadFile(file) {
   if (!res.ok) throw new Error(data.message || data.detail || data.error || "Upload failed");
   return data.file_url;
 }
+
+export const follows = {
+  async follow(follower_id, follower_username, following_id, following_username) {
+    return request("POST", `/apps/${APP_ID}/entities/Follow`, {
+      follower_id, follower_username, following_id, following_username
+    });
+  },
+  async unfollow(recordId) {
+    return request("DELETE", `/apps/${APP_ID}/entities/Follow/${recordId}`);
+  },
+  async getFollowing(follower_id) {
+    return request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${follower_id}`);
+  },
+  async getFollowers(following_id) {
+    return request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${following_id}`);
+  },
+  async getFollowingVideos(userIds) {
+    // fetch videos from followed users
+    const ids = userIds.join(",");
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
+  }
+};
