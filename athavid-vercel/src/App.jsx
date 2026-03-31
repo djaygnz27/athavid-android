@@ -1053,12 +1053,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         </div>
       )}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:55, opacity: (photoUrls || !playing) ? 1 : 0, transition:"opacity 0.3s" }} />
-      <button onClick={handleMuteToggle}
-        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:20, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:55, opacity:1, transition:"opacity 0.3s" }} />
+      <button onClick={(e) => { e.stopPropagation(); handleMuteToggle(e); }}
+        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:80, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
         {muted ? "🔇" : "🔊"}
       </button>
-      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:60, opacity: (photoUrls || !playing) ? 1 : 0, transition:"opacity 0.3s", pointerEvents: (!photoUrls && playing) ? "none" : "auto" }}>
+      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:70, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
             style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
@@ -1099,7 +1099,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         )}
       </div>
-      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:60, opacity: (photoUrls || !playing) ? 1 : 0, transition:"opacity 0.3s", pointerEvents: (!photoUrls && playing) ? "none" : "auto" }}>
+      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:70, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
         <button onClick={handleLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ fontSize:22, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
