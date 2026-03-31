@@ -878,7 +878,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 }
 
 // ── Video Card ────────────────────────────────────────────────────────────────
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen }) {
   const videoRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
@@ -1053,10 +1053,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
-            style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b", flexShrink:0 }} />
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ color:"#fff", fontWeight:800, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{video.display_name || video.username}</div>
-            <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>@{video.username}</div>
+            onClick={tap(() => onProfileOpen && onProfileOpen(video.user_id, video.username))}
+            style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b", flexShrink:0, cursor:"pointer" }} />
+          <div style={{ flex:1, minWidth:0 }} onClick={tap(() => onProfileOpen && onProfileOpen(video.user_id, video.username))} >
+            <div style={{ color:"#fff", fontWeight:800, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", cursor:"pointer" }}>{video.display_name || video.username}</div>
+            <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12, cursor:"pointer" }}>@{video.username}</div>
           </div>
           {!isOwnVideo && (
             <button onClick={tap(doFollow)} disabled={followLoading}
@@ -1311,6 +1312,175 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 }
 
 
+
+// ─── User Profile Sheet ──────────────────────────────────────────────────────
+function UserProfileSheet({ userId, username, currentUser, onClose }) {
+  const [profile, setProfile] = React.useState(null);
+  const [userVideos, setUserVideos] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [followRecord, setFollowRecord] = React.useState(null);
+  const [followLoading, setFollowLoading] = React.useState(false);
+  const [selectedVideo, setSelectedVideo] = React.useState(null);
+
+  const isOwnProfile = currentUser && currentUser.id === userId;
+
+  React.useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?created_by=${userId}`).catch(() => null),
+      videos.byUser(userId).catch(() => [])
+    ]).then(([userRes, vids]) => {
+      const u = (userRes?.items || userRes || [])[0] || null;
+      setProfile(u);
+      const vidList = Array.isArray(vids) ? vids : (vids?.items || []);
+      setUserVideos(vidList);
+      setLoading(false);
+    });
+    // Check follow status
+    if (currentUser && !isOwnProfile) {
+      follows.getFollowing(currentUser.id).then(res => {
+        const rec = (res.items || res || []).find(r => r.following_id === userId);
+        if (rec) setFollowRecord(rec);
+      }).catch(() => {});
+    }
+  }, [userId]);
+
+  const doFollow = async () => {
+    if (!currentUser || isOwnProfile) return;
+    setFollowLoading(true);
+    try {
+      if (followRecord) {
+        await follows.unfollow(followRecord.id);
+        setFollowRecord(null);
+      } else {
+        const rec = await follows.follow(
+          currentUser.id,
+          currentUser.username || currentUser.email?.split("@")[0],
+          userId,
+          username
+        );
+        setFollowRecord(rec);
+      }
+    } catch(e) { console.error(e); }
+    setFollowLoading(false);
+  };
+
+  const displayName = profile?.display_name || username || "User";
+  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:4000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+      {/* Backdrop */}
+      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
+
+      {/* Sheet */}
+      <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"24px 24px 0 0",
+        width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column",
+        zIndex:4001, overflow:"hidden" }}>
+
+        {/* Handle */}
+        <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"14px auto 0", flexShrink:0 }} />
+
+        {/* Close */}
+        <button onClick={onClose} style={{ position:"absolute", top:12, right:16, background:"none", border:"none",
+          color:"#888", fontSize:22, cursor:"pointer", zIndex:1 }}>✕</button>
+
+        {loading ? (
+          <div style={{ textAlign:"center", padding:60, color:"#555" }}>
+            <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>
+            <div>Loading profile...</div>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div style={{ padding:"16px 20px 20px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
+              <img src={avatarUrl}
+                style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", marginBottom:10, background:"#1a1a2e" }} />
+              <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{displayName}</div>
+              <div style={{ color:"#666", fontSize:13, marginBottom:4 }}>@{username}</div>
+              {profile?.bio && <div style={{ color:"#aaa", fontSize:13, marginBottom:8, lineHeight:1.5 }}>{profile.bio}</div>}
+              {profile?.location && <div style={{ color:"#666", fontSize:12, marginBottom:8 }}>📍 {profile.location}</div>}
+
+              {/* Stats row */}
+              <div style={{ display:"flex", justifyContent:"center", gap:28, marginTop:12, marginBottom:14 }}>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{userVideos.length}</div>
+                  <div style={{ color:"#666", fontSize:11 }}>Videos</div>
+                </div>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.followers_count || 0}</div>
+                  <div style={{ color:"#666", fontSize:11 }}>Followers</div>
+                </div>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.following_count || 0}</div>
+                  <div style={{ color:"#666", fontSize:11 }}>Following</div>
+                </div>
+              </div>
+
+              {/* Follow button */}
+              {!isOwnProfile && currentUser && (
+                <button onClick={doFollow} disabled={followLoading}
+                  style={{ padding:"10px 40px", borderRadius:24,
+                    background: followRecord ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg,#ff6b6b,#e53935)",
+                    border: followRecord ? "1.5px solid rgba(255,255,255,0.3)" : "none",
+                    color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
+                    opacity: followLoading ? 0.6 : 1,
+                    WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                  {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
+                </button>
+              )}
+            </div>
+
+            {/* Video grid */}
+            <div style={{ overflowY:"auto", flex:1, padding:2 }}>
+              {userVideos.length === 0 ? (
+                <div style={{ textAlign:"center", padding:40, color:"#444" }}>
+                  <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
+                  <div>No videos yet</div>
+                </div>
+              ) : (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:2 }}>
+                  {userVideos.map(v => (
+                    <div key={v.id} onClick={() => setSelectedVideo(v)}
+                      style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}>
+                      {v.thumbnail_url ? (
+                        <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      ) : (
+                        <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      )}
+                      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)" }} />
+                      <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
+                        ❤️ {v.likes_count || 0}
+                      </div>
+                      {v.views_count > 0 && (
+                        <div style={{ position:"absolute", bottom:4, right:6, color:"#fff", fontSize:11 }}>
+                          👁 {v.views_count}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Mini video preview */}
+      {selectedVideo && (
+        <div style={{ position:"fixed", inset:0, zIndex:5000, background:"rgba(0,0,0,0.95)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+          <button onClick={() => setSelectedVideo(null)}
+            style={{ position:"absolute", top:20, right:20, background:"rgba(255,255,255,0.15)", border:"none",
+              borderRadius:"50%", width:44, height:44, color:"#fff", fontSize:20, cursor:"pointer", zIndex:5001 }}>✕</button>
+          <video src={selectedVideo.video_url} controls autoPlay playsInline
+            style={{ width:"100%", maxWidth:480, maxHeight:"80vh", objectFit:"contain", borderRadius:12 }} />
+          <div style={{ color:"#fff", fontSize:14, marginTop:12, padding:"0 20px", textAlign:"center" }}>{selectedVideo.caption}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── VideoManageGrid ────────────────────────────────────────────────────────
 function VideoManageGrid({ videos: vids, onRefresh }) {
   const [menuVideo, setMenuVideo] = React.useState(null);
@@ -1477,6 +1647,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feed");
   const [showGoLive, setShowGoLive] = useState(false);
+  const [profileSheet, setProfileSheet] = useState(null); // { userId, username }
   const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
   const [followingVideos, setFollowingVideos] = useState([]);
   const [followingIds, setFollowingIds] = useState([]);
@@ -1627,7 +1798,8 @@ export default function App() {
               onLike={handleLike}
               onView={handleView}
               onNeedAuth={() => setShowAuth(true)}
-              onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))} />
+              onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
+              onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })} />
           ))}
         </div>
       )}
@@ -1705,6 +1877,13 @@ export default function App() {
 
       </div>
 
+      {profileSheet && (
+        <UserProfileSheet
+          userId={profileSheet.userId}
+          username={profileSheet.username}
+          currentUser={currentUser}
+          onClose={() => setProfileSheet(null)} />
+      )}
       {commentVideo && <CommentSheet video={commentVideo} currentUser={currentUser} onClose={() => setCommentVideo(null)} onCommentPosted={handleCommentCount} onNeedAuth={() => { setCommentVideo(null); setShowAuth(true); }} />}
       {showUpload && currentUser && <UploadModal currentUser={currentUser} onClose={() => setShowUpload(false)} onUploaded={() => { loadVideos(); setUploadToast(true); setTimeout(() => setUploadToast(false), 4000); }} />}
       {showGoLive && currentUser && <GoLiveModal currentUser={currentUser} onClose={() => setShowGoLive(false)} onUploaded={() => { loadVideos(); setUploadToast(true); setTimeout(() => setUploadToast(false), 4000); }} />}
