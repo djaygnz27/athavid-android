@@ -741,23 +741,16 @@ spinStyle.textContent = `
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
 
 // ── Avatar Picker Modal ───────────────────────────────────────────────────────
-const PRESET_AVATARS = [
-  { id:"a1", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" },
-  { id:"a2", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" },
-  { id:"a3", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Mia" },
-  { id:"a4", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Zara" },
-  { id:"a5", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Leo" },
-  { id:"a6", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Nova" },
-  { id:"a7", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Kira" },
-  { id:"a8", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Blaze" },
-  { id:"a9", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Pixel" },
-  { id:"a10", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Storm" },
-  { id:"a11", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Echo" },
-  { id:"a12", url:"https://api.dicebear.com/7.x/avataaars/svg?seed=Sage" },
+const AVATAR_STYLES = [
+  { label: "Cartoon", style: "avataaars", seeds: ["Felix","Aneka","Mia","Zara","Leo","Nova","Kira","Blaze","Pixel","Storm","Echo","Sage","Raya","Kofi","Priya","Omar","Mei","Ava","Jake","Luna","Diego","Aisha","Nate","Yuki"] },
+  { label: "Portraits", style: "lorelei", seeds: ["Alex","Sam","Jordan","Taylor","Morgan","Casey","Jamie","Riley","Quinn","Avery","Blake","Cameron","Dana","Ellis","Fynn","Gwen","Harley","Indie","Jules","Kai"] },
+  { label: "Fun", style: "bottts", seeds: ["R2D2","BB8","Wall-E","Robo","Zap","Bolt","Chip","Digi","Glitch","Mega","Nano","Pixel","Spark","Vibe","Wave","Flux","Glow","Nova","Atom","Echo"] },
+  { label: "Minimal", style: "thumbs", seeds: ["Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Eta","Theta","Iota","Kappa","Lambda","Mu","Nu","Xi","Omicron","Pi","Rho","Sigma","Tau","Upsilon"] },
 ];
 
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = useState(false);
+  const [activeStyle, setActiveStyle] = useState(0);
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
@@ -771,33 +764,51 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     finally { setUploading(false); }
   };
 
+  const currentStyleData = AVATAR_STYLES[activeStyle];
+  const avatarUrls = currentStyleData.seeds.map(seed =>
+    `https://api.dicebear.com/7.x/${currentStyleData.style}/svg?seed=${seed}`
+  );
+
   return (
     <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
-      <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, padding:"20px 20px 40px", zIndex:2001 }}>
+      <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, padding:"20px 20px 36px", zIndex:2001 }}>
         <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 16px" }} />
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
           <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>Choose your avatar</div>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
         </div>
 
         {/* Upload own photo */}
-        <div style={{ marginBottom:16 }}>
+        <div style={{ marginBottom:14 }}>
           <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFileUpload} />
           <button onClick={() => fileRef.current?.click()} disabled={uploading}
-            style={{ width:"100%", padding:"12px", background:"rgba(108,99,255,0.2)", border:"2px dashed rgba(108,99,255,0.5)", borderRadius:12, color:"#6c63ff", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+            style={{ width:"100%", padding:"11px", background:"rgba(108,99,255,0.2)", border:"2px dashed rgba(108,99,255,0.5)", borderRadius:12, color:"#6c63ff", fontWeight:700, fontSize:14, cursor:"pointer" }}>
             {uploading ? "Uploading..." : "📷 Upload your own photo"}
           </button>
         </div>
 
-        <div style={{ color:"#666", fontSize:12, marginBottom:12, textAlign:"center" }}>— or pick a preset —</div>
+        {/* Style tabs */}
+        <div style={{ display:"flex", gap:6, marginBottom:12, overflowX:"auto", scrollbarWidth:"none" }}>
+          {AVATAR_STYLES.map((s, i) => (
+            <button key={i} onClick={() => setActiveStyle(i)}
+              style={{ flexShrink:0, padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                background: activeStyle === i ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
+                color: activeStyle === i ? "#fff" : "#aaa" }}>
+              {s.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Preset grid */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10 }}>
-          {PRESET_AVATARS.map(a => (
-            <div key={a.id} onClick={() => onSelect(a.url)}
-              style={{ cursor:"pointer", borderRadius:"50%", border: currentAvatar===a.url ? "3px solid #ff6b6b" : "3px solid transparent", overflow:"hidden", width:60, height:60, margin:"0 auto", transition:"border 0.2s" }}>
-              <img src={a.url} style={{ width:"100%", height:"100%" }} />
+        {/* Avatar grid — scrollable */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:10, maxHeight:280, overflowY:"auto", paddingRight:4 }}>
+          {avatarUrls.map((url, i) => (
+            <div key={i} onClick={() => onSelect(url)}
+              style={{ cursor:"pointer", borderRadius:"50%", border: currentAvatar===url ? "3px solid #ff6b6b" : "3px solid rgba(255,255,255,0.1)",
+                overflow:"hidden", width:54, height:54, margin:"0 auto", transition:"border 0.2s, transform 0.15s",
+                transform: currentAvatar===url ? "scale(1.1)" : "scale(1)",
+                background:"rgba(255,255,255,0.05)" }}>
+              <img src={url} style={{ width:"100%", height:"100%" }} loading="lazy" />
             </div>
           ))}
         </div>
