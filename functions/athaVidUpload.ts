@@ -1,9 +1,9 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { createClientFromRequest, createServiceRoleClient } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
   };
 
@@ -11,12 +11,23 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 200, headers });
   }
 
+  // ── GET /api/functions/athaVidUpload?feed=1  →  public feed ──
+  if (req.method === "GET") {
+    try {
+      const base44 = createServiceRoleClient();
+      const records = await base44.entities.SachiVideo.filter(
+        { is_approved: true, is_archived: false },
+        { sort: "-created_date", limit: 100 }
+      );
+      return Response.json(Array.isArray(records) ? records : records?.records || [], { headers });
+    } catch (err) {
+      return Response.json({ error: String(err) }, { status: 500, headers });
+    }
+  }
+
+  // ── POST /api/functions/athaVidUpload  →  file upload ──
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me().catch(() => null);
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401, headers });
-    }
 
     const formData = await req.formData();
     const file = formData.get("file");
@@ -25,11 +36,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: "No file provided" }, { status: 400, headers });
     }
 
-    // Convert to bytes for upload
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    // Use service role to upload
     const result = await base44.asServiceRole.storage.uploadPublic(bytes, {
       filename: file.name || "upload.mp4",
       contentType: file.type || "video/mp4",
