@@ -1047,8 +1047,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         style={{ width:"100%", height:"100%", objectFit:"cover" }} />
       )}
       {!playing && (
-        <div onClick={togglePlay} style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
-          <div style={{ background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:10 }}>
+          <div onClick={togglePlay} style={{ background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer" }}>
             <div style={{ fontSize:30, marginLeft:6 }}>▶</div>
           </div>
         </div>
@@ -1067,7 +1067,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>@{video.username}</div>
           </div>
           {currentUser && !isOwnVideo && (
-            <button onClick={handleFollow} disabled={followLoading}
+            <button onClick={(e) => { e.stopPropagation(); handleFollow(e); }} disabled={followLoading}
               style={{
                 padding:"5px 14px", borderRadius:20, flexShrink:0,
                 background: followRecord
@@ -1100,19 +1100,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
       </div>
       <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:70, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
-        <button onClick={handleLike} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+        <button onClick={(e) => { e.stopPropagation(); handleLike(e); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ fontSize:22, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
         </button>
-        <button onClick={() => onCommentOpen(video)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+        <button onClick={(e) => { e.stopPropagation(); onCommentOpen(video); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ fontSize:22 }}>💬</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount(video.comments_count)}</div>
         </button>
-        <button onClick={() => { if(navigator.share){ navigator.share({ title: video.caption || "Check this out", url: window.location.href }); } else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); } }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+        <button onClick={(e) => { e.stopPropagation(); if(navigator.share){ navigator.share({ title: video.caption || "Check this out", url: window.location.href }); } else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); } }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ fontSize:22 }}>↪️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Share</div>
         </button>
-        <button onClick={() => setReportTarget(video)} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+        <button onClick={(e) => { e.stopPropagation(); setReportTarget(video); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ fontSize:22 }}>🚩</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Report</div>
         </button>
