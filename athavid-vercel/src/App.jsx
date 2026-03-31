@@ -1059,8 +1059,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:55, opacity:1, transition:"opacity 0.3s" }} />
-      <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); const el = videoRef.current; if(!el) return; const newMuted = !muted; setMuted(newMuted); el.muted = newMuted; if(!newMuted){ const t = el.currentTime; el.pause(); el.muted = false; el.currentTime = t; el.play().catch(()=>{}); } }}
-        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
+      <button
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+        onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); const el = videoRef.current; if(!el) return; const nm = !muted; setMuted(nm); el.muted = nm; if(!nm){ const t=el.currentTime; el.pause(); el.muted=false; el.currentTime=t; el.play().catch(()=>{}); } }}
+        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:56, height:56, color:"#fff", cursor:"pointer", fontSize:22, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)", touchAction:"manipulation" }}>
         {muted ? "🔇" : "🔊"}
       </button>
       <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:350, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
@@ -1072,7 +1074,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>@{video.username}</div>
           </div>
           {!isOwnVideo && (
-            <button onClick={(e) => { e.stopPropagation(); if(!currentUser){ onNeedAuth(); return; } handleFollow(e); }} disabled={followLoading}
+            <button 
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+              onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); if(!currentUser){ onNeedAuth(); return; } handleFollow(e); }}
+              disabled={followLoading}
               style={{
                 padding:"5px 14px", borderRadius:20, flexShrink:0,
                 background: followRecord
@@ -1105,11 +1110,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
       </div>
       <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:350, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
-        <button onClick={(e) => { e.stopPropagation(); handleLike(e); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); handleLike(e); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, touchAction:"manipulation" }}>
           <div style={{ fontSize:22, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); onCommentOpen(video); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCommentOpen(video); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, touchAction:"manipulation" }}>
           <div style={{ fontSize:22 }}>💬</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount(video.comments_count)}</div>
         </button>
@@ -1689,19 +1694,7 @@ export default function App() {
             <div style={{ fontSize:10, color: tab.id === "install" ? "#6bff9a" : activeTab === tab.id ? "#ff6b6b" : "#555", fontWeight: activeTab === tab.id ? 700 : 400 }}>{tab.label}</div>
           </button>
         ))}
-        {/* Go Live button — centered prominent */}
-        <button
-          onClick={() => requireAuth(() => setShowGoLive(true))}
-          style={{ flex:1, padding:"6px 0 8px", background:"none", border:"none", cursor:"pointer",
-            display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-          <div style={{ width:42, height:42, borderRadius:"50%", background:"linear-gradient(135deg,#e53935,#c62828)",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:18,
-            boxShadow:"0 0 14px rgba(229,57,53,0.6)", animation:"livePulse 1.8s ease infinite",
-            border:"2px solid rgba(255,100,100,0.4)" }}>
-            🔴
-          </div>
-          <div style={{ fontSize:10, color:"#e53935", fontWeight:800, letterSpacing:0.5 }}>LIVE</div>
-        </button>
+
       </div>
 
       {commentVideo && <CommentSheet video={commentVideo} currentUser={currentUser} onClose={() => setCommentVideo(null)} onCommentPosted={handleCommentCount} onNeedAuth={() => { setCommentVideo(null); setShowAuth(true); }} />}
