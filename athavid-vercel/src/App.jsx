@@ -936,9 +936,19 @@ export default function App() {
           ) : (
             <>
               <div style={{ padding:"20px 20px 0", textAlign:"center" }}>
-                <div style={{ position:"relative", display:"inline-block", marginBottom:12 }} onClick={() => setShowAvatarPicker(true)}>
-                  <img src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`} style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", cursor:"pointer", display:"block" }} />
-                  <div style={{ position:"absolute", bottom:0, right:0, background:"#ff6b6b", borderRadius:"50%", width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, cursor:"pointer", border:"2px solid #0a0a14" }}>✏️</div>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:12, gap:8 }}>
+                  <div style={{ position:"relative", display:"inline-block" }}>
+                    <img src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`}
+                      style={{ width:90, height:90, borderRadius:"50%", border:"3px solid #ff6b6b", display:"block", background:"rgba(255,255,255,0.05)" }} />
+                    <div style={{ position:"absolute", bottom:2, right:2, background:"#ff6b6b", borderRadius:"50%", width:26, height:26,
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0a0a14", pointerEvents:"none" }}>✏️</div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowAvatarPicker(true); }}
+                    style={{ background:"rgba(255,107,107,0.18)", border:"1px solid rgba(255,107,107,0.4)", borderRadius:20,
+                      padding:"6px 18px", color:"#ff6b6b", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                    Change Avatar
+                  </button>
                 </div>
                 <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
                 <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
