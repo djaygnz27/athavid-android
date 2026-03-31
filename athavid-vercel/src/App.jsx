@@ -315,26 +315,15 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
       const blob = new Blob(chunksRef.current, { type: mimeType });
       const file = new File([blob], `live_${Date.now()}.${ext}`, { type: mimeType });
 
-      // Upload video
-      const formData = new FormData();
-      formData.append("file", file);
-      const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-      const token = localStorage.getItem("athavid_token");
-      const res = await fetch(`https://api.base44.com/api/apps/${APP_ID}/storage/upload`, {
-        method:"POST", headers:{ Authorization:`Bearer ${token}` }, body: formData
-      });
-      const { file_url } = await res.json();
+      // Upload video using the shared uploadFile helper (avoids CORS issues)
+      const file_url = await uploadFile(file);
 
       // Generate thumbnail
       let thumbUrl = "";
       try {
-        const thumb = await captureThumbnail(file);
-        const tForm = new FormData();
-        tForm.append("file", new File([thumb], "thumb.jpg", { type:"image/jpeg" }));
-        const tRes = await fetch(`https://api.base44.com/api/apps/${APP_ID}/storage/upload`, {
-          method:"POST", headers:{ Authorization:`Bearer ${token}` }, body: tForm
-        });
-        thumbUrl = (await tRes.json()).file_url || "";
+        const thumbBlob = await captureThumbnail(file);
+        const thumbFile = new File([thumbBlob], "thumb.jpg", { type:"image/jpeg" });
+        thumbUrl = await uploadFile(thumbFile);
       } catch(_) {}
 
       // Save to DB
