@@ -219,8 +219,37 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [step, setStep] = useState("");
   const fileRef = useRef();
 
+  const [notAiConfirmed, setNotAiConfirmed] = useState(false);
+  const [aiBlocked, setAiBlocked] = useState(false);
+
+  const checkForAiSignatures = (f) => {
+    // Check filename for known AI generator names
+    const name = f.name.toLowerCase();
+    const aiKeywords = ["sora", "runway", "pika", "kling", "luma", "gen2", "gen3", "synthesia", "deepfake",
+      "ai_generated", "ai-generated", "aigc", "midjourney", "stable diffusion", "stablediffusion",
+      "invideo", "heygen", "did_", "d-id", "veed", "capcut_ai", "dreamina", "pixverse"];
+    return aiKeywords.some(kw => name.includes(kw));
+  };
+
+  const handleFileSelect = (f) => {
+    if (!f) return;
+    setFile(f);
+    setAiBlocked(false);
+    if (checkForAiSignatures(f)) {
+      setAiBlocked(true);
+    }
+  };
+
   const upload = async () => {
     if (!file) return;
+    if (aiBlocked) {
+      alert("🚫 This video appears to be AI-generated and cannot be posted on AthaVid.");
+      return;
+    }
+    if (!notAiConfirmed) {
+      alert("⚠️ Please confirm your video is NOT AI-generated before posting.");
+      return;
+    }
     // Check video duration
     try {
       const dur = await new Promise((res, rej) => {
@@ -243,7 +272,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Generating thumbnail...");
       let thumbnail_url = null;
       try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
-      setProgress(80);
       setProgress(80);
       setStep("Saving to feed...");
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
@@ -358,6 +386,30 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
         <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
 
+        {/* AI Block Warning */}
+        {aiBlocked && (
+          <div style={{ background:"rgba(255,50,50,0.12)", border:"1px solid rgba(255,50,50,0.4)", borderRadius:12, padding:"14px 16px", marginBottom:12, display:"flex", gap:10, alignItems:"flex-start" }}>
+            <div style={{ fontSize:22, flexShrink:0 }}>🚫</div>
+            <div>
+              <div style={{ color:"#ff4444", fontWeight:700, fontSize:14, marginBottom:4 }}>AI-Generated Video Detected</div>
+              <div style={{ color:"#cc6666", fontSize:13, lineHeight:1.5 }}>This video appears to be AI-generated. AthaVid does not allow AI videos. Please upload an original, real video.</div>
+            </div>
+          </div>
+        )}
+
+        {/* Not AI Confirmation Checkbox */}
+        {!aiBlocked && file && (
+          <div onClick={() => setNotAiConfirmed(p => !p)}
+            style={{ display:"flex", gap:10, alignItems:"center", marginBottom:14, cursor:"pointer", padding:"10px 14px", background:"rgba(255,255,255,0.04)", borderRadius:10, border:`1px solid ${notAiConfirmed ? "rgba(107,255,154,0.4)" : "rgba(255,255,255,0.1)"}` }}>
+            <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${notAiConfirmed ? "#6bff9a" : "#555"}`, background: notAiConfirmed ? "#6bff9a" : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+              {notAiConfirmed && <span style={{ color:"#0a0a14", fontSize:13, fontWeight:900 }}>✓</span>}
+            </div>
+            <div style={{ color: notAiConfirmed ? "#6bff9a" : "#888", fontSize:13, lineHeight:1.4 }}>
+              I confirm this is <strong>my original video</strong> and is <strong>NOT AI-generated</strong>
+            </div>
+          </div>
+        )}
+
         {uploading && (
           <div style={{ marginBottom:16 }}>
             <div style={{ color:"#aaa", fontSize:13, marginBottom:6 }}>{step}</div>
@@ -366,8 +418,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             </div>
           </div>
         )}
-        <button onClick={upload} disabled={!file || uploading}
-          style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading ? "pointer" : "not-allowed", opacity: file && !uploading ? 1 : 0.5 }}>
+        <button onClick={upload} disabled={!file || uploading || aiBlocked || !notAiConfirmed}
+          style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && notAiConfirmed ? 1 : 0.5 }}>
           {uploading ? step : "🚀 Post Video"}
         </button>
       </div>
