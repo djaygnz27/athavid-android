@@ -878,7 +878,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 }
 
 // ── Video Card ────────────────────────────────────────────────────────────────
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete }) {
   const videoRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
@@ -967,6 +967,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       }
     } catch(err) { console.error(err); }
     setFollowLoading(false);
+  };
+
+  const doDelete = async () => {
+    if (!currentUser || !isOwnVideo) return;
+    if (!window.confirm("Delete this video? This can't be undone.")) return;
+    try {
+      await videos.delete(video.id);
+      onDelete && onDelete(video.id);
+    } catch(err) { alert("Failed to delete. Try again."); }
   };
 
   const photoUrls = video.is_photo && video.photo_urls
@@ -1108,6 +1117,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ fontSize:26 }}>🚩</div>
           <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>Report</div>
         </button>
+
+        {isOwnVideo && (
+          <button onClick={tap(doDelete)}
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+              WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            <div style={{ fontSize:26 }}>🗑️</div>
+            <div style={{ color:"#ff4444", fontSize:11, fontWeight:700 }}>Delete</div>
+          </button>
+        )}
 
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
           <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#333,#111)",
@@ -1608,7 +1626,8 @@ export default function App() {
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
               onView={handleView}
-              onNeedAuth={() => setShowAuth(true)} />
+              onNeedAuth={() => setShowAuth(true)}
+              onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))} />
           ))}
         </div>
       )}
