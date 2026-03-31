@@ -82,19 +82,24 @@ export const comments = {
 };
 
 export async function uploadFile(file) {
-  // Upload directly to Base44 storage — CORS is open, no proxy needed
+  // Upload directly to Base44 storage — CORS open, works with or without auth
   const token = getToken();
   const form = new FormData();
   form.append("file", file);
+
+  // Build headers — only add Authorization if we have a token
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const res = await fetch(
-    `https://sachi-c7f0261c.base44.app/api/apps/${APP_ID}/integration-endpoints/Core/UploadFile`,
-    {
-      method: "POST",
-      headers: token ? { "Authorization": `Bearer ${token}` } : {},
-      body: form
-    }
+    `https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/integration-endpoints/Core/UploadFile`,
+    { method: "POST", headers, body: form }
   );
-  const data = await res.json();
+
+  // If 404 or non-JSON, give a clear error
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch(_) { throw new Error(`Upload error ${res.status}: ${text.slice(0,100)}`); }
   if (!res.ok || data.error) throw new Error(data.error || data.message || "Upload failed");
   return data.file_url;
 }
