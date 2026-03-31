@@ -195,15 +195,46 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 
 // ── Music Library ─────────────────────────────────────────────────────────────
 const MUSIC_LIBRARY = [
-  { id:"m1", title:"Blinding Lights (Instrumental)", artist:"Royalty Free", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", emoji:"🎸" },
-  { id:"m2", title:"Summer Vibes", artist:"Free Beats", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", emoji:"🌊" },
-  { id:"m3", title:"Midnight Drive", artist:"Lo-Fi Studio", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", emoji:"🌙" },
-  { id:"m4", title:"Energy Boost", artist:"Epic Sounds", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", emoji:"⚡" },
-  { id:"m5", title:"Chill Wave", artist:"Ambient Lab", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", emoji:"🎵" },
-  { id:"m6", title:"Urban Groove", artist:"Street Beats", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", emoji:"🎤" },
-  { id:"m7", title:"Happy Days", artist:"Feel Good Music", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", emoji:"☀️" },
-  { id:"m8", title:"Deep Focus", artist:"Study Sounds", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", emoji:"🧠" },
+  // ── Pop ──────────────────────────────────────────────────────────────────
+  { id:"pop1", genre:"Pop", title:"Summer Vibes",         artist:"Free Beats",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",  emoji:"🌊" },
+  { id:"pop2", genre:"Pop", title:"Happy Days",           artist:"Feel Good Music", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",  emoji:"☀️" },
+  { id:"pop3", genre:"Pop", title:"Good Energy",          artist:"Pop Studio",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",  emoji:"✨" },
+  { id:"pop4", genre:"Pop", title:"Dance All Night",      artist:"Pop Studio",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", emoji:"💃" },
+  { id:"pop5", genre:"Pop", title:"Neon Lights",          artist:"Synth Pop",       url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3", emoji:"🌈" },
+  // ── Jazz ─────────────────────────────────────────────────────────────────
+  { id:"jz1", genre:"Jazz", title:"Smooth Jazz Cafe",     artist:"Jazz Collective",  url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",  emoji:"🎷" },
+  { id:"jz2", genre:"Jazz", title:"Late Night Jazz",      artist:"Blue Note Studio", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",  emoji:"🌙" },
+  { id:"jz3", genre:"Jazz", title:"Uptown Swing",         artist:"Jazz Collective",  url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",  emoji:"🎺" },
+  { id:"jz4", genre:"Jazz", title:"Bossa Nova Breeze",    artist:"Cafe Jazz",        url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", emoji:"🌴" },
+  { id:"jz5", genre:"Jazz", title:"Midnight Sax",         artist:"Blue Note Studio", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3", emoji:"🎶" },
+  // ── Classic Rock ─────────────────────────────────────────────────────────
+  { id:"cr1", genre:"Classic Rock", title:"Guitar Highway",    artist:"Rock Legends",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",  emoji:"🎸" },
+  { id:"cr2", genre:"Classic Rock", title:"Power Chord",       artist:"Rock Legends",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",  emoji:"🤘" },
+  { id:"cr3", genre:"Classic Rock", title:"Road Trip Anthem",  artist:"Fuzz & Roll",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",  emoji:"🛣️" },
+  { id:"cr4", genre:"Classic Rock", title:"Stadium Rock",      artist:"Fuzz & Roll",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3", emoji:"🏟️" },
+  { id:"cr5", genre:"Classic Rock", title:"Blues Driver",      artist:"Rock Legends",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", emoji:"🔥" },
+  // ── Contemporary ─────────────────────────────────────────────────────────
+  { id:"co1", genre:"Contemporary", title:"Midnight Drive",    artist:"Lo-Fi Studio",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3", emoji:"🚗" },
+  { id:"co2", genre:"Contemporary", title:"Urban Groove",      artist:"Street Beats",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3", emoji:"🏙️" },
+  { id:"co3", genre:"Contemporary", title:"Chill Wave",        artist:"Ambient Lab",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-18.mp3", emoji:"🌊" },
+  { id:"co4", genre:"Contemporary", title:"Deep Focus",        artist:"Study Sounds",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-19.mp3", emoji:"🧠" },
+  { id:"co5", genre:"Contemporary", title:"Indie Morning",     artist:"Indie Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-20.mp3", emoji:"☕" },
+  // ── Lo-Fi / Chill ────────────────────────────────────────────────────────
+  { id:"lo1", genre:"Lo-Fi", title:"Rainy Day Study",    artist:"Lo-Fi Beats",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-21.mp3", emoji:"🌧️" },
+  { id:"lo2", genre:"Lo-Fi", title:"Coffee Shop Vibes",  artist:"Lo-Fi Cafe",     url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-22.mp3", emoji:"☕" },
+  { id:"lo3", genre:"Lo-Fi", title:"Evening Chill",      artist:"Chill Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-23.mp3", emoji:"🌅" },
+  // ── Hip-Hop / R&B ────────────────────────────────────────────────────────
+  { id:"hh1", genre:"Hip-Hop", title:"Energy Boost",      artist:"Epic Sounds",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-24.mp3", emoji:"⚡" },
+  { id:"hh2", genre:"Hip-Hop", title:"Street Heat",       artist:"Street Beats",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-25.mp3", emoji:"🔥" },
+  { id:"hh3", genre:"Hip-Hop", title:"Trap Sunrise",      artist:"Beat Factory",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-26.mp3", emoji:"🌄" },
+  // ── Electronic ───────────────────────────────────────────────────────────
+  { id:"el1", genre:"Electronic", title:"Neon Rush",      artist:"Synth Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-27.mp3", emoji:"🤖" },
+  { id:"el2", genre:"Electronic", title:"Bass Drop",      artist:"EDM Factory",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-28.mp3", emoji:"🎛️" },
+  { id:"el3", genre:"Electronic", title:"Future Wave",    artist:"Synth Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-29.mp3", emoji:"🚀" },
 ];
+
+const MUSIC_GENRES = ["All", "Pop", "Jazz", "Classic Rock", "Contemporary", "Lo-Fi", "Hip-Hop", "Electronic"];
+
 
 // ── Upload Modal ──────────────────────────────────────────────────────────────
 function UploadModal({ currentUser, onClose, onUploaded }) {
@@ -212,6 +243,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [maxDuration, setMaxDuration] = useState(60);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
+  const [musicGenreFilter, setMusicGenreFilter] = useState("All");
   const [previewTrack, setPreviewTrack] = useState(null);
   const previewAudioRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -407,29 +439,43 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
         {/* Music Library */}
         {showMusicPicker && (
-          <div style={{ background:"rgba(0,0,0,0.4)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, marginBottom:14, maxHeight:220, overflowY:"auto" }}>
-            {MUSIC_LIBRARY.map(track => (
-              <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
-                style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
-                <div style={{ fontSize:22 }}>{track.emoji}</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ color:"#fff", fontWeight:600, fontSize:13 }}>{track.title}</div>
-                  <div style={{ color:"#888", fontSize:11 }}>{track.artist}</div>
-                </div>
-                <button onClick={e => {
-                  e.stopPropagation();
-                  if (previewTrack === track.id) {
-                    previewAudioRef.current?.pause();
-                    setPreviewTrack(null);
-                  } else {
-                    if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.src = track.url; previewAudioRef.current.play(); }
-                    setPreviewTrack(track.id);
-                  }
-                }} style={{ background:"rgba(255,107,107,0.2)", border:"none", borderRadius:"50%", width:30, height:30, color:"#ff6b6b", cursor:"pointer", fontSize:14 }}>
-                  {previewTrack === track.id ? "⏹" : "▶"}
+          <div style={{ background:"rgba(0,0,0,0.5)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, marginBottom:14 }}>
+            {/* Genre filter tabs */}
+            <div style={{ display:"flex", gap:6, padding:"10px 10px 6px", overflowX:"auto", scrollbarWidth:"none" }}>
+              {MUSIC_GENRES.map(g => (
+                <button key={g} onClick={() => setMusicGenreFilter(g)}
+                  style={{ flexShrink:0, padding:"5px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:700,
+                    background: musicGenreFilter === g ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
+                    color: musicGenreFilter === g ? "#fff" : "#aaa" }}>
+                  {g}
                 </button>
-              </div>
-            ))}
+              ))}
+            </div>
+            {/* Track list */}
+            <div style={{ maxHeight:200, overflowY:"auto" }}>
+              {MUSIC_LIBRARY.filter(t => musicGenreFilter === "All" || t.genre === musicGenreFilter).map(track => (
+                <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
+                  style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
+                  <div style={{ fontSize:20 }}>{track.emoji}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ color:"#fff", fontWeight:600, fontSize:13 }}>{track.title}</div>
+                    <div style={{ color:"#888", fontSize:11 }}>{track.artist} · <span style={{ color:"rgba(255,107,107,0.7)" }}>{track.genre}</span></div>
+                  </div>
+                  <button onClick={e => {
+                    e.stopPropagation();
+                    if (previewTrack === track.id) {
+                      previewAudioRef.current?.pause();
+                      setPreviewTrack(null);
+                    } else {
+                      if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.src = track.url; previewAudioRef.current.play(); }
+                      setPreviewTrack(track.id);
+                    }
+                  }} style={{ background:"rgba(255,107,107,0.2)", border:"none", borderRadius:"50%", width:30, height:30, color:"#ff6b6b", cursor:"pointer", fontSize:14, flexShrink:0 }}>
+                    {previewTrack === track.id ? "⏹" : "▶"}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
