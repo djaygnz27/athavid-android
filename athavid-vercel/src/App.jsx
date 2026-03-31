@@ -704,71 +704,72 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const photoTouchStartY = useRef(0);
   const photoCardRef = useRef(null);
 
-  useEffect(() => {
-    if (!photoUrls) return;
-    const el = photoCardRef.current;
-    if (!el) return;
-    const handleMove = (e) => {
-      const dx = Math.abs(e.touches[0].clientX - photoTouchStartX.current);
-      const dy = Math.abs(e.touches[0].clientY - photoTouchStartY.current);
-      if (dx > dy && dx > 5) e.preventDefault();
-    };
-    el.addEventListener("touchmove", handleMove, { passive: false });
-    return () => el.removeEventListener("touchmove", handleMove);
-  }, [photoUrls]);
+  // photo carousel navigation handled via arrow buttons
   const photoUrls = video.is_photo && video.photo_urls ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls)) : null;
 
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
       {photoUrls ? (
-        <div ref={photoCardRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
-          onTouchStart={e => {
-            photoTouchStartX.current = e.touches[0].clientX;
-            photoTouchStartY.current = e.touches[0].clientY;
-          }}
-          onTouchMove={e => {
-            const dx = Math.abs(e.touches[0].clientX - photoTouchStartX.current);
-            const dy = Math.abs(e.touches[0].clientY - photoTouchStartY.current);
-            if (dx > dy && dx > 5) {
-              e.stopPropagation();
-              e.preventDefault();
-            }
-          }}
-          onTouchEnd={e => {
-            const dx = e.changedTouches[0].clientX - photoTouchStartX.current;
-            const dy = Math.abs(e.changedTouches[0].clientY - photoTouchStartY.current);
-            if (Math.abs(dx) > 35 && Math.abs(dx) > dy) {
-              if (dx < 0 && photoIdx < photoUrls.length - 1) setPhotoIdx(p => p + 1);
-              if (dx > 0 && photoIdx > 0) setPhotoIdx(p => p - 1);
-            }
-          }}>
-          {/* Slide strip — translate on index change */}
-          <div style={{
-            display:"flex", width:`${photoUrls.length * 100}%`, height:"100%",
-            transform:`translateX(-${(photoIdx / photoUrls.length) * 100}%)`,
-            transition:"transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
-          }}>
-            {photoUrls.map((url, i) => (
-              <div key={i} style={{ width:`${100 / photoUrls.length}%`, height:"100%", flexShrink:0 }}>
-                <img src={url} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-              </div>
-            ))}
-          </div>
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000" }}>
+          {/* Current photo */}
+          <img
+            src={photoUrls[photoIdx]}
+            style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", userSelect:"none" }}
+          />
+
+          {/* LEFT arrow button */}
+          {photoIdx > 0 && (
+            <button
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
+              style={{
+                position:"absolute", left:12, top:"50%", transform:"translateY(-50%)",
+                zIndex:50, background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%",
+                width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
+                cursor:"pointer", backdropFilter:"blur(4px)", boxShadow:"0 2px 12px rgba(0,0,0,0.5)",
+              }}>
+              <span style={{ color:"#fff", fontSize:22, lineHeight:1, marginRight:2 }}>‹</span>
+            </button>
+          )}
+
+          {/* RIGHT arrow button */}
+          {photoIdx < photoUrls.length - 1 && (
+            <button
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
+              style={{
+                position:"absolute", right:12, top:"50%", transform:"translateY(-50%)",
+                zIndex:50, background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%",
+                width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
+                cursor:"pointer", backdropFilter:"blur(4px)", boxShadow:"0 2px 12px rgba(0,0,0,0.5)",
+              }}>
+              <span style={{ color:"#fff", fontSize:22, lineHeight:1, marginLeft:2 }}>›</span>
+            </button>
+          )}
+
           {/* Dot indicators */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", display:"flex", gap:5, zIndex:20, pointerEvents:"none" }}>
+            <div style={{
+              position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)",
+              display:"flex", gap:6, zIndex:50, pointerEvents:"none"
+            }}>
               {photoUrls.map((_,i) => (
-                <div key={i} style={{ width: i===photoIdx ? 18 : 6, height:6, borderRadius:99,
-                  background: i===photoIdx ? "#fff" : "rgba(255,255,255,0.45)", transition:"all 0.25s" }} />
+                <div key={i} style={{
+                  width: i===photoIdx ? 20 : 7, height:7, borderRadius:99,
+                  background: i===photoIdx ? "#ff6b6b" : "rgba(255,255,255,0.5)",
+                  transition:"all 0.25s", boxShadow:"0 1px 4px rgba(0,0,0,0.5)"
+                }} />
               ))}
             </div>
           )}
-          {/* Counter badge */}
-          {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.55)", borderRadius:99, padding:"3px 10px", fontSize:12, color:"#fff", zIndex:20, pointerEvents:"none", backdropFilter:"blur(4px)" }}>
-              {photoIdx+1} / {photoUrls.length}
-            </div>
-          )}
+
+          {/* Counter top right */}
+          <div style={{
+            position:"absolute", top:60, right:16,
+            background:"rgba(0,0,0,0.6)", borderRadius:20, padding:"4px 12px",
+            fontSize:13, fontWeight:700, color:"#fff", zIndex:50,
+            backdropFilter:"blur(4px)", pointerEvents:"none"
+          }}>
+            {photoIdx+1} / {photoUrls.length}
+          </div>
         </div>
       ) : (
       <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
