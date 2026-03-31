@@ -1295,6 +1295,166 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   );
 }
 
+
+// ─── VideoManageGrid ────────────────────────────────────────────────────────
+function VideoManageGrid({ videos: vids, onRefresh }) {
+  const [menuVideo, setMenuVideo] = React.useState(null);
+  const [editVideo, setEditVideo] = React.useState(null);
+  const [editCaption, setEditCaption] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(null);
+
+  const handleDelete = async () => {
+    try {
+      setSaving(true);
+      await videos.delete(confirmDelete.id);
+      setConfirmDelete(null);
+      onRefresh();
+    } catch(e) { alert("Delete failed: " + e.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      setSaving(true);
+      await videos.update(editVideo.id, { caption: editCaption });
+      setEditVideo(null);
+      onRefresh();
+    } catch(e) { alert("Save failed: " + e.message); }
+    finally { setSaving(false); }
+  };
+
+  if (!vids || vids.length === 0) return (
+    <div style={{ gridColumn:"1/-1", textAlign:"center", padding:40, color:"#555" }}>
+      <div style={{ fontSize:40, marginBottom:8 }}>📹</div>
+      <div>No videos yet</div>
+    </div>
+  );
+
+  return (
+    <>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+        {vids.map(v => (
+          <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
+            onClick={() => setMenuVideo(v)}>
+            {v.thumbnail_url
+              ? <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
+            {/* Three-dot indicator */}
+            <div style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
+              width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:14, color:"#fff", lineHeight:1 }}>⋮</div>
+            {/* Views badge */}
+            {v.views_count > 0 && <div style={{ position:"absolute", bottom:4, left:4, background:"rgba(0,0,0,0.6)",
+              borderRadius:8, padding:"2px 6px", fontSize:10, color:"#fff" }}>👁 {v.views_count}</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Action Menu Sheet */}
+      {menuVideo && (
+        <div style={{ position:"fixed", inset:0, zIndex:8000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}
+          onClick={() => setMenuVideo(null)}>
+          <div style={{ background:"#1a1a2e", borderRadius:"20px 20px 0 0", padding:20, maxWidth:480, width:"100%", margin:"0 auto" }}
+            onClick={e => e.stopPropagation()}>
+            {/* Thumbnail preview */}
+            <div style={{ display:"flex", gap:12, marginBottom:20, alignItems:"center" }}>
+              <div style={{ width:54, height:72, background:"#111", borderRadius:8, overflow:"hidden", flexShrink:0 }}>
+                {menuVideo.thumbnail_url
+                  ? <img src={menuVideo.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🎬</div>}
+              </div>
+              <div>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{menuVideo.caption || "(no caption)"}</div>
+                <div style={{ color:"#888", fontSize:12, marginTop:4 }}>👁 {menuVideo.views_count || 0}  ❤️ {menuVideo.likes_count || 0}  💬 {menuVideo.comments_count || 0}</div>
+              </div>
+            </div>
+
+            {/* Edit button */}
+            <button onClick={() => { setEditCaption(menuVideo.caption || ""); setEditVideo(menuVideo); setMenuVideo(null); }}
+              style={{ width:"100%", padding:"14px 0", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)",
+                borderRadius:12, color:"#fff", fontSize:15, fontWeight:600, cursor:"pointer", marginBottom:10,
+                display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+              ✏️ Edit Caption
+            </button>
+
+            {/* Delete button */}
+            <button onClick={() => { setConfirmDelete(menuVideo); setMenuVideo(null); }}
+              style={{ width:"100%", padding:"14px 0", background:"rgba(229,57,53,0.15)", border:"1px solid rgba(229,57,53,0.4)",
+                borderRadius:12, color:"#ff6b6b", fontSize:15, fontWeight:600, cursor:"pointer", marginBottom:10,
+                display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+              🗑️ Delete Video
+            </button>
+
+            {/* Cancel */}
+            <button onClick={() => setMenuVideo(null)}
+              style={{ width:"100%", padding:"12px 0", background:"none", border:"none", color:"#888", fontSize:14, cursor:"pointer" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Caption Modal */}
+      {editVideo && (
+        <div style={{ position:"fixed", inset:0, zIndex:8000, background:"rgba(0,0,0,0.8)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => setEditVideo(null)}>
+          <div style={{ background:"#1a1a2e", borderRadius:20, padding:24, width:"100%", maxWidth:420 }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:16 }}>✏️ Edit Caption</div>
+            <textarea
+              value={editCaption}
+              onChange={e => setEditCaption(e.target.value)}
+              placeholder="Write a caption..."
+              rows={4}
+              style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)",
+                borderRadius:12, color:"#fff", padding:12, fontSize:14, resize:"none", outline:"none",
+                fontFamily:"inherit", boxSizing:"border-box" }}
+            />
+            <div style={{ display:"flex", gap:10, marginTop:14 }}>
+              <button onClick={() => setEditVideo(null)}
+                style={{ flex:1, padding:"12px 0", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)",
+                  borderRadius:12, color:"#aaa", fontSize:14, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={handleSaveEdit} disabled={saving}
+                style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#e91e63,#9c27b0)",
+                  border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700,
+                  cursor:saving?"not-allowed":"pointer", opacity:saving?0.7:1 }}>
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmDelete && (
+        <div style={{ position:"fixed", inset:0, zIndex:8000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div style={{ background:"#1a1a2e", borderRadius:20, padding:24, width:"100%", maxWidth:380, textAlign:"center" }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🗑️</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:8 }}>Delete this video?</div>
+            <div style={{ color:"#888", fontSize:13, marginBottom:24 }}>This can't be undone. The video will be permanently removed.</div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setConfirmDelete(null)}
+                style={{ flex:1, padding:"12px 0", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)",
+                  borderRadius:12, color:"#aaa", fontSize:14, cursor:"pointer" }}>
+                Keep it
+              </button>
+              <button onClick={handleDelete} disabled={saving}
+                style={{ flex:1, padding:"12px 0", background:"rgba(229,57,53,0.9)",
+                  border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700,
+                  cursor:saving?"not-allowed":"pointer" }}>
+                {saving ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
@@ -1496,21 +1656,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-                {myVideos.length === 0
-                  ? <div style={{ gridColumn:"1/-1", textAlign:"center", padding:40, color:"#555" }}>
-                      <div style={{ fontSize:40, marginBottom:8 }}>📹</div>
-                      <div>No videos yet</div>
-                    </div>
-                  : myVideos.map(v => (
-                    <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", overflow:"hidden" }}>
-                      {v.thumbnail_url
-                        ? <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                        : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
-                    </div>
-                  ))
-                }
-              </div>
+              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id).then(setMyVideos).catch(()=>{})} />
             </>
           )}
         </div>

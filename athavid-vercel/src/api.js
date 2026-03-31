@@ -70,6 +70,9 @@ export const videos = {
   async myVideos(userId) {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}`);
   },
+  async delete(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiVideo/${id}`);
+  },
 };
 
 export const comments = {
