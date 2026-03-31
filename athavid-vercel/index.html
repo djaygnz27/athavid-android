@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>AthaVid — Your Stage</title>
+    <title>Sachi — Your Stage</title>
 
     <!-- PWA Meta Tags -->
-    <meta name="application-name" content="AthaVid" />
+    <meta name="application-name" content="Sachi" />
     <meta name="description" content="Your stage. Share short videos with the world." />
     <meta name="theme-color" content="#ff6b6b" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="AthaVid" />
+    <meta name="apple-mobile-web-app-title" content="Sachi" />
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
@@ -228,7 +228,7 @@
       <div class="b-left">
         <div class="b-icon">📲</div>
         <div>
-          <div class="b-title">Install AthaVid</div>
+          <div class="b-title">Install Sachi</div>
           <div class="b-sub">Add to home screen — free</div>
         </div>
       </div>
@@ -241,11 +241,11 @@
     <!-- First-Time Welcome Popup -->
     <div id="welcome-popup">
       <div class="welcome-box">
-        <img src="/icon-192.png" alt="AthaVid"/>
-        <h2>Welcome to AthaVid</h2>
+        <img src="/icon-192.png" alt="Sachi"/>
+        <h2>Welcome to Sachi</h2>
         <p class="tagline">Your stage. Share short videos with the world.</p>
         <div class="install-hint">
-          💡 <strong>Tip:</strong> Add AthaVid to your home screen for the full app experience — tap the <strong>📲 Install</strong> button in the bottom nav anytime!
+          💡 <strong>Tip:</strong> Add Sachi to your home screen for the full app experience — tap the <strong>📲 Install</strong> button in the bottom nav anytime!
         </div>
         <button class="btn-welcome-install" onclick="dismissWelcome(true)">📲 Show me how to install</button>
         <button class="btn-welcome-skip" onclick="dismissWelcome(false)">Maybe later — just browse</button>
@@ -255,7 +255,7 @@
     <!-- Manual Install Instructions Popup -->
     <div id="manual-install">
       <div class="manual-box">
-        <h3>📲 Install AthaVid</h3>
+        <h3>📲 Install Sachi</h3>
         <div class="tab-btns">
           <button class="tab-btn active" onclick="showTab('android',this)">🤖 Android</button>
           <button class="tab-btn" onclick="showTab('iphone',this)">🍎 iPhone</button>
@@ -267,7 +267,7 @@
           <div class="manual-step">1. Tap <strong>⋮</strong> (3 dots, top right of Chrome)</div>
           <div class="manual-step">2. Tap <strong>"Add to Home screen"</strong></div>
           <div class="manual-step">3. Tap <strong>Add</strong> — done! ✅</div>
-          <a href="https://athavid-vercel.vercel.app" target="_blank"
+          <a href="https://sachi-app.vercel.app" target="_blank"
              style="display:block;text-align:center;margin-top:14px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;font-weight:800;font-size:14px;padding:12px;border-radius:14px;text-decoration:none;">
             🌐 Open in Chrome
           </a>
@@ -288,7 +288,7 @@
       // First-time welcome
       window.addEventListener('load', () => {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-        const seen = localStorage.getItem('athavid_welcomed');
+        const seen = localStorage.getItem('sachi_welcomed');
         if (!seen && !isStandalone) {
           setTimeout(() => {
             const wp = document.getElementById('welcome-popup');
@@ -298,7 +298,7 @@
       });
 
       function dismissWelcome(showInstall) {
-        localStorage.setItem('athavid_welcomed', '1');
+        localStorage.setItem('sachi_welcomed', '1');
         document.getElementById('welcome-popup').style.display = 'none';
         if (showInstall) {
           setTimeout(() => window.showInstallInstructions && window.showInstallInstructions(), 200);
