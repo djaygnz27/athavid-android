@@ -390,7 +390,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount(video.comments_count)}</div>
         </button>
         <button onClick={() => { if(navigator.share){ navigator.share({ title: video.caption || "Check this out", url: window.location.href }); } else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); } }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-          <div style={{ fontSize:22 }}>↗️</div>
+          <div style={{ fontSize:22 }}>↪️</div>
           <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Share</div>
         </button>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
