@@ -881,6 +881,10 @@ export default function App() {
 
   const username = currentUser?.full_name || currentUser?.email?.split("@")[0] || "";
 
+  if (!hasEntered) {
+    return <Landing onEnter={() => setHasEntered(true)} />;
+  }
+
   return (
     <div style={{ background:"#000", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" }}>
 
