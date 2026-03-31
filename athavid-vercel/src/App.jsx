@@ -828,6 +828,7 @@ export default function App() {
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
+  const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
   const [avatarUrl, setAvatarUrl] = useState(null);
@@ -1017,7 +1018,21 @@ export default function App() {
           </div>
         </div>
       )}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); }} />}
+      {/* Login success toast */}
+      {loginToast && (
+        <div style={{ position:"fixed", top:24, left:"50%", transform:"translateX(-50%)", zIndex:9999,
+          background:"linear-gradient(135deg,#1a1a2e,#16213e)", border:"1.5px solid #6c63ff",
+          borderRadius:18, padding:"14px 22px", display:"flex", alignItems:"center", gap:12,
+          boxShadow:"0 8px 32px rgba(0,0,0,0.6)", animation:"slideDown 0.35s ease", whiteSpace:"nowrap" }}>
+          <div style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#6c63ff,#ff6b6b)",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>✓</div>
+          <div>
+            <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>You are now logged in to Sachi 🎉</div>
+            <div style={{ color:"#a09de8", fontSize:12, marginTop:2 }}>Welcome back — let's vibe 🎶</div>
+          </div>
+        </div>
+      )}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={(url) => { setAvatarUrl(url); if(currentUser) localStorage.setItem(`avatar_${currentUser.id}`, url); setShowAvatarPicker(false); }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
   );
