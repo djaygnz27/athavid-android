@@ -801,15 +801,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div>
             <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>@{video.username}</div>
-            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11, marginTop:2 }}>
-              📅 {formatDate(video.created_date)}
-            </div>
+
           </div>
         </div>
         <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>{video.caption}</div>
         {video.hashtags?.length > 0 && (
           <div style={{ color:"#ff8e53", fontSize:13, marginTop:4 }}>
             {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
+          </div>
+        )}
+        {video.created_date && (
+          <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:8,
+            background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px",
+            backdropFilter:"blur(6px)", width:"fit-content" }}>
+            <span style={{ fontSize:12 }}>📅</span>
+            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
+              {formatDate(video.created_date)}
+            </span>
           </div>
         )}
       </div>
