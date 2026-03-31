@@ -1,5 +1,5 @@
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "/api/proxy";
+const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 
 let sessionToken = null;
 
