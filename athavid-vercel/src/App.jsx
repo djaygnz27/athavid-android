@@ -883,20 +883,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [reportTarget, setReportTarget] = useState(null);
   const [muted, setMuted] = useState(true);
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const [followRecord, setFollowRecord] = useState(null);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
 
+  const isOwnVideo = currentUser && currentUser.id === video.user_id;
+
+  // Auto-play via IntersectionObserver
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
+        el.muted = true;
+        setMuted(true);
         el.play().catch(() => {});
         setPlaying(true);
-        if (!viewedRef.current) {
-          viewedRef.current = true;
-          onView && onView(video.id);
-        }
+        if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
         setPlaying(false);
@@ -906,53 +911,46 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => obs.disconnect();
   }, []);
 
-  // Robust unmute — must reload + play for mobile browsers to allow audio
-  const handleMuteToggle = (e) => {
-    e.stopPropagation();
-    const el = videoRef.current;
-    if (!el) return;
-    const newMuted = !muted;
-    setMuted(newMuted);
-    el.muted = newMuted;
-    // Mobile browsers need a nudge — pause/play to force audio policy unlock
-    if (!newMuted) {
-      const currentTime = el.currentTime;
-      el.pause();
-      el.muted = false;
-      el.currentTime = currentTime;
-      el.play().catch(() => {});
-    }
-  };
-
-  const togglePlay = () => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (el.paused) { el.play(); setPlaying(true); } else { el.pause(); setPlaying(false); }
-  };
-
-  const handleLike = () => {
-    if (!currentUser) { onNeedAuth(); return; }
-    setLiked(l => !l);
-    onLike(video.id, liked ? -1 : 1);
-  };
-
-  const [photoIdx, setPhotoIdx] = useState(0);
-  const [followRecord, setFollowRecord] = useState(null); // the Follow DB record if following
-  const [followLoading, setFollowLoading] = useState(false);
-  const isOwnVideo = currentUser && currentUser.id === video.user_id;
-
+  // Load follow state
   useEffect(() => {
     if (!currentUser || isOwnVideo) return;
-    // Check if already following this user
     follows.getFollowing(currentUser.id).then(res => {
       const rec = (res.items || res || []).find(r => r.following_id === video.user_id);
       if (rec) setFollowRecord(rec);
     }).catch(() => {});
   }, [currentUser, video.user_id]);
 
-  const handleFollow = async (e) => {
-    e.stopPropagation();
-    if (!currentUser) return;
+  const doMute = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    const nm = !muted;
+    setMuted(nm);
+    el.muted = nm;
+    if (!nm) {
+      // Unmuting on mobile requires user gesture — we already have it here
+      const t = el.currentTime;
+      el.pause();
+      el.muted = false;
+      el.currentTime = t;
+      el.play().catch(() => {});
+    }
+  };
+
+  const doTogglePlay = () => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (el.paused) { el.play(); setPlaying(true); } else { el.pause(); setPlaying(false); }
+  };
+
+  const doLike = () => {
+    if (!currentUser) { onNeedAuth(); return; }
+    setLiked(l => !l);
+    onLike(video.id, liked ? -1 : 1);
+  };
+
+  const doFollow = async () => {
+    if (!currentUser) { onNeedAuth(); return; }
+    if (isOwnVideo) return;
     setFollowLoading(true);
     try {
       if (followRecord) {
@@ -967,127 +965,98 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         setFollowRecord(rec);
       }
-    } catch(e) { console.error(e); }
+    } catch(err) { console.error(err); }
     setFollowLoading(false);
   };
-  const photoTouchStartX = useRef(0);
-  const photoTouchStartY = useRef(0);
-  const photoCardRef = useRef(null);
 
-  // photo carousel navigation handled via arrow buttons
-  const photoUrls = video.is_photo && video.photo_urls ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls)) : null;
+  const photoUrls = video.is_photo && video.photo_urls
+    ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
+    : null;
+
+  const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
+
+      {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000" }}>
-          {/* Current photo */}
-          <img
-            src={photoUrls[photoIdx]}
-            style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", userSelect:"none" }}
-          />
-
-          {/* LEFT arrow button */}
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}>
+          <img src={photoUrls[photoIdx]} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
           {photoIdx > 0 && (
-            <button
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
-              style={{
-                position:"absolute", left:12, top:"50%", transform:"translateY(-50%)",
-                zIndex:50, background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%",
-                width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
-                cursor:"pointer", backdropFilter:"blur(4px)", boxShadow:"0 2px 12px rgba(0,0,0,0.5)",
-              }}>
-              <span style={{ color:"#fff", fontSize:22, lineHeight:1, marginRight:2 }}>‹</span>
-            </button>
+            <button onClick={tap(() => setPhotoIdx(p=>p-1))}
+              style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", zIndex:50,
+                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:44, height:44,
+                color:"#fff", fontSize:22, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
           )}
-
-          {/* RIGHT arrow button */}
-          {photoIdx < photoUrls.length - 1 && (
-            <button
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
-              style={{
-                position:"absolute", right:12, top:"50%", transform:"translateY(-50%)",
-                zIndex:50, background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%",
-                width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
-                cursor:"pointer", backdropFilter:"blur(4px)", boxShadow:"0 2px 12px rgba(0,0,0,0.5)",
-              }}>
-              <span style={{ color:"#fff", fontSize:22, lineHeight:1, marginLeft:2 }}>›</span>
-            </button>
+          {photoIdx < photoUrls.length-1 && (
+            <button onClick={tap(() => setPhotoIdx(p=>p+1))}
+              style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", zIndex:50,
+                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:44, height:44,
+                color:"#fff", fontSize:22, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
           )}
-
-          {/* Dot indicators */}
           {photoUrls.length > 1 && (
-            <div style={{
-              position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)",
-              display:"flex", gap:6, zIndex:50, pointerEvents:"none"
-            }}>
+            <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6, zIndex:50, pointerEvents:"none" }}>
               {photoUrls.map((_,i) => (
-                <div key={i} style={{
-                  width: i===photoIdx ? 20 : 7, height:7, borderRadius:99,
-                  background: i===photoIdx ? "#ff6b6b" : "rgba(255,255,255,0.5)",
-                  transition:"all 0.25s", boxShadow:"0 1px 4px rgba(0,0,0,0.5)"
-                }} />
+                <div key={i} style={{ width:i===photoIdx?20:7, height:7, borderRadius:99,
+                  background:i===photoIdx?"#ff6b6b":"rgba(255,255,255,0.5)", transition:"all 0.25s" }} />
               ))}
             </div>
           )}
-
-          {/* Counter top right */}
-          <div style={{
-            position:"absolute", top:60, right:16,
-            background:"rgba(0,0,0,0.6)", borderRadius:20, padding:"4px 12px",
-            fontSize:13, fontWeight:700, color:"#fff", zIndex:50,
-            backdropFilter:"blur(4px)", pointerEvents:"none"
-          }}>
+          <div style={{ position:"absolute", top:60, right:16, background:"rgba(0,0,0,0.6)", borderRadius:20,
+            padding:"4px 12px", fontSize:13, fontWeight:700, color:"#fff", zIndex:50, pointerEvents:"none" }}>
             {photoIdx+1} / {photoUrls.length}
           </div>
         </div>
       ) : (
-      <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
-        loop playsInline
-        style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
+        <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
+          loop playsInline muted
+          style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
       )}
-      {/* Tap-to-pause: transparent overlay only active when playing, sits below buttons */}
-      {playing && (
-        <div onClick={togglePlay} style={{ position:"absolute", top:0, left:0, right:0, bottom:200, zIndex:310, cursor:"pointer", pointerEvents:"auto" }} />
-      )}
-      {/* Paused indicator: only the circle is interactive */}
+
+      {/* ── GRADIENT OVERLAY (no pointer events) ── */}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:10 }} />
+
+      {/* ── TAP TO PAUSE (middle area only) ── */}
+      <div onClick={tap(doTogglePlay)}
+        style={{ position:"absolute", top:60, left:0, right:0, bottom:220, zIndex:15, cursor:"pointer" }} />
+
+      {/* ── PAUSED INDICATOR ── */}
       {!playing && (
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:310 }}>
-          <div onClick={togglePlay} style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer" }}>
-            <div style={{ fontSize:30, marginLeft:6 }}>▶</div>
-          </div>
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
+          <div onClick={tap(doTogglePlay)} style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:72, height:72,
+            display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:30 }}>▶</div>
         </div>
       )}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:55, opacity:1, transition:"opacity 0.3s" }} />
-      <button
-        onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
-        onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); const el = videoRef.current; if(!el) return; const nm = !muted; setMuted(nm); el.muted = nm; if(!nm){ const t=el.currentTime; el.pause(); el.muted=false; el.currentTime=t; el.play().catch(()=>{}); } }}
-        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:56, height:56, color:"#fff", cursor:"pointer", fontSize:22, zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)", touchAction:"manipulation" }}>
+
+      {/* ── MUTE BUTTON (top right) ── */}
+      <button onClick={tap(doMute)}
+        style={{ position:"absolute", top:16, right:16, zIndex:500,
+          background: muted ? "rgba(0,0,0,0.6)" : "rgba(255,107,107,0.85)",
+          border:"none", borderRadius:"50%", width:52, height:52,
+          color:"#fff", fontSize:22, cursor:"pointer",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)",
+          WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
         {muted ? "🔇" : "🔊"}
       </button>
-      <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:350, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
+
+      {/* ── BOTTOM LEFT: user info + caption ── */}
+      <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
-            style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
-          <div style={{ flex:1 }}>
-            <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
+            style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b", flexShrink:0 }} />
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:"#fff", fontWeight:800, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{video.display_name || video.username}</div>
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>@{video.username}</div>
           </div>
           {!isOwnVideo && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
-              onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); if(!currentUser){ onNeedAuth(); return; } handleFollow(e); }}
-              disabled={followLoading}
-              style={{
-                padding:"5px 14px", borderRadius:20, flexShrink:0,
-                background: followRecord
-                  ? "rgba(255,255,255,0.15)"
-                  : "linear-gradient(135deg,#ff6b6b,#e53935)",
+            <button onClick={tap(doFollow)} disabled={followLoading}
+              style={{ padding:"6px 16px", borderRadius:20, flexShrink:0,
+                background: followRecord ? "rgba(255,255,255,0.15)" : "linear-gradient(135deg,#ff6b6b,#e53935)",
                 border: followRecord ? "1.5px solid rgba(255,255,255,0.4)" : "none",
-                color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer",
-                opacity: followLoading ? 0.6 : 1, whiteSpace:"nowrap",
-                boxShadow: followRecord ? "none" : "0 2px 10px rgba(229,57,53,0.5)"
-              }}>
+                color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer",
+                opacity: followLoading ? 0.6 : 1,
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
               {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
             </button>
           )}
@@ -1100,40 +1069,58 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
         {video.created_date && (
           <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:8,
-            background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px",
-            backdropFilter:"blur(6px)", width:"fit-content" }}>
+            background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px", width:"fit-content" }}>
             <span style={{ fontSize:12 }}>📅</span>
-            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
-              {formatDate(video.created_date)}
-            </span>
+            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>{formatDate(video.created_date)}</span>
           </div>
         )}
       </div>
-      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:16, zIndex:350, opacity:1, transition:"opacity 0.3s", pointerEvents:"auto" }}>
-        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); handleLike(e); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, touchAction:"manipulation" }}>
-          <div style={{ fontSize:22, display:"inline-block", animation: liked ? "heartpop 0.5s ease forwards, heartbeat 1.2s ease 0.5s infinite" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
-          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
+
+      {/* ── RIGHT SIDEBAR: actions ── */}
+      <div style={{ position:"absolute", bottom:96, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:50 }}>
+        <button onClick={tap(doLike)}
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <div style={{ fontSize:26, animation: liked ? "heartpop 0.5s ease forwards" : "heartbeat 1.8s ease infinite", transformOrigin:"center" }}>❤️</div>
+          <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); }} onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onCommentOpen(video); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, touchAction:"manipulation" }}>
-          <div style={{ fontSize:22 }}>💬</div>
-          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>{formatCount(video.comments_count)}</div>
+
+        <button onClick={tap(() => onCommentOpen(video))}
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <div style={{ fontSize:26 }}>💬</div>
+          <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>{formatCount(video.comments_count)}</div>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); if(navigator.share){ navigator.share({ title: video.caption || "Check this out", url: window.location.href }); } else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); } }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-          <div style={{ fontSize:22 }}>↪️</div>
-          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Share</div>
+
+        <button onClick={tap(() => {
+            if(navigator.share){ navigator.share({ title: video.caption||"Check this out", url: window.location.href }); }
+            else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); }
+          })}
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <div style={{ fontSize:26 }}>↪️</div>
+          <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>Share</div>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); setReportTarget(video); }} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-          <div style={{ fontSize:22 }}>🚩</div>
-          <div style={{ color:"#fff", fontSize:10, fontWeight:700 }}>Report</div>
+
+        <button onClick={tap(() => setReportTarget(video))}
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <div style={{ fontSize:26 }}>🚩</div>
+          <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>Report</div>
         </button>
+
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-          <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#333,#111)", border:"2px solid #555", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, animation: playing ? "spin 3s linear infinite" : "none" }}>🎵</div>
+          <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#333,#111)",
+            border:"2px solid #555", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13,
+            animation: playing ? "spin 3s linear infinite" : "none" }}>🎵</div>
         </div>
       </div>
+
       {reportTarget && <ReportModal video={reportTarget} onClose={() => setReportTarget(null)} />}
     </div>
   );
 }
+
 
 // ── Report Modal ─────────────────────────────────────────────────────────────
 const REPORT_REASONS = [
