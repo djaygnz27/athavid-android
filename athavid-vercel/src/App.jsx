@@ -701,16 +701,43 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   const [photoIdx, setPhotoIdx] = useState(0);
   const photoTouchStartX = useRef(0);
+  const photoTouchStartY = useRef(0);
+  const photoCardRef = useRef(null);
+
+  useEffect(() => {
+    if (!photoUrls) return;
+    const el = photoCardRef.current;
+    if (!el) return;
+    const handleMove = (e) => {
+      const dx = Math.abs(e.touches[0].clientX - photoTouchStartX.current);
+      const dy = Math.abs(e.touches[0].clientY - photoTouchStartY.current);
+      if (dx > dy && dx > 5) e.preventDefault();
+    };
+    el.addEventListener("touchmove", handleMove, { passive: false });
+    return () => el.removeEventListener("touchmove", handleMove);
+  }, [photoUrls]);
   const photoUrls = video.is_photo && video.photo_urls ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls)) : null;
 
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
-          onTouchStart={e => { photoTouchStartX.current = e.touches[0].clientX; }}
+        <div ref={photoCardRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
+          onTouchStart={e => {
+            photoTouchStartX.current = e.touches[0].clientX;
+            photoTouchStartY.current = e.touches[0].clientY;
+          }}
+          onTouchMove={e => {
+            const dx = Math.abs(e.touches[0].clientX - photoTouchStartX.current);
+            const dy = Math.abs(e.touches[0].clientY - photoTouchStartY.current);
+            if (dx > dy && dx > 5) {
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          }}
           onTouchEnd={e => {
             const dx = e.changedTouches[0].clientX - photoTouchStartX.current;
-            if (Math.abs(dx) > 40) {
+            const dy = Math.abs(e.changedTouches[0].clientY - photoTouchStartY.current);
+            if (Math.abs(dx) > 35 && Math.abs(dx) > dy) {
               if (dx < 0 && photoIdx < photoUrls.length - 1) setPhotoIdx(p => p + 1);
               if (dx > 0 && photoIdx > 0) setPhotoIdx(p => p - 1);
             }
