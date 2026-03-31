@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
 
 function formatDate(d) {
@@ -1473,6 +1473,9 @@ export default function App() {
   const [myVideos, setMyVideos] = useState([]);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editProfileName, setEditProfileName] = useState('');
+  const [editProfileSaving, setEditProfileSaving] = useState(false);
 
   useEffect(() => { loadVideos(); }, []);
   useEffect(() => { if (currentUser) loadFollowingVideos(currentUser); }, [currentUser]);
@@ -1630,20 +1633,25 @@ export default function App() {
             <>
               <div style={{ padding:"20px 20px 0", textAlign:"center" }}>
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:12, gap:8 }}>
-                  <div style={{ position:"relative", display:"inline-block" }}>
+                  <div style={{ position:"relative", display:"inline-block", cursor:"pointer" }}
+                    onClick={() => setShowAvatarPicker(true)}>
                     <img src={avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`}
                       style={{ width:90, height:90, borderRadius:"50%", border:"3px solid #ff6b6b", display:"block", background:"rgba(255,255,255,0.05)" }} />
                     <div style={{ position:"absolute", bottom:2, right:2, background:"#ff6b6b", borderRadius:"50%", width:26, height:26,
-                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0a0a14", pointerEvents:"none" }}>✏️</div>
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0a0a14" }}>✏️</div>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setShowAvatarPicker(true); }}
+                    onClick={() => setShowAvatarPicker(true)}
                     style={{ background:"rgba(255,107,107,0.18)", border:"1px solid rgba(255,107,107,0.4)", borderRadius:20,
                       padding:"6px 18px", color:"#ff6b6b", fontWeight:700, fontSize:13, cursor:"pointer" }}>
                     Change Avatar
                   </button>
                 </div>
-                <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, cursor:"pointer" }}
+                  onClick={() => { setEditProfileName(currentUser?.full_name || ''); setShowEditProfile(true); }}>
+                  <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
+                  <div style={{ fontSize:13, color:"#888" }}>✏️</div>
+                </div>
                 <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
                 <div style={{ display:"flex", justifyContent:"center", gap:32, marginTop:20, marginBottom:20 }}>
                   <div style={{ textAlign:"center" }}>
@@ -1722,6 +1730,47 @@ export default function App() {
         </div>
       )}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
+      {showEditProfile && (
+        <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => setShowEditProfile(false)}>
+          <div style={{ background:"#1a1a2e", borderRadius:20, padding:24, width:"100%", maxWidth:420 }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:16 }}>✏️ Edit Display Name</div>
+            <input
+              value={editProfileName}
+              onChange={e => setEditProfileName(e.target.value)}
+              placeholder={currentUser?.full_name || username || "Your display name"}
+              defaultValue={currentUser?.full_name || ""}
+              style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
+                borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:15, outline:"none",
+                fontFamily:"inherit", boxSizing:"border-box" }}
+            />
+            <div style={{ display:"flex", gap:10, marginTop:14 }}>
+              <button onClick={() => setShowEditProfile(false)}
+                style={{ flex:1, padding:"12px 0", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)",
+                  borderRadius:12, color:"#aaa", fontSize:14, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={async () => {
+                  if (!editProfileName.trim()) return;
+                  setEditProfileSaving(true);
+                  try {
+                    await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                    setCurrentUser(u => ({ ...u, full_name: editProfileName.trim() }));
+                    setShowEditProfile(false);
+                  } catch(e) { alert("Save failed: " + e.message); }
+                  finally { setEditProfileSaving(false); }
+                }}
+                disabled={editProfileSaving}
+                style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#e91e63,#9c27b0)",
+                  border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700,
+                  cursor:editProfileSaving?"not-allowed":"pointer" }}>
+                {editProfileSaving ? "Saving..." : "Save Name"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={(url) => { setAvatarUrl(url); if(currentUser) localStorage.setItem(`avatar_${currentUser.id}`, url); setShowAvatarPicker(false); }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
   );

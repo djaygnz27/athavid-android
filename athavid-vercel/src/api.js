@@ -7,7 +7,7 @@ export function setToken(t) { sessionToken = t; localStorage.setItem("sachi_toke
 export function getToken() { return sessionToken || localStorage.getItem("sachi_token"); }
 export function clearToken() { sessionToken = null; localStorage.removeItem("sachi_token"); localStorage.removeItem("sachi_user"); }
 
-async function request(method, path, body) {
+export async function request(method, path, body) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
