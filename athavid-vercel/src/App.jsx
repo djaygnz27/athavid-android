@@ -822,7 +822,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 }
 
 export default function App() {
-  const [hasEntered, setHasEntered] = useState(() => sessionStorage.getItem("sachi_entered") === "1");
+  const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
   const [videoList, setVideoList] = useState([]);
   const [loading, setLoading] = useState(true);
