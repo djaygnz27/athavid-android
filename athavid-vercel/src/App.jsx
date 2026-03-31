@@ -1048,7 +1048,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )}
       {/* Tap-to-pause: transparent overlay only active when playing, sits below buttons */}
       {playing && (
-        <div onClick={togglePlay} style={{ position:"absolute", inset:0, zIndex:12, cursor:"pointer", pointerEvents:"auto" }} />
+        <div onClick={togglePlay} style={{ position:"absolute", top:0, left:0, right:0, bottom:200, zIndex:12, cursor:"pointer", pointerEvents:"auto" }} />
       )}
       {/* Paused indicator: only the circle is interactive */}
       {!playing && (
@@ -1059,7 +1059,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:55, opacity:1, transition:"opacity 0.3s" }} />
-      <button onClick={(e) => { e.stopPropagation(); handleMuteToggle(e); }}
+      <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); const el = videoRef.current; if(!el) return; const newMuted = !muted; setMuted(newMuted); el.muted = newMuted; if(!newMuted){ const t = el.currentTime; el.pause(); el.muted = false; el.currentTime = t; el.play().catch(()=>{}); } }}
         style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:80, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
         {muted ? "🔇" : "🔊"}
       </button>
@@ -1071,8 +1071,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12 }}>@{video.username}</div>
           </div>
-          {currentUser && !isOwnVideo && (
-            <button onClick={(e) => { e.stopPropagation(); handleFollow(e); }} disabled={followLoading}
+          {!isOwnVideo && (
+            <button onClick={(e) => { e.stopPropagation(); if(!currentUser){ onNeedAuth(); return; } handleFollow(e); }} disabled={followLoading}
               style={{
                 padding:"5px 14px", borderRadius:20, flexShrink:0,
                 background: followRecord
@@ -1677,7 +1677,7 @@ export default function App() {
 
       {/* Bottom Nav */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,16px)" }}>
-        {[{ id:"feed", icon:"🏠", label:"Home" }, { id:"post", icon:"➕", label:"Post" }, { id:"profile", icon:"👤", label:"Me" }, { id:"install", icon:"📲", label:"Install" }].map(tab => (
+        {[{ id:"feed", icon:"🏠", label:"Home" }, { id:"post", icon:"➕", label:"Post" }, { id:"profile", icon:"👤", label:"Me" }].map(tab => (
           <button key={tab.id}
             onClick={() => {
               if (tab.id === "post") { requireAuth(() => setShowUpload(true)); }
