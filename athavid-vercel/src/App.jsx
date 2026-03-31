@@ -1043,12 +1043,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       ) : (
       <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
-        loop playsInline onClick={togglePlay}
-        style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+        loop playsInline
+        style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
       )}
+      {/* Tap-to-pause: transparent overlay only active when playing, sits below buttons */}
+      {playing && (
+        <div onClick={togglePlay} style={{ position:"absolute", inset:0, zIndex:12, cursor:"pointer", pointerEvents:"auto" }} />
+      )}
+      {/* Paused indicator: only the circle is interactive */}
       {!playing && (
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:10 }}>
-          <div onClick={togglePlay} style={{ background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer" }}>
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:12 }}>
+          <div onClick={togglePlay} style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:72, height:72, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer" }}>
             <div style={{ fontSize:30, marginLeft:6 }}>▶</div>
           </div>
         </div>
