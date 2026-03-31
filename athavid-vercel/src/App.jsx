@@ -561,12 +561,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => obs.disconnect();
   }, []);
 
-  // Directly set .muted on the DOM element — React's muted prop is unreliable
-  useEffect(() => {
+  // Robust unmute — must reload + play for mobile browsers to allow audio
+  const handleMuteToggle = (e) => {
+    e.stopPropagation();
     const el = videoRef.current;
     if (!el) return;
-    el.muted = muted;
-  }, [muted]);
+    const newMuted = !muted;
+    setMuted(newMuted);
+    el.muted = newMuted;
+    // Mobile browsers need a nudge — pause/play to force audio policy unlock
+    if (!newMuted) {
+      const currentTime = el.currentTime;
+      el.pause();
+      el.muted = false;
+      el.currentTime = currentTime;
+      el.play().catch(() => {});
+    }
+  };
 
   const togglePlay = () => {
     const el = videoRef.current;
@@ -593,8 +604,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)", pointerEvents:"none", opacity: playing ? 0 : 1, transition:"opacity 0.3s" }} />
-      <button onClick={(e) => { e.stopPropagation(); setMuted(m => !m); }}
-        style={{ position:"absolute", top:16, right:16, background:"rgba(0,0,0,0.55)", border:"none", borderRadius:"50%", width:42, height:42, color:"#fff", cursor:"pointer", fontSize:18, zIndex:20, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(4px)" }}>
+      <button onClick={handleMuteToggle}
+        style={{ position:"absolute", top:16, right:16, background: muted ? "rgba(0,0,0,0.55)" : "rgba(255,107,107,0.75)", border:"none", borderRadius:"50%", width:44, height:44, color:"#fff", cursor:"pointer", fontSize:20, zIndex:20, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(6px)", transition:"background 0.2s", boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)" }}>
         {muted ? "🔇" : "🔊"}
       </button>
       <div style={{ position:"absolute", bottom:90, left:16, right:80, zIndex:10, opacity: playing ? 0 : 1, transition:"opacity 0.3s", pointerEvents: playing ? "none" : "auto" }}>
