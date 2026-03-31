@@ -1027,8 +1027,8 @@ export default function App() {
           <div style={{ width:34, height:34, borderRadius:"50%", background:"linear-gradient(135deg,#6c63ff,#ff6b6b)",
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>✓</div>
           <div>
-            <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>You are now logged in to Sachi 🎉</div>
-            <div style={{ color:"#a09de8", fontSize:12, marginTop:2 }}>Welcome back — let's vibe 🎶</div>
+            <div style={{ color:"#fff", fontWeight:800, fontSize:15, letterSpacing:0.3 }}>✨ Sachi is Live for you</div>
+            <div style={{ color:"#a09de8", fontSize:12, marginTop:2 }}>Welcome in — let's go 🔥</div>
           </div>
         </div>
       )}
