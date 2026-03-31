@@ -1,6 +1,3 @@
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = `https://api.base44.com/api/apps/${APP_ID}`;
-
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
@@ -10,7 +7,7 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // Strip /api/proxy prefix to get the Base44 path
+  // Strip /api/proxy prefix — the remaining path already includes /apps/{APP_ID}/...
   const path = req.url.replace(/^\/api\/proxy/, "") || "/";
 
   const upstreamHeaders = {};
@@ -18,7 +15,6 @@ export default async function handler(req, res) {
   if (req.headers["content-type"]) upstreamHeaders["Content-Type"] = req.headers["content-type"];
 
   try {
-    // Read raw body
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const rawBody = Buffer.concat(chunks);
@@ -32,16 +28,18 @@ export default async function handler(req, res) {
       fetchOptions.body = rawBody;
     }
 
-    const response = await fetch(`${BASE_URL}${path}`, fetchOptions);
+    // Forward to base44 API — path already has /apps/{APP_ID}/...
+    const upstream = `https://api.base44.com/api${path}`;
+    const response = await fetch(upstream, fetchOptions);
     const contentType = response.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
       const data = await response.json();
       return res.status(response.status).json(data);
     } else {
-      const text = await response.text();
+      const buffer = await response.arrayBuffer();
       res.setHeader("Content-Type", contentType);
-      return res.status(response.status).send(text);
+      return res.status(response.status).send(Buffer.from(buffer));
     }
   } catch (e) {
     return res.status(500).json({ error: e.message });
