@@ -229,13 +229,51 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     return explicit.some(kw => name.includes(kw) || capLower.includes(kw));
   };
 
-  const checkForAiSignatures = (f) => {
-    // Check filename for known AI generator names
+  const checkForAiSignatures = (f, cap) => {
     const name = f.name.toLowerCase();
-    const aiKeywords = ["sora", "runway", "pika", "kling", "luma", "gen2", "gen3", "synthesia", "deepfake",
-      "ai_generated", "ai-generated", "aigc", "midjourney", "stable diffusion", "stablediffusion",
-      "invideo", "heygen", "did_", "d-id", "veed", "capcut_ai", "dreamina", "pixverse"];
-    return aiKeywords.some(kw => name.includes(kw));
+    const capLower = (cap || "").toLowerCase();
+    const combined = name + " " + capLower;
+
+    const aiKeywords = [
+      // ── Top AI video generators ──
+      "sora", "runway", "runwayml", "pika", "pikaart", "kling", "luma", "lumalabs",
+      "gen2", "gen3", "gen4", "gen-2", "gen-3", "synthesia", "deepfake", "deep fake",
+      "invideo", "heygen", "he-gen", "d-id", "did_video", "veed", "capcut_ai",
+      "dreamina", "pixverse", "pixart", "haiper", "morph", "kaiber", "moonvalley",
+      "stablevideo", "stable video", "stablediffusion", "stable diffusion",
+      "animatediff", "animate diff", "modelscope", "zeroscope", "cogvideo",
+      "text2video", "text to video", "img2video", "image to video",
+      "openai video", "dalle video", "gemini video",
+      "vidnoz", "fliki", "pictory", "flexclip_ai", "elai", "colossyan",
+      "movio", "windsor", "tavus", "argil", "captions_ai", "captions.ai",
+      "nova ai", "novaai", "steve ai", "steveai", "rawshorts",
+      "wisecut", "descript_ai", "opus_ai", "munch_ai",
+
+      // ── AI image generators used in video ──
+      "midjourney", "midjrny", "dalle", "dall-e", "dall_e",
+      "firefly", "adobe_ai", "ideogram", "leonardo_ai", "leonardoai",
+      "nightcafe", "artbreeder", "civitai", "civit_ai",
+      "playground_ai", "playgroundai", "tensor_art", "tensorart",
+      "novelai", "novel_ai", "nijijourney",
+
+      // ── Generic AI tags ──
+      "ai_generated", "ai-generated", "aigenerated", "aigc", "ai_made",
+      "ai_video", "aivideo", "made_by_ai", "created_by_ai", "generated_by_ai",
+      "synthetic_media", "synthetic media", "deepfake", "deep_fake",
+      "neural_render", "neural render", "gan_video", "diffusion_video",
+      "aiart", "ai art", "ai content", "aicontent",
+      "virtual human", "virtual_human", "digital human", "digital_human",
+      "avatar video", "avatar_video", "ai avatar", "ai_avatar",
+      "face swap", "faceswap", "face_swap", "voice clone", "voice_clone",
+      "lip sync", "lipsync", "lip_sync",
+
+      // ── Caption/hashtag signals ──
+      "#ai", "#aiart", "#aivideo", "#aigc", "#artificialintelligence",
+      "#aigenerated", "#deepfake", "#synthetic", "#notreal", "#virtualinfluencer",
+      "#aiinfluencer", "#digitalavatar"
+    ];
+
+    return aiKeywords.some(kw => combined.includes(kw));
   };
 
   const [explicitBlocked, setExplicitBlocked] = useState(false);
@@ -245,14 +283,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setFile(f);
     setAiBlocked(false);
     setExplicitBlocked(false);
-    if (checkForAiSignatures(f)) { setAiBlocked(true); return; }
+    if (checkForAiSignatures(f, caption)) { setAiBlocked(true); return; }
     if (checkForExplicitContent(f, caption)) { setExplicitBlocked(true); }
   };
 
   const upload = async () => {
     if (!file) return;
     if (checkForExplicitContent(file, caption)) { alert("🔞 Sexual or explicit content is not allowed on AthaVid."); return; }
-    if (aiBlocked) {
+    if (aiBlocked || checkForAiSignatures(file, caption)) {
       alert("🚫 This video appears to be AI-generated and cannot be posted on AthaVid.");
       return;
     }
@@ -419,7 +457,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
 
         {/* Not AI Confirmation Checkbox */}
-        {!aiBlocked && file && (
+        {!aiBlocked && !explicitBlocked && file && (
           <div onClick={() => setNotAiConfirmed(p => !p)}
             style={{ display:"flex", gap:10, alignItems:"center", marginBottom:14, cursor:"pointer", padding:"10px 14px", background:"rgba(255,255,255,0.04)", borderRadius:10, border:`1px solid ${notAiConfirmed ? "rgba(107,255,154,0.4)" : "rgba(255,255,255,0.1)"}` }}>
             <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${notAiConfirmed ? "#6bff9a" : "#555"}`, background: notAiConfirmed ? "#6bff9a" : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
