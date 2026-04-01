@@ -1833,41 +1833,45 @@ export default function App() {
   return (
     <div style={{ background:"#000", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" }}>
 
-      {/* Header */}
-      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:100, padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", background:"linear-gradient(to bottom,rgba(0,0,0,0.75),transparent)" }}>
-        <div style={{ fontSize:26, fontWeight:900, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</div>
-        {currentUser
-          ? <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              
-              
-            </div>
-          : <button onClick={() => setShowAuth(true)} style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:20, padding:"6px 16px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}>Log In</button>
-        }
+      {/* Header — TikTok style */}
+      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:"env(safe-area-inset-top,0px)", background:"transparent" }}>
+        {/* Left: search icon */}
+        <div style={{ width:48, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:10 }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        {/* Center: Following | Sachi | For You tabs */}
+        {activeTab === "feed" ? (
+          <div style={{ display:"flex", alignItems:"flex-end", gap:0, paddingTop:10 }}>
+            <button onClick={() => { setFeedTab("following"); if(currentUser) loadFollowingVideos(currentUser); }}
+              style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 12px", color: feedTab==="following" ? "#fff" : "rgba(255,255,255,0.45)", fontWeight: feedTab==="following" ? 800 : 500, fontSize: feedTab==="following" ? 16 : 14, letterSpacing:0.2, transition:"all 0.2s", borderBottom: feedTab==="following" ? "2px solid #fff" : "2px solid transparent" }}>
+              Following
+            </button>
+            <div style={{ color:"rgba(255,255,255,0.2)", fontSize:18, paddingBottom:4, paddingLeft:2, paddingRight:2 }}>|</div>
+            <button onClick={() => setFeedTab("forYou")}
+              style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 12px", color: feedTab==="forYou" ? "#fff" : "rgba(255,255,255,0.45)", fontWeight: feedTab==="forYou" ? 800 : 500, fontSize: feedTab==="forYou" ? 16 : 14, letterSpacing:0.2, transition:"all 0.2s", borderBottom: feedTab==="forYou" ? "2px solid #fff" : "2px solid transparent" }}>
+              For You
+            </button>
+          </div>
+        ) : (
+          <div style={{ fontSize:18, fontWeight:900, color:"#fff", paddingTop:10, letterSpacing:0.5 }}>
+            {activeTab === "profile" ? "Profile" : "sachi"}
+          </div>
+        )}
+        {/* Right: login or notification bell */}
+        <div style={{ width:48, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:10 }}>
+          {currentUser ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          ) : (
+            <button onClick={() => setShowAuth(true)} style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:20, padding:"5px 14px", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>Log In</button>
+          )}
+        </div>
       </div>
 
       {/* Feed */}
-      {activeTab === "feed" && (
-        <>
-        {/* Feed tabs */}
-        <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)",
-          width:"100%", maxWidth:480, zIndex:300, display:"flex", justifyContent:"center",
-          gap:0, paddingTop:"env(safe-area-inset-top,12px)", pointerEvents:"none" }}>
-          <div style={{ display:"flex", gap:0, background:"rgba(0,0,0,0.5)",
-            backdropFilter:"blur(12px)", borderRadius:30, padding:"4px", pointerEvents:"auto",
-            marginTop:8, boxShadow:"0 2px 20px rgba(0,0,0,0.4)" }}>
-            {["forYou","following"].map(t => (
-              <button key={t} onClick={() => { setFeedTab(t); if(t==="following" && currentUser) loadFollowingVideos(currentUser); }}
-                style={{ padding:"7px 20px", borderRadius:26, border:"none", cursor:"pointer",
-                  background: feedTab===t ? "linear-gradient(135deg,#ff6b6b,#e53935)" : "transparent",
-                  color: feedTab===t ? "#fff" : "rgba(255,255,255,0.55)",
-                  fontWeight: feedTab===t ? 800 : 500, fontSize:13, transition:"all 0.2s" }}>
-                {t === "forYou" ? "For You" : "Following"}
-              </button>
-            ))}
-          </div>
-        </div>
-        </>
-      )}
       {activeTab === "feed" && (
         <div data-feed style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory" }}>
           {feedTab === "following" && followingIds.length === 0 && (
@@ -1961,23 +1965,50 @@ export default function App() {
         </div>
       )}
 
-      {/* Bottom Nav */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,16px)" }}>
-        {[{ id:"feed", icon:"🏠", label:"Home" }, { id:"post", icon:"➕", label:"Post" }, { id:"live", icon:"🔴", label:"Live" }, { id:"profile", icon:"👤", label:"Me" }].map(tab => (
-          <button key={tab.id}
-            onClick={() => {
-              if (tab.id === "post") { requireAuth(() => setShowUpload(true)); }
-              else if (tab.id === "live") { requireAuth(() => setShowGoLive(true)); }
-              else if (tab.id === "feed") { setActiveTab("feed"); loadVideos(); window.scrollTo(0, 0); document.querySelector("[data-feed]") && (document.querySelector("[data-feed]").scrollTop = 0); }
-              else { setActiveTab(tab.id); }
-            }}
-            style={{ flex:1, padding:"10px 0 8px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-              WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-            <div style={{ fontSize:22, ...(tab.id==="live" ? { animation:"livePulse 1.5s ease infinite" } : {}) }}>{tab.icon}</div>
-            <div style={{ fontSize:10, color: activeTab === tab.id ? "#ff6b6b" : "#555", fontWeight: activeTab === tab.id ? 700 : 400 }}>{tab.label}</div>
-          </button>
-        ))}
-
+      {/* Bottom Nav — TikTok style */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,10px)", paddingTop:6 }}>
+        {/* Home */}
+        <button onClick={() => { setActiveTab("feed"); loadVideos(); window.scrollTo(0,0); }}
+          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#fff" : "none"} stroke={activeTab==="feed" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <div style={{ fontSize:10, color: activeTab==="feed" ? "#fff" : "#666", fontWeight: activeTab==="feed" ? 700 : 400 }}>Home</div>
+        </button>
+        {/* Friends/Explore */}
+        <button onClick={() => requireAuth(() => setActiveTab("explore"))}
+          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Explore</div>
+        </button>
+        {/* Center ➕ Post button — TikTok style */}
+        <button onClick={() => requireAuth(() => setShowUpload(true))}
+          style={{ flex:1, padding:"0 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", position:"relative" }}>
+          <div style={{ position:"relative", width:46, height:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ position:"absolute", left:3, top:0, width:36, height:28, background:"#20d5ec", borderRadius:8 }} />
+            <div style={{ position:"absolute", right:3, top:0, width:36, height:28, background:"#fe2c55", borderRadius:8 }} />
+            <div style={{ position:"relative", width:36, height:28, background:"#fff", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", zIndex:1 }}>
+              <span style={{ fontSize:20, fontWeight:900, color:"#000", lineHeight:1 }}>+</span>
+            </div>
+          </div>
+          <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Post</div>
+        </button>
+        {/* Live */}
+        <button onClick={() => requireAuth(() => setShowGoLive(true))}
+          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
+          <div style={{ fontSize:22, animation:"livePulse 1.5s ease infinite" }}>🔴</div>
+          <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Live</div>
+        </button>
+        {/* Profile / Me */}
+        <button onClick={() => setActiveTab("profile")}
+          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#fff" : "none"} stroke={activeTab==="profile" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <div style={{ fontSize:10, color: activeTab==="profile" ? "#fff" : "#666", fontWeight: activeTab==="profile" ? 700 : 400 }}>Me</div>
+        </button>
       </div>
 
       {profileSheet && (
