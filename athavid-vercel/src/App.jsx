@@ -849,9 +849,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   const upload = async () => {
     if (!file) return;
-    if (checkForExplicitContent(file, caption)) { alert("🔞 Sexual or explicit content is not allowed on AthaVid."); return; }
+    if (checkForExplicitContent(file, caption)) { alert("🔞 Sexual or explicit content is not allowed on Sachi."); return; }
     if (aiBlocked || checkForAiSignatures(file, caption)) {
-      alert("🚫 This video appears to be AI-generated and cannot be posted on AthaVid.");
+      alert("🚫 This video appears to be AI-generated and cannot be posted on Sachi.");
       return;
     }
     if (!notAiConfirmed) {
@@ -1074,7 +1074,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             <div style={{ fontSize:22, flexShrink:0 }}>🔞</div>
             <div>
               <div style={{ color:"#ff4444", fontWeight:700, fontSize:14, marginBottom:4 }}>Explicit Content Not Allowed</div>
-              <div style={{ color:"#cc6666", fontSize:13, lineHeight:1.5 }}>AthaVid does not allow sexual or explicit content. Please upload appropriate videos only.</div>
+              <div style={{ color:"#cc6666", fontSize:13, lineHeight:1.5 }}>Sachi does not allow sexual or explicit content. Please upload appropriate videos only.</div>
             </div>
           </div>
         )}
@@ -1520,7 +1520,7 @@ function ReportModal({ video, onClose }) {
           <div style={{ textAlign:"center", padding:"24px 0" }}>
             <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
             <div style={{ color:"#fff", fontWeight:700, fontSize:18, marginBottom:6 }}>Report Submitted</div>
-            <div style={{ color:"#888", fontSize:14 }}>Thanks for keeping AthaVid safe. We'll review this video.</div>
+            <div style={{ color:"#888", fontSize:14 }}>Thanks for keeping Sachi safe. We'll review this video.</div>
           </div>
         ) : (
           <>

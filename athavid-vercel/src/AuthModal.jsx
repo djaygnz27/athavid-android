@@ -145,7 +145,7 @@ export default function AuthModal({ onClose, onSuccess }) {
                   {" "}and{" "}
                   <a href="/privacy" target="_blank" rel="noopener noreferrer"
                     style={{ color:"#ff8e53", textDecoration:"underline" }}>Privacy Policy</a>
-                  , including that <strong style={{color:"#fff"}}>Sachi and AthaVid are not responsible or liable for content posted by other users.</strong>
+                  , including that <strong style={{color:"#fff"}}>Sachi is not responsible or liable for content posted by other users.</strong>
                 </div>
               </div>
             )}
