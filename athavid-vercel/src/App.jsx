@@ -1864,12 +1864,10 @@ export default function App() {
 
       {/* Header — TikTok style */}
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:"env(safe-area-inset-top,0px)", background:"transparent" }}>
-        {/* Left: search icon */}
-        <button onClick={() => setShowSearch(true)} style={{ width:48, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:10, background:"none", border:"none", cursor:"pointer", WebkitTapHighlightColor:"transparent" }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </button>
+        {/* Left: username */}
+        <div style={{ paddingLeft:14, paddingTop:10, color:"rgba(255,255,255,0.75)", fontSize:13, fontWeight:600, minWidth:48 }}>
+          {currentUser ? `@${currentUser.full_name?.split(" ")[0]?.toLowerCase() || currentUser.email?.split("@")[0] || ""}` : ""}
+        </div>
         {/* Center: Following | Sachi | For You tabs */}
         {activeTab === "feed" ? (
           <div style={{ display:"flex", alignItems:"flex-end", gap:0, paddingTop:10 }}>
