@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
