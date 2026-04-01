@@ -1037,17 +1037,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
 
-      {/* ── MUTE BUTTON (top right) ── */}
-      <button onClick={tap(doMute)}
-        style={{ position:"absolute", top:16, right:16, zIndex:500,
-          background: muted ? "rgba(0,0,0,0.6)" : "rgba(255,107,107,0.85)",
-          border:"none", borderRadius:"50%", width:52, height:52,
-          color:"#fff", fontSize:22, cursor:"pointer",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          boxShadow: muted ? "none" : "0 0 14px rgba(255,107,107,0.6)",
-          WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-        {muted ? "🔇" : "🔊"}
-      </button>
+
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
       <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:50 }}>
@@ -1070,6 +1060,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
             </button>
           )}
+          {/* Mute button inline */}
+          <button onClick={tap(doMute)}
+            style={{ background: muted ? "rgba(0,0,0,0.5)" : "rgba(255,107,107,0.85)",
+              border:"none", borderRadius:"50%", width:36, height:36, flexShrink:0,
+              color:"#fff", fontSize:16, cursor:"pointer",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              boxShadow: muted ? "none" : "0 0 10px rgba(255,107,107,0.5)",
+              WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            {muted ? "🔇" : "🔊"}
+          </button>
         </div>
         {video.sound_title && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
@@ -1751,6 +1751,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("feed");
   const [showGoLive, setShowGoLive] = useState(false);
   const [profileSheet, setProfileSheet] = useState(null); // { userId, username }
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
   const [followingVideos, setFollowingVideos] = useState([]);
   const [followingIds, setFollowingIds] = useState([]);
@@ -1836,11 +1838,11 @@ export default function App() {
       {/* Header — TikTok style */}
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:"env(safe-area-inset-top,0px)", background:"transparent" }}>
         {/* Left: search icon */}
-        <div style={{ width:48, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:10 }}>
+        <button onClick={() => setShowSearch(true)} style={{ width:48, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:10, background:"none", border:"none", cursor:"pointer", WebkitTapHighlightColor:"transparent" }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-        </div>
+        </button>
         {/* Center: Following | Sachi | For You tabs */}
         {activeTab === "feed" ? (
           <div style={{ display:"flex", alignItems:"flex-end", gap:0, paddingTop:10 }}>
@@ -1975,8 +1977,8 @@ export default function App() {
           </svg>
           <div style={{ fontSize:10, color: activeTab==="feed" ? "#fff" : "#666", fontWeight: activeTab==="feed" ? 700 : 400 }}>Home</div>
         </button>
-        {/* Friends/Explore */}
-        <button onClick={() => requireAuth(() => setActiveTab("explore"))}
+        {/* Search/Explore */}
+        <button onClick={() => setShowSearch(true)}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -2010,6 +2012,51 @@ export default function App() {
           <div style={{ fontSize:10, color: activeTab==="profile" ? "#fff" : "#666", fontWeight: activeTab==="profile" ? 700 : 400 }}>Me</div>
         </button>
       </div>
+
+      {/* Search Sheet */}
+      {showSearch && (
+        <div style={{ position:"fixed", inset:0, zIndex:500, background:"#000", display:"flex", flexDirection:"column" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 12px)", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search users or videos..."
+                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
+              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>}
+            </div>
+            <button onClick={() => { setShowSearch(false); setSearchQuery(""); }} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.6)", fontSize:14, cursor:"pointer", fontWeight:600, padding:"0 4px", WebkitTapHighlightColor:"transparent" }}>Cancel</button>
+          </div>
+          <div style={{ flex:1, overflowY:"auto", padding:16 }}>
+            {searchQuery.trim() === "" ? (
+              <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>Search for users or video captions</div>
+            ) : (
+              videoList.filter(v =>
+                (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+              ).length === 0 ? (
+                <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No results for "{searchQuery}"</div>
+              ) : (
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                  {videoList.filter(v =>
+                    (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+                  ).map(v => (
+                    <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                      onClick={() => { setShowSearch(false); setSearchQuery(""); }}>
+                      <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
 
       {profileSheet && (
         <UserProfileSheet
