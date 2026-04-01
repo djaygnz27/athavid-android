@@ -1040,7 +1040,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:50 }}>
+      <div style={{ position:"absolute", bottom:90, left:16, right:72, zIndex:250 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:2, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
@@ -1075,7 +1075,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDEBAR: actions ── */}
-      <div style={{ position:"absolute", bottom:72, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:50 }}>
+      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:250 }}>
 
         {/* Avatar + Follow button — TikTok style */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
@@ -1845,7 +1845,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ background:"#000", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", overflow:"hidden" }}>
+    <div style={{ background:"#000", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
       {/* Header — exact TikTok style */}
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:"env(safe-area-inset-top,0px)", background:"transparent" }}>
