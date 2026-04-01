@@ -1132,14 +1132,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ color:"#fff", fontSize:11, fontWeight:700 }}>Report</div>
         </button>
 
-        {isOwnVideo && (
-          <button onClick={tap(doDelete)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
-              WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-            <div style={{ fontSize:26 }}>🗑️</div>
-            <div style={{ color:"#ff4444", fontSize:11, fontWeight:700 }}>Delete</div>
-          </button>
-        )}
+
 
 
       </div>
