@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
@@ -475,8 +475,245 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
   );
 }
 
+// ── Video Editor Component ────────────────────────────────────────────────────
+function VideoEditor({ file, onDone, onSkip }) {
+  const videoRef = useRef(null);
+  const [duration, setDuration] = useState(0);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [trimming, setTrimming] = useState(false);
+  const [cropMode, setCropMode] = useState("original"); // original | square | portrait
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
+
+  useEffect(() => {
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  const onMeta = () => {
+    const dur = videoRef.current?.duration || 0;
+    setDuration(dur);
+    setTrimEnd(dur);
+  };
+
+  const onTimeUpdate = () => setCurrentTime(videoRef.current?.currentTime || 0);
+
+  const seekTo = (t) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = t;
+    }
+  };
+
+  const fmtTime = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  };
+
+  const doTrim = async () => {
+    // If no real trim or crop needed, just pass through original
+    if (trimStart <= 0.5 && trimEnd >= duration - 0.5 && cropMode === "original") {
+      onDone(file);
+      return;
+    }
+
+    setTrimming(true);
+    try {
+      // Use MediaRecorder to trim the video in-browser
+      const video = document.createElement("video");
+      video.src = previewUrl;
+      video.muted = true;
+      await new Promise(r => { video.onloadedmetadata = r; video.load(); });
+
+      const canvas = document.createElement("canvas");
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+
+      // Set canvas dimensions based on crop mode
+      if (cropMode === "square") {
+        const size = Math.min(vw, vh);
+        canvas.width = size; canvas.height = size;
+      } else if (cropMode === "portrait") {
+        const targetH = Math.round(vw * (16/9));
+        canvas.width = vw; canvas.height = Math.min(targetH, vh);
+      } else {
+        canvas.width = vw; canvas.height = vh;
+      }
+
+      const ctx = canvas.getContext("2d");
+      const stream = canvas.captureStream(30);
+
+      // Add audio
+      let audioStream = null;
+      try {
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaElementSource(video);
+        const dest = audioCtx.createMediaStreamDestination();
+        source.connect(dest);
+        audioStream = dest.stream;
+      } catch {}
+
+      const combinedStream = audioStream
+        ? new MediaStream([...stream.getTracks(), ...audioStream.getTracks()])
+        : stream;
+
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+        ? "video/webm;codecs=vp9,opus"
+        : "video/webm";
+
+      const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 4000000 });
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+      let animFrame;
+      const drawFrame = () => {
+        if (video.paused || video.ended) return;
+        const sx = cropMode === "square" ? (vw - Math.min(vw,vh)) / 2 : 0;
+        const sy = cropMode === "square" ? (vh - Math.min(vw,vh)) / 2 : 0;
+        const sw = cropMode === "square" ? Math.min(vw,vh) : vw;
+        const sh = cropMode === "square" ? Math.min(vw,vh) : (cropMode === "portrait" ? canvas.height : vh);
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        animFrame = requestAnimationFrame(drawFrame);
+      };
+
+      const blob = await new Promise((resolve) => {
+        recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+        video.currentTime = trimStart;
+        video.oncanplay = async () => {
+          video.oncanplay = null;
+          recorder.start(100);
+          drawFrame();
+          await video.play();
+          const remaining = (trimEnd - trimStart) * 1000;
+          setTimeout(() => {
+            cancelAnimationFrame(animFrame);
+            video.pause();
+            recorder.stop();
+          }, remaining);
+        };
+      });
+
+      const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+      const trimmedFile = new File([blob], `trimmed_${Date.now()}.${ext}`, { type: mimeType });
+      onDone(trimmedFile);
+    } catch(err) {
+      console.error("Trim failed", err);
+      // Fallback — use original
+      onDone(file);
+    }
+    setTrimming(false);
+  };
+
+  const cropLabel = { original: "Original", square: "1:1 Square", portrait: "9:16 Portrait" };
+  const trimDuration = Math.max(0, trimEnd - trimStart);
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:3000, background:"#000", display:"flex", flexDirection:"column" }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", borderBottom:"1px solid #222" }}>
+        <button onClick={onSkip} style={{ background:"none", border:"none", color:"#aaa", fontSize:15, cursor:"pointer" }}>Skip</button>
+        <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>✂️ Edit Video</div>
+        <button onClick={doTrim} disabled={trimming}
+          style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:20, padding:"8px 18px", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+          {trimming ? "Processing..." : "Done"}
+        </button>
+      </div>
+
+      {/* Video Preview */}
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:"#111", overflow:"hidden" }}>
+        <video ref={videoRef} src={previewUrl}
+          onLoadedMetadata={onMeta} onTimeUpdate={onTimeUpdate}
+          onClick={() => videoRef.current?.paused ? videoRef.current.play() : videoRef.current.pause()}
+          style={{
+            maxWidth:"100%", maxHeight:"100%",
+            aspectRatio: cropMode === "square" ? "1/1" : cropMode === "portrait" ? "9/16" : "auto",
+            objectFit: cropMode === "original" ? "contain" : "cover",
+            cursor:"pointer"
+          }}
+          playsInline loop muted={false}
+        />
+      </div>
+
+      {/* Controls */}
+      <div style={{ background:"#0f0f1a", padding:"20px 20px 40px" }}>
+
+        {/* Crop Mode */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ color:"#aaa", fontSize:12, fontWeight:600, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Crop</div>
+          <div style={{ display:"flex", gap:8 }}>
+            {["original","square","portrait"].map(m => (
+              <button key={m} onClick={() => setCropMode(m)}
+                style={{ flex:1, padding:"10px 0", borderRadius:12, border: cropMode===m ? "2px solid #ff6b6b" : "2px solid #333",
+                  background: cropMode===m ? "rgba(255,107,107,0.15)" : "#1a1a2e",
+                  color: cropMode===m ? "#ff6b6b" : "#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                {m === "original" ? "📐 Original" : m === "square" ? "⬜ Square" : "📱 Portrait"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Trim */}
+        {duration > 0 && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+              <div style={{ color:"#aaa", fontSize:12, fontWeight:600, textTransform:"uppercase", letterSpacing:1 }}>Trim</div>
+              <div style={{ color:"#ff6b6b", fontSize:13, fontWeight:700 }}>{fmtTime(trimStart)} – {fmtTime(trimEnd)} ({fmtTime(trimDuration)})</div>
+            </div>
+
+            {/* Trim bar */}
+            <div style={{ position:"relative", height:44, background:"#1a1a2e", borderRadius:12, overflow:"hidden", marginBottom:8 }}>
+              {/* Selected range highlight */}
+              <div style={{
+                position:"absolute", top:0, bottom:0,
+                left: `${(trimStart/duration)*100}%`,
+                width: `${((trimEnd-trimStart)/duration)*100}%`,
+                background:"rgba(255,107,107,0.25)", border:"2px solid #ff6b6b", borderRadius:8
+              }} />
+              {/* Playhead */}
+              <div style={{
+                position:"absolute", top:0, bottom:0, width:2, background:"#fff",
+                left: `${(currentTime/duration)*100}%`
+              }} />
+              {/* Start thumb */}
+              <input type="range" min={0} max={duration} step={0.1} value={trimStart}
+                onChange={e => { const v = Math.min(parseFloat(e.target.value), trimEnd-1); setTrimStart(v); seekTo(v); }}
+                style={{ position:"absolute", inset:0, width:"100%", opacity:0, cursor:"ew-resize", zIndex:2 }} />
+            </div>
+
+            {/* Start / End sliders */}
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <div>
+                <div style={{ color:"#888", fontSize:11, marginBottom:4 }}>Start: {fmtTime(trimStart)}</div>
+                <input type="range" min={0} max={duration} step={0.1} value={trimStart}
+                  onChange={e => { const v = Math.min(parseFloat(e.target.value), trimEnd-1); setTrimStart(v); seekTo(v); }}
+                  style={{ width:"100%", accentColor:"#ff6b6b" }} />
+              </div>
+              <div>
+                <div style={{ color:"#888", fontSize:11, marginBottom:4 }}>End: {fmtTime(trimEnd)}</div>
+                <input type="range" min={0} max={duration} step={0.1} value={trimEnd}
+                  onChange={e => { const v = Math.max(parseFloat(e.target.value), trimStart+1); setTrimEnd(v); seekTo(v); }}
+                  style={{ width:"100%", accentColor:"#ff6b6b" }} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {trimming && (
+        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", zIndex:10 }}>
+          <div style={{ fontSize:40, marginBottom:16 }}>✂️</div>
+          <div style={{ color:"#fff", fontSize:18, fontWeight:700 }}>Processing video...</div>
+          <div style={{ color:"#aaa", fontSize:14, marginTop:8 }}>This may take a moment</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UploadModal({ currentUser, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
+  const [editedFile, setEditedFile] = useState(null); // trimmed/cropped version
+  const [showEditor, setShowEditor] = useState(false);
   const [uploadTab, setUploadTab] = useState("video");
   const [photos, setPhotos] = useState([]);
   const photoRef = useRef();
@@ -554,10 +791,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const handleFileSelect = (f) => {
     if (!f) return;
     setFile(f);
+    setEditedFile(null);
     setAiBlocked(false);
     setExplicitBlocked(false);
     if (checkForAiSignatures(f, caption)) { setAiBlocked(true); return; }
-    if (checkForExplicitContent(f, caption)) { setExplicitBlocked(true); }
+    if (checkForExplicitContent(f, caption)) { setExplicitBlocked(true); return; }
+    // Show editor for video files
+    if (f.type.startsWith("video/")) setShowEditor(true);
   };
 
   const handlePhotoSelect = (e) => {
@@ -633,7 +873,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setUploading(true); setProgress(10);
     try {
       setStep("Uploading video...");
-      const video_url = await uploadFile(file);
+      const video_url = await uploadFile(editedFile || file);
       setProgress(60);
       setStep("Generating thumbnail...");
       let thumbnail_url = null;
@@ -659,6 +899,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   };
 
   return (
+    <>
+    {showEditor && (
+      <VideoEditor
+        file={file}
+        onDone={(processed) => { setEditedFile(processed); setShowEditor(false); }}
+        onSkip={() => { setEditedFile(null); setShowEditor(false); }}
+      />
+    )}
     <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)" }} />
       <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:2001 }}>
@@ -874,6 +1122,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
       </div>
     </div>
+    </>
   );
 }
 
@@ -1193,6 +1442,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
     </div>
+    </>
   );
 }
 
