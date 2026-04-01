@@ -62,25 +62,26 @@ short video, viral videos, video sharing, social media, TikTok alternative, crea
 ---
 
 ## Content Rating
-**Teen (13+)**
-- User-generated content
-- Social interaction
+**Mature 17+ (or Adults Only)**
+Reason: User-generated content platform requiring 18+ age verification at signup
 
 ---
 
 ## Contact Info
 - **Developer Name:** LDNA Consulting
 - **Email:** lasanjaya@gmail.com
-- **Website:** https://athavid-vercel.vercel.app
-- **Privacy Policy URL:** https://athavid-vercel.vercel.app/privacy
+- **Website:** https://sachistream.com
+- **Privacy Policy URL:** https://sachistream.com/privacy
 
 ---
 
 ## Assets Checklist
 - [x] App Icon: 512x512 px (sachi_icon_512.png)
 - [x] Feature Graphic: 1024x500 px (sachi_feature_1024x500.png)
-- [ ] Phone Screenshots: min 2, max 8 (1080x1920 recommended)
-- [ ] Tablet Screenshots: 7-inch and 10-inch
+- [x] Phone Screenshots: 4 screens (phone_ss1-4)
+- [x] Tablet Screenshots: 7-inch and 10-inch (tab_ss1-4)
+- [x] Android XR Screenshots (xr2_1-4)
+- [ ] AAB file (build via GitHub Actions once Play account verified)
 
 ## Version Info
 - Version: 1.0
