@@ -1148,23 +1148,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
             <svg width="26" height="28" viewBox="0 0 26 28">
-              {/* Pole */}
-              <line x1="3" y1="1" x2="3" y2="27" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              {/* Checkered flag hanging from pole — 4x3 grid */}
-              <rect x="4" y="1" width="5" height="5" fill="white"/>
-              <rect x="9" y="1" width="5" height="5" fill="black"/>
-              <rect x="14" y="1" width="5" height="5" fill="white"/>
-              <rect x="19" y="1" width="5" height="5" fill="black"/>
+              {/* Pole — slightly tilted */}
+              <line x1="4" y1="27" x2="7" y2="1" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              {/* Checkered flag — tilted via transform */}
+              <g transform="rotate(-15, 7, 1)">
+                <rect x="8" y="1" width="4.5" height="4.5" fill="white"/>
+                <rect x="12.5" y="1" width="4.5" height="4.5" fill="black"/>
+                <rect x="17" y="1" width="4.5" height="4.5" fill="white"/>
+                <rect x="21.5" y="1" width="4.5" height="4.5" fill="black"/>
 
-              <rect x="4" y="6" width="5" height="5" fill="black"/>
-              <rect x="9" y="6" width="5" height="5" fill="white"/>
-              <rect x="14" y="6" width="5" height="5" fill="black"/>
-              <rect x="19" y="6" width="5" height="5" fill="white"/>
+                <rect x="8" y="5.5" width="4.5" height="4.5" fill="black"/>
+                <rect x="12.5" y="5.5" width="4.5" height="4.5" fill="white"/>
+                <rect x="17" y="5.5" width="4.5" height="4.5" fill="black"/>
+                <rect x="21.5" y="5.5" width="4.5" height="4.5" fill="white"/>
 
-              <rect x="4" y="11" width="5" height="5" fill="white"/>
-              <rect x="9" y="11" width="5" height="5" fill="black"/>
-              <rect x="14" y="11" width="5" height="5" fill="white"/>
-              <rect x="19" y="11" width="5" height="5" fill="black"/>
+                <rect x="8" y="10" width="4.5" height="4.5" fill="white"/>
+                <rect x="12.5" y="10" width="4.5" height="4.5" fill="black"/>
+                <rect x="17" y="10" width="4.5" height="4.5" fill="white"/>
+                <rect x="21.5" y="10" width="4.5" height="4.5" fill="black"/>
+              </g>
             </svg>
           </div>
           <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>Report</div>
