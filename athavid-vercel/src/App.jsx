@@ -1075,7 +1075,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDEBAR: actions ── */}
-      <div style={{ position:"absolute", bottom:96, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:50 }}>
+      <div style={{ position:"absolute", bottom:72, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:50 }}>
 
         {/* Avatar + Follow button — TikTok style */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
@@ -1142,35 +1142,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>Share</div>
         </button>
 
-        {/* Report */}
-        <button onClick={tap(() => setReportTarget(video))}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
-            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="20" height="22" viewBox="0 0 26 28">
-              {/* Pole — tilted right */}
-              <line x1="3" y1="27" x2="10" y2="1" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              {/* Checkered flag attached at top of pole, tilted right */}
-              <g transform="rotate(20, 10, 1)">
-                <rect x="11" y="1" width="4" height="4" fill="white"/>
-                <rect x="15" y="1" width="4" height="4" fill="black"/>
-                <rect x="19" y="1" width="4" height="4" fill="white"/>
-                <rect x="23" y="1" width="4" height="4" fill="black"/>
 
-                <rect x="11" y="5" width="4" height="4" fill="black"/>
-                <rect x="15" y="5" width="4" height="4" fill="white"/>
-                <rect x="19" y="5" width="4" height="4" fill="black"/>
-                <rect x="23" y="5" width="4" height="4" fill="white"/>
-
-                <rect x="11" y="9" width="4" height="4" fill="white"/>
-                <rect x="15" y="9" width="4" height="4" fill="black"/>
-                <rect x="19" y="9" width="4" height="4" fill="white"/>
-                <rect x="23" y="9" width="4" height="4" fill="black"/>
-              </g>
-            </svg>
-          </div>
-          <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>Report</div>
-        </button>
 
 
 
