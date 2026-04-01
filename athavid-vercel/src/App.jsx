@@ -1138,7 +1138,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
 
-  const isOwnVideo = currentUser && currentUser.id === video.user_id;
+  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
 
   // Auto-play via IntersectionObserver
   useEffect(() => {
