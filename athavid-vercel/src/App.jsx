@@ -1863,8 +1863,8 @@ export default function App() {
         {/* Left: Live button (TikTok style) */}
         <div style={{ width:56, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:12 }}>
           <button onClick={() => requireAuth(() => setShowGoLive(true))}
-            style={{ background:"none", border:"1.5px solid rgba(255,255,255,0.5)", borderRadius:6, padding:"3px 8px", color:"rgba(255,255,255,0.7)", fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:0.5, WebkitTapHighlightColor:"transparent" }}>
-            LIVE
+            style={{ background:"none", border:"1.5px solid rgba(229,57,53,0.8)", borderRadius:6, padding:"3px 8px", color:"#e53935", fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:0.5, WebkitTapHighlightColor:"transparent" }}>
+            ⏺ Rec
           </button>
         </div>
 
