@@ -139,12 +139,13 @@ export default function AuthModal({ onClose, onSuccess }) {
                   {agreedToTerms && <span style={{ color:"#fff", fontSize:14, fontWeight:900 }}>✓</span>}
                 </div>
                 <div style={{ color:"#aaa", fontSize:13, lineHeight:1.6 }}>
-                  I am 18 years or older and I agree to the{" "}
+                  I am 18 years or older. I have read and agree to the{" "}
                   <a href="/terms" target="_blank" rel="noopener noreferrer"
                     style={{ color:"#ff8e53", textDecoration:"underline" }}>Terms of Service</a>
                   {" "}and{" "}
                   <a href="/privacy" target="_blank" rel="noopener noreferrer"
                     style={{ color:"#ff8e53", textDecoration:"underline" }}>Privacy Policy</a>
+                  , including that <strong style={{color:"#fff"}}>Sachi and AthaVid are not responsible or liable for content posted by other users.</strong>
                 </div>
               </div>
             )}
