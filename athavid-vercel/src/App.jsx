@@ -1317,13 +1317,115 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 
 
 // ─── User Profile Sheet ──────────────────────────────────────────────────────
+// ─── Profile Video Player (full-screen TikTok-style) ────────────────────────
+function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username }) {
+  const [idx, setIdx] = React.useState(startIndex || 0);
+  const [muted, setMuted] = React.useState(false);
+  const videoRef = React.useRef(null);
+  const touchStartY = React.useRef(null);
+
+  const v = vids[idx];
+
+  React.useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [idx]);
+
+  const goNext = () => { if (idx < vids.length - 1) setIdx(i => i + 1); };
+  const goPrev = () => { if (idx > 0) setIdx(i => i - 1); };
+
+  const onTouchStart = (e) => { touchStartY.current = e.touches[0].clientY; };
+  const onTouchEnd = (e) => {
+    if (touchStartY.current === null) return;
+    const diff = touchStartY.current - e.changedTouches[0].clientY;
+    if (Math.abs(diff) > 50) { diff > 0 ? goNext() : goPrev(); }
+    touchStartY.current = null;
+  };
+
+  if (!v) return null;
+
+  return (
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+
+      {/* Video */}
+      <video ref={videoRef} key={v.id} src={v.video_url} autoPlay playsInline loop muted={muted}
+        onClick={() => { if(videoRef.current.paused) videoRef.current.play(); else videoRef.current.pause(); }}
+        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+
+      {/* Gradient overlay */}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents:"none" }} />
+
+      {/* Top bar */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, display:"flex", alignItems:"center", padding:"50px 16px 16px", zIndex:10 }}>
+        <button onClick={onClose}
+          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
+            color:"#fff", fontSize:20, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
+        <div style={{ flex:1, textAlign:"center", color:"#fff", fontWeight:800, fontSize:15 }}>
+          {profile?.display_name || username}
+        </div>
+        <button onClick={() => setMuted(m => !m)}
+          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
+            color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {muted ? "🔇" : "🔊"}
+        </button>
+      </div>
+
+      {/* Bottom info */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"0 16px 40px", zIndex:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+          <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`}
+            style={{ width:36, height:36, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
+          <div style={{ color:"#fff", fontWeight:800, fontSize:14 }}>@{username}</div>
+        </div>
+        {v.caption && <div style={{ color:"#fff", fontSize:13, lineHeight:1.5, marginBottom:8 }}>{v.caption}</div>}
+        <div style={{ display:"flex", gap:16 }}>
+          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>❤️ {v.likes_count || 0}</span>
+          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>💬 {v.comments_count || 0}</span>
+          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>👁 {v.views_count || 0}</span>
+        </div>
+      </div>
+
+      {/* Swipe hint dots */}
+      <div style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", display:"flex", flexDirection:"column", gap:4, zIndex:10 }}>
+        {vids.map((_, i) => (
+          <div key={i} onClick={() => setIdx(i)}
+            style={{ width:4, height: i === idx ? 20 : 6, borderRadius:4,
+              background: i === idx ? "#ff6b6b" : "rgba(255,255,255,0.3)", cursor:"pointer",
+              transition:"height 0.2s" }} />
+        ))}
+      </div>
+
+      {/* Nav arrows (desktop) */}
+      {idx > 0 && (
+        <button onClick={goPrev}
+          style={{ position:"absolute", top:"50%", left:12, transform:"translateY(-50%)", background:"rgba(0,0,0,0.5)",
+            border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", zIndex:10 }}>↑</button>
+      )}
+      {idx < vids.length - 1 && (
+        <button onClick={goNext}
+          style={{ position:"absolute", top:"50%", right:54, transform:"translateY(-50%)", background:"rgba(0,0,0,0.5)",
+            border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", zIndex:10 }}>↓</button>
+      )}
+
+      {/* Counter */}
+      <div style={{ position:"absolute", bottom:16, right:16, color:"rgba(255,255,255,0.5)", fontSize:11, zIndex:10 }}>
+        {idx + 1} / {vids.length}
+      </div>
+    </div>
+  );
+}
+
+// ─── User Profile Sheet ───────────────────────────────────────────────────────
 function UserProfileSheet({ userId, username, currentUser, onClose }) {
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [followRecord, setFollowRecord] = React.useState(null);
   const [followLoading, setFollowLoading] = React.useState(false);
-  const [selectedVideo, setSelectedVideo] = React.useState(null);
+  const [playerIndex, setPlayerIndex] = React.useState(null);
 
   const isOwnProfile = currentUser && currentUser.id === userId;
 
@@ -1339,7 +1441,6 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       setUserVideos(vidList);
       setLoading(false);
     });
-    // Check follow status
     if (currentUser && !isOwnProfile) {
       follows.getFollowing(currentUser.id).then(res => {
         const rec = (res.items || res || []).find(r => r.following_id === userId);
@@ -1372,115 +1473,113 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:4000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-      {/* Backdrop */}
-      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
+    <>
+      <div style={{ position:"fixed", inset:0, zIndex:4000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+        {/* Backdrop */}
+        <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
 
-      {/* Sheet */}
-      <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"24px 24px 0 0",
-        width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column",
-        zIndex:4001, overflow:"hidden" }}>
+        {/* Sheet */}
+        <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"24px 24px 0 0",
+          width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column",
+          zIndex:4001, overflow:"hidden" }}>
 
-        {/* Handle */}
-        <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"14px auto 0", flexShrink:0 }} />
+          {/* Handle */}
+          <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"14px auto 0", flexShrink:0 }} />
 
-        {/* Close */}
-        <button onClick={onClose} style={{ position:"absolute", top:12, right:16, background:"none", border:"none",
-          color:"#888", fontSize:22, cursor:"pointer", zIndex:1 }}>✕</button>
+          {/* Close */}
+          <button onClick={onClose} style={{ position:"absolute", top:12, right:16, background:"none", border:"none",
+            color:"#888", fontSize:22, cursor:"pointer", zIndex:1 }}>✕</button>
 
-        {loading ? (
-          <div style={{ textAlign:"center", padding:60, color:"#555" }}>
-            <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>
-            <div>Loading profile...</div>
-          </div>
-        ) : (
-          <>
-            {/* Header */}
-            <div style={{ padding:"16px 20px 20px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
-              <img src={avatarUrl}
-                style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", marginBottom:10, background:"#1a1a2e" }} />
-              <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{displayName}</div>
-              <div style={{ color:"#666", fontSize:13, marginBottom:4 }}>@{username}</div>
-              {profile?.bio && <div style={{ color:"#aaa", fontSize:13, marginBottom:8, lineHeight:1.5 }}>{profile.bio}</div>}
-              {profile?.location && <div style={{ color:"#666", fontSize:12, marginBottom:8 }}>📍 {profile.location}</div>}
+          {loading ? (
+            <div style={{ textAlign:"center", padding:60, color:"#555" }}>
+              <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>
+              <div>Loading profile...</div>
+            </div>
+          ) : (
+            <>
+              {/* Header */}
+              <div style={{ padding:"16px 20px 20px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
+                <img src={avatarUrl}
+                  style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", marginBottom:10, background:"#1a1a2e" }} />
+                <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{displayName}</div>
+                <div style={{ color:"#666", fontSize:13, marginBottom:4 }}>@{username}</div>
+                {profile?.bio && <div style={{ color:"#aaa", fontSize:13, marginBottom:8, lineHeight:1.5 }}>{profile.bio}</div>}
+                {profile?.location && <div style={{ color:"#666", fontSize:12, marginBottom:8 }}>📍 {profile.location}</div>}
 
-              {/* Stats row */}
-              <div style={{ display:"flex", justifyContent:"center", gap:28, marginTop:12, marginBottom:14 }}>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{userVideos.length}</div>
-                  <div style={{ color:"#666", fontSize:11 }}>Videos</div>
+                {/* Stats */}
+                <div style={{ display:"flex", justifyContent:"center", gap:28, marginTop:12, marginBottom:14 }}>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{userVideos.length}</div>
+                    <div style={{ color:"#666", fontSize:11 }}>Videos</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.followers_count || 0}</div>
+                    <div style={{ color:"#666", fontSize:11 }}>Followers</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.following_count || 0}</div>
+                    <div style={{ color:"#666", fontSize:11 }}>Following</div>
+                  </div>
                 </div>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.followers_count || 0}</div>
-                  <div style={{ color:"#666", fontSize:11 }}>Followers</div>
-                </div>
-                <div style={{ textAlign:"center" }}>
-                  <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.following_count || 0}</div>
-                  <div style={{ color:"#666", fontSize:11 }}>Following</div>
-                </div>
+
+                {!isOwnProfile && currentUser && (
+                  <button onClick={doFollow} disabled={followLoading}
+                    style={{ padding:"10px 40px", borderRadius:24,
+                      background: followRecord ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg,#ff6b6b,#e53935)",
+                      border: followRecord ? "1.5px solid rgba(255,255,255,0.3)" : "none",
+                      color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
+                      opacity: followLoading ? 0.6 : 1,
+                      WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                    {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
+                  </button>
+                )}
               </div>
 
-              {/* Follow button */}
-              {!isOwnProfile && currentUser && (
-                <button onClick={doFollow} disabled={followLoading}
-                  style={{ padding:"10px 40px", borderRadius:24,
-                    background: followRecord ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg,#ff6b6b,#e53935)",
-                    border: followRecord ? "1.5px solid rgba(255,255,255,0.3)" : "none",
-                    color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
-                    opacity: followLoading ? 0.6 : 1,
-                    WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                  {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
-                </button>
-              )}
-            </div>
-
-            {/* Video grid */}
-            <div style={{ overflowY:"auto", flex:1, padding:2 }}>
-              {userVideos.length === 0 ? (
-                <div style={{ textAlign:"center", padding:40, color:"#444" }}>
-                  <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
-                  <div>No videos yet</div>
-                </div>
-              ) : (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:2 }}>
-                  {userVideos.map(v => (
-                    <div key={v.id} onClick={() => setSelectedVideo(v)}
-                      style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}>
-                      {v.thumbnail_url ? (
-                        <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                      ) : (
-                        <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                      )}
-                      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)" }} />
-                      <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
-                        ❤️ {v.likes_count || 0}
-                      </div>
-                      {v.views_count > 0 && (
-                        <div style={{ position:"absolute", bottom:4, right:6, color:"#fff", fontSize:11 }}>
-                          👁 {v.views_count}
+              {/* Video Grid */}
+              <div style={{ overflowY:"auto", flex:1, padding:2 }}>
+                {userVideos.length === 0 ? (
+                  <div style={{ textAlign:"center", padding:40, color:"#444" }}>
+                    <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
+                    <div>No videos yet</div>
+                  </div>
+                ) : (
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:2 }}>
+                    {userVideos.map((v, i) => (
+                      <div key={v.id} onClick={() => setPlayerIndex(i)}
+                        style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}>
+                        {v.thumbnail_url ? (
+                          <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                        ) : (
+                          <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        )}
+                        {/* Play icon overlay */}
+                        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <div style={{ fontSize:22, opacity:0.8 }}>▶</div>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
+                        <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
+                          ❤️ {v.likes_count || 0}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Mini video preview */}
-      {selectedVideo && (
-        <div style={{ position:"fixed", inset:0, zIndex:5000, background:"rgba(0,0,0,0.95)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-          <button onClick={() => setSelectedVideo(null)}
-            style={{ position:"absolute", top:20, right:20, background:"rgba(255,255,255,0.15)", border:"none",
-              borderRadius:"50%", width:44, height:44, color:"#fff", fontSize:20, cursor:"pointer", zIndex:5001 }}>✕</button>
-          <video src={selectedVideo.video_url} controls autoPlay playsInline
-            style={{ width:"100%", maxWidth:480, maxHeight:"80vh", objectFit:"contain", borderRadius:12 }} />
-          <div style={{ color:"#fff", fontSize:14, marginTop:12, padding:"0 20px", textAlign:"center" }}>{selectedVideo.caption}</div>
-        </div>
+      {/* Full screen TikTok-style player */}
+      {playerIndex !== null && userVideos.length > 0 && (
+        <ProfileVideoPlayer
+          videos={userVideos}
+          startIndex={playerIndex}
+          profile={profile}
+          username={username}
+          onClose={() => setPlayerIndex(null)} />
       )}
-    </div>
+    </>
   );
 }
 
