@@ -1245,7 +1245,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* ── MEDIA ── */}
       {photoUrls ? (
         <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}>
-          <img src={photoUrls[photoIdx]} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+          <img src={photoUrls[photoIdx]} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }} />
           {photoIdx > 0 && (
             <button onClick={tap(() => setPhotoIdx(p=>p-1))}
               style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", zIndex:50,
@@ -1271,11 +1271,18 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             {photoIdx+1} / {photoUrls.length}
           </div>
         </div>
-      ) : (
-        <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
-          loop playsInline muted
-          style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
-      )}
+      ) : (() => {
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+        if (isImg) return (
+          <img src={video.video_url}
+            style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
+        );
+        return (
+          <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
+            loop playsInline muted
+            style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+        );
+      })()}
 
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:10 }} />
