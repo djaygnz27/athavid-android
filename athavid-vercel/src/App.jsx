@@ -2115,6 +2115,20 @@ export default function App() {
   const [editProfileSaving, setEditProfileSaving] = useState(false);
 
   useEffect(() => { loadVideos(); }, []);
+
+  // Handle Android share intent from TikTok/Instagram etc.
+  useEffect(() => {
+    const handleSachiShare = (e) => {
+      const { type, uri, url } = e.detail || {};
+      if (type === "video" || type === "url") {
+        setShowUpload(true);
+        // Store shared data for upload screen to pick up
+        window._sachiSharedContent = { type, uri, url };
+      }
+    };
+    window.addEventListener("sachi-share", handleSachiShare);
+    return () => window.removeEventListener("sachi-share", handleSachiShare);
+  }, []);
   useEffect(() => { if (currentUser) loadFollowingVideos(currentUser); }, [currentUser]);
   useEffect(() => {
     if (currentUser) {
