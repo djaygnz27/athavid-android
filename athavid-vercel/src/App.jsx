@@ -1041,15 +1041,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
       <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:50 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-          <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
-            onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}
-            style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b", flexShrink:0, cursor:"pointer" }} />
-          <div style={{ flex:1, minWidth:0 }} onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))} >
-            <div style={{ color:"#fff", fontWeight:800, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", cursor:"pointer" }}>{video.display_name || video.username}</div>
-            <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12, cursor:"pointer" }}>@{video.username}</div>
-          </div>
-
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}
+          onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>{video.display_name || video.username}</div>
+          <div style={{ color:"rgba(255,255,255,0.55)", fontSize:13, cursor:"pointer" }}>@{video.username}</div>
         </div>
         {video.sound_title && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
