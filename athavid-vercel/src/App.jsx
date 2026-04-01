@@ -2056,9 +2056,8 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
             </div>
           </div>
         </div>
-      )}
 
-      {/* Confirm Delete Modal */}
+      )}
       {confirmDelete && (
         <div style={{ position:"fixed", inset:0, zIndex:8000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
           <div style={{ background:"#1a1a2e", borderRadius:20, padding:24, width:"100%", maxWidth:380, textAlign:"center" }}>
@@ -2321,6 +2320,17 @@ export default function App() {
                 </div>
               </div>
               <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id).then(setMyVideos).catch(()=>{})} />
+
+              {/* Log Out */}
+              <div style={{ padding:"24px 20px 32px" }}>
+                <button onClick={() => { auth.signOut(); setCurrentUser(null); setActiveTab("feed"); }}
+                  style={{ width:"100%", padding:"14px 0", background:"rgba(255,50,50,0.1)",
+                    border:"1.5px solid rgba(255,80,80,0.3)", borderRadius:14,
+                    color:"#ff5555", fontWeight:700, fontSize:15, cursor:"pointer",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  🚪 Log Out
+                </button>
+              </div>
             </>
           )}
         </div>
