@@ -969,9 +969,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     setFollowLoading(false);
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const doDelete = async () => {
     if (!currentUser || !isOwnVideo) return;
-    if (!window.confirm("Delete this video? This can't be undone.")) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
     try {
       await videos.delete(video.id);
       onDelete && onDelete(video.id);
@@ -1142,6 +1148,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>{formatCount(video.shares_count||0)}</div>
         </button>
 
+        {/* Delete — only for own videos */}
+        {isOwnVideo && (
+          <button onClick={tap(doDelete)}
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+              WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,60,60,0.18)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </div>
+            <div style={{ color:"#ff4444", fontSize:11, fontWeight:600 }}>Delete</div>
+          </button>
+        )}
+
 
 
 
@@ -1150,6 +1170,28 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {reportTarget && <ReportModal video={reportTarget} onClose={() => setReportTarget(null)} />}
+
+      {/* Delete Confirmation */}
+      {showDeleteConfirm && (
+        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+          onClick={() => setShowDeleteConfirm(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:480, background:"#1a1a2e", borderRadius:"24px 24px 0 0", padding:"28px 24px 48px", display:"flex", flexDirection:"column", gap:16 }}>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:36, marginBottom:8 }}>🗑️</div>
+              <div style={{ color:"#fff", fontSize:18, fontWeight:700 }}>Delete Video?</div>
+              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:14, marginTop:6 }}>This can't be undone.</div>
+            </div>
+            <button onClick={confirmDelete}
+              style={{ width:"100%", padding:"14px", background:"#ff3b30", border:"none", borderRadius:14, color:"#fff", fontSize:16, fontWeight:700, cursor:"pointer" }}>
+              Yes, Delete
+            </button>
+            <button onClick={() => setShowDeleteConfirm(false)}
+              style={{ width:"100%", padding:"14px", background:"rgba(255,255,255,0.1)", border:"none", borderRadius:14, color:"#fff", fontSize:16, fontWeight:600, cursor:"pointer" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
