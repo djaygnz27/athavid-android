@@ -2031,11 +2031,13 @@ export default function App() {
           </div>
           <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Post</div>
         </button>
-        {/* Live */}
+        {/* Rec */}
         <button onClick={() => requireAuth(() => setShowGoLive(true))}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <div style={{ fontSize:22, animation:"livePulse 1.5s ease infinite" }}>🔴</div>
-          <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Live</div>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="#e53935" stroke="none">
+            <circle cx="12" cy="12" r="8"/>
+          </svg>
+          <div style={{ fontSize:10, color:"#e53935", fontWeight:700 }}>Rec</div>
         </button>
         {/* Profile / Me */}
         <button onClick={() => setActiveTab("profile")}
