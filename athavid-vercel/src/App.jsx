@@ -1049,27 +1049,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <div style={{ color:"#fff", fontWeight:800, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", cursor:"pointer" }}>{video.display_name || video.username}</div>
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12, cursor:"pointer" }}>@{video.username}</div>
           </div>
-          {!isOwnVideo && (
-            <button onClick={tap(doFollow)} disabled={followLoading}
-              style={{ padding:"6px 16px", borderRadius:20, flexShrink:0,
-                background: followRecord ? "rgba(255,255,255,0.15)" : "linear-gradient(135deg,#ff6b6b,#e53935)",
-                border: followRecord ? "1.5px solid rgba(255,255,255,0.4)" : "none",
-                color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer",
-                opacity: followLoading ? 0.6 : 1,
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-              {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
-            </button>
-          )}
-          {/* Mute button inline */}
-          <button onClick={tap(doMute)}
-            style={{ background: muted ? "rgba(0,0,0,0.5)" : "rgba(255,107,107,0.85)",
-              border:"none", borderRadius:"50%", width:36, height:36, flexShrink:0,
-              color:"#fff", fontSize:16, cursor:"pointer",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              boxShadow: muted ? "none" : "0 0 10px rgba(255,107,107,0.5)",
-              WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-            {muted ? "🔇" : "🔊"}
-          </button>
+
         </div>
         {video.sound_title && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
@@ -1101,6 +1081,32 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── RIGHT SIDEBAR: actions ── */}
       <div style={{ position:"absolute", bottom:96, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:50 }}>
+
+        {/* Avatar + Follow button — TikTok style */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
+          <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
+            onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}
+            style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #fff", cursor:"pointer", flexShrink:0 }} />
+          {!isOwnVideo && (
+            <button onClick={tap(doFollow)} disabled={followLoading}
+              style={{ marginTop:-10, width:22, height:22, borderRadius:"50%", border:"none",
+                background: followRecord ? "rgba(255,255,255,0.85)" : "#fe2c55",
+                color:"#fff", fontWeight:900, fontSize:14, cursor:"pointer", lineHeight:1,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                boxShadow:"0 2px 6px rgba(0,0,0,0.4)",
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+              {followLoading ? "·" : followRecord ? "✓" : "+"}
+            </button>
+          )}
+        </div>
+
+        {/* Mute button */}
+        <button onClick={tap(doMute)}
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <div style={{ fontSize:26 }}>{muted ? "🔇" : "🔊"}</div>
+        </button>
+
         <button onClick={tap(doLike)}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
