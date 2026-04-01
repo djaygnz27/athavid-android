@@ -2184,7 +2184,11 @@ export default function App() {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, comments_count: count } : v));
   };
 
-  const requireAuth = (cb) => { if (currentUser) cb(); else setShowAuth(true); };
+  const [authToast, setAuthToast] = useState(false);
+  const requireAuth = (cb) => {
+    if (currentUser) { cb(); }
+    else { setShowAuth(true); setAuthToast(true); setTimeout(() => setAuthToast(false), 3000); }
+  };
 
   const username = currentUser?.full_name || currentUser?.email?.split("@")[0] || "";
 
@@ -2230,7 +2234,7 @@ export default function App() {
           </div>
         ) : (
           <div style={{ fontSize:17, fontWeight:700, color:"#fff", paddingTop:10, letterSpacing:0.3 }}>
-            {activeTab === "profile" ? "Profile" : "Sachi"}
+            {activeTab === "profile" ? "Profile" : activeTab === "explore" ? "Explore" : "Sachi"}
           </div>
         )}
 
@@ -2252,8 +2256,25 @@ export default function App() {
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
               <div style={{ fontSize:56 }}>👥</div>
-              <div style={{ fontSize:18, fontWeight:700, color:"#fff" }}>Follow someone first</div>
-              <div style={{ fontSize:14 }}>Hit <b>+ Follow</b> on any video to see their posts here</div>
+              {!currentUser ? (
+                <>
+                  <div style={{ fontSize:18, fontWeight:700, color:"#fff" }}>Sign in to follow people</div>
+                  <div style={{ fontSize:14 }}>Create a free account to follow your favourite creators</div>
+                  <button onClick={() => setShowAuth(true)}
+                    style={{ marginTop:8, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, padding:"12px 28px", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+                    Sign Up / Log In
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize:18, fontWeight:700, color:"#fff" }}>No one to show yet</div>
+                  <div style={{ fontSize:14 }}>Tap <b>+ Follow</b> on any video to see their posts here</div>
+                  <button onClick={() => setFeedTab("forYou")}
+                    style={{ marginTop:8, background:"rgba(255,255,255,0.1)", border:"1.5px solid rgba(255,255,255,0.2)", borderRadius:14, padding:"10px 24px", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                    Browse For You →
+                  </button>
+                </>
+              )}
             </div>
           )}
           {loading && (
@@ -2350,6 +2371,70 @@ export default function App() {
         </div>
       )}
 
+      {/* Explore Tab */}
+      {activeTab === "explore" && (
+        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0a0a14" }}>
+          <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search users or videos..."
+                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
+              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>}
+            </div>
+          </div>
+          <div style={{ padding:16 }}>
+            {searchQuery.trim() === "" ? (
+              <>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>🔥 Trending Now</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                  {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
+                    <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                      onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
+                      <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        <div>@{v.username}</div>
+                        {v.views_count > 0 && <div style={{ color:"#aaa" }}>👁 {v.views_count}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {videoList.length === 0 && (
+                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No videos yet — be the first to post!</div>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>Results</div>
+                {videoList.filter(v =>
+                  (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+                ).length === 0 ? (
+                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No results for "{searchQuery}"</div>
+                ) : (
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                    {videoList.filter(v =>
+                      (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+                    ).map(v => (
+                      <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                        onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
+                        <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Bottom Nav — TikTok style */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,10px)", paddingTop:6 }}>
         {/* Home */}
@@ -2361,12 +2446,12 @@ export default function App() {
           <div style={{ fontSize:10, color: activeTab==="feed" ? "#fff" : "#666", fontWeight: activeTab==="feed" ? 700 : 400 }}>Home</div>
         </button>
         {/* Search/Explore */}
-        <button onClick={() => setShowSearch(true)}
+        <button onClick={() => setActiveTab("explore")}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="explore" ? "#fff" : "none"} stroke={activeTab==="explore" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Explore</div>
+          <div style={{ fontSize:10, color: activeTab==="explore" ? "#fff" : "#666", fontWeight: activeTab==="explore" ? 700 : 400 }}>Explore</div>
         </button>
         {/* Center ➕ Post button — TikTok style */}
         <button onClick={() => requireAuth(() => setShowUpload(true))}
@@ -2457,6 +2542,20 @@ export default function App() {
       {commentVideo && <CommentSheet video={commentVideo} currentUser={currentUser} onClose={() => setCommentVideo(null)} onCommentPosted={handleCommentCount} onNeedAuth={() => { setCommentVideo(null); setShowAuth(true); }} />}
       {showUpload && currentUser && <UploadModal currentUser={currentUser} onClose={() => setShowUpload(false)} onUploaded={() => { loadVideos(); setUploadToast(true); setTimeout(() => setUploadToast(false), 4000); }} />}
       {showGoLive && currentUser && <GoLiveModal currentUser={currentUser} onClose={() => setShowGoLive(false)} onUploaded={() => { loadVideos(); setUploadToast(true); setTimeout(() => setUploadToast(false), 4000); }} />}
+      {/* Auth required toast */}
+      {authToast && (
+        <div style={{ position:"fixed", bottom:90, left:"50%", transform:"translateX(-50%)", zIndex:9999,
+          background:"linear-gradient(135deg,#1a1a2e,#16213e)", border:"1.5px solid #ff6b6b",
+          borderRadius:16, padding:"14px 22px", display:"flex", alignItems:"center", gap:12,
+          boxShadow:"0 8px 32px rgba(0,0,0,0.5)", whiteSpace:"nowrap" }}>
+          <div style={{ fontSize:22 }}>🔐</div>
+          <div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Sign in required</div>
+            <div style={{ color:"#ff9999", fontSize:12, marginTop:2 }}>Create a free account to continue</div>
+          </div>
+        </div>
+      )}
+
       {/* Upload success toast */}
       {uploadToast && (
         <div style={{ position:"fixed", bottom:90, left:"50%", transform:"translateX(-50%)", zIndex:9999,
