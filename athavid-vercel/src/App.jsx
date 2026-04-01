@@ -1220,6 +1220,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showFullCaption, setShowFullCaption] = useState(false);
+  const [showUI, setShowUI] = useState(true);
 
   const doDelete = async () => {
     if (!currentUser || !isOwnVideo) return;
@@ -1286,10 +1287,26 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       })()}
 
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:10 }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.3s", opacity: showUI ? 1 : 0 }} />
 
-      {/* ── TAP TO PAUSE (middle area only) ── */}
-      <div onClick={tap(doTogglePlay)}
+      {/* ── TAP TO SHOW HINT (when UI hidden) ── */}
+      {!showUI && (
+        <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", zIndex:300,
+          background:"rgba(0,0,0,0.55)", borderRadius:20, padding:"6px 16px", pointerEvents:"none" }}>
+          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:13 }}>Tap to show controls</span>
+        </div>
+      )}
+
+      {/* ── TAP: toggle UI visibility on images, toggle play on videos ── */}
+      <div onClick={tap(() => {
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+        if (isImg || !(video.video_url)) {
+          setShowUI(v => !v);
+          if (!showUI) setShowFullCaption(true);
+        } else {
+          doTogglePlay();
+        }
+      })}
         style={{ position:"absolute", top:60, left:0, right:80, bottom:300, zIndex:15, cursor:"pointer" }} />
 
       {/* ── PAUSED INDICATOR ── */}
@@ -1303,7 +1320,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:150, left:16, right:72, zIndex:250 }}>
+      <div style={{ position:"absolute", bottom:150, left:16, right:72, zIndex:250, transition:"opacity 0.3s", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none" }}>
         <div style={{ display:"flex", flexDirection:"column", gap:2, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
@@ -1350,7 +1367,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDEBAR: actions ── */}
-      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:250 }}>
+      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:250, transition:"opacity 0.3s", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none" }}>
 
         {/* Avatar + Follow button — TikTok style */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
