@@ -1,0 +1,55 @@
+{
+  "type": "object",
+  "properties": {
+    "podcast_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "is_live": {
+      "type": "boolean"
+    },
+    "live_stream_url": {
+      "type": "string"
+    },
+    "listener_count": {
+      "type": "number"
+    },
+    "like_count": {
+      "type": "number"
+    },
+    "comment_count": {
+      "type": "number"
+    },
+    "episode_number": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Live",
+        "Recorded",
+        "Scheduled",
+        "Draft"
+      ]
+    }
+  },
+  "required": [],
+  "name": "SachiPodcastEpisode"
+}
