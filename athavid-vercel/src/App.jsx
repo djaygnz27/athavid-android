@@ -1219,6 +1219,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFullCaption, setShowFullCaption] = useState(false);
 
   const doDelete = async () => {
     if (!currentUser || !isOwnVideo) return;
@@ -1321,7 +1322,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         </div>
       )}
-      <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>{video.caption}</div>
+      {video.caption && (
+        <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>
+          {showFullCaption || (video.caption || "").length <= 80
+            ? video.caption
+            : (video.caption || "").slice(0, 80) + "…"}
+          {(video.caption || "").length > 80 && (
+            <span onClick={tap(() => setShowFullCaption(v => !v))}
+              style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginLeft:6, cursor:"pointer", fontWeight:600 }}>
+              {showFullCaption ? "see less" : "see more"}
+            </span>
+          )}
+        </div>
+      )}
         {video.hashtags?.length > 0 && (
           <div style={{ color:"#ff8e53", fontSize:13, marginTop:4 }}>
             {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
