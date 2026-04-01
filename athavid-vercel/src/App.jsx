@@ -2366,13 +2366,17 @@ export default function App() {
           </div>
           <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Post</div>
         </button>
-        {/* Rec */}
+        {/* Go Live */}
         <button onClick={() => requireAuth(() => setShowGoLive(true))}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#e53935" stroke="none">
-            <circle cx="12" cy="12" r="8"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e53935" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" fill="#e53935" stroke="none"/>
+            <path d="M6.3 6.3a8 8 0 0 0 0 11.4"/>
+            <path d="M17.7 6.3a8 8 0 0 1 0 11.4"/>
+            <path d="M9.2 9.2a4 4 0 0 0 0 5.6"/>
+            <path d="M14.8 9.2a4 4 0 0 1 0 5.6"/>
           </svg>
-          <div style={{ fontSize:10, color:"#e53935", fontWeight:700 }}>Rec</div>
+          <div style={{ fontSize:10, color:"#e53935", fontWeight:700 }}>Go Live</div>
         </button>
         {/* Profile / Me */}
         <button onClick={() => setActiveTab("profile")}
