@@ -1027,7 +1027,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── TAP TO PAUSE (middle area only) ── */}
       <div onClick={tap(doTogglePlay)}
-        style={{ position:"absolute", top:60, left:0, right:0, bottom:220, zIndex:15, cursor:"pointer" }} />
+        style={{ position:"absolute", top:60, left:0, right:80, bottom:300, zIndex:15, cursor:"pointer" }} />
 
       {/* ── PAUSED INDICATOR ── */}
       {!playing && (
@@ -1040,7 +1040,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:90, left:16, right:72, zIndex:250 }}>
+      <div style={{ position:"absolute", bottom:150, left:16, right:72, zIndex:250 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:2, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
@@ -1075,7 +1075,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDEBAR: actions ── */}
-      <div style={{ position:"absolute", bottom:90, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:250 }}>
+      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:250 }}>
 
         {/* Avatar + Follow button — TikTok style */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
