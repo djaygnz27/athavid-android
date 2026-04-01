@@ -1106,9 +1106,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <button onClick={tap(doLike)}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center",
+          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center",
             animation: liked ? "heartpop 0.5s ease forwards" : "heartbeat 1.4s ease-in-out infinite", transformOrigin:"center" }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="#fe2c55" stroke="#fe2c55" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fe2c55" stroke="#fe2c55" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </div>
@@ -1119,8 +1119,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <button onClick={tap(() => onCommentOpen(video))}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
@@ -1134,8 +1134,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           })}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
             </svg>
           </div>
@@ -1146,8 +1146,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <button onClick={tap(() => setReportTarget(video))}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="26" height="28" viewBox="0 0 26 28">
+          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="20" height="22" viewBox="0 0 26 28">
               {/* Pole — tilted right */}
               <line x1="3" y1="27" x2="10" y2="1" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               {/* Checkered flag attached at top of pole, tilted right */}
@@ -2024,7 +2024,7 @@ export default function App() {
         {/* Home */}
         <button onClick={() => { setActiveTab("feed"); loadVideos(); window.scrollTo(0,0); }}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#fff" : "none"} stroke={activeTab==="feed" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#fff" : "none"} stroke={activeTab==="feed" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
           <div style={{ fontSize:10, color: activeTab==="feed" ? "#fff" : "#666", fontWeight: activeTab==="feed" ? 700 : 400 }}>Home</div>
@@ -2032,7 +2032,7 @@ export default function App() {
         {/* Search/Explore */}
         <button onClick={() => setShowSearch(true)}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Explore</div>
@@ -2052,7 +2052,7 @@ export default function App() {
         {/* Rec */}
         <button onClick={() => requireAuth(() => setShowGoLive(true))}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="#e53935" stroke="none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#e53935" stroke="none">
             <circle cx="12" cy="12" r="8"/>
           </svg>
           <div style={{ fontSize:10, color:"#e53935", fontWeight:700 }}>Rec</div>
@@ -2060,7 +2060,7 @@ export default function App() {
         {/* Profile / Me */}
         <button onClick={() => setActiveTab("profile")}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#fff" : "none"} stroke={activeTab==="profile" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#fff" : "none"} stroke={activeTab==="profile" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
           <div style={{ fontSize:10, color: activeTab==="profile" ? "#fff" : "#666", fontWeight: activeTab==="profile" ? 700 : 400 }}>Me</div>
