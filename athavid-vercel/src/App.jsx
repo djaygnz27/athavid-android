@@ -1107,8 +1107,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center",
-            animation: liked ? "heartpop 0.5s ease forwards" : "none", transformOrigin:"center" }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill={liked ? "#fe2c55" : "white"} stroke={liked ? "#fe2c55" : "white"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            animation: liked ? "heartpop 0.5s ease forwards" : "heartbeat 1.4s ease-in-out infinite", transformOrigin:"center" }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#fe2c55" stroke="#fe2c55" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </div>
