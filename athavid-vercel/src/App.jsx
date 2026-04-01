@@ -1442,7 +1442,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
     </div>
-    </>
   );
 }
 
