@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
+import Terms from "./Terms.jsx";
+import Privacy from "./Privacy.jsx";
 
 function formatDate(d) {
   if (!d) return "";
@@ -2084,6 +2086,11 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
 }
 
 export default function App() {
+  // Simple client-side routing for terms/privacy pages
+  const path = window.location.pathname;
+  if (path === "/terms") return <Terms />;
+  if (path === "/privacy") return <Privacy />;
+
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
   const [videoList, setVideoList] = useState([]);
