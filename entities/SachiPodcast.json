@@ -1,0 +1,67 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "host_name": {
+      "type": "string"
+    },
+    "host_user_id": {
+      "type": "string"
+    },
+    "host_username": {
+      "type": "string"
+    },
+    "host_avatar_url": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "News & Politics",
+        "Business",
+        "True Crime",
+        "Comedy",
+        "Sports",
+        "Technology",
+        "Health & Wellness",
+        "Society & Culture",
+        "Entertainment",
+        "Education",
+        "Other"
+      ]
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "is_live": {
+      "type": "boolean"
+    },
+    "live_stream_url": {
+      "type": "string"
+    },
+    "listener_count": {
+      "type": "number"
+    },
+    "episode_count": {
+      "type": "number"
+    },
+    "follower_count": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Inactive",
+        "Pending"
+      ]
+    }
+  },
+  "required": [],
+  "name": "SachiPodcast"
+}
