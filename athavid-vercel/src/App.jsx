@@ -1147,8 +1147,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           <div style={{ width:48, height:48, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+            <svg width="28" height="28" viewBox="0 0 28 28">
+              {/* NASCAR checkered flag */}
+              <rect x="0" y="0" width="7" height="7" fill="white"/>
+              <rect x="7" y="0" width="7" height="7" fill="black"/>
+              <rect x="14" y="0" width="7" height="7" fill="white"/>
+              <rect x="21" y="0" width="7" height="7" fill="black"/>
+              <rect x="0" y="7" width="7" height="7" fill="black"/>
+              <rect x="7" y="7" width="7" height="7" fill="white"/>
+              <rect x="14" y="7" width="7" height="7" fill="black"/>
+              <rect x="21" y="7" width="7" height="7" fill="white"/>
+              <rect x="0" y="14" width="7" height="7" fill="white"/>
+              <rect x="7" y="14" width="7" height="7" fill="black"/>
+              <rect x="14" y="14" width="7" height="7" fill="white"/>
+              <rect x="21" y="14" width="7" height="7" fill="black"/>
+              <rect x="0" y="21" width="7" height="7" fill="black"/>
+              <rect x="7" y="21" width="7" height="7" fill="white"/>
+              <rect x="14" y="21" width="7" height="7" fill="black"/>
+              <rect x="21" y="21" width="7" height="7" fill="white"/>
             </svg>
           </div>
           <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>Report</div>
