@@ -12,6 +12,7 @@ export default function AuthModal({ onClose, onSuccess }) {
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const submitForgot = async () => {
     if (!email) return setError("Enter your email address.");
@@ -42,6 +43,7 @@ export default function AuthModal({ onClose, onSuccess }) {
 
   const submitForm = async () => {
     if (!email || !password) return setError("Please fill in all fields.");
+    if (mode === "signup" && !agreedToTerms) return setError("You must agree to the Terms of Service and Privacy Policy to create an account.");
     setLoading(true); setError("");
     try {
       if (mode === "login") {
@@ -127,6 +129,24 @@ export default function AuthModal({ onClose, onSuccess }) {
                   color:"#ff8e53", fontSize:13, cursor:"pointer", marginTop:-8, marginBottom:8, padding:0 }}>
                 Forgot password?
               </button>
+            )}
+            {mode === "signup" && (
+              <div style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:14, marginTop:4 }}>
+                <div onClick={() => setAgreedToTerms(v => !v)}
+                  style={{ width:22, height:22, borderRadius:6, border: agreedToTerms ? "none" : "2px solid rgba(255,255,255,0.3)",
+                    background: agreedToTerms ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.06)",
+                    display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, marginTop:1 }}>
+                  {agreedToTerms && <span style={{ color:"#fff", fontSize:14, fontWeight:900 }}>✓</span>}
+                </div>
+                <div style={{ color:"#aaa", fontSize:13, lineHeight:1.6 }}>
+                  I am 18 years or older and I agree to the{" "}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer"
+                    style={{ color:"#ff8e53", textDecoration:"underline" }}>Terms of Service</a>
+                  {" "}and{" "}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer"
+                    style={{ color:"#ff8e53", textDecoration:"underline" }}>Privacy Policy</a>
+                </div>
+              </div>
             )}
             {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
             <button onClick={submitForm} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
