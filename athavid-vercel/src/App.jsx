@@ -1053,9 +1053,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${video.username}`}
-            onClick={tap(() => onProfileOpen && onProfileOpen(video.user_id, video.username))}
+            onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}
             style={{ width:44, height:44, borderRadius:"50%", border:"2px solid #ff6b6b", flexShrink:0, cursor:"pointer" }} />
-          <div style={{ flex:1, minWidth:0 }} onClick={tap(() => onProfileOpen && onProfileOpen(video.user_id, video.username))} >
+          <div style={{ flex:1, minWidth:0 }} onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))} >
             <div style={{ color:"#fff", fontWeight:800, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", cursor:"pointer" }}>{video.display_name || video.username}</div>
             <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12, cursor:"pointer" }}>@{video.username}</div>
           </div>
@@ -1432,10 +1432,11 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?created_by=${userId}`).catch(() => null),
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => [])
     ]).then(([userRes, vids]) => {
-      const u = (userRes?.items || userRes || [])[0] || null;
+      const allUsers = userRes?.items || userRes || [];
+      const u = allUsers.find(x => x.id === userId || x.created_by === userId) || null;
       setProfile(u);
       const vidList = Array.isArray(vids) ? vids : (vids?.items || []);
       setUserVideos(vidList);
