@@ -1071,7 +1071,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </button>
           )}
         </div>
-        <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>{video.caption}</div>
+        {video.sound_title && (
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
+          <div style={{ fontSize:14, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none",
+            display:"inline-block" }}>🎵</div>
+          <div style={{ overflow:"hidden", flex:1 }}>
+            <div style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600, whiteSpace:"nowrap",
+              animation: playing ? "marquee 8s linear infinite" : "none",
+              display:"inline-block" }}>
+              {video.sound_title}{video.sound_artist ? ` · ${video.sound_artist}` : ""}
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>{video.caption}</div>
         {video.hashtags?.length > 0 && (
           <div style={{ color:"#ff8e53", fontSize:13, marginTop:4 }}>
             {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
@@ -1128,11 +1141,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </button>
         )}
 
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-          <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#333,#111)",
-            border:"2px solid #555", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13,
-            animation: playing ? "spin 3s linear infinite" : "none" }}>🎵</div>
-        </div>
+
       </div>
 
       {reportTarget && <ReportModal video={reportTarget} onClose={() => setReportTarget(null)} />}
@@ -1213,6 +1222,7 @@ function ReportModal({ video, onClose }) {
 const spinStyle = document.createElement('style');
 spinStyle.textContent = `
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
   @keyframes heartbeat {
     0%   { transform: scale(1); }
     14%  { transform: scale(1.35); }
