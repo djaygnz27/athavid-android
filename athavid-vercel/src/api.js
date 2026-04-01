@@ -71,7 +71,19 @@ export const videos = {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}`);
   },
   async byUser(userId) {
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&is_archived=false&sort=-created_date`);
+    // Fetch all videos and filter client-side by user_id
+    let all = [];
+    let skip = 0;
+    const limit = 100;
+    while (true) {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
+      const items = Array.isArray(res) ? res : (res?.items || []);
+      all = all.concat(items);
+      if (items.length < limit) break;
+      skip += limit;
+      if (skip > 500) break; // safety cap
+    }
+    return all.filter(v => v.user_id === userId && !v.is_archived);
   },
   async delete(id) {
     return request("DELETE", `/apps/${APP_ID}/entities/SachiVideo/${id}`);
