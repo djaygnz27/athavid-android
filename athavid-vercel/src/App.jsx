@@ -2084,357 +2084,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
   );
 }
 
-export default 
-// ─────────────────────────────────────────────
-// PODCAST PAGE
-// ─────────────────────────────────────────────
-function PodcastPage({ currentUser, onNeedAuth }) {
-  const CATEGORIES = ["All", "News & Politics", "Business", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Education"];
-  const [podcasts, setPodcasts] = useState([]);
-  const [selectedCat, setSelectedCat] = useState("All");
-  const [selectedPodcast, setSelectedPodcast] = useState(null);
-  const [showRegister, setShowRegister] = useState(false);
-  const [registerForm, setRegisterForm] = useState({ title:"", host_name:"", description:"", category:"Business", cover_image_url:"" });
-  const [registering, setRegistering] = useState(false);
-  const [registerDone, setRegisterDone] = useState(false);
-  const [playingPodcast, setPlayingPodcast] = useState(null);
-  const audioRef = useRef(null);
-
-  useEffect(() => { loadPodcasts(); }, []);
-
-  const loadPodcasts = async () => {
-    try {
-      const res = await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/");
-      const data = await res.json();
-      setPodcasts(Array.isArray(data) ? data : (data.items || []));
-    } catch(e) { console.error(e); }
-  };
-
-  const filtered = selectedCat === "All" ? podcasts : podcasts.filter(p => p.category === selectedCat);
-  const livePodcasts = filtered.filter(p => p.is_live);
-  const regularPodcasts = filtered.filter(p => !p.is_live);
-
-  const handleRegister = async () => {
-    if (!registerForm.title || !registerForm.host_name) return;
-    setRegistering(true);
-    try {
-      await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ ...registerForm, status:"Pending", is_live:false, listener_count:0, episode_count:0, follower_count:0,
-          host_user_id: currentUser?.id || "", host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "" })
-      });
-      setRegisterDone(true);
-      setShowRegister(false);
-      setRegisterForm({ title:"", host_name:"", description:"", category:"Business", cover_image_url:"" });
-    } catch(e) { console.error(e); }
-    setRegistering(false);
-  };
-
-  // Podcast detail sheet
-  if (selectedPodcast) {
-    return (
-      <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0a0a14", overflowY:"auto" }}>
-        {/* Hero */}
-        <div style={{ position:"relative", height:260, background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-          <button onClick={() => setSelectedPodcast(null)}
-            style={{ position:"absolute", top:16, left:16, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
-          <div style={{ width:120, height:120, borderRadius:20, overflow:"hidden", background:"rgba(255,255,255,0.05)", border:"2px solid rgba(255,255,255,0.1)", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:52 }}>
-            🎙️
-          </div>
-          <div style={{ color:"#fff", fontWeight:800, fontSize:20, textAlign:"center", padding:"0 20px" }}>{selectedPodcast.title}</div>
-          <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, marginTop:4 }}>by {selectedPodcast.host_name}</div>
-          {selectedPodcast.is_live && (
-            <div style={{ position:"absolute", top:16, right:16, background:"#e53935", borderRadius:20, padding:"4px 12px", display:"flex", alignItems:"center", gap:6 }}>
-              <div style={{ width:7, height:7, borderRadius:"50%", background:"#fff", animation:"pulse 1s infinite" }} />
-              <span style={{ color:"#fff", fontWeight:700, fontSize:12 }}>LIVE</span>
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div style={{ padding:"20px 20px 0" }}>
-          <div style={{ display:"flex", gap:24, marginBottom:20 }}>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{selectedPodcast.follower_count || 0}</div>
-              <div style={{ color:"#666", fontSize:11 }}>Followers</div>
-            </div>
-            <div style={{ textAlign:"center" }}>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{selectedPodcast.episode_count || 0}</div>
-              <div style={{ color:"#666", fontSize:11 }}>Episodes</div>
-            </div>
-            {selectedPodcast.is_live && (
-              <div style={{ textAlign:"center" }}>
-                <div style={{ color:"#e53935", fontWeight:800, fontSize:18 }}>{selectedPodcast.listener_count || 0}</div>
-                <div style={{ color:"#666", fontSize:11 }}>Listening</div>
-              </div>
-            )}
-          </div>
-
-          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:16, marginBottom:20 }}>
-            <div style={{ color:"rgba(255,255,255,0.7)", fontSize:14, lineHeight:1.6 }}>{selectedPodcast.description || "No description yet."}</div>
-          </div>
-
-          {/* Action buttons */}
-          {/* HOST Go Live / End Live controls */}
-          {currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === "jaygnz27@gmail.com") && (
-            <div style={{ marginBottom:12 }}>
-              {selectedPodcast.is_live ? (
-                <button onClick={async () => {
-                  if (!confirm("End your live session? Your audience will be notified it has ended.")) return;
-                  try {
-                    await fetch(\`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/\${selectedPodcast.id}/\`, {
-                      method:"PATCH", headers:{"Content-Type":"application/json"},
-                      body: JSON.stringify({ is_live: false, listener_count: 0 })
-                    });
-                    setSelectedPodcast(p => ({...p, is_live: false, listener_count: 0}));
-                    alert("Your live session has ended.");
-                  } catch(e) { alert("Error ending live: " + e.message); }
-                }}
-                  style={{ width:"100%", padding:"16px 0", background:"rgba(229,57,53,0.15)", border:"2px solid #e53935", borderRadius:16, color:"#e53935", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8 }}>
-                  ⏹️ End Live Session
-                </button>
-              ) : (
-                <button onClick={async () => {
-                  if (!confirm("Go live now? All Sachi users will be notified instantly!")) return;
-                  try {
-                    // Flip is_live in DB
-                    await fetch(\`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/\${selectedPodcast.id}/\`, {
-                      method:"PATCH", headers:{"Content-Type":"application/json"},
-                      body: JSON.stringify({ is_live: true })
-                    });
-                    // Trigger notification blast
-                    await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
-                      method:"POST", headers:{"Content-Type":"application/json"},
-                      body: JSON.stringify({
-                        podcast_id: selectedPodcast.id,
-                        podcast_title: selectedPodcast.title,
-                        host_name: selectedPodcast.host_name,
-                        live_stream_url: selectedPodcast.live_stream_url || ""
-                      })
-                    });
-                    setSelectedPodcast(p => ({...p, is_live: true}));
-                    alert("🔴 You are LIVE! Notifications are being sent to all Sachi users right now.");
-                  } catch(e) { alert("Error going live: " + e.message); }
-                }}
-                  style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8, boxShadow:"0 4px 20px rgba(229,57,53,0.4)" }}>
-                  🔴 Go Live Now
-                </button>
-              )}
-              <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center" }}>
-                {selectedPodcast.is_live ? "You are currently live on Sachi" : "Going live notifies all Sachi users instantly"}
-              </div>
-            </div>
-          )}
-
-          {/* LISTENER buttons */}
-          {(!currentUser || (currentUser.id !== selectedPodcast.host_user_id && currentUser.email !== "jaygnz27@gmail.com")) && (
-            selectedPodcast.is_live ? (
-              <button onClick={() => {
-                if (!currentUser) { onNeedAuth(); return; }
-                if (selectedPodcast.live_stream_url) {
-                  setPlayingPodcast(selectedPodcast);
-                } else {
-                  alert("Live stream starting soon! Follow this podcast to get notified.");
-                }
-              }}
-                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
-                <span style={{ fontSize:20 }}>🎧</span> Listen Live Now
-              </button>
-            ) : (
-              <button onClick={() => {
-                if (!currentUser) { onNeedAuth(); return; }
-                alert("You're now following " + selectedPodcast.title + "! You'll be notified when they go live.");
-              }}
-                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
-                <span style={{ fontSize:20 }}>🔔</span> Follow & Get Notified
-              </button>
-            )
-          )}
-
-          <div style={{ background:"rgba(255,255,255,0.03)", borderRadius:14, padding:16, marginBottom:20 }}>
-            <div style={{ color:"rgba(255,255,255,0.3)", fontSize:13, textAlign:"center" }}>
-              🎙️ Episodes coming soon — the host hasn't uploaded yet
-            </div>
-          </div>
-
-          {/* Category badge */}
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20 }}>
-            <div style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:20, padding:"4px 14px", color:"#a78bfa", fontSize:12, fontWeight:600 }}>
-              {selectedPodcast.category}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Register form
-  if (showRegister) {
-    return (
-      <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0a0a14", overflowY:"auto" }}>
-        <div style={{ padding:"20px 20px 0", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
-            <button onClick={() => setShowRegister(false)}
-              style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", fontSize:18, cursor:"pointer" }}>←</button>
-            <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>🎙️ Register Your Podcast</div>
-          </div>
-
-          {registerDone ? (
-            <div style={{ textAlign:"center", padding:40 }}>
-              <div style={{ fontSize:64, marginBottom:16 }}>🎉</div>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:22, marginBottom:8 }}>You're on the list!</div>
-              <div style={{ color:"#888", fontSize:14, marginBottom:24 }}>We'll review your podcast and get back to you within 24 hours. Welcome to Sachi Podcasts!</div>
-              <button onClick={() => { setRegisterDone(false); setShowRegister(false); }}
-                style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"12px 28px", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
-                Back to Podcasts
-              </button>
-            </div>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              <div style={{ background:"linear-gradient(135deg,rgba(108,60,247,0.15),rgba(69,39,160,0.1))", border:"1px solid rgba(108,60,247,0.3)", borderRadius:16, padding:16, marginBottom:8 }}>
-                <div style={{ color:"#a78bfa", fontWeight:700, fontSize:14, marginBottom:4 }}>🚀 Why podcast on Sachi?</div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.5 }}>Your live sessions auto-clip to the For You feed. New listeners discover you every day without you lifting a finger.</div>
-              </div>
-
-              {[
-                { label:"Podcast Title *", key:"title", placeholder:"e.g. The Daily Grind" },
-                { label:"Host Name *", key:"host_name", placeholder:"Your name or show host name" },
-                { label:"Description", key:"description", placeholder:"What is your podcast about?", multiline:true },
-                { label:"Cover Image URL", key:"cover_image_url", placeholder:"https://... (optional)" },
-              ].map(field => (
-                <div key={field.key}>
-                  <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>{field.label}</div>
-                  {field.multiline ? (
-                    <textarea value={registerForm[field.key]} onChange={e => setRegisterForm(p => ({...p, [field.key]:e.target.value}))}
-                      placeholder={field.placeholder} rows={3}
-                      style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, outline:"none", resize:"none", boxSizing:"border-box" }} />
-                  ) : (
-                    <input value={registerForm[field.key]} onChange={e => setRegisterForm(p => ({...p, [field.key]:e.target.value}))}
-                      placeholder={field.placeholder}
-                      style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }} />
-                  )}
-                </div>
-              ))}
-
-              <div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Category</div>
-                <select value={registerForm.category} onChange={e => setRegisterForm(p => ({...p, category:e.target.value}))}
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, outline:"none" }}>
-                  {["Business","News & Politics","Entertainment","Comedy","Sports","Technology","Health & Wellness","True Crime","Society & Culture","Education","Other"].map(c => (
-                    <option key={c} value={c} style={{ background:"#111" }}>{c}</option>
-                  ))}
-                </select>
-              </div>
-
-              <button onClick={handleRegister} disabled={registering || !registerForm.title || !registerForm.host_name}
-                style={{ width:"100%", padding:"16px 0", background: registering ? "rgba(108,60,247,0.4)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", marginTop:8 }}>
-                {registering ? "Submitting..." : "🎙️ Submit My Podcast"}
-              </button>
-              <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center", paddingBottom:40 }}>
-                We review all podcasts within 24 hours. No spam, ever.
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0a0a14" }}>
-      {/* Hero banner */}
-      <div style={{ margin:"0 16px 20px", background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius:20, padding:"24px 20px", position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:-20, right:-20, fontSize:100, opacity:0.07 }}>🎙️</div>
-        <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Sachi Podcasts</div>
-        <div style={{ color:"#fff", fontWeight:800, fontSize:22, lineHeight:1.3, marginBottom:8 }}>Listen Live.<br/>Discover New Shows.</div>
-        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, marginBottom:16, lineHeight:1.5 }}>Tune into live podcast sessions or browse on-demand episodes — all in one place.</div>
-        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); }}
-          style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:12, padding:"10px 20px", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:8 }}>
-          🎙️ Register Your Podcast
-        </button>
-      </div>
-
-      {/* Category filter */}
-      <div style={{ overflowX:"auto", display:"flex", gap:8, padding:"0 16px 16px", scrollbarWidth:"none" }}>
-        {CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setSelectedCat(cat)}
-            style={{ flexShrink:0, padding:"7px 16px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:600, fontSize:13, background: selectedCat===cat ? "#6c3cf7" : "rgba(255,255,255,0.07)", color: selectedCat===cat ? "#fff" : "rgba(255,255,255,0.5)", transition:"all 0.2s", WebkitTapHighlightColor:"transparent" }}>
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Live Now section */}
-      {livePodcasts.length > 0 && (
-        <div style={{ marginBottom:24 }}>
-          <div style={{ padding:"0 16px 12px", display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:8, height:8, borderRadius:"50%", background:"#e53935", animation:"pulse 1s infinite" }} />
-            <span style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Live Now</span>
-          </div>
-          <div style={{ display:"flex", gap:12, padding:"0 16px", overflowX:"auto", scrollbarWidth:"none" }}>
-            {livePodcasts.map(p => (
-              <div key={p.id} onClick={() => setSelectedPodcast(p)}
-                style={{ flexShrink:0, width:200, background:"rgba(229,57,53,0.08)", border:"1.5px solid rgba(229,57,53,0.3)", borderRadius:16, padding:16, cursor:"pointer", position:"relative", overflow:"hidden" }}>
-                <div style={{ position:"absolute", top:12, right:12, background:"#e53935", borderRadius:20, padding:"3px 10px", display:"flex", alignItems:"center", gap:5 }}>
-                  <div style={{ width:6, height:6, borderRadius:"50%", background:"#fff" }} />
-                  <span style={{ color:"#fff", fontWeight:700, fontSize:11 }}>LIVE</span>
-                </div>
-                <div style={{ fontSize:36, marginBottom:10 }}>🎙️</div>
-                <div style={{ color:"#fff", fontWeight:700, fontSize:15, marginBottom:4, lineHeight:1.3 }}>{p.title}</div>
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, marginBottom:8 }}>{p.host_name}</div>
-                <div style={{ color:"#e53935", fontSize:12, fontWeight:600 }}>🎧 {p.listener_count || 0} listening</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* All Shows */}
-      <div style={{ padding:"0 16px" }}>
-        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>
-          {selectedCat === "All" ? "All Shows" : selectedCat}
-        </div>
-        {regularPodcasts.length === 0 && livePodcasts.length === 0 && (
-          <div style={{ textAlign:"center", padding:"60px 0", color:"rgba(255,255,255,0.25)", fontSize:14 }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🎙️</div>
-            No podcasts in this category yet.<br/>Be the first to register yours!
-          </div>
-        )}
-        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-          {regularPodcasts.map(p => (
-            <div key={p.id} onClick={() => setSelectedPodcast(p)}
-              style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:16, padding:16, cursor:"pointer", display:"flex", gap:14, alignItems:"center" }}>
-              <div style={{ width:64, height:64, borderRadius:12, background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0, border:"1px solid rgba(108,60,247,0.2)" }}>🎙️</div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ color:"#fff", fontWeight:700, fontSize:15, marginBottom:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.title}</div>
-                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:12, marginBottom:6 }}>{p.host_name}</div>
-                <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                  <div style={{ background:"rgba(108,60,247,0.2)", borderRadius:20, padding:"2px 10px", color:"#a78bfa", fontSize:11, fontWeight:600 }}>{p.category}</div>
-                  <div style={{ color:"rgba(255,255,255,0.25)", fontSize:11 }}>{p.follower_count || 0} followers</div>
-                </div>
-              </div>
-              <div style={{ color:"rgba(255,255,255,0.2)", fontSize:20 }}>›</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA at bottom */}
-      <div style={{ margin:"32px 16px 0", background:"rgba(108,60,247,0.08)", border:"1px solid rgba(108,60,247,0.2)", borderRadius:20, padding:24, textAlign:"center" }}>
-        <div style={{ fontSize:32, marginBottom:12 }}>🚀</div>
-        <div style={{ color:"#fff", fontWeight:800, fontSize:18, marginBottom:8 }}>Have a podcast?</div>
-        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:14, marginBottom:16, lineHeight:1.5 }}>Join Sachi and reach new listeners every day through our For You feed.</div>
-        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); }}
-          style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"13px 28px", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>
-          Get Started Free →
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function App() {
+export default function App() {
   // Simple client-side routing for terms/privacy pages
   const path = window.location.pathname;
   if (path === "/terms") return <Terms />;
@@ -2448,6 +2098,7 @@ function App() {
   const [showGoLive, setShowGoLive] = useState(false);
   const [profileSheet, setProfileSheet] = useState(null); // { userId, username }
   const [showSearch, setShowSearch] = useState(false);
+  const [authToast, setAuthToast] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
   const [followingVideos, setFollowingVideos] = useState([]);
@@ -2534,11 +2185,7 @@ function App() {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, comments_count: count } : v));
   };
 
-  const [authToast, setAuthToast] = useState(false);
-  const requireAuth = (cb) => {
-    if (currentUser) { cb(); }
-    else { setShowAuth(true); setAuthToast(true); setTimeout(() => setAuthToast(false), 3000); }
-  };
+  const requireAuth = (cb) => { if (currentUser) { cb(); } else { setShowAuth(true); setAuthToast(true); setTimeout(() => setAuthToast(false), 3000); } };
 
   const username = currentUser?.full_name || currentUser?.email?.split("@")[0] || "";
 
@@ -2584,7 +2231,7 @@ function App() {
           </div>
         ) : (
           <div style={{ fontSize:17, fontWeight:700, color:"#fff", paddingTop:10, letterSpacing:0.3 }}>
-            {activeTab === "profile" ? "Profile" : activeTab === "explore" ? "Explore" : activeTab === "podcast" ? "Podcasts" : "Sachi"}
+            {activeTab === "profile" ? "Profile" : activeTab === "explore" ? "Explore" : "Sachi"}
           </div>
         )}
 
@@ -2721,7 +2368,7 @@ function App() {
         </div>
       )}
 
-      {/* Explore Tab */}
+            {/* Explore Tab */}
       {activeTab === "explore" && (
         <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0a0a14" }}>
           <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
@@ -2785,11 +2432,6 @@ function App() {
         </div>
       )}
 
-      {/* Podcast Tab */}
-      {activeTab === "podcast" && (
-        <PodcastPage currentUser={currentUser} onNeedAuth={() => setShowAuth(true)} />
-      )}
-
       {/* Bottom Nav — TikTok style */}
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,10px)", paddingTop:6 }}>
         {/* Home */}
@@ -2803,7 +2445,7 @@ function App() {
         {/* Search/Explore */}
         <button onClick={() => setActiveTab("explore")}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="explore" ? "#fff" : "none"} stroke={activeTab==="explore" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <div style={{ fontSize:10, color: activeTab==="explore" ? "#fff" : "#666", fontWeight: activeTab==="explore" ? 700 : 400 }}>Explore</div>
@@ -2820,16 +2462,17 @@ function App() {
           </div>
           <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Post</div>
         </button>
-        {/* Podcasts */}
-        <button onClick={() => setActiveTab("podcast")}
+        {/* Go Live */}
+        <button onClick={() => requireAuth(() => setShowGoLive(true))}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#a78bfa" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e53935" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" fill="#e53935" stroke="none"/>
+            <path d="M6.3 6.3a8 8 0 0 0 0 11.4"/>
+            <path d="M17.7 6.3a8 8 0 0 1 0 11.4"/>
+            <path d="M9.2 9.2a4 4 0 0 0 0 5.6"/>
+            <path d="M14.8 9.2a4 4 0 0 1 0 5.6"/>
           </svg>
-          <div style={{ fontSize:10, color: activeTab==="podcast" ? "#a78bfa" : "#666", fontWeight: activeTab==="podcast" ? 700 : 400 }}>Podcasts</div>
+          <div style={{ fontSize:10, color:"#e53935", fontWeight:700 }}>Go Live</div>
         </button>
         {/* Profile / Me */}
         <button onClick={() => setActiveTab("profile")}
