@@ -1403,25 +1403,42 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDEBAR: avatar + follow — ALWAYS VISIBLE ── */}
-      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:260 }}>
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
+      <div style={{ position:"absolute", bottom:150, right:8, display:"flex", flexDirection:"column", alignItems:"center", gap:0, zIndex:999 }}>
+        {/* Avatar */}
+        <div onClick={(e) => { e.stopPropagation(); onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name); }}
+          style={{ width:50, height:50, borderRadius:"50%", overflow:"hidden", border:"2.5px solid #fff", cursor:"pointer", flexShrink:0 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${video.username}`}
-            onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}
-            style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #fff", cursor:"pointer", flexShrink:0 }} />
-          {!isOwnVideo && (
-            <button onClick={tap(doFollow)} disabled={followLoading}
-              style={{ marginTop:-10, width:26, height:26, borderRadius:"50%", border:"none",
-                background: followRecord ? "#22c55e" : "#ff0000",
-                color:"#fff", fontWeight:900, fontSize:16, cursor:"pointer", lineHeight:1,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                boxShadow: followRecord ? "0 2px 8px rgba(34,197,94,0.6)" : "0 2px 8px rgba(255,0,0,0.5)",
-                transition:"background 0.3s, box-shadow 0.3s",
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-              {followLoading ? "·" : followRecord ? "✓" : "+"}
-            </button>
-          )}
+            style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
         </div>
-
+        {/* Follow button — always red until followed, then green */}
+        {!isOwnVideo && (
+          <button
+            onClick={(e) => { e.stopPropagation(); doFollow(); }}
+            disabled={followLoading}
+            style={{
+              marginTop: -12,
+              width: 28, height: 28,
+              borderRadius: "50%",
+              border: "2px solid #000",
+              background: followRecord ? "#22c55e" : "#ff0000",
+              color: "#fff",
+              fontWeight: 900,
+              fontSize: 18,
+              lineHeight: 1,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: followRecord
+                ? "0 0 10px rgba(34,197,94,0.8)"
+                : "0 0 10px rgba(255,0,0,0.8)",
+              transition: "background 0.25s, box-shadow 0.25s",
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              zIndex: 1000,
+              position: "relative",
+            }}>
+            {followLoading ? "·" : followRecord ? "✓" : "+"}
+          </button>
+        )}
       </div>
 
       {/* ── RIGHT SIDEBAR: other actions — fades with UI ── */}
