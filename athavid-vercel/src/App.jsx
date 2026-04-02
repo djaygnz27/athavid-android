@@ -1402,10 +1402,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
       </div>
 
-      {/* ── RIGHT SIDEBAR: actions ── */}
-      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:250, transition:"opacity 0.3s", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none" }}>
-
-        {/* Avatar + Follow button — TikTok style */}
+      {/* ── RIGHT SIDEBAR: avatar + follow — ALWAYS VISIBLE ── */}
+      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:260 }}>
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
           <img src={video.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${video.username}`}
             onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}
@@ -1417,12 +1415,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 color:"#fff", fontWeight:900, fontSize:16, cursor:"pointer", lineHeight:1,
                 display:"flex", alignItems:"center", justifyContent:"center",
                 boxShadow: followRecord ? "0 2px 8px rgba(34,197,94,0.6)" : "0 2px 8px rgba(255,0,0,0.5)",
-                transition:"background 0.2s, box-shadow 0.2s",
+                transition:"background 0.3s, box-shadow 0.3s",
                 WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
               {followLoading ? "·" : followRecord ? "✓" : "+"}
             </button>
           )}
         </div>
+
+      </div>
+
+      {/* ── RIGHT SIDEBAR: other actions — fades with UI ── */}
+      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:250, transition:"opacity 0.3s", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", paddingTop: 70 }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
