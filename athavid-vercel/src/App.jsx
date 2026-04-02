@@ -2176,27 +2176,80 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           </div>
 
           {/* Action buttons */}
-          {selectedPodcast.is_live ? (
-            <button onClick={() => {
-              if (!currentUser) { onNeedAuth(); return; }
-              // Play live stream if URL exists, else show coming soon
-              if (selectedPodcast.live_stream_url) {
-                setPlayingPodcast(selectedPodcast);
-              } else {
-                alert("Live stream starting soon! Follow this podcast to get notified.");
-              }
-            }}
-              style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
-              <span style={{ fontSize:20 }}>🎧</span> Listen Live Now
-            </button>
-          ) : (
-            <button onClick={() => {
-              if (!currentUser) { onNeedAuth(); return; }
-              alert("You're now following " + selectedPodcast.title + "! You'll be notified when they go live.");
-            }}
-              style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
-              <span style={{ fontSize:20 }}>🔔</span> Follow & Get Notified
-            </button>
+          {/* HOST Go Live / End Live controls */}
+          {currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === "jaygnz27@gmail.com") && (
+            <div style={{ marginBottom:12 }}>
+              {selectedPodcast.is_live ? (
+                <button onClick={async () => {
+                  if (!confirm("End your live session? Your audience will be notified it has ended.")) return;
+                  try {
+                    await fetch(\`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/\${selectedPodcast.id}/\`, {
+                      method:"PATCH", headers:{"Content-Type":"application/json"},
+                      body: JSON.stringify({ is_live: false, listener_count: 0 })
+                    });
+                    setSelectedPodcast(p => ({...p, is_live: false, listener_count: 0}));
+                    alert("Your live session has ended.");
+                  } catch(e) { alert("Error ending live: " + e.message); }
+                }}
+                  style={{ width:"100%", padding:"16px 0", background:"rgba(229,57,53,0.15)", border:"2px solid #e53935", borderRadius:16, color:"#e53935", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8 }}>
+                  ⏹️ End Live Session
+                </button>
+              ) : (
+                <button onClick={async () => {
+                  if (!confirm("Go live now? All Sachi users will be notified instantly!")) return;
+                  try {
+                    // Flip is_live in DB
+                    await fetch(\`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/\${selectedPodcast.id}/\`, {
+                      method:"PATCH", headers:{"Content-Type":"application/json"},
+                      body: JSON.stringify({ is_live: true })
+                    });
+                    // Trigger notification blast
+                    await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      method:"POST", headers:{"Content-Type":"application/json"},
+                      body: JSON.stringify({
+                        podcast_id: selectedPodcast.id,
+                        podcast_title: selectedPodcast.title,
+                        host_name: selectedPodcast.host_name,
+                        live_stream_url: selectedPodcast.live_stream_url || ""
+                      })
+                    });
+                    setSelectedPodcast(p => ({...p, is_live: true}));
+                    alert("🔴 You are LIVE! Notifications are being sent to all Sachi users right now.");
+                  } catch(e) { alert("Error going live: " + e.message); }
+                }}
+                  style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8, boxShadow:"0 4px 20px rgba(229,57,53,0.4)" }}>
+                  🔴 Go Live Now
+                </button>
+              )}
+              <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center" }}>
+                {selectedPodcast.is_live ? "You are currently live on Sachi" : "Going live notifies all Sachi users instantly"}
+              </div>
+            </div>
+          )}
+
+          {/* LISTENER buttons */}
+          {(!currentUser || (currentUser.id !== selectedPodcast.host_user_id && currentUser.email !== "jaygnz27@gmail.com")) && (
+            selectedPodcast.is_live ? (
+              <button onClick={() => {
+                if (!currentUser) { onNeedAuth(); return; }
+                if (selectedPodcast.live_stream_url) {
+                  setPlayingPodcast(selectedPodcast);
+                } else {
+                  alert("Live stream starting soon! Follow this podcast to get notified.");
+                }
+              }}
+                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
+                <span style={{ fontSize:20 }}>🎧</span> Listen Live Now
+              </button>
+            ) : (
+              <button onClick={() => {
+                if (!currentUser) { onNeedAuth(); return; }
+                alert("You're now following " + selectedPodcast.title + "! You'll be notified when they go live.");
+              }}
+                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
+                <span style={{ fontSize:20 }}>🔔</span> Follow & Get Notified
+              </button>
+            )
           )}
 
           <div style={{ background:"rgba(255,255,255,0.03)", borderRadius:14, padding:16, marginBottom:20 }}>
