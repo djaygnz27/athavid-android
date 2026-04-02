@@ -89,7 +89,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       if (replyingTo) {
         // Post as a reply stored locally under the parent comment
-        const reply = { id: Date.now().toString(), username, avatar_url: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
+        const reply = { id: Date.now().toString(), username, avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
         setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
@@ -97,7 +97,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       } else {
         const c = await comments.create({
           video_id: video.id, username,
-          avatar_url: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`,
+          avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`,
           comment_text: text.trim(), likes_count: 0,
         });
         const newCount = list.length + 1;
@@ -830,7 +830,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       await videos.create({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
-        avatar_url: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`,
+        avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`,
         video_url: urls[0],
         thumbnail_url: urls[0],
         photo_urls: JSON.stringify(urls),
@@ -887,7 +887,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       await videos.create({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
-        avatar_url: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`,
+        avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`,
         video_url, thumbnail_url, caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
@@ -1407,7 +1407,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
         {/* Avatar + Follow button — TikTok style */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:0, marginBottom:4 }}>
-          <img src={video.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${video.username}`}
+          <img src={video.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${video.username}`}
             onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}
             style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #fff", cursor:"pointer", flexShrink:0 }} />
           {!isOwnVideo && (
@@ -1612,46 +1612,31 @@ spinStyle.textContent = `
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
 
 // ── Avatar Picker Modal ───────────────────────────────────────────────────────
-const MEDIEVAL_AVATARS = [
-  // Kings
-  { label: "King", emoji: "👑", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KingArthur&backgroundColor=b6e3f4&accessories=glasses&clothing=shirt&hat=beanie" },
-  { label: "King", emoji: "👑", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KingRichard&backgroundColor=ffdfbf&accessories=eyepatch" },
-  { label: "King", emoji: "👑", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KingEdward&backgroundColor=c0aede" },
-  { label: "King", emoji: "👑", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KingHenry&backgroundColor=ffd5dc" },
-  // Queens
-  { label: "Queen", emoji: "👸", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=QueenEleanor&backgroundColor=d1d4f9" },
-  { label: "Queen", emoji: "👸", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=QueenMargaret&backgroundColor=b6e3f4" },
-  { label: "Queen", emoji: "👸", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=QueenIsabella&backgroundColor=ffdfbf" },
-  { label: "Queen", emoji: "👸", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=QueenBeatrice&backgroundColor=c0aede" },
-  // Knights
-  { label: "Knight", emoji: "⚔️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KnightLancelot&backgroundColor=b6e3f4" },
-  { label: "Knight", emoji: "⚔️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KnightGawain&backgroundColor=ffdfbf" },
-  { label: "Knight", emoji: "⚔️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KnightPercival&backgroundColor=c0aede" },
-  { label: "Knight", emoji: "⚔️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=KnightGalahad&backgroundColor=d1d4f9" },
-  // Bishops
-  { label: "Bishop", emoji: "✝️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=BishopAugustine&backgroundColor=b6e3f4" },
-  { label: "Bishop", emoji: "✝️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=BishopThomas&backgroundColor=ffdfbf" },
-  // Wizards
-  { label: "Wizard", emoji: "🧙", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=WizardMerlin&backgroundColor=c0aede" },
-  { label: "Wizard", emoji: "🧙", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=WizardGandalf&backgroundColor=d1d4f9" },
-  // Warriors
-  { label: "Warrior", emoji: "🛡️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=WarriorBrynhild&backgroundColor=b6e3f4" },
-  { label: "Warrior", emoji: "🛡️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=WarriorSigurd&backgroundColor=ffdfbf" },
-  { label: "Warrior", emoji: "🛡️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=WarriorAthena&backgroundColor=ffd5dc" },
-  { label: "Warrior", emoji: "🛡️", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=WarriorAchilles&backgroundColor=c0aede" },
-  // Archers
-  { label: "Archer", emoji: "🏹", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=ArcherRobin&backgroundColor=b6e3f4" },
-  { label: "Archer", emoji: "🏹", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=ArcherLegolas&backgroundColor=d1d4f9" },
-  // Mystics
-  { label: "Mystic", emoji: "🔮", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=MysticMorgana&backgroundColor=c0aede" },
-  { label: "Mystic", emoji: "🔮", url: "https://api.dicebear.com/7.x/pixel-art/svg?seed=MysticCirce&backgroundColor=ffd5dc" },
-];
-
 const AVATAR_STYLES = [
-  { label: "Medieval", style: "pixel-art", seeds: ["KingArthur","QueenEleanor","KnightLancelot","BishopAugustine","WizardMerlin","WarriorBrynhild","ArcherRobin","MysticMorgana","KingRichard","QueenMargaret","KnightGawain","BishopThomas","WizardGandalf","WarriorSigurd","ArcherLegolas","MysticCirce","KingEdward","QueenIsabella","KnightPercival","WarriorAthena"] },
-  { label: "Portraits", style: "lorelei", seeds: ["Alex","Sam","Jordan","Taylor","Morgan","Casey","Jamie","Riley","Quinn","Avery","Blake","Cameron","Dana","Ellis","Fynn","Gwen","Harley","Indie","Jules","Kai"] },
-  { label: "Sci-Fi", style: "bottts", seeds: ["R2D2","BB8","Wall-E","Robo","Zap","Bolt","Chip","Digi","Glitch","Mega","Nano","Pixel","Spark","Vibe","Wave","Flux","Glow","Nova","Atom","Echo"] },
-  { label: "Minimal", style: "thumbs", seeds: ["Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Eta","Theta","Iota","Kappa","Lambda","Mu","Nu","Xi","Omicron","Pi","Rho","Sigma","Tau","Upsilon"] },
+  {
+    label: "3D Faces",
+    style: "notionists",
+    seeds: ["Nova","Zara","Kai","Milo","Aria","Finn","Luna","Rex","Sage","Cleo","Axel","Nadia","Blake","Iris","Cruz","Ember","Jax","Lyra","Orion","Veda"],
+    backgroundColor: ["0f0f0f","1a1a2e","16213e","0d0d0d","1e1e2e"]
+  },
+  {
+    label: "Sleek",
+    style: "micah",
+    seeds: ["Alpha","Storm","Vibe","Echo","Flux","Neon","Pulse","Drift","Haze","Blaze","Glow","Smoke","Arc","Volt","Rift","Void","Core","Edge","Link","Node"],
+    backgroundColor: ["0f0f0f","1a1a2e","16213e","2d1b69","1a0533"]
+  },
+  {
+    label: "Portraits",
+    style: "lorelei",
+    seeds: ["Alex","Sam","Jordan","Taylor","Morgan","Casey","Jamie","Riley","Quinn","Avery","Blake","Cameron","Dana","Ellis","Fynn","Gwen","Harley","Indie","Jules","Kai"],
+    backgroundColor: ["0f0f0f","1a1a2e","16213e","111827","0c0c0c"]
+  },
+  {
+    label: "Abstract",
+    style: "shapes",
+    seeds: ["Cyber","Neon","Dark","Prism","Wave","Grid","Code","Data","Hack","Byte","Loop","Sync","Mesh","Node","Port","Byte","Flux","Core","Arch","Zone"],
+    backgroundColor: ["0f0f0f","1a1a2e","16213e","0d0d0d","2d1b69"]
+  },
 ];
 
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
@@ -1671,8 +1656,9 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   };
 
   const currentStyleData = AVATAR_STYLES[activeStyle];
-  const avatarUrls = currentStyleData.seeds.map(seed =>
-    `https://api.dicebear.com/7.x/${currentStyleData.style}/svg?seed=${seed}`
+  const bgColors = currentStyleData.backgroundColor || ["1a1a2e","0f0f0f","16213e","2d1b69","111827"];
+  const avatarUrls = currentStyleData.seeds.map((seed, i) =>
+    `https://api.dicebear.com/7.x/${currentStyleData.style}/svg?seed=${seed}&backgroundColor=${bgColors[i % bgColors.length]}`
   );
 
   return (
@@ -1711,13 +1697,14 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
           {avatarUrls.map((url, i) => (
             <button key={i}
               onClick={() => onSelect(url)}
-              style={{ background: currentAvatar===url ? "rgba(255,107,107,0.2)" : "rgba(255,255,255,0.04)",
-                border: currentAvatar===url ? "3px solid #ff6b6b" : "3px solid rgba(255,255,255,0.1)",
-                borderRadius:"50%", width:64, height:64, margin:"0 auto", padding:0,
+              style={{ background: currentAvatar===url ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.06)",
+                border: currentAvatar===url ? "3px solid #6c63ff" : "3px solid rgba(255,255,255,0.08)",
+                borderRadius:16, width:64, height:64, margin:"0 auto", padding:4,
                 cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"border 0.2s, transform 0.15s",
+                transition:"border 0.2s, transform 0.15s, box-shadow 0.2s",
+                boxShadow: currentAvatar===url ? "0 0 12px rgba(108,99,255,0.5)" : "none",
                 transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
-              <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block" }} loading="lazy" />
+              <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block", borderRadius:10 }} loading="lazy" />
             </button>
           ))}
         </div>
@@ -1788,7 +1775,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       {/* Bottom info */}
       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"0 16px 40px", zIndex:10 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-          <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`}
+          <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`}
             style={{ width:36, height:36, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
           <div style={{ color:"#fff", fontWeight:800, fontSize:14 }}>@{username}</div>
         </div>
@@ -1883,7 +1870,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   };
 
   const displayName = profile?.display_name || username || "User";
-  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`;
+  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`;
 
   return (
     <>
@@ -2700,7 +2687,7 @@ function App() {
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:12, gap:8 }}>
                   <div style={{ position:"relative", display:"inline-block", cursor:"pointer" }}
                     onClick={() => setShowAvatarPicker(true)}>
-                    <img src={avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${username}`}
+                    <img src={avatarUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`}
                       style={{ width:90, height:90, borderRadius:"50%", border:"3px solid #ff6b6b", display:"block", background:"rgba(255,255,255,0.05)" }} />
                     <div style={{ position:"absolute", bottom:2, right:2, background:"#ff6b6b", borderRadius:"50%", width:26, height:26,
                       display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0a0a14" }}>✏️</div>
