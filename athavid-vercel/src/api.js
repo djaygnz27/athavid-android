@@ -143,3 +143,77 @@ export const follows = {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
   }
 };
+
+// ── Recommendation Engine ──────────────────────────────────────────────────
+export const interests = {
+  // Fetch a user's interest scores
+  async get(userId) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/UserInterest?user_id=${userId}&limit=100`);
+      return Array.isArray(res) ? res : (res?.items || []);
+    } catch { return []; }
+  },
+
+  // Record a signal: like=3pts, watch(50%+)=1pt, follow=5pts
+  async signal(userId, hashtags, points) {
+    if (!userId || !hashtags?.length) return;
+    const existing = await this.get(userId);
+    const now = new Date().toISOString();
+    for (const tag of hashtags) {
+      const clean = tag.replace(/^#/, "").toLowerCase().trim();
+      if (!clean) continue;
+      const entry = existing.find(e => e.hashtag === clean);
+      if (entry) {
+        // Decay old score slightly then add new points (recency matters)
+        const decayed = Math.max(0, (entry.score || 0) * 0.95);
+        await request("PUT", `/apps/${APP_ID}/entities/UserInterest/${entry.id}`, {
+          score: decayed + points,
+          last_updated: now
+        }).catch(() => {});
+      } else {
+        await request("POST", `/apps/${APP_ID}/entities/UserInterest`, {
+          user_id: userId,
+          hashtag: clean,
+          score: points,
+          last_updated: now
+        }).catch(() => {});
+      }
+    }
+  },
+
+  // Score a list of videos against user's interests and return sorted list
+  async rankFeed(userId, videoList) {
+    if (!userId) return videoList; // guests get chronological feed
+    const userInterests = await this.get(userId);
+    if (!userInterests.length) return videoList; // no data yet, return as-is
+
+    // Build a score map: hashtag -> interest score
+    const scoreMap = {};
+    for (const i of userInterests) {
+      scoreMap[i.hashtag.toLowerCase()] = i.score || 0;
+    }
+
+    // Score each video
+    const scored = videoList.map(v => {
+      const tags = (v.hashtags || []).map(t => t.replace(/^#/, "").toLowerCase());
+      let relevance = 0;
+      for (const tag of tags) {
+        relevance += scoreMap[tag] || 0;
+      }
+      return { ...v, _relevance: relevance };
+    });
+
+    // Sort: high relevance first, but mix in some recency so feed doesn't get stale
+    // Top 30% by relevance, rest by date
+    scored.sort((a, b) => {
+      // Blend: 70% relevance score + 30% recency bonus
+      const recencyA = new Date(a.created_date || 0).getTime() / 1e12;
+      const recencyB = new Date(b.created_date || 0).getTime() / 1e12;
+      const scoreA = (a._relevance * 0.7) + (recencyA * 0.3);
+      const scoreB = (b._relevance * 0.7) + (recencyB * 0.3);
+      return scoreB - scoreA;
+    });
+
+    return scored;
+  }
+};

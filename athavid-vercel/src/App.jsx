@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request, interests } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
@@ -2476,11 +2476,15 @@ function App() {
     } catch(e) { console.error(e); }
   };
 
-  const loadVideos = async () => {
+  const loadVideos = async (user) => {
     setLoading(true);
     try {
       const data = await videos.list();
-      setVideoList(Array.isArray(data) ? data : []);
+      const raw = Array.isArray(data) ? data : [];
+      // Rank feed by user interest scores if logged in
+      const activeUser = user || currentUser;
+      const ranked = activeUser ? await interests.rankFeed(activeUser.id, raw) : raw;
+      setVideoList(ranked);
     } catch { setVideoList([]); }
     setLoading(false);
   };
@@ -2496,13 +2500,25 @@ function App() {
   const handleLike = (videoId, delta) => {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, likes_count: Math.max(0, (v.likes_count||0)+delta) } : v));
     const vid = videoList.find(v => v.id === videoId);
-    if (vid) videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count||0)+delta) }).catch(()=>{});
+    if (vid) {
+      videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count||0)+delta) }).catch(()=>{});
+      // Record interest signal: like = 3 points, unlike = -1 point
+      if (currentUser && vid.hashtags?.length) {
+        interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(()=>{});
+      }
+    }
   };
 
   const handleView = (videoId) => {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, views_count: (v.views_count||0)+1 } : v));
     const vid = videoList.find(v => v.id === videoId);
-    if (vid) videos.update(videoId, { views_count: (vid.views_count||0)+1 }).catch(()=>{});
+    if (vid) {
+      videos.update(videoId, { views_count: (vid.views_count||0)+1 }).catch(()=>{});
+      // Record watch signal: 1 point (weaker than a like)
+      if (currentUser && vid.hashtags?.length) {
+        interests.signal(currentUser.id, vid.hashtags, 1).catch(()=>{});
+      }
+    }
   };
 
   const handleCommentCount = (videoId, count) => {
