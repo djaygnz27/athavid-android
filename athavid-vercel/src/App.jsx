@@ -2806,17 +2806,15 @@ function App() {
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,10px)", paddingTop:6 }}>
         {/* Home */}
         <button onClick={() => {
-          if (activeTab === "feed") {
-            // Already on feed — scroll to top and refresh
-            if (feedContainerRef.current) feedContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
-            loadVideos();
-          } else {
-            setActiveTab("feed");
-            setTimeout(() => {
-              if (feedContainerRef.current) feedContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
-            }, 100);
-            loadVideos();
-          }
+          setActiveTab("feed");
+          loadVideos();
+          // Use a longer delay to ensure the feed DOM is mounted before scrolling
+          const doScroll = () => {
+            const el = feedContainerRef.current || document.querySelector("[data-feed]");
+            if (el) { el.scrollTo({ top: 0, behavior: "smooth" }); }
+          };
+          setTimeout(doScroll, 50);
+          setTimeout(doScroll, 200);
         }}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#fff" : "none"} stroke={activeTab==="feed" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
