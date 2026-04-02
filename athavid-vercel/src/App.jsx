@@ -2407,8 +2407,23 @@ function App() {
   useEffect(() => { if (currentUser) loadFollowingVideos(currentUser); }, [currentUser]);
   useEffect(() => {
     if (currentUser) {
-      const saved = localStorage.getItem(`avatar_${currentUser.id}`);
-      if (saved) setAvatarUrl(saved);
+      // Try to load avatar from DB first (most up to date)
+      try {
+        const usersRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+        const usersData = await usersRes.json();
+        const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
+        const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
+        if (match && match.avatar_url) {
+          setAvatarUrl(match.avatar_url);
+          localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
+        } else {
+          const saved = localStorage.getItem(`avatar_${currentUser.id}`);
+          if (saved) setAvatarUrl(saved);
+        }
+      } catch(e) {
+        const saved = localStorage.getItem(`avatar_${currentUser.id}`);
+        if (saved) setAvatarUrl(saved);
+      }
     }
   }, [currentUser]);
 
@@ -2900,7 +2915,32 @@ function App() {
           </div>
         </div>
       )}
-      {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={(url) => { setAvatarUrl(url); if(currentUser) localStorage.setItem(`avatar_${currentUser.id}`, url); setShowAvatarPicker(false); }} onClose={() => setShowAvatarPicker(false)} />}
+      {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
+        setAvatarUrl(url);
+        if (currentUser) {
+          // Save to localStorage as cache
+          localStorage.setItem(`avatar_${currentUser.id}`, url);
+          // Save to AthaVidUser entity in DB
+          try {
+            const usersRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+            const usersData = await usersRes.json();
+            const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
+            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
+            if (match) {
+              await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, {
+                method:"PATCH", headers:{"Content-Type":"application/json"},
+                body: JSON.stringify({ avatar_url: url })
+              });
+            }
+          } catch(e) { console.error("Avatar DB save failed:", e); }
+          // Also update auth profile
+          try {
+            await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+            setCurrentUser(u => ({ ...u, avatar_url: url }));
+          } catch(e) { console.error("Auth avatar update failed:", e); }
+        }
+        setShowAvatarPicker(false);
+      }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
   );
 }
