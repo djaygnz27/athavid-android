@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "hashtag": {
+      "type": "string"
+    },
+    "score": {
+      "type": "number"
+    },
+    "last_updated": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "UserInterest"
+}
