@@ -1184,13 +1184,40 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       el.muted = false;
       el.currentTime = t;
       el.play().catch(() => {});
+      // Auto-hide UI when video autoplays
+      if (uiTimerRef && uiTimerRef.current !== undefined) {
+        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+        uiTimerRef.current = setTimeout(() => setShowUI(false), 2000);
+      }
     }
+  };
+
+  const uiTimerRef = useRef(null);
+
+  const hideUIAfterDelay = () => {
+    if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+    uiTimerRef.current = setTimeout(() => setShowUI(false), 2000);
+  };
+
+  const cancelUITimer = () => {
+    if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
   };
 
   const doTogglePlay = () => {
     const el = videoRef.current;
     if (!el) return;
-    if (el.paused) { el.play(); setPlaying(true); } else { el.pause(); setPlaying(false); }
+    if (el.paused) {
+      el.play();
+      setPlaying(true);
+      // Auto-hide controls after 2 seconds when playing
+      hideUIAfterDelay();
+    } else {
+      el.pause();
+      setPlaying(false);
+      // Show controls when paused
+      cancelUITimer();
+      setShowUI(true);
+    }
   };
 
   const doLike = () => {
@@ -1306,7 +1333,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           setShowUI(v => !v);
           if (!showUI) setShowFullCaption(true);
         } else {
-          doTogglePlay();
+          const isVidPlaying = videoRef.current && !videoRef.current.paused;
+          if (isVidPlaying) {
+            // Video is playing — tap shows controls briefly then hides
+            setShowUI(true);
+            hideUIAfterDelay();
+          } else {
+            doTogglePlay();
+          }
         }
       })}
         style={{ position:"absolute", top:60, left:0, right:80, bottom:300, zIndex:15, cursor:"pointer" }} />
