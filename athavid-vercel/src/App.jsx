@@ -1413,10 +1413,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {!isOwnVideo && (
             <button onClick={tap(doFollow)} disabled={followLoading}
               style={{ marginTop:-10, width:26, height:26, borderRadius:"50%", border:"none",
-                background: followRecord ? "#22c55e" : "#fe2c55",
+                background: followRecord ? "#22c55e" : "#ff0000",
                 color:"#fff", fontWeight:900, fontSize:16, cursor:"pointer", lineHeight:1,
                 display:"flex", alignItems:"center", justifyContent:"center",
-                boxShadow: followRecord ? "0 2px 8px rgba(34,197,94,0.6)" : "0 2px 6px rgba(0,0,0,0.4)",
+                boxShadow: followRecord ? "0 2px 8px rgba(34,197,94,0.6)" : "0 2px 8px rgba(255,0,0,0.5)",
                 transition:"background 0.2s, box-shadow 0.2s",
                 WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
               {followLoading ? "·" : followRecord ? "✓" : "+"}
@@ -1925,14 +1925,14 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                 {!isOwnProfile && currentUser && (
                   <button onClick={doFollow} disabled={followLoading}
                     style={{ padding:"10px 40px", borderRadius:24,
-                      background: followRecord ? "#22c55e" : "linear-gradient(135deg,#ff6b6b,#e53935)",
+                      background: followRecord ? "#22c55e" : "#ff0000",
                       border: "none",
                       color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
                       opacity: followLoading ? 0.6 : 1,
-                      boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "none",
+                      boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
                       transition:"background 0.25s, box-shadow 0.25s",
                       WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                    {followLoading ? "..." : followRecord ? "✚ Following" : "+ Follow"}
+                    {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
                   </button>
                 )}
               </div>
