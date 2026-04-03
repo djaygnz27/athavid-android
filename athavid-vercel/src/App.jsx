@@ -1140,14 +1140,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [showUI, setShowUI] = useState(true);
+  const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
 
-  const hideUIAfterDelay = React.useCallback((delay = 2000) => {
+  const hideUIAfterDelay = (delay = 2000) => {
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-    uiTimerRef.current = setTimeout(() => setShowUI(false), delay);
-  }, []);
+    uiTimerRef.current = setTimeout(() => {
+      setShowUI(false);
+      setUserTapped(false);
+    }, delay);
+  };
+
+  const showUIBriefly = () => {
+    setShowUI(true);
+    setUserTapped(true);
+    hideUIAfterDelay(2500);
+  };
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -1165,14 +1175,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         el.play().catch(() => {});
         setPlaying(true);
         // Hide icons after 1.5s
-        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        uiTimerRef.current = setTimeout(() => setShowUI(false), 1500);
+        hideUIAfterDelay(1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
         setPlaying(false);
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
         setShowUI(true);
+        setUserTapped(false);
       }
     }, { threshold: 0.6 });
     obs.observe(el);
@@ -1202,10 +1212,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       el.currentTime = t;
       el.play().catch(() => {});
       // Auto-hide UI when video autoplays
-      if (uiTimerRef && uiTimerRef.current !== undefined) {
-        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        uiTimerRef.current = setTimeout(() => setShowUI(false), 2000);
-      }
+      hideUIAfterDelay(2000);
     }
   };
 
@@ -1347,9 +1354,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         } else {
           const isVidPlaying = videoRef.current && !videoRef.current.paused;
           if (isVidPlaying) {
-            // Video is playing — tap shows controls briefly then hides
-            setShowUI(true);
-            hideUIAfterDelay();
+            showUIBriefly();
           } else {
             doTogglePlay();
           }
