@@ -2162,7 +2162,6 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
   );
 }
 
-export default 
 // ─────────────────────────────────────────────
 // PODCAST PAGE
 // ─────────────────────────────────────────────
@@ -3066,3 +3065,5 @@ function App() {
     </div>
   );
 }
+
+export default App;
