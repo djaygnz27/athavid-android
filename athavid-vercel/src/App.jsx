@@ -1,3 +1,4 @@
+// Sachi v1.3.2 - fix scroll, button hide, avatar auth
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests } from "./api.js";
