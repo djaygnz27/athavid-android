@@ -2643,7 +2643,7 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div key={feedKey} ref={el => { feedContainerRef.current = el; if (el) window.requestAnimationFrame(() => { el.scrollTop = 0; }); }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate" }}>
+        <div key={feedKey} ref={el => { feedContainerRef.current = el; window.__sachiEl = el; if (el) { el.scrollTop = 0; window.__sachiEl.scrollTop = 0; } }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
