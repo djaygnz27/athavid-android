@@ -1144,10 +1144,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
 
-  const hideUIAfterDelay = (delay = 2000) => {
+  const hideUIAfterDelay = React.useCallback((delay = 2000) => {
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
     uiTimerRef.current = setTimeout(() => setShowUI(false), delay);
-  };
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => { if (uiTimerRef.current) clearTimeout(uiTimerRef.current); };
+  }, []);
 
   // Auto-play via IntersectionObserver
   useEffect(() => {
@@ -1159,12 +1164,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setMuted(true);
         el.play().catch(() => {});
         setPlaying(true);
-        hideUIAfterDelay(1500); // ← auto-hide icons 1.5s after video starts
+        // Hide icons after 1.5s
+        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+        uiTimerRef.current = setTimeout(() => setShowUI(false), 1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
         setPlaying(false);
-        // Show UI again when video goes off screen
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
         setShowUI(true);
       }
