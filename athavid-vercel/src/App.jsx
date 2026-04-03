@@ -1347,24 +1347,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
 
-      {/* ── TAP: toggle UI visibility on images, toggle play on videos ── */}
+      {/* ── TAP: toggle UI visibility on images, toggle play/pause on videos ── */}
       <div onClick={tap(() => {
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
         if (isImg || !(video.video_url)) {
           setShowUI(v => !v);
           if (!showUI) setShowFullCaption(true);
         } else {
-          const isVidPlaying = videoRef.current && !videoRef.current.paused;
-          if (isVidPlaying) {
-            showUIBriefly();
-          } else {
-            doTogglePlay();
-          }
+          // Always toggle play/pause on tap (TikTok-style)
+          doTogglePlay();
         }
       })}
         style={{ position:"absolute", top:60, left:0, right:80, bottom:300, zIndex:15, cursor:"pointer" }} />
 
-      {/* ── PAUSED INDICATOR ── */}
+      {/* ── PLAY/PAUSE INDICATOR ── */}
       {!playing && (
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
           <div onClick={tap(doTogglePlay)} style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:72, height:72,
