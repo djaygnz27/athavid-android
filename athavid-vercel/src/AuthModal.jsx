@@ -73,15 +73,15 @@ export default function AuthModal({ onClose, onSuccess }) {
 
   const inp = {
     display: "block", width: "100%", boxSizing: "border-box",
-    background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+    background: "rgba(255,255,255,0.08)", border: "1px solid rgba(245,200,66,0.15)",
     borderRadius: 12, padding: "14px 16px", color: "#fff", fontSize: 15,
     outline: "none", marginBottom: 12,
   };
 
   const btn = {
     display: "block", width: "100%", padding: "14px 0",
-    background: "linear-gradient(135deg,#ff6b6b,#ff8e53)", border: "none",
-    borderRadius: 14, color: "#fff", fontWeight: 800, fontSize: 16,
+    background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none",
+    borderRadius: 14, color: "#0B0C1A", fontWeight: 800, fontSize: 16,
     cursor: "pointer", marginBottom: 10,
   };
 
@@ -94,7 +94,7 @@ export default function AuthModal({ onClose, onSuccess }) {
     <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 16px" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.88)" }} />
       <div style={{
-        position:"relative", zIndex:3001, background:"#0f0f1a", borderRadius:24,
+        position:"relative", zIndex:3001, background:"#12132A", borderRadius:24, border:"1px solid rgba(245,200,66,0.1)",
         padding:"28px 24px 32px", width:"100%", maxWidth:400, maxHeight:"90vh", overflowY:"auto",
       }}>
 
