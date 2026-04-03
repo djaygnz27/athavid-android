@@ -9922,11 +9922,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       setUserTapped(false);
     }, delay);
   };
-  const showUIBriefly = () => {
-    setShowUI(true);
-    setUserTapped(true);
-    hideUIAfterDelay(2500);
-  };
   reactExports.useEffect(() => {
     return () => {
       if (uiTimerRef.current)
@@ -10186,12 +10181,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             if (!showUI)
               setShowFullCaption(true);
           } else {
-            const isVidPlaying = videoRef.current && !videoRef.current.paused;
-            if (isVidPlaying) {
-              showUIBriefly();
-            } else {
-              doTogglePlay();
-            }
+            doTogglePlay();
           }
         }),
         style: { position: "absolute", top: 60, left: 0, right: 80, bottom: 300, zIndex: 15, cursor: "pointer" }
