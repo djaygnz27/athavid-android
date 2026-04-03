@@ -9984,10 +9984,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       hideUIAfterDelay(2e3);
     }
   };
-  const cancelUITimer = () => {
-    if (uiTimerRef.current)
-      clearTimeout(uiTimerRef.current);
-  };
   const doTogglePlay = () => {
     const el2 = videoRef.current;
     if (!el2)
@@ -9995,11 +9991,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (el2.paused) {
       el2.play();
       setPlaying(true);
-      hideUIAfterDelay();
+      if (uiTimerRef.current)
+        clearTimeout(uiTimerRef.current);
+      uiTimerRef.current = setTimeout(() => {
+        setShowUI(false);
+      }, 400);
     } else {
       el2.pause();
       setPlaying(false);
-      cancelUITimer();
+      if (uiTimerRef.current)
+        clearTimeout(uiTimerRef.current);
       setShowUI(true);
     }
   };

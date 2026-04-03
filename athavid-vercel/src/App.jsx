@@ -1230,13 +1230,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (el.paused) {
       el.play();
       setPlaying(true);
-      // Auto-hide controls after 2 seconds when playing
-      hideUIAfterDelay();
+      // Immediately hide UI when resuming play
+      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+      uiTimerRef.current = setTimeout(() => { setShowUI(false); }, 400);
     } else {
       el.pause();
       setPlaying(false);
       // Show controls when paused
-      cancelUITimer();
+      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       setShowUI(true);
     }
   };
