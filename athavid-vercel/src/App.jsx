@@ -89,7 +89,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       if (replyingTo) {
         // Post as a reply stored locally under the parent comment
-        const reply = { id: Date.now().toString(), username, avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
+        const reply = { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
         setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
@@ -97,7 +97,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       } else {
         const c = await comments.create({
           video_id: video.id, username,
-          avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`,
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
           comment_text: text.trim(), likes_count: 0,
         });
         const newCount = list.length + 1;
@@ -830,7 +830,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       await videos.create({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
-        avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`,
+        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: urls[0],
         thumbnail_url: urls[0],
         photo_urls: JSON.stringify(urls),
@@ -887,7 +887,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       await videos.create({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
-        avatar_url: `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`,
+        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url, thumbnail_url, caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
@@ -1139,7 +1139,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [followRecord, setFollowRecord] = useState(null);
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
-  const [showUI, setShowUI] = useState(true);
+  const [showUI, setShowUI] = useState(false);
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
 
@@ -1174,7 +1174,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setMuted(true);
         el.play().catch(() => {});
         setPlaying(true);
-        // Hide icons after 1.5s
+        // Show UI briefly then hide
+        setShowUI(true);
         hideUIAfterDelay(1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
@@ -1424,7 +1425,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         {/* Avatar */}
         <div onClick={(e) => { e.stopPropagation(); onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name); }}
           style={{ width:50, height:50, borderRadius:"50%", overflow:"hidden", border:"2.5px solid #fff", cursor:"pointer", flexShrink:0 }}>
-          <img src={video.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${video.username}`}
+          <img src={video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`}
             style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
         </div>
         {/* Follow button — always red until followed, then green */}
@@ -1812,7 +1813,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       {/* Bottom info */}
       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"0 16px 40px", zIndex:10 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-          <img src={profile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`}
+          <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`}
             style={{ width:36, height:36, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
           <div style={{ color:"#fff", fontWeight:800, fontSize:14 }}>@{username}</div>
         </div>
@@ -1907,7 +1908,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   };
 
   const displayName = profile?.display_name || username || "User";
-  const avatarUrl = profile?.avatar_url || `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`;
+  const avatarUrl = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`;
 
   return (
     <>
@@ -2198,7 +2199,10 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
   const loadPodcasts = async () => {
     try {
-      const data = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/");
+      const res = await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/?limit=50", {
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
       setPodcasts(Array.isArray(data) ? data : (data.items || []));
     } catch(e) { console.error("loadPodcasts failed:", e); }
   };
@@ -2727,7 +2731,7 @@ function App() {
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:12, gap:8 }}>
                   <div style={{ position:"relative", display:"inline-block", cursor:"pointer" }}
                     onClick={() => setShowAvatarPicker(true)}>
-                    <img src={avatarUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${username}`}
+                    <img src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`}
                       style={{ width:90, height:90, borderRadius:"50%", border:"3px solid #ff6b6b", display:"block", background:"rgba(255,255,255,0.05)" }} />
                     <div style={{ position:"absolute", bottom:2, right:2, background:"#ff6b6b", borderRadius:"50%", width:26, height:26,
                       display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0a0a14" }}>✏️</div>
