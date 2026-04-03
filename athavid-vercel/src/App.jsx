@@ -2447,6 +2447,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
+  const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feed");
   const [showGoLive, setShowGoLive] = useState(false);
@@ -2633,7 +2634,7 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div ref={feedContainerRef} data-feed style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate" }}>
+        <div key={feedKey} ref={feedContainerRef} data-feed style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
@@ -2826,20 +2827,9 @@ function App() {
       <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,10px)", paddingTop:6 }}>
         {/* Home */}
         <button onClick={() => {
-          // Step 1: force scroll to top instantly BEFORE reloading (ref still valid)
-          const el = feedContainerRef.current || document.querySelector("[data-feed]");
-          if (el) { el.scrollTop = 0; }
-          // Step 2: switch tab (in case we're on another tab)
           setActiveTab("feed");
-          // Step 3: reload videos (after brief delay so tab switch renders first)
-          setTimeout(() => {
-            loadVideos();
-            // Step 4: scroll again after new videos mount
-            setTimeout(() => {
-              const el2 = feedContainerRef.current || document.querySelector("[data-feed]");
-              if (el2) { el2.scrollTop = 0; }
-            }, 300);
-          }, 50);
+          setFeedKey(k => k + 1); // remounts feed container → instantly back to top
+          loadVideos();
         }}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#fff" : "none"} stroke={activeTab==="feed" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
