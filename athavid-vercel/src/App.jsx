@@ -1,4 +1,4 @@
-// Sachi v2.0.0 - original brand identity, Sachi UI
+// Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests } from "./api.js";
@@ -1353,7 +1353,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           doTogglePlay();
         }
       })}
-        style={{ position:"absolute", top:60, left:0, right:80, bottom:80, zIndex:50, cursor:"pointer" }} />
+        style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
 
       {/* ── PLAY/PAUSE INDICATOR ── */}
       {!playing && (
@@ -1366,11 +1366,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:150, left:16, right:72, zIndex:250, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }}>
-        <div style={{ display:"flex", flexDirection:"column", gap:2, marginBottom:8, cursor:"pointer" }}
+      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:250, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }}>
+        <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
-          <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
-          <div style={{ color:"rgba(245,200,66,0.55)", fontSize:13 }}>@{video.username}</div>
+          <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
+          <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>@{video.username}</div>
         </div>
         {video.sound_title && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
@@ -1412,81 +1412,80 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
       </div>
 
-      {/* ── RIGHT SIDEBAR: avatar + follow — ALWAYS VISIBLE ── */}
-      <div style={{ position:"absolute", bottom:150, right:8, display:"flex", flexDirection:"column", alignItems:"center", gap:0, zIndex:999 }}>
+      {/* ── AVATAR + FOLLOW — top left, always visible — Sachi original ── */}
+      <div style={{ position:"absolute", top:72, left:14, display:"flex", flexDirection:"row", alignItems:"center", gap:10, zIndex:999 }}>
         {/* Avatar */}
         <div onClick={(e) => { e.stopPropagation(); onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name); }}
-          style={{ width:50, height:50, borderRadius:"50%", overflow:"hidden", border:"2.5px solid #fff", cursor:"pointer", flexShrink:0 }}>
+          style={{ width:42, height:42, borderRadius:"50%", overflow:"hidden", border:"2px solid rgba(245,200,66,0.7)", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 12px rgba(0,0,0,0.5)" }}>
           <img src={video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`}
             style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
         </div>
-        {/* Follow button — always red until followed, then green */}
+        {/* Follow pill — inline next to avatar */}
         {!isOwnVideo && (
           <button
             onClick={(e) => { e.stopPropagation(); doFollow(); }}
             disabled={followLoading}
             style={{
-              marginTop: -10,
-              width: 30, height: 30,
-              borderRadius: "50%",
-              border: followRecord ? "2px solid #F5C842" : "2px solid rgba(255,255,255,0.8)",
-              background: followRecord ? "#F5C842" : "rgba(0,0,0,0.5)",
-              color: followRecord ? "#0B0C1A" : "#fff",
-              fontWeight: 900,
-              fontSize: 17,
-              lineHeight: 1,
+              height: 28,
+              borderRadius: 20,
+              border: followRecord ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
+              background: followRecord ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
+              backdropFilter: "blur(8px)",
+              color: followRecord ? "#F5C842" : "#fff",
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: 0.3,
+              padding: "0 12px",
               cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: followRecord ? "0 0 12px rgba(245,200,66,0.6)" : "none",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              boxShadow: followRecord ? "0 0 10px rgba(245,200,66,0.3)" : "none",
               transition: "all 0.25s",
               WebkitTapHighlightColor: "transparent",
               touchAction: "manipulation",
-              zIndex: 1000,
-              position: "relative",
             }}>
-            {followLoading ? "·" : followRecord ? "✓" : "+"}
+            {followLoading ? "·" : followRecord ? "✓ Following" : "+ Follow"}
           </button>
         )}
       </div>
 
-      {/* ── RIGHT SIDEBAR: other actions — fades with UI ── */}
-      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:260, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", paddingTop: 70, visibility: showUI ? "visible" : "hidden" }}>
+      {/* ── BOTTOM ACTION BAR — fades with UI — Sachi style ── */}
+      <div style={{ position:"absolute", bottom:90, left:16, right:16, display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"flex-end", gap:10, zIndex:260, transition:"opacity 0.4s ease, transform 0.4s ease", opacity: showUI ? 1 : 0, transform: showUI ? "translateY(0)" : "translateY(10px)", pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ width:44, height:44, borderRadius:14, background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: muted ? "1px solid rgba(245,200,66,0.35)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}>
             {muted
-              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
             }
           </div>
         </button>
 
         {/* Like */}
         <button onClick={tap(doLike)}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center",
-            animation: liked ? "heartpop 0.5s ease forwards" : "heartbeat 1.4s ease-in-out infinite", transformOrigin:"center" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF6B6B" stroke="#FF6B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ width:44, height:44, borderRadius:14, background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center",
+            animation: liked ? "heartpop 0.4s ease forwards" : "none", transformOrigin:"center", transition:"background 0.2s, border 0.2s" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke="#FF6B6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </div>
-          <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
+          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:11, fontWeight:600 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
         </button>
 
         {/* Comment */}
         <button onClick={tap(() => onCommentOpen(video))}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>{formatCount(video.comments_count)}</div>
+          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:11, fontWeight:600 }}>{formatCount(video.comments_count)}</div>
         </button>
 
         {/* Share */}
@@ -1494,27 +1493,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             if(navigator.share){ navigator.share({ title: video.caption||"Check this out", url: window.location.href }); }
             else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); }
           })}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+          <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>
           </div>
-          <div style={{ color:"#fff", fontSize:12, fontWeight:600 }}>{formatCount(video.shares_count||0)}</div>
+          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:11, fontWeight:600 }}>{formatCount(video.shares_count||0)}</div>
         </button>
 
         {/* Delete — only for own videos */}
         {isOwnVideo && (
           <button onClick={tap(doDelete)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
               WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-            <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,60,60,0.18)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff4444" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,60,60,0.12)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,60,60,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
               </svg>
             </div>
-            <div style={{ color:"#ff4444", fontSize:11, fontWeight:600 }}>Delete</div>
           </button>
         )}
 
@@ -2722,14 +2721,14 @@ function App() {
                   <div style={{ position:"relative", display:"inline-block", cursor:"pointer" }}
                     onClick={() => setShowAvatarPicker(true)}>
                     <img src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`}
-                      style={{ width:90, height:90, borderRadius:"50%", border:"3px solid #ff6b6b", display:"block", background:"rgba(255,255,255,0.05)" }} />
-                    <div style={{ position:"absolute", bottom:2, right:2, background:"#ff6b6b", borderRadius:"50%", width:26, height:26,
-                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0a0a14" }}>✏️</div>
+                      style={{ width:90, height:90, borderRadius:"50%", border:"3px solid #F5C842", display:"block", background:"rgba(255,255,255,0.05)" }} />
+                    <div style={{ position:"absolute", bottom:2, right:2, background:"#F5C842", borderRadius:"50%", width:26, height:26,
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0B0C1A" }}>✏️</div>
                   </div>
                   <button
                     onClick={() => setShowAvatarPicker(true)}
-                    style={{ background:"rgba(255,107,107,0.18)", border:"1px solid rgba(255,107,107,0.4)", borderRadius:20,
-                      padding:"6px 18px", color:"#ff6b6b", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                    style={{ background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20,
+                      padding:"6px 18px", color:"#F5C842", fontWeight:700, fontSize:13, cursor:"pointer" }}>
                     Change Avatar
                   </button>
                 </div>
