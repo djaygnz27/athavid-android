@@ -3030,39 +3030,28 @@ function App() {
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
         setAvatarUrl(url);
         if (currentUser) {
-          // Save to localStorage as cache
           localStorage.setItem(`avatar_${currentUser.id}`, url);
-          // Save to AthaVidUser entity in DB
-          try {
-            const usersRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
-            const usersData = await usersRes.json();
-            const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
-            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) {
-              await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, {
-                method:"PATCH", headers:{"Content-Type":"application/json"},
-                body: JSON.stringify({ avatar_url: url })
-              });
-            }
-          } catch(e) { console.error("Avatar DB save failed:", e); }
-          // Also update auth profile
+          // 1. Update auth profile (with token)
           try {
             await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
             setCurrentUser(u => ({ ...u, avatar_url: url }));
           } catch(e) { console.error("Auth avatar update failed:", e); }
-          // Update avatar_url on all the user's video records so feed shows new avatar
+          // 2. Update AthaVidUser entity (with token)
           try {
-            const vidsRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`);
-            const vidsData = await vidsRes.json();
-            const myVids = vidsData.items || vidsData || [];
+            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+            const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
+            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
+            if (match) {
+              await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+            }
+          } catch(e) { console.error("AthaVidUser avatar update failed:", e); }
+          // 3. Update avatar on all user's videos (with token) + refresh feed instantly
+          try {
+            const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`);
+            const myVids = Array.isArray(vidsData) ? vidsData : (vidsData.items || []);
             await Promise.all(myVids.map(v =>
-              fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ avatar_url: url })
-              })
+              request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })
             ));
-            // Instantly update feed UI without reload
             setVideoList(vs => vs.map(v =>
               (v.user_id === currentUser.id || v.created_by === currentUser.id)
                 ? { ...v, avatar_url: url }
