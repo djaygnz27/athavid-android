@@ -1,4 +1,4 @@
-// Sachi v1.3.2 - fix scroll, button hide, avatar auth
+// Sachi v2.0.0 - original brand identity, Sachi UI
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests } from "./api.js";
@@ -1293,7 +1293,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
   return (
-    <div style={{ position:"relative", width:"100%", height:"100svh", background:"#000", flexShrink:0, scrollSnapAlign:"start" }}>
+    <div style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start" }}>
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
@@ -1315,7 +1315,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6, zIndex:50, pointerEvents:"none" }}>
               {photoUrls.map((_,i) => (
                 <div key={i} style={{ width:i===photoIdx?20:7, height:7, borderRadius:99,
-                  background:i===photoIdx?"#ff6b6b":"rgba(255,255,255,0.5)", transition:"all 0.25s" }} />
+                  background:i===photoIdx?"#F5C842":"rgba(255,255,255,0.3)", transition:"all 0.25s" }} />
               ))}
             </div>
           )}
@@ -1338,15 +1338,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       })()}
 
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 55%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, visibility: showUI ? "visible" : "hidden" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, visibility: showUI ? "visible" : "hidden" }} />
 
-      {/* ── TAP TO SHOW HINT (when UI hidden) ── */}
-      {!showUI && (
-        <div style={{ position:"absolute", top:16, left:"50%", transform:"translateX(-50%)", zIndex:300,
-          background:"rgba(0,0,0,0.55)", borderRadius:20, padding:"6px 16px", pointerEvents:"none" }}>
-          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:13 }}>Tap to show controls</span>
-        </div>
-      )}
+      {/* Tap hint removed — content-first UI */}
 
       {/* ── TAP: toggle UI visibility on images, toggle play/pause on videos ── */}
       <div onClick={tap(() => {
@@ -1364,8 +1358,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* ── PLAY/PAUSE INDICATOR ── */}
       {!playing && (
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
-          <div onClick={tap(doTogglePlay)} style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:72, height:72,
-            display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:30 }}>▶</div>
+          <div onClick={tap(doTogglePlay)} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:64, height:64,
+            display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:26 }}>▶</div>
         </div>
       )}
 
@@ -1376,7 +1370,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <div style={{ display:"flex", flexDirection:"column", gap:2, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{video.display_name || video.username}</div>
-          <div style={{ color:"rgba(255,255,255,0.55)", fontSize:13 }}>@{video.username}</div>
+          <div style={{ color:"rgba(245,200,66,0.55)", fontSize:13 }}>@{video.username}</div>
         </div>
         {video.sound_title && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
@@ -1405,7 +1399,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
         {video.hashtags?.length > 0 && (
-          <div style={{ color:"#ff8e53", fontSize:13, marginTop:4 }}>
+          <div style={{ color:"#F5C842", fontSize:13, marginTop:4 }}>
             {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
           </div>
         )}
@@ -1432,21 +1426,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             onClick={(e) => { e.stopPropagation(); doFollow(); }}
             disabled={followLoading}
             style={{
-              marginTop: -12,
-              width: 28, height: 28,
+              marginTop: -10,
+              width: 30, height: 30,
               borderRadius: "50%",
-              border: "2px solid #000",
-              background: followRecord ? "#22c55e" : "#ff0000",
-              color: "#fff",
+              border: followRecord ? "2px solid #F5C842" : "2px solid rgba(255,255,255,0.8)",
+              background: followRecord ? "#F5C842" : "rgba(0,0,0,0.5)",
+              color: followRecord ? "#0B0C1A" : "#fff",
               fontWeight: 900,
-              fontSize: 18,
+              fontSize: 17,
               lineHeight: 1,
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: followRecord
-                ? "0 0 10px rgba(34,197,94,0.8)"
-                : "0 0 10px rgba(255,0,0,0.8)",
-              transition: "background 0.25s, box-shadow 0.25s",
+              boxShadow: followRecord ? "0 0 12px rgba(245,200,66,0.6)" : "none",
+              transition: "all 0.25s",
               WebkitTapHighlightColor: "transparent",
               touchAction: "manipulation",
               zIndex: 1000,
@@ -1464,7 +1456,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <button onClick={tap(doMute)}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ fontSize:26 }}>{muted ? "🔇" : "🔊"}</div>
+          <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {muted
+              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            }
+          </div>
         </button>
 
         {/* Like */}
@@ -1473,7 +1470,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
           <div style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center",
             animation: liked ? "heartpop 0.5s ease forwards" : "heartbeat 1.4s ease-in-out infinite", transformOrigin:"center" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fe2c55" stroke="#fe2c55" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF6B6B" stroke="#FF6B6B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </div>
@@ -2204,7 +2201,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   if (selectedPodcast) {
     const isHost = currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === "jaygnz27@gmail.com");
     return (
-      <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0a0a14", overflowY:"auto" }}>
+      <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
         <div style={{ position:"relative", height:260, background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
           <button onClick={() => setSelectedPodcast(null)}
             style={{ position:"absolute", top:16, left:16, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
@@ -2288,7 +2285,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   // ── REGISTER FORM ──
   if (showRegister) {
     return (
-      <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0a0a14", overflowY:"auto" }}>
+      <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
         <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
             <button onClick={() => setShowRegister(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", fontSize:18, cursor:"pointer" }}>←</button>
@@ -2340,7 +2337,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
   // ── MAIN PODCAST LIST ──
   return (
-    <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0a0a14" }}>
+    <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
       <div style={{ margin:"0 16px 20px", background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius:20, padding:"24px 20px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:-20, right:-20, fontSize:100, opacity:0.07 }}>🎙️</div>
         <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Sachi Podcasts</div>
@@ -2592,55 +2589,59 @@ function App() {
   }
 
   return (
-    <div style={{ background:"#000", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+    <div style={{ background:"#0B0C1A", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
-      {/* Header — exact TikTok style */}
-      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, display:"flex", alignItems:"center", justifyContent:"space-between", paddingTop:"env(safe-area-inset-top,0px)", background:"transparent" }}>
+      {/* Header — Sachi original */}
+      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px" }}>
 
-        {/* Left: Live button (TikTok style) */}
-        <div style={{ width:56, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:12 }}>
-          <button onClick={() => requireAuth(() => setShowGoLive(true))}
-            style={{ background:"none", border:"1.5px solid rgba(229,57,53,0.8)", borderRadius:6, padding:"3px 8px", color:"#e53935", fontSize:12, fontWeight:700, cursor:"pointer", letterSpacing:0.5, WebkitTapHighlightColor:"transparent" }}>
-            ⏺ Rec
-          </button>
-        </div>
+          {/* Left: Sachi wordmark */}
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:22, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</span>
+          </div>
 
-        {/* Center: Following | For You */}
-        {activeTab === "feed" ? (
-          <div style={{ display:"flex", alignItems:"center", gap:0, paddingTop:10 }}>
-            <button onClick={() => { setFeedTab("following"); if(currentUser) loadFollowingVideos(currentUser); }}
-              style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 16px 8px",
-                color: feedTab==="following" ? "#fff" : "rgba(255,255,255,0.5)",
-                fontWeight: feedTab==="following" ? 700 : 500,
-                fontSize: 16, letterSpacing:0.3, transition:"all 0.2s",
-                borderBottom: feedTab==="following" ? "2px solid #fff" : "2px solid transparent",
-                WebkitTapHighlightColor:"transparent" }}>
-              Following
+          {/* Center: feed tabs — subtle pill style */}
+          {activeTab === "feed" && (
+            <div style={{ display:"flex", background:"rgba(255,255,255,0.07)", borderRadius:24, padding:3, gap:2 }}>
+              <button onClick={() => { setFeedTab("following"); if(currentUser) loadFollowingVideos(currentUser); }}
+                style={{ background: feedTab==="following" ? "rgba(245,200,66,0.2)" : "none", border:"none", cursor:"pointer", padding:"5px 16px",
+                  color: feedTab==="following" ? "#F5C842" : "rgba(255,255,255,0.45)",
+                  fontWeight: feedTab==="following" ? 700 : 500,
+                  fontSize: 13, borderRadius:20, transition:"all 0.2s",
+                  WebkitTapHighlightColor:"transparent" }}>
+                Following
+              </button>
+              <button onClick={() => setFeedTab("forYou")}
+                style={{ background: feedTab==="forYou" ? "rgba(245,200,66,0.2)" : "none", border:"none", cursor:"pointer", padding:"5px 16px",
+                  color: feedTab==="forYou" ? "#F5C842" : "rgba(255,255,255,0.45)",
+                  fontWeight: feedTab==="forYou" ? 700 : 500,
+                  fontSize: 13, borderRadius:20, transition:"all 0.2s",
+                  WebkitTapHighlightColor:"transparent" }}>
+                For You
+              </button>
+            </div>
+          )}
+          {activeTab !== "feed" && (
+            <div style={{ fontSize:16, fontWeight:800, color:"#fff", letterSpacing:0.2 }}>
+              {activeTab === "profile" ? "Profile" : activeTab === "explore" ? "Explore" : activeTab === "podcast" ? "Podcasts" : ""}
+            </div>
+          )}
+
+          {/* Right: search + rec */}
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <button onClick={() => requireAuth(() => setShowGoLive(true))}
+              style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20, padding:"4px 10px", color:"#F5C842", fontSize:11, fontWeight:700, cursor:"pointer", letterSpacing:0.3, WebkitTapHighlightColor:"transparent", display:"flex", alignItems:"center", gap:4 }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background:"#F5C842", display:"inline-block", animation:"heartbeat 1.4s ease-in-out infinite" }} />
+              Live
             </button>
-            <button onClick={() => setFeedTab("forYou")}
-              style={{ background:"none", border:"none", cursor:"pointer", padding:"6px 16px 8px",
-                color: feedTab==="forYou" ? "#fff" : "rgba(255,255,255,0.5)",
-                fontWeight: feedTab==="forYou" ? 700 : 500,
-                fontSize: 16, letterSpacing:0.3, transition:"all 0.2s",
-                borderBottom: feedTab==="forYou" ? "2px solid #fff" : "2px solid transparent",
-                WebkitTapHighlightColor:"transparent" }}>
-              For You
+            <button onClick={() => setShowSearch(true)}
+              style={{ background:"none", border:"none", cursor:"pointer", padding:4, WebkitTapHighlightColor:"transparent" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
             </button>
           </div>
-        ) : (
-          <div style={{ fontSize:17, fontWeight:700, color:"#fff", paddingTop:10, letterSpacing:0.3 }}>
-            {activeTab === "profile" ? "Profile" : activeTab === "explore" ? "Explore" : activeTab === "podcast" ? "Podcasts" : "Sachi"}
-          </div>
-        )}
 
-        {/* Right: Search icon */}
-        <div style={{ width:56, display:"flex", alignItems:"center", justifyContent:"center", paddingTop:12 }}>
-          <button onClick={() => setShowSearch(true)}
-            style={{ background:"none", border:"none", cursor:"pointer", padding:4, WebkitTapHighlightColor:"transparent" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-          </button>
         </div>
       </div>
 
@@ -2656,7 +2657,7 @@ function App() {
                   <div style={{ fontSize:18, fontWeight:700, color:"#fff" }}>Sign in to follow people</div>
                   <div style={{ fontSize:14 }}>Create a free account to follow your favourite creators</div>
                   <button onClick={() => setShowAuth(true)}
-                    style={{ marginTop:8, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, padding:"12px 28px", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+                    style={{ marginTop:8, background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, padding:"12px 28px", color:"#0B0C1A", fontWeight:800, fontSize:15, cursor:"pointer" }}>
                     Sign Up / Log In
                   </button>
                 </>
@@ -2675,7 +2676,7 @@ function App() {
           {loading && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:48 }}>🎬</div>
-              <div style={{ color:"#fff", fontSize:16 }}>Loading...</div>
+              <div style={{ color:"rgba(245,200,66,0.7)", fontSize:14, letterSpacing:1, fontWeight:600 }}>Loading...</div>
             </div>
           )}
           {!loading && videoList.length === 0 && (
@@ -2684,7 +2685,7 @@ function App() {
               <div style={{ color:"#fff", fontWeight:800, fontSize:22 }}>No videos yet</div>
               <div style={{ color:"#888", fontSize:15 }}>Be the first to post!</div>
               <button onClick={() => requireAuth(() => setShowUpload(true))}
-                style={{ marginTop:12, background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, padding:"12px 28px", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>
+                style={{ marginTop:12, background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, padding:"12px 28px", color:"#0B0C1A", fontWeight:800, fontSize:16, cursor:"pointer" }}>
                 + Upload Video
               </button>
             </div>
@@ -2703,14 +2704,14 @@ function App() {
 
       {/* Profile */}
       {activeTab === "profile" && (
-        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0a0a14" }}>
+        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
           {!currentUser ? (
             <div style={{ textAlign:"center", padding:60 }}>
               <div style={{ fontSize:56, marginBottom:16 }}>👤</div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:20, marginBottom:8 }}>You're not logged in</div>
               <div style={{ color:"#666", fontSize:14, marginBottom:24 }}>Sign up to post and build your profile</div>
               <button onClick={() => setShowAuth(true)}
-                style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:14, padding:"13px 32px", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>
+                style={{ background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, padding:"13px 32px", color:"#0B0C1A", fontWeight:800, fontSize:16, cursor:"pointer" }}>
                 Sign Up / Log In
               </button>
             </div>
@@ -2768,7 +2769,7 @@ function App() {
 
             {/* Explore Tab */}
       {activeTab === "explore" && (
-        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0a0a14" }}>
+        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
           <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
             <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -2835,55 +2836,59 @@ function App() {
         <PodcastPage currentUser={currentUser} onNeedAuth={() => setShowAuth(true)} />
       )}
 
-      {/* Bottom Nav — TikTok style */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, background:"rgba(8,8,16,0.97)", backdropFilter:"blur(24px)", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom,10px)", paddingTop:6 }}>
-        {/* Home */}
-        <button onClick={goHome}
-          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#fff" : "none"} stroke={activeTab==="feed" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-          <div style={{ fontSize:10, color: activeTab==="feed" ? "#fff" : "#666", fontWeight: activeTab==="feed" ? 700 : 400 }}>Home</div>
-        </button>
-        {/* Search/Explore */}
-        <button onClick={() => setActiveTab("explore")}
-          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <div style={{ fontSize:10, color: activeTab==="explore" ? "#fff" : "#666", fontWeight: activeTab==="explore" ? 700 : 400 }}>Explore</div>
-        </button>
-        {/* Center ➕ Post button — TikTok style */}
-        <button onClick={() => requireAuth(() => setShowUpload(true))}
-          style={{ flex:1, padding:"0 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", position:"relative" }}>
-          <div style={{ position:"relative", width:46, height:32, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={{ position:"absolute", left:3, top:0, width:36, height:28, background:"#20d5ec", borderRadius:8 }} />
-            <div style={{ position:"absolute", right:3, top:0, width:36, height:28, background:"#fe2c55", borderRadius:8 }} />
-            <div style={{ position:"relative", width:36, height:28, background:"#fff", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", zIndex:1 }}>
-              <span style={{ fontSize:20, fontWeight:900, color:"#000", lineHeight:1 }}>+</span>
+      {/* Bottom Nav — Sachi original style: floating pill */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
+        <div style={{ pointerEvents:"auto", margin:"0 16px 8px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
+
+          {/* Home */}
+          <button onClick={goHome}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="feed" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#F5C842" : "none"} stroke={activeTab==="feed" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <div style={{ fontSize:9, color: activeTab==="feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" ? 700 : 400, letterSpacing:0.3 }}>Home</div>
+          </button>
+
+          {/* Explore */}
+          <button onClick={() => setActiveTab("explore")}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="explore" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="explore" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400, letterSpacing:0.3 }}>Explore</div>
+          </button>
+
+          {/* Center ✦ Post button — Sachi original: gold circle */}
+          <button onClick={() => requireAuth(() => setShowUpload(true))}
+            style={{ padding:"0 4px 0", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent" }}>
+            <div style={{ width:48, height:48, borderRadius:"50%", background:"linear-gradient(135deg,#F5C842,#FF9500)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 16px rgba(245,200,66,0.5)", marginTop:-16 }}>
+              <span style={{ fontSize:24, fontWeight:300, color:"#0B0C1A", lineHeight:1 }}>✦</span>
             </div>
-          </div>
-          <div style={{ fontSize:10, color:"#666", fontWeight:400 }}>Post</div>
-        </button>
-        {/* Podcasts */}
-        <button onClick={() => setActiveTab("podcast")}
-          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#a78bfa" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-            <line x1="12" y1="19" x2="12" y2="23"/>
-            <line x1="8" y1="23" x2="16" y2="23"/>
-          </svg>
-          <div style={{ fontSize:10, color: activeTab==="podcast" ? "#a78bfa" : "#666", fontWeight: activeTab==="podcast" ? 700 : 400 }}>Podcasts</div>
-        </button>
-        {/* Profile / Me */}
-        <button onClick={() => setActiveTab("profile")}
-          style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#fff" : "none"} stroke={activeTab==="profile" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
-          <div style={{ fontSize:10, color: activeTab==="profile" ? "#fff" : "#666", fontWeight: activeTab==="profile" ? 700 : 400 }}>Me</div>
-        </button>
+            <div style={{ fontSize:9, color:"#4A4A6A", fontWeight:400, letterSpacing:0.3, marginTop:2 }}>Post</div>
+          </button>
+
+          {/* Podcasts */}
+          <button onClick={() => setActiveTab("podcast")}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="podcast" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            <div style={{ fontSize:9, color: activeTab==="podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="podcast" ? 700 : 400, letterSpacing:0.3 }}>Podcasts</div>
+          </button>
+
+          {/* Profile */}
+          <button onClick={() => setActiveTab("profile")}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="profile" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <div style={{ fontSize:9, color: activeTab==="profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="profile" ? 700 : 400, letterSpacing:0.3 }}>Me</div>
+          </button>
+
+        </div>
       </div>
 
       {/* Search Sheet */}
