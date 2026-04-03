@@ -3050,6 +3050,25 @@ function App() {
             await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
             setCurrentUser(u => ({ ...u, avatar_url: url }));
           } catch(e) { console.error("Auth avatar update failed:", e); }
+          // Update avatar_url on all the user's video records so feed shows new avatar
+          try {
+            const vidsRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`);
+            const vidsData = await vidsRes.json();
+            const myVids = vidsData.items || vidsData || [];
+            await Promise.all(myVids.map(v =>
+              fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ avatar_url: url })
+              })
+            ));
+            // Instantly update feed UI without reload
+            setVideoList(vs => vs.map(v =>
+              (v.user_id === currentUser.id || v.created_by === currentUser.id)
+                ? { ...v, avatar_url: url }
+                : v
+            ));
+          } catch(e) { console.error("Video avatar sync failed:", e); }
         }
         setShowAvatarPicker(false);
       }} onClose={() => setShowAvatarPicker(false)} />}
