@@ -2496,25 +2496,28 @@ function App() {
   }, []);
   useEffect(() => { if (currentUser) loadFollowingVideos(currentUser); }, [currentUser]);
   useEffect(() => {
-    if (currentUser) {
-      // Try to load avatar from DB first (most up to date)
-      try {
-        const usersRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
-        const usersData = await usersRes.json();
-        const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
-        const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-        if (match && match.avatar_url) {
-          setAvatarUrl(match.avatar_url);
-          localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
-        } else {
+    const loadAvatar = async () => {
+      if (currentUser) {
+        // Try to load avatar from DB first (most up to date)
+        try {
+          const usersRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await usersRes.json();
+          const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
+          const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
+          if (match && match.avatar_url) {
+            setAvatarUrl(match.avatar_url);
+            localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
+          } else {
+            const saved = localStorage.getItem(`avatar_${currentUser.id}`);
+            if (saved) setAvatarUrl(saved);
+          }
+        } catch(e) {
           const saved = localStorage.getItem(`avatar_${currentUser.id}`);
           if (saved) setAvatarUrl(saved);
         }
-      } catch(e) {
-        const saved = localStorage.getItem(`avatar_${currentUser.id}`);
-        if (saved) setAvatarUrl(saved);
       }
-    }
+    };
+    loadAvatar();
   }, [currentUser]);
 
   const loadFollowingVideos = async (user) => {
