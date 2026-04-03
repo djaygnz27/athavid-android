@@ -1182,7 +1182,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         el.pause();
         setPlaying(false);
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        setShowUI(false);
+        setShowUI(true);
         setUserTapped(false);
       }
     }, { threshold: 0.6 });
@@ -2484,26 +2484,20 @@ function App() {
       if (currentUser) {
         // Try to load avatar from DB first (most up to date)
         try {
-          // Use authenticated request (with Bearer token) to fetch user profile
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersRes = await fetch(`https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await usersRes.json();
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           if (match && match.avatar_url) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
-          } else if (currentUser.avatar_url) {
-            setAvatarUrl(currentUser.avatar_url);
           } else {
             const saved = localStorage.getItem(`avatar_${currentUser.id}`);
             if (saved) setAvatarUrl(saved);
           }
         } catch(e) {
-          // Fall back to auth user avatar_url first, then localStorage
-          if (currentUser.avatar_url) setAvatarUrl(currentUser.avatar_url);
-          else {
-            const saved = localStorage.getItem(`avatar_${currentUser.id}`);
-            if (saved) setAvatarUrl(saved);
-          }
+          const saved = localStorage.getItem(`avatar_${currentUser.id}`);
+          if (saved) setAvatarUrl(saved);
         }
       }
     };
@@ -2537,17 +2531,11 @@ function App() {
   };
 
   const goHome = () => {
+    // Clear list first so feed div unmounts, then reload fresh — guarantees top position
     setActiveTab("feed");
     setVideoList([]);
     setFeedKey(k => k + 1);
-    // Scroll container to top immediately
-    if (feedContainerRef.current) {
-      feedContainerRef.current.scrollTop = 0;
-    }
-    setTimeout(() => {
-      loadVideos();
-      if (feedContainerRef.current) feedContainerRef.current.scrollTop = 0;
-    }, 50);
+    setTimeout(() => loadVideos(), 50);
   };
 
   useEffect(() => {
@@ -3047,16 +3035,8 @@ function App() {
           } catch(e) { console.error("AthaVidUser avatar update failed:", e); }
           // 3. Update avatar on all user's videos (with token) + refresh feed instantly
           try {
-            // Fetch by user_id AND created_by to catch all videos
-            const [vidsData1, vidsData2] = await Promise.allSettled([
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`)
-            ]);
-            const list1 = vidsData1.status === 'fulfilled' ? (Array.isArray(vidsData1.value) ? vidsData1.value : (vidsData1.value?.items || [])) : [];
-            const list2 = vidsData2.status === 'fulfilled' ? (Array.isArray(vidsData2.value) ? vidsData2.value : (vidsData2.value?.items || [])) : [];
-            // Deduplicate by id
-            const seen = new Set();
-            const myVids = [...list1, ...list2].filter(v => { if (seen.has(v.id)) return false; seen.add(v.id); return true; });
+            const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`);
+            const myVids = Array.isArray(vidsData) ? vidsData : (vidsData.items || []);
             await Promise.all(myVids.map(v =>
               request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })
             ));
