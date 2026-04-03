@@ -10184,7 +10184,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             doTogglePlay();
           }
         }),
-        style: { position: "absolute", top: 60, left: 0, right: 80, bottom: 300, zIndex: 15, cursor: "pointer" }
+        style: { position: "absolute", top: 60, left: 0, right: 80, bottom: 80, zIndex: 50, cursor: "pointer" }
       }
     ),
     !playing && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: tap(doTogglePlay), style: {
@@ -11809,6 +11809,13 @@ function App() {
     setFeedKey((k2) => k2 + 1);
     setTimeout(() => {
       loadVideos();
+      setTimeout(() => {
+        const el2 = feedContainerRef.current || window.__sachiEl;
+        if (el2) {
+          el2.scrollTop = 0;
+          el2.scrollTo({ top: 0, behavior: "instant" });
+        }
+      }, 200);
     }, 80);
   };
   reactExports.useEffect(() => {

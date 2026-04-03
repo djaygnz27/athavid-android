@@ -1358,7 +1358,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           doTogglePlay();
         }
       })}
-        style={{ position:"absolute", top:60, left:0, right:80, bottom:300, zIndex:15, cursor:"pointer" }} />
+        style={{ position:"absolute", top:60, left:0, right:80, bottom:80, zIndex:50, cursor:"pointer" }} />
 
       {/* ── PLAY/PAUSE INDICATOR ── */}
       {!playing && (
@@ -2535,8 +2535,15 @@ function App() {
   const goHome = () => {
     setActiveTab("feed");
     setVideoList([]);
-    setFeedKey(k => k + 1); // triggers ref callback which sets scrollTop=0
-    setTimeout(() => { loadVideos(); }, 80);
+    setFeedKey(k => k + 1);
+    setTimeout(() => {
+      loadVideos();
+      // Force scroll to top after videos load
+      setTimeout(() => {
+        const el = feedContainerRef.current || window.__sachiEl;
+        if (el) { el.scrollTop = 0; el.scrollTo({ top: 0, behavior: 'instant' }); }
+      }, 200);
+    }, 80);
   };
 
   useEffect(() => {
