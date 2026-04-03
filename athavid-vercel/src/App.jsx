@@ -2528,15 +2528,20 @@ function App() {
     } catch(e) { console.error(e); }
   };
 
-  const loadVideos = async (user) => {
+  const loadVideos = async (user, scrollToTop = false) => {
     setLoading(true);
     try {
       const data = await videos.list();
       const raw = Array.isArray(data) ? data : [];
-      // Rank feed by user interest scores if logged in
       const activeUser = user || currentUser;
       const ranked = activeUser ? await interests.rankFeed(activeUser.id, raw) : raw;
       setVideoList(ranked);
+      if (scrollToTop) {
+        setTimeout(() => {
+          const el = document.querySelector("[data-feed]");
+          if (el) el.scrollTop = 0;
+        }, 100);
+      }
     } catch { setVideoList([]); }
     setLoading(false);
   };
@@ -2834,8 +2839,8 @@ function App() {
         {/* Home */}
         <button onClick={() => {
           setActiveTab("feed");
-          setFeedKey(k => k + 1); // remounts feed container → instantly back to top
-          loadVideos();
+          setFeedKey(k => k + 1);
+          loadVideos(null, true);
         }}
           style={{ flex:1, padding:"6px 0 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#fff" : "none"} stroke={activeTab==="feed" ? "#fff" : "#666"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
