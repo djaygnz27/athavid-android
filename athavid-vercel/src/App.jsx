@@ -1143,6 +1143,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
 
   // Auto-play via IntersectionObserver
+  const uiTimerRef = useRef(null);
+  const hideUIAfterDelay = (delay = 2000) => {
+    if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+    uiTimerRef.current = setTimeout(() => setShowUI(false), delay);
+  };
+
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
@@ -1152,10 +1158,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setMuted(true);
         el.play().catch(() => {});
         setPlaying(true);
+        hideUIAfterDelay(1500); // ← auto-hide icons 1.5s after video starts
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
         setPlaying(false);
+        // Show UI again when video goes off screen
+        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+        setShowUI(true);
       }
     }, { threshold: 0.6 });
     obs.observe(el);
@@ -1192,12 +1202,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }
   };
 
-  const uiTimerRef = useRef(null);
 
-  const hideUIAfterDelay = () => {
-    if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-    uiTimerRef.current = setTimeout(() => setShowUI(false), 2000);
-  };
 
   const cancelUITimer = () => {
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
