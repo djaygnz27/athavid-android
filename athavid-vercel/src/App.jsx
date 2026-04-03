@@ -2198,10 +2198,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
   const loadPodcasts = async () => {
     try {
-      const res = await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/");
-      const data = await res.json();
+      const data = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/");
       setPodcasts(Array.isArray(data) ? data : (data.items || []));
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("loadPodcasts failed:", e); }
   };
 
   const filtered = selectedCat === "All" ? podcasts : podcasts.filter(p => p.category === selectedCat);
@@ -2212,11 +2211,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     if (!registerForm.title || !registerForm.host_name) return;
     setRegistering(true);
     try {
-      await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ ...registerForm, status:"Pending", is_live:false, listener_count:0, episode_count:0, follower_count:0,
-          host_user_id: currentUser?.id || "", host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "" })
-      });
+      await request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/", { ...registerForm, status:"Pending", is_live:false, listener_count:0, episode_count:0, follower_count:0,
+          host_user_id: currentUser?.id || "", host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "" });
       setRegisterDone(true); setShowRegister(false);
       setRegisterForm({ title:"", host_name:"", description:"", category:"Business", cover_image_url:"" });
     } catch(e) { console.error(e); }
@@ -2257,9 +2253,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               {selectedPodcast.is_live ? (
                 <button onClick={async () => {
                   if (!confirm("End your live session?")) return;
-                  await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", {
-                    method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ is_live:false, listener_count:0 })
-                  });
+                  await request("PATCH", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", { is_live:false, listener_count:0 });
                   setSelectedPodcast(p => ({...p, is_live:false, listener_count:0}));
                   alert("Live session ended.");
                 }}
@@ -2269,9 +2263,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               ) : (
                 <button onClick={async () => {
                   if (!confirm("Go live now? All Sachi users will be notified instantly!")) return;
-                  await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", {
-                    method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ is_live:true })
-                  });
+                  await request("PATCH", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", { is_live:true });
                   await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
                     method:"POST", headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"" })
