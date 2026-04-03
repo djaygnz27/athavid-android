@@ -1461,7 +1461,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDEBAR: other actions — fades with UI ── */}
-      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:250, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", paddingTop: 70, visibility: showUI ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", bottom:150, right:10, display:"flex", flexDirection:"column", alignItems:"center", gap:14, zIndex:260, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", paddingTop: 70, visibility: showUI ? "visible" : "hidden" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
@@ -2540,15 +2540,8 @@ function App() {
   const goHome = () => {
     setActiveTab("feed");
     setVideoList([]);
-    setFeedKey(k => k + 1);
-    // Scroll container to top immediately
-    if (feedContainerRef.current) {
-      feedContainerRef.current.scrollTop = 0;
-    }
-    setTimeout(() => {
-      loadVideos();
-      if (feedContainerRef.current) feedContainerRef.current.scrollTop = 0;
-    }, 50);
+    setFeedKey(k => k + 1); // triggers ref callback which sets scrollTop=0
+    setTimeout(() => { loadVideos(); }, 80);
   };
 
   useEffect(() => {
@@ -2650,7 +2643,7 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div key={feedKey} ref={feedContainerRef} data-feed style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate" }}>
+        <div key={feedKey} ref={el => { feedContainerRef.current = el; if (el) window.requestAnimationFrame(() => { el.scrollTop = 0; }); }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
