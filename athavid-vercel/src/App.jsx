@@ -1139,16 +1139,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [followRecord, setFollowRecord] = useState(null);
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  const [showUI, setShowUI] = useState(true);
+  const uiTimerRef = useRef(null);
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
 
-  // Auto-play via IntersectionObserver
-  const uiTimerRef = useRef(null);
   const hideUIAfterDelay = (delay = 2000) => {
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
     uiTimerRef.current = setTimeout(() => setShowUI(false), delay);
   };
 
+  // Auto-play via IntersectionObserver
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
@@ -1254,7 +1255,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showFullCaption, setShowFullCaption] = useState(false);
-  const [showUI, setShowUI] = useState(true);
+
 
   const doDelete = async () => {
     if (!currentUser || !isOwnVideo) return;
