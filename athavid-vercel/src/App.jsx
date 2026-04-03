@@ -1650,36 +1650,17 @@ spinStyle.textContent = `
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
 
 // ── Avatar Picker Modal ───────────────────────────────────────────────────────
-const AVATAR_STYLES = [
-  {
-    label: "3D Faces",
-    style: "notionists",
-    seeds: ["Nova","Zara","Kai","Milo","Aria","Finn","Luna","Rex","Sage","Cleo","Axel","Nadia","Blake","Iris","Cruz","Ember","Jax","Lyra","Orion","Veda"],
-    backgroundColor: ["0f0f0f","1a1a2e","16213e","0d0d0d","1e1e2e"]
-  },
-  {
-    label: "Sleek",
-    style: "micah",
-    seeds: ["Alpha","Storm","Vibe","Echo","Flux","Neon","Pulse","Drift","Haze","Blaze","Glow","Smoke","Arc","Volt","Rift","Void","Core","Edge","Link","Node"],
-    backgroundColor: ["0f0f0f","1a1a2e","16213e","2d1b69","1a0533"]
-  },
-  {
-    label: "Portraits",
-    style: "lorelei",
-    seeds: ["Alex","Sam","Jordan","Taylor","Morgan","Casey","Jamie","Riley","Quinn","Avery","Blake","Cameron","Dana","Ellis","Fynn","Gwen","Harley","Indie","Jules","Kai"],
-    backgroundColor: ["0f0f0f","1a1a2e","16213e","111827","0c0c0c"]
-  },
-  {
-    label: "Abstract",
-    style: "shapes",
-    seeds: ["Cyber","Neon","Dark","Prism","Wave","Grid","Code","Data","Hack","Byte","Loop","Sync","Mesh","Node","Port","Byte","Flux","Core","Arch","Zone"],
-    backgroundColor: ["0f0f0f","1a1a2e","16213e","0d0d0d","2d1b69"]
-  },
+const AVATAR_COLORS = [
+  ["e94560","fff"],["f5a623","000"],["22c55e","fff"],["6c63ff","fff"],["0ea5e9","fff"],
+  ["ec4899","fff"],["f97316","fff"],["14b8a6","fff"],["8b5cf6","fff"],["ef4444","fff"],
+  ["10b981","fff"],["3b82f6","fff"],["a855f7","fff"],["f59e0b","000"],["06b6d4","fff"],
+  ["84cc16","000"],["fb7185","fff"],["34d399","000"],["60a5fa","fff"],["c084fc","fff"],
 ];
+const AVATAR_NAMES = ["Nova","Zara","Kai","Milo","Aria","Finn","Luna","Rex","Sage","Cleo","Axel","Nadia","Blake","Iris","Cruz","Ember","Jax","Lyra","Orion","Veda"];
 
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = useState(false);
-  const [activeStyle, setActiveStyle] = useState(0);
+  // avatar picker uses color grid
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
@@ -1693,11 +1674,10 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     finally { setUploading(false); }
   };
 
-  const currentStyleData = AVATAR_STYLES[activeStyle];
-  const bgColors = currentStyleData.backgroundColor || ["1a1a2e","0f0f0f","16213e","2d1b69","111827"];
-  const avatarUrls = currentStyleData.seeds.map((seed, i) =>
-    `https://api.dicebear.com/7.x/${currentStyleData.style}/svg?seed=${seed}&backgroundColor=${bgColors[i % bgColors.length]}`
-  );
+  const avatarUrls = AVATAR_NAMES.map((name, i) => {
+    const [bg, fg] = AVATAR_COLORS[i % AVATAR_COLORS.length];
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=${fg}&size=128&bold=true&format=png`;
+  });
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
@@ -1705,7 +1685,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
       <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, padding:"20px 20px 36px", zIndex:2001 }}>
         <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 16px" }} />
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-          <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>⚔️ Choose your character</div>
+          <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>🎨 Choose your avatar</div>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
         </div>
 
