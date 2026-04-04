@@ -12174,10 +12174,8 @@ function App() {
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, paddingTop: "env(safe-area-inset-top,0px)", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-logo-512.png", alt: "Sachi", style: { height: 38, width: 38, borderRadius: 10, objectFit: "contain" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: 20, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: [
-          "sachi",
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, fontWeight: 400, verticalAlign: "super", WebkitTextFillColor: "#F5C842", background: "none", WebkitBackgroundClip: "unset" }, children: "™" })
-        ] })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "sachi" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, fontWeight: 700, verticalAlign: "super", color: "#F5C842", marginLeft: 1 }, children: "™" })
       ] }),
       activeTab === "feed" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", background: "rgba(255,255,255,0.07)", borderRadius: 24, padding: 3, gap: 2 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
