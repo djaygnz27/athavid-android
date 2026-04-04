@@ -11821,6 +11821,178 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     ] })
   ] });
 }
+function AdminPanel({ currentUser }) {
+  const [allVideos, setAllVideos] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [saving, setSaving] = reactExports.useState(null);
+  const [filter, setFilter] = reactExports.useState("all");
+  const [search, setSearch] = reactExports.useState("");
+  const loadVideos = async () => {
+    setLoading(true);
+    try {
+      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=200&sort=-created_date");
+      setAllVideos(res.items || res || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  };
+  reactExports.useEffect(() => {
+    loadVideos();
+  }, []);
+  const toggleMature = async (video, reason) => {
+    setSaving(video.id);
+    try {
+      const newMature = !video.is_mature;
+      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, {
+        is_mature: newMature,
+        mature_reason: newMature ? reason || "other" : null
+      });
+      setAllVideos((prev) => prev.map((v2) => v2.id === video.id ? { ...v2, is_mature: newMature, mature_reason: newMature ? reason || "other" : null } : v2));
+    } catch (e) {
+      alert("Failed to update: " + e.message);
+    }
+    setSaving(null);
+  };
+  const deleteVideo = async (video) => {
+    if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`))
+      return;
+    setSaving(video.id);
+    try {
+      await request("DELETE", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`);
+      setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
+    } catch (e) {
+      alert("Failed to delete: " + e.message);
+    }
+    setSaving(null);
+  };
+  const filtered = allVideos.filter((v2) => {
+    if (filter === "mature" && !v2.is_mature)
+      return false;
+    if (filter === "clean" && v2.is_mature)
+      return false;
+    if (search && !((v2.caption || "").toLowerCase().includes(search.toLowerCase()) || (v2.username || "").toLowerCase().includes(search.toLowerCase())))
+      return false;
+    return true;
+  });
+  const reasons = ["violence", "fighting", "adult_themes", "strong_language", "other"];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { minHeight: "100svh", background: "#0B0C1A", paddingBottom: 120, paddingTop: 0 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(14,14,28,0.98)", borderBottom: "1px solid rgba(245,200,66,0.15)", padding: "16px 20px 12px", position: "sticky", top: 0, zIndex: 100 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 900, fontSize: 20, marginBottom: 10 }, children: "🛡️ Content Moderation" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          value: search,
+          onChange: (e) => setSearch(e.target.value),
+          placeholder: "Search by caption or username…",
+          style: { width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "10px 14px", color: "#fff", fontSize: 14, outline: "none", marginBottom: 10 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+        [["all", "All"], ["mature", "🔞 Mature"], ["clean", "✅ Clean"]].map(([val, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setFilter(val),
+            style: {
+              padding: "6px 14px",
+              borderRadius: 20,
+              border: "none",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+              background: filter === val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
+              color: filter === val ? "#0B0C1A" : "#888"
+            },
+            children: label
+          },
+          val
+        )),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: loadVideos, style: { marginLeft: "auto", padding: "6px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, background: "rgba(255,255,255,0.07)", color: "#888" }, children: "↻ Refresh" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, padding: "12px 20px" }, children: [
+      ["Total", allVideos.length, "#F5C842"],
+      ["Mature", allVideos.filter((v2) => v2.is_mature).length, "#ff6b6b"],
+      ["Clean", allVideos.filter((v2) => !v2.is_mature).length, "#6bff9a"]
+    ].map(([label, count, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 0", textAlign: "center", border: `1px solid ${color}22` }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 20 }, children: count }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 11 }, children: label })
+    ] }, label)) }),
+    loading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "Loading videos…" }) : filtered.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "No videos match this filter." }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }, children: filtered.map((video) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, border: `1px solid ${video.is_mature ? "rgba(255,107,107,0.3)" : "rgba(255,255,255,0.07)"}`, overflow: "hidden" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, padding: "12px 14px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 80, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#1a1a2e" }, children: video.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: video.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontSize: 24 }, children: "🎬" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 3 }, children: [
+            "@",
+            video.username || "unknown"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 13, fontWeight: 600, marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: video.caption || "(no caption)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: 11, color: "#555" }, children: [
+              "👁 ",
+              video.views_count || 0
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: 11, color: "#555" }, children: [
+              "❤️ ",
+              video.likes_count || 0
+            ] }),
+            video.is_mature && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontSize: 11, background: "rgba(255,107,107,0.2)", color: "#ff6b6b", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }, children: [
+              "🔞 ",
+              (video.mature_reason || "mature").replace(/_/g, " ")
+            ] })
+          ] }),
+          video.is_mature && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "select",
+            {
+              value: video.mature_reason || "other",
+              onChange: (e) => toggleMature({ ...video, is_mature: true }, e.target.value),
+              style: { width: "100%", padding: "6px 10px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,107,107,0.3)", borderRadius: 8, color: "#fff", fontSize: 12, outline: "none", marginBottom: 4 },
+              children: reasons.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: r2, children: r2.replace(/_/g, " ") }, r2))
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 0, borderTop: "1px solid rgba(255,255,255,0.05)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => toggleMature(video),
+            disabled: saving === video.id,
+            style: {
+              flex: 1,
+              padding: "10px 0",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 700,
+              borderRight: "1px solid rgba(255,255,255,0.05)",
+              background: video.is_mature ? "rgba(107,255,154,0.08)" : "rgba(255,107,107,0.08)",
+              color: video.is_mature ? "#6bff9a" : "#ff6b6b"
+            },
+            children: saving === video.id ? "Saving…" : video.is_mature ? "✅ Clear Mature Flag" : "🔞 Mark as Mature"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => deleteVideo(video),
+            disabled: saving === video.id,
+            style: {
+              width: 56,
+              padding: "10px 0",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 16,
+              background: "rgba(255,0,0,0.06)",
+              color: "#ff4444"
+            },
+            children: "🗑"
+          }
+        )
+      ] })
+    ] }, video.id)) })
+  ] });
+}
 function App() {
   var _a;
   const path = window.location.pathname;
@@ -11830,11 +12002,13 @@ function App() {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
   const [hasEntered, setHasEntered] = reactExports.useState(false);
   const [currentUser, setCurrentUser] = reactExports.useState(() => auth.getUser());
+  (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
   const feedContainerRef = reactExports.useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = reactExports.useState(true);
   const [activeTab, setActiveTab] = reactExports.useState("feed");
+  reactExports.useState(false);
   const [showGoLive, setShowGoLive] = reactExports.useState(false);
   const [profileSheet, setProfileSheet] = reactExports.useState(null);
   const [showSearch, setShowSearch] = reactExports.useState(false);
@@ -12349,6 +12523,7 @@ function App() {
       ] }) })
     ] }),
     activeTab === "podcast" && /* @__PURE__ */ jsxRuntimeExports.jsx(PodcastPage, { currentUser, onNeedAuth: () => setShowAuth(true) }),
+    activeTab === "admin" && /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPanel, { currentUser }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,8px)", paddingTop: 0, display: "flex", justifyContent: "center", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { pointerEvents: "auto", margin: "0 16px 8px", background: "rgba(14,14,28,0.96)", backdropFilter: "blur(30px)", borderRadius: 40, border: "1px solid rgba(245,200,66,0.15)", display: "flex", alignItems: "center", padding: "6px 8px", gap: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
@@ -12402,6 +12577,17 @@ function App() {
               /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8", y1: "23", x2: "16", y2: "23" })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "podcast" ? 700 : 400, letterSpacing: 0.3 }, children: "Podcasts" })
+          ]
+        }
+      ),
+      ((currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com") && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("admin"),
+          style: { flex: 1, minWidth: 52, padding: "8px 10px 6px", background: activeTab === "admin" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "admin" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "admin" ? 700 : 400, letterSpacing: 0.3 }, children: "Mod" })
           ]
         }
       ),
