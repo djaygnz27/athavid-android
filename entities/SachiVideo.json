@@ -63,6 +63,20 @@
     },
     "sound_url": {
       "type": "string"
+    },
+    "is_mature": {
+      "type": "boolean",
+      "description": "Mature content \u2014 fighting, violence, adult themes. Hidden from users under 18."
+    },
+    "mature_reason": {
+      "type": "string",
+      "enum": [
+        "violence",
+        "fighting",
+        "adult_themes",
+        "strong_language",
+        "other"
+      ]
     }
   },
   "required": [],
