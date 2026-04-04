@@ -721,6 +721,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [photos, setPhotos] = useState([]);
   const photoRef = useRef();
   const [caption, setCaption] = useState("");
+  const [isMature, setIsMature] = useState(false);
+  const [matureReason, setMatureReason] = useState("other");
   const [maxDuration, setMaxDuration] = useState(60);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
@@ -839,6 +841,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
+        is_mature: isMature, mature_reason: isMature ? matureReason : null,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -892,6 +895,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         video_url, thumbnail_url, caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
+        is_mature: isMature, mature_reason: isMature ? matureReason : null,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -1091,6 +1095,31 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
+        {/* Mature Content Toggle */}
+        {!aiBlocked && !explicitBlocked && file && (
+          <div style={{ marginBottom:14 }}>
+            <div onClick={() => setIsMature(p => !p)}
+              style={{ display:"flex", gap:10, alignItems:"center", cursor:"pointer", padding:"10px 14px", background:"rgba(255,255,255,0.04)", borderRadius:10, border:`1px solid ${isMature ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.1)"}` }}>
+              <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${isMature ? "#ff6b6b" : "#555"}`, background: isMature ? "#ff6b6b" : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                {isMature && <span style={{ color:"#fff", fontSize:13, fontWeight:900 }}>✓</span>}
+              </div>
+              <div style={{ color: isMature ? "#ff6b6b" : "#888", fontSize:13, lineHeight:1.4 }}>
+                🔞 This video contains <strong>mature content</strong> (violence, fighting, adult themes)
+              </div>
+            </div>
+            {isMature && (
+              <select value={matureReason} onChange={e => setMatureReason(e.target.value)}
+                style={{ marginTop:8, width:"100%", padding:"10px 14px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,107,107,0.3)", borderRadius:10, color:"#fff", fontSize:13, outline:"none" }}>
+                <option value="violence">⚔️ Violence</option>
+                <option value="fighting">🥊 Fighting / Combat</option>
+                <option value="adult_themes">🔞 Adult Themes</option>
+                <option value="strong_language">🤬 Strong Language</option>
+                <option value="other">⚠️ Other Mature Content</option>
+              </select>
+            )}
+          </div>
+        )}
+
         {/* Not AI Confirmation Checkbox */}
         {!aiBlocked && !explicitBlocked && file && (
           <div onClick={() => setNotAiConfirmed(p => !p)}
@@ -1130,6 +1159,18 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 }
 
 // ── Video Card ────────────────────────────────────────────────────────────────
+// ─── Age Gate Helper ──────────────────────────────────────────────────────────
+function getUserAge() {
+  const dob = localStorage.getItem("sachi_dob");
+  if (!dob) return null;
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+}
+
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen }) {
   const videoRef = useRef(null);
   const viewedRef = useRef(false);
@@ -1145,6 +1186,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const uiTimerRef = useRef(null);
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
+  const [ageGateUnlocked, setAgeGateUnlocked] = useState(false);
+  const userAge = getUserAge();
+  const isUnder18 = userAge !== null && userAge < 18;
+  const showMatureBlock = video.is_mature && isUnder18 && !ageGateUnlocked;
+
 
   const hideUIAfterDelay = (delay = 2000) => {
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
@@ -1294,6 +1340,33 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start" }}>
+
+      {/* ── AGE GATE OVERLAY ── */}
+      {showMatureBlock && (
+        <div style={{ position:"absolute", inset:0, zIndex:200, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+          background:"rgba(11,12,26,0.92)", backdropFilter:"blur(20px)", gap:16, padding:32 }}>
+          <div style={{ fontSize:52 }}>🔞</div>
+          <div style={{ color:"#fff", fontWeight:900, fontSize:20, textAlign:"center" }}>Mature Content</div>
+          <div style={{ color:"#aaa", fontSize:14, textAlign:"center", lineHeight:1.6 }}>
+            This video contains content that may not be suitable for viewers under 18.
+          </div>
+          <div style={{ color:"#666", fontSize:12, textAlign:"center" }}>
+            Content type: {video.mature_reason ? video.mature_reason.replace(/_/g," ") : "mature"}
+          </div>
+          {userAge === null && (
+            <div style={{ color:"#F5C842", fontSize:13, textAlign:"center" }}>
+              Sign in or verify your age to view this content.
+            </div>
+          )}
+          {userAge !== null && userAge >= 18 && (
+            <button onClick={() => setAgeGateUnlocked(true)}
+              style={{ padding:"12px 28px", background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none",
+                borderRadius:14, color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+              I'm 18+ — View Anyway
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── MEDIA ── */}
       {photoUrls ? (

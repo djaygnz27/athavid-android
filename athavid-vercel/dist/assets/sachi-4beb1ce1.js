@@ -7932,6 +7932,7 @@ function AuthModal({ onClose, onSuccess }) {
   const [email, setEmail] = reactExports.useState("");
   const [password, setPassword] = reactExports.useState("");
   const [name, setName] = reactExports.useState("");
+  const [dob, setDob] = reactExports.useState("");
   const [otp, setOtp] = reactExports.useState("");
   const [resetToken, setResetToken] = reactExports.useState("");
   const [newPassword, setNewPassword] = reactExports.useState("");
@@ -7978,6 +7979,18 @@ function AuthModal({ onClose, onSuccess }) {
       return setError("Please fill in all fields.");
     if (mode === "signup" && !agreedToTerms)
       return setError("You must agree to the Terms of Service and Privacy Policy to create an account.");
+    if (mode === "signup" && !dob)
+      return setError("Please enter your date of birth.");
+    if (mode === "signup") {
+      const birthDate = new Date(dob);
+      const today = /* @__PURE__ */ new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m2 = today.getMonth() - birthDate.getMonth();
+      if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate())
+        age--;
+      if (age < 13)
+        return setError("You must be at least 13 years old to join Sachi.");
+    }
     setLoading(true);
     setError("");
     try {
@@ -7986,7 +7999,8 @@ function AuthModal({ onClose, onSuccess }) {
         const user = loginData.user || auth.getUser();
         onSuccess(user);
       } else {
-        await auth.signUp(email, password, name || email.split("@")[0]);
+        await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
+        localStorage.setItem("sachi_dob", dob);
         setStep("otp");
       }
     } catch (e) {
@@ -8094,7 +8108,23 @@ function AuthModal({ onClose, onSuccess }) {
           },
           m2
         )) }),
-        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Your name", style: inp }),
+        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Your name", style: inp }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4, color: "#888", fontSize: 12 }, children: [
+            "Date of Birth ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              value: dob,
+              onChange: (e) => setDob(e.target.value),
+              type: "date",
+              max: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+              style: { ...inp, colorScheme: "dark" }
+            }
+          )
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: email, onChange: (e) => setEmail(e.target.value), placeholder: "Email address", type: "email", style: inp }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "input",
@@ -9261,6 +9291,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [photos, setPhotos] = reactExports.useState([]);
   const photoRef = reactExports.useRef();
   const [caption, setCaption] = reactExports.useState("");
+  const [isMature, setIsMature] = reactExports.useState(false);
+  const [matureReason, setMatureReason] = reactExports.useState("other");
   const [maxDuration, setMaxDuration] = reactExports.useState(60);
   const [selectedTrack, setSelectedTrack] = reactExports.useState(null);
   const [showMusicPicker, setShowMusicPicker] = reactExports.useState(false);
@@ -9475,7 +9507,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         shares_count: 0,
         is_approved: true,
         is_archived: false,
-        is_ai_detected: false
+        is_ai_detected: false,
+        is_mature: isMature,
+        mature_reason: isMature ? matureReason : null
       });
       setProgress(100);
       setStep("Posted! 🎉");
@@ -9554,7 +9588,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         shares_count: 0,
         is_approved: true,
         is_archived: false,
-        is_ai_detected: false
+        is_ai_detected: false,
+        is_mature: isMature,
+        mature_reason: isMature ? matureReason : null
       });
       setProgress(100);
       setStep("Posted! 🎉");
@@ -9861,6 +9897,38 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             ] })
           ] })
         ] }),
+        !aiBlocked && !explicitBlocked && file && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: () => setIsMature((p2) => !p2),
+              style: { display: "flex", gap: 10, alignItems: "center", cursor: "pointer", padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: 10, border: `1px solid ${isMature ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.1)"}` },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 20, height: 20, borderRadius: 5, border: `2px solid ${isMature ? "#ff6b6b" : "#555"}`, background: isMature ? "#ff6b6b" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }, children: isMature && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontSize: 13, fontWeight: 900 }, children: "✓" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: isMature ? "#ff6b6b" : "#888", fontSize: 13, lineHeight: 1.4 }, children: [
+                  "🔞 This video contains ",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "mature content" }),
+                  " (violence, fighting, adult themes)"
+                ] })
+              ]
+            }
+          ),
+          isMature && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "select",
+            {
+              value: matureReason,
+              onChange: (e) => setMatureReason(e.target.value),
+              style: { marginTop: 8, width: "100%", padding: "10px 14px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,107,107,0.3)", borderRadius: 10, color: "#fff", fontSize: 13, outline: "none" },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "violence", children: "⚔️ Violence" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "fighting", children: "🥊 Fighting / Combat" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "adult_themes", children: "🔞 Adult Themes" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "strong_language", children: "🤬 Strong Language" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "other", children: "⚠️ Other Mature Content" })
+              ]
+            }
+          )
+        ] }),
         !aiBlocked && !explicitBlocked && file && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
@@ -9902,6 +9970,18 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     ] })
   ] });
 }
+function getUserAge() {
+  const dob = localStorage.getItem("sachi_dob");
+  if (!dob)
+    return null;
+  const birthDate = new Date(dob);
+  const today = /* @__PURE__ */ new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m2 = today.getMonth() - birthDate.getMonth();
+  if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate())
+    age--;
+  return age;
+}
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen }) {
   var _a;
   const videoRef = reactExports.useRef(null);
@@ -9917,6 +9997,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || currentUser.username && currentUser.username === video.username);
+  const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
+  const userAge = getUserAge();
+  const isUnder18 = userAge !== null && userAge < 18;
+  const showMatureBlock = video.is_mature && isUnder18 && !ageGateUnlocked;
   const hideUIAfterDelay = (delay = 2e3) => {
     if (uiTimerRef.current)
       clearTimeout(uiTimerRef.current);
@@ -10064,6 +10148,45 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     fn();
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: "100%", height: "100svh", background: "#0B0C1A", flexShrink: 0, scrollSnapAlign: "start" }, children: [
+    showMatureBlock && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      inset: 0,
+      zIndex: 200,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "rgba(11,12,26,0.92)",
+      backdropFilter: "blur(20px)",
+      gap: 16,
+      padding: 32
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 52 }, children: "🔞" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, textAlign: "center" }, children: "Mature Content" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 14, textAlign: "center", lineHeight: 1.6 }, children: "This video contains content that may not be suitable for viewers under 18." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#666", fontSize: 12, textAlign: "center" }, children: [
+        "Content type: ",
+        video.mature_reason ? video.mature_reason.replace(/_/g, " ") : "mature"
+      ] }),
+      userAge === null && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 13, textAlign: "center" }, children: "Sign in or verify your age to view this content." }),
+      userAge !== null && userAge >= 18 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: () => setAgeGateUnlocked(true),
+          style: {
+            padding: "12px 28px",
+            background: "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+            border: "none",
+            borderRadius: 14,
+            color: "#fff",
+            fontWeight: 800,
+            fontSize: 15,
+            cursor: "pointer"
+          },
+          children: "I'm 18+ — View Anyway"
+        }
+      )
+    ] }),
     photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", height: "100%", position: "relative", overflow: "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: photoUrls[photoIdx], style: { width: "100%", height: "100%", objectFit: "contain", background: "#000" } }),
       photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
