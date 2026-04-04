@@ -4,8 +4,8 @@
   "description": "Your stage. Share short videos with the world.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#ff6b6b",
+  "background_color": "#0B0C1A",
+  "theme_color": "#0B0C1A",
   "orientation": "portrait",
   "categories": ["entertainment", "social"],
   "icons": [
@@ -20,6 +20,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/sachi-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
