@@ -2161,6 +2161,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
 function PodcastPage({ currentUser, onNeedAuth }) {
   const CATEGORIES = ["All","News & Politics","Business","Entertainment","Comedy","Sports","Technology","Health & Wellness","True Crime","Education"];
   const [podcasts, setPodcasts] = useState([]);
+  const [loadingPodcasts, setLoadingPodcasts] = useState(true);
   const [selectedCat, setSelectedCat] = useState("All");
   const [selectedPodcast, setSelectedPodcast] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
@@ -2171,13 +2172,17 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   useEffect(() => { loadPodcasts(); }, []);
 
   const loadPodcasts = async () => {
+    setLoadingPodcasts(true);
     try {
-      const res = await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/?limit=50", {
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await res.json();
-      setPodcasts(Array.isArray(data) ? data : (data.items || []));
-    } catch(e) { console.error("loadPodcasts failed:", e); }
+      const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+      const data = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast?status=Active`);
+      const list = Array.isArray(data) ? data : (data.records || data.items || []);
+      setPodcasts(list);
+    } catch(e) {
+      console.error("loadPodcasts failed:", e);
+    } finally {
+      setLoadingPodcasts(false);
+    }
   };
 
   const filtered = selectedCat === "All" ? podcasts : podcasts.filter(p => p.category === selectedCat);
@@ -2188,7 +2193,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     if (!registerForm.title || !registerForm.host_name) return;
     setRegistering(true);
     try {
-      await request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/", { ...registerForm, status:"Pending", is_live:false, listener_count:0, episode_count:0, follower_count:0,
+      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, { ...registerForm, status:"Pending", is_live:false, listener_count:0, episode_count:0, follower_count:0,
           host_user_id: currentUser?.id || "", host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "" });
       setRegisterDone(true); setShowRegister(false);
       setRegisterForm({ title:"", host_name:"", description:"", category:"Business", cover_image_url:"" });
@@ -2230,7 +2235,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               {selectedPodcast.is_live ? (
                 <button onClick={async () => {
                   if (!confirm("End your live session?")) return;
-                  await request("PATCH", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", { is_live:false, listener_count:0 });
+                  await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 });
                   setSelectedPodcast(p => ({...p, is_live:false, listener_count:0}));
                   alert("Live session ended.");
                 }}
@@ -2240,7 +2245,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               ) : (
                 <button onClick={async () => {
                   if (!confirm("Go live now? All Sachi users will be notified instantly!")) return;
-                  await request("PATCH", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", { is_live:true });
+                  await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true });
                   await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
                     method:"POST", headers:{"Content-Type":"application/json"},
                     body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"" })
@@ -2385,7 +2390,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>
           {selectedCat==="All" ? "All Shows" : selectedCat}
         </div>
-        {regularPodcasts.length === 0 && livePodcasts.length === 0 && (
+        {loadingPodcasts && (
+          <div style={{ textAlign:"center", padding:"60px 0", color:"rgba(245,200,66,0.5)", fontSize:14 }}>
+            <div style={{ fontSize:40, marginBottom:12, animation:"spin 1.5s linear infinite", display:"inline-block" }}>⟳</div>
+            <div>Loading podcasts...</div>
+          </div>
+        )}
+        {!loadingPodcasts && regularPodcasts.length === 0 && livePodcasts.length === 0 && (
           <div style={{ textAlign:"center", padding:"60px 0", color:"rgba(255,255,255,0.25)", fontSize:14 }}>
             <div style={{ fontSize:48, marginBottom:12 }}>🎙️</div>
             No podcasts in this category yet.

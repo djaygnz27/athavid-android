@@ -10726,6 +10726,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
 function PodcastPage({ currentUser, onNeedAuth }) {
   const CATEGORIES = ["All", "News & Politics", "Business", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Education"];
   const [podcasts, setPodcasts] = reactExports.useState([]);
+  const [loadingPodcasts, setLoadingPodcasts] = reactExports.useState(true);
   const [selectedCat, setSelectedCat] = reactExports.useState("All");
   const [selectedPodcast, setSelectedPodcast] = reactExports.useState(null);
   const [showRegister, setShowRegister] = reactExports.useState(false);
@@ -10736,14 +10737,16 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     loadPodcasts();
   }, []);
   const loadPodcasts = async () => {
+    setLoadingPodcasts(true);
     try {
-      const res = await fetch("https://app.base44.com/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/?limit=50", {
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await res.json();
-      setPodcasts(Array.isArray(data) ? data : data.items || []);
+      const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
+      const data = await request("GET", `/apps/${APP_ID2}/entities/SachiPodcast?status=Active`);
+      const list = Array.isArray(data) ? data : data.records || data.items || [];
+      setPodcasts(list);
     } catch (e) {
       console.error("loadPodcasts failed:", e);
+    } finally {
+      setLoadingPodcasts(false);
     }
   };
   const filtered = selectedCat === "All" ? podcasts : podcasts.filter((p2) => p2.category === selectedCat);
@@ -10754,7 +10757,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     if (!registerForm.title || !registerForm.host_name) return;
     setRegistering(true);
     try {
-      await request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/", {
+      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
         ...registerForm,
         status: "Pending",
         is_live: false,
@@ -10817,7 +10820,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             {
               onClick: async () => {
                 if (!confirm("End your live session?")) return;
-                await request("PATCH", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", { is_live: false, listener_count: 0 });
+                await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
                 setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
                 alert("Live session ended.");
               },
@@ -10829,7 +10832,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             {
               onClick: async () => {
                 if (!confirm("Go live now? All Sachi users will be notified instantly!")) return;
-                await request("PATCH", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/" + selectedPodcast.id + "/", { is_live: true });
+                await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
                 await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -11014,7 +11017,11 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase" }, children: selectedCat === "All" ? "All Shows" : selectedCat }),
-      regularPodcasts.length === 0 && livePodcasts.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)", fontSize: 14 }, children: [
+      loadingPodcasts && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(245,200,66,0.5)", fontSize: 14 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12, animation: "spin 1.5s linear infinite", display: "inline-block" }, children: "⟳" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading podcasts..." })
+      ] }),
+      !loadingPodcasts && regularPodcasts.length === 0 && livePodcasts.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)", fontSize: 14 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🎙️" }),
         "No podcasts in this category yet."
       ] }),
