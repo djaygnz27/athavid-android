@@ -91,6 +91,7 @@ export default function AuthModal({ onClose, onSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [dob, setDob] = useState("");
   const [otp, setOtp] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -128,6 +129,15 @@ export default function AuthModal({ onClose, onSuccess }) {
   const submitForm = async () => {
     if (!email || !password) return setError("Please fill in all fields.");
     if (mode === "signup" && !agreedToTerms) return setError("You must agree to the Terms of Service and Privacy Policy to create an account.");
+    if (mode === "signup" && !dob) return setError("Please enter your date of birth.");
+    if (mode === "signup") {
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+      if (age < 13) return setError("You must be at least 13 years old to join Sachi.");
+    }
     setLoading(true); setError("");
     try {
       if (mode === "login") {
@@ -135,7 +145,9 @@ export default function AuthModal({ onClose, onSuccess }) {
         const user = loginData.user || auth.getUser();
         onSuccess(user);
       } else {
-        await auth.signUp(email, password, name || email.split("@")[0]);
+        await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
+        // Store DOB in localStorage for age-gating
+        localStorage.setItem("sachi_dob", dob);
         setStep("otp");
       }
     } catch (e) {
@@ -213,7 +225,13 @@ export default function AuthModal({ onClose, onSuccess }) {
               ))}
             </div>
             {mode==="signup" && (
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inp} />
+              <>
+                <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inp} />
+                <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>Date of Birth <span style={{color:"#ff6b6b"}}>*</span></div>
+                <input value={dob} onChange={e => setDob(e.target.value)} type="date"
+                  max={new Date().toISOString().split("T")[0]}
+                  style={{ ...inp, colorScheme:"dark" }} />
+              </>
             )}
             <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email" style={inp} />
             <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password"
