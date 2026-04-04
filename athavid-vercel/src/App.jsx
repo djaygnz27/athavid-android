@@ -2838,7 +2838,7 @@ function App() {
           {/* Left: Sachi logo */}
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <img src="/sachi-logo-512.png" alt="Sachi" style={{ height:38, width:38, borderRadius:10, objectFit:"contain" }} />
-            <span style={{ fontSize:20, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi<span style={{ fontSize:11, fontWeight:400, verticalAlign:"super", WebkitTextFillColor:"#F5C842", background:"none", WebkitBackgroundClip:"unset" }}>™</span></span>
+            <span style={{ fontSize:20, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</span><span style={{ fontSize:11, fontWeight:700, verticalAlign:"super", color:"#F5C842", marginLeft:1 }}>™</span>
           </div>
 
           {/* Center: feed tabs — subtle pill style */}
