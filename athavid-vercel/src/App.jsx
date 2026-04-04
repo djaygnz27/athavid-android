@@ -2607,7 +2607,7 @@ function App() {
 
           {/* Left: Sachi wordmark */}
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ fontSize:22, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</span>
+            <span style={{ fontSize:22, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi<span style={{ fontSize:12, fontWeight:400, verticalAlign:"super", WebkitTextFillColor:"#F5C842", background:"none", WebkitBackgroundClip:"unset" }}>™</span></span>
           </div>
 
           {/* Center: feed tabs — subtle pill style */}
