@@ -7920,6 +7920,12 @@ const interests = {
     return scored;
   }
 };
+function GoogleOneTap({ onSuccess }) {
+  reactExports.useEffect(() => {
+    return;
+  }, []);
+  return null;
+}
 function AuthModal({ onClose, onSuccess }) {
   const [mode, setMode] = reactExports.useState("signup");
   const [step, setStep] = reactExports.useState("form");
@@ -8058,7 +8064,13 @@ function AuthModal({ onClose, onSuccess }) {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "🎬" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Join Sachi" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "Create an account to post videos" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "Your stage. Share with the world." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleOneTap, { onSuccess }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 12 }, children: "or continue with email" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: 4, marginBottom: 18 }, children: ["signup", "login"].map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
@@ -8172,6 +8184,35 @@ function AuthModal({ onClose, onSuccess }) {
         error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 10, textAlign: "center" }, children: error }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitForm, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Please wait…" : mode === "signup" ? "Create Account" : "Log In" })
       ] }),
+      step === "otp" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "📧" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, margin: "8px 0 6px" }, children: "Check your email" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 14, lineHeight: 1.6 }, children: [
+            "We sent a 6-digit code to",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontWeight: 700 }, children: email })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            autoFocus: true,
+            value: otp,
+            onChange: (e) => setOtp(e.target.value),
+            placeholder: "Enter 6-digit code",
+            type: "number",
+            onKeyDown: (e) => e.key === "Enter" && submitOtp(),
+            style: { ...inp, fontSize: 22, textAlign: "center", letterSpacing: 8 }
+          }
+        ),
+        error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 10, textAlign: "center" }, children: error }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitOtp, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Verifying…" : "Verify & Enter Sachi" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+          setStep("form");
+          setError("");
+        }, style: backBtn, children: "← Back" })
+      ] }),
       step === "forgot" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "🔑" }),
@@ -8232,71 +8273,11 @@ function AuthModal({ onClose, onSuccess }) {
           }
         ),
         error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 10, textAlign: "center" }, children: error }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitReset, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Resetting…" : "Reset Password" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitReset, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Resetting…" : "Set New Password" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          setStep("forgot");
+          setStep("form");
           setError("");
-          setResetToken("");
-        }, style: backBtn, children: "← Back" })
-      ] }),
-      step === "otp" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "📧" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, margin: "8px 0 6px" }, children: "Check your email" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 14, lineHeight: 1.6 }, children: [
-            "We sent a 6-digit code to",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff8e53", fontWeight: 700 }, children: email })
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            autoFocus: true,
-            value: otp,
-            onChange: (e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)),
-            placeholder: "000000",
-            inputMode: "numeric",
-            maxLength: 6,
-            onKeyDown: (e) => e.key === "Enter" && submitOtp(),
-            style: {
-              display: "block",
-              width: "100%",
-              boxSizing: "border-box",
-              background: "rgba(255,255,255,0.08)",
-              border: "2px solid rgba(255,140,83,0.6)",
-              borderRadius: 16,
-              padding: "18px 0",
-              color: "#fff",
-              fontSize: 36,
-              fontWeight: 800,
-              letterSpacing: 12,
-              textAlign: "center",
-              outline: "none",
-              marginBottom: 16
-            }
-          }
-        ),
-        error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 10, textAlign: "center" }, children: error }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitOtp, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Verifying…" : "Verify Email" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => auth.resendOtp(email).catch(() => {
-            }),
-            style: {
-              display: "block",
-              width: "100%",
-              padding: "8px 0",
-              background: "none",
-              border: "none",
-              color: "#ff8e53",
-              fontSize: 13,
-              cursor: "pointer"
-            },
-            children: "Resend code"
-          }
-        )
+        }, style: backBtn, children: "← Back to Log In" })
       ] })
     ] })
   ] });
