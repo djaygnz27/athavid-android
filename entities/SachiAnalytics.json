@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "properties": {
+    "period": {
+      "type": "string",
+      "description": "Month/year e.g. April 2026"
+    },
+    "period_key": {
+      "type": "string",
+      "description": "YYYY-MM for sorting"
+    },
+    "total_users": {
+      "type": "number"
+    },
+    "new_users_this_period": {
+      "type": "number"
+    },
+    "total_videos": {
+      "type": "number"
+    },
+    "new_videos_this_period": {
+      "type": "number"
+    },
+    "total_views": {
+      "type": "number"
+    },
+    "total_likes": {
+      "type": "number"
+    },
+    "total_comments": {
+      "type": "number"
+    },
+    "active_users": {
+      "type": "number",
+      "description": "Users who posted or interacted this period"
+    },
+    "top_creator": {
+      "type": "string"
+    },
+    "top_video_caption": {
+      "type": "string"
+    },
+    "top_video_views": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiAnalytics"
+}
