@@ -12562,7 +12562,7 @@ function App() {
           onClick: () => requireAuth(() => setShowUpload(true)),
           style: { padding: "0 4px 0", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent" },
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg,#F5C842,#FF9500)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(245,200,66,0.5)", marginTop: -16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24, fontWeight: 300, color: "#0B0C1A", lineHeight: 1 }, children: "✦" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg,#F5C842,#FF9500)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(245,200,66,0.5)", marginTop: -16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 28, fontWeight: 300, color: "#0B0C1A", lineHeight: 1 }, children: "+" }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#4A4A6A", fontWeight: 400, letterSpacing: 0.3, marginTop: 2 }, children: "Post" })
           ]
         }
