@@ -2885,10 +2885,13 @@ function App() {
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px" }}>
 
-          {/* Left: Sachi logo */}
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <img src="/sachi-logo-512.png" alt="Sachi" style={{ height:38, width:38, borderRadius:10, objectFit:"contain" }} />
-            <span style={{ fontSize:20, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</span><span style={{ fontSize:11, fontWeight:700, verticalAlign:"super", color:"#F5C842", marginLeft:1 }}>™</span>
+          {/* Left: Sachi logo + wordmark */}
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <img src="/sachi-logo-512.png" alt="Sachi" style={{ height:42, width:42, borderRadius:12, objectFit:"contain", filter:"drop-shadow(0 0 6px rgba(245,200,66,0.4))" }} />
+            <div style={{ display:"flex", alignItems:"baseline", gap:1 }}>
+              <span style={{ fontSize:22, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
+              <span style={{ fontSize:11, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
+            </div>
           </div>
 
           {/* Center: feed tabs — subtle pill style */}
