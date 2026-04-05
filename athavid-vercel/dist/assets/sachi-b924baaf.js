@@ -10713,29 +10713,6 @@ if (!document.getElementById("spin-style")) {
   spinStyle.id = "spin-style";
   document.head.appendChild(spinStyle);
 }
-const AVATAR_COLORS = [
-  ["e94560", "fff"],
-  ["f5a623", "000"],
-  ["22c55e", "fff"],
-  ["6c63ff", "fff"],
-  ["0ea5e9", "fff"],
-  ["ec4899", "fff"],
-  ["f97316", "fff"],
-  ["14b8a6", "fff"],
-  ["8b5cf6", "fff"],
-  ["ef4444", "fff"],
-  ["10b981", "fff"],
-  ["3b82f6", "fff"],
-  ["a855f7", "fff"],
-  ["f59e0b", "000"],
-  ["06b6d4", "fff"],
-  ["84cc16", "000"],
-  ["fb7185", "fff"],
-  ["34d399", "000"],
-  ["60a5fa", "fff"],
-  ["c084fc", "fff"]
-];
-const AVATAR_NAMES = ["Nova", "Zara", "Kai", "Milo", "Aria", "Finn", "Luna", "Rex", "Sage", "Cleo", "Axel", "Nadia", "Blake", "Iris", "Cruz", "Ember", "Jax", "Lyra", "Orion", "Veda"];
 const AVATAR_STYLES = [
   { label: "Cartoon", style: "avataaars", seeds: ["Felix", "Aneka", "Mia", "Zara", "Leo", "Nova", "Kira", "Blaze", "Pixel", "Storm", "Echo", "Sage", "Raya", "Kofi", "Priya", "Omar", "Mei", "Ava", "Jake", "Luna", "Diego", "Aisha", "Nate", "Yuki"] },
   { label: "Portraits", style: "lorelei", seeds: ["Alex", "Sam", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Riley", "Quinn", "Avery", "Blake", "Cameron", "Dana", "Ellis", "Fynn", "Gwen", "Harley", "Indie", "Jules", "Kai"] },
@@ -10744,6 +10721,7 @@ const AVATAR_STYLES = [
 ];
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = reactExports.useState(false);
+  const [activeStyle, setActiveStyle] = reactExports.useState(0);
   const fileRef = reactExports.useRef();
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -10759,10 +10737,6 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
       setUploading(false);
     }
   };
-  const avatarUrls = AVATAR_NAMES.map((name, i) => {
-    const [bg2, fg2] = AVATAR_COLORS[i % AVATAR_COLORS.length];
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg2}&color=${fg2}&size=128&bold=true&format=png`;
-  });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 2e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)" } }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "20px 20px 36px", zIndex: 2001 }, children: [
@@ -10805,31 +10779,35 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
         },
         i
       )) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxHeight: 300, overflowY: "auto", paddingBottom: 4 }, children: avatarUrls.map((url, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => onSelect(url),
-          style: {
-            background: currentAvatar === url ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.06)",
-            border: currentAvatar === url ? "3px solid #6c63ff" : "3px solid rgba(255,255,255,0.08)",
-            borderRadius: 16,
-            width: 64,
-            height: 64,
-            margin: "0 auto",
-            padding: 4,
-            cursor: "pointer",
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "border 0.2s, transform 0.15s, box-shadow 0.2s",
-            boxShadow: currentAvatar === url ? "0 0 12px rgba(108,99,255,0.5)" : "none",
-            transform: currentAvatar === url ? "scale(1.12)" : "scale(1)"
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxHeight: 260, overflowY: "auto", paddingBottom: 4 }, children: AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
+        const style = AVATAR_STYLES[activeStyle].style;
+        const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => onSelect(url),
+            style: {
+              background: currentAvatar === url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
+              border: currentAvatar === url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
+              borderRadius: 16,
+              width: 64,
+              height: 64,
+              margin: "0 auto",
+              padding: 4,
+              cursor: "pointer",
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "border 0.2s, transform 0.15s, box-shadow 0.2s",
+              boxShadow: currentAvatar === url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
+              transform: currentAvatar === url ? "scale(1.12)" : "scale(1)"
+            },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", pointerEvents: "none", display: "block", borderRadius: 10, background: "rgba(255,255,255,0.05)" }, loading: "lazy" })
           },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", pointerEvents: "none", display: "block", borderRadius: 10 }, loading: "lazy" })
-        },
-        i
-      )) })
+          i
+        );
+      }) })
     ] })
   ] });
 }
@@ -12362,7 +12340,40 @@ function App() {
       ))
     ] }, feedKey),
     activeTab === "profile" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: !currentUser ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 60 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 56, marginBottom: 16 }, children: "👤" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          style: { position: "relative", display: "inline-block", cursor: "pointer", marginBottom: 16 },
+          onClick: () => setShowAuth(true),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              width: 90,
+              height: 90,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.08)",
+              border: "3px solid rgba(245,200,66,0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 44
+            }, children: "👤" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              position: "absolute",
+              bottom: 2,
+              right: 2,
+              background: "#F5C842",
+              borderRadius: "50%",
+              width: 26,
+              height: 26,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 13,
+              border: "2px solid #0B0C1A"
+            }, children: "📷" })
+          ]
+        }
+      ),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20, marginBottom: 8 }, children: "You're not logged in" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 14, marginBottom: 24 }, children: "Sign up to post and build your profile" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -12888,7 +12899,6 @@ function App() {
       }
     ),
     showAvatarPicker && /* @__PURE__ */ jsxRuntimeExports.jsx(AvatarPickerModal, { currentAvatar: avatarUrl, onSelect: async (url) => {
-      var _a2, _b;
       setAvatarUrl(url);
       if (currentUser) {
         localStorage.setItem(`avatar_${currentUser.id}`, url);
@@ -12909,22 +12919,34 @@ function App() {
           console.error("AthaVidUser avatar update failed:", e);
         }
         try {
-          const [vidsData1, vidsData2] = await Promise.allSettled([
+          const [vidsA1, vidsA2, vidsS1, vidsS2] = await Promise.allSettled([
             request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`),
-            request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`)
+            request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`),
+            request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?user_id=${currentUser.id}&limit=200`),
+            request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`)
           ]);
-          const list1 = vidsData1.status === "fulfilled" ? Array.isArray(vidsData1.value) ? vidsData1.value : ((_a2 = vidsData1.value) == null ? void 0 : _a2.items) || [] : [];
-          const list2 = vidsData2.status === "fulfilled" ? Array.isArray(vidsData2.value) ? vidsData2.value : ((_b = vidsData2.value) == null ? void 0 : _b.items) || [] : [];
-          const seen = /* @__PURE__ */ new Set();
-          const myVids = [...list1, ...list2].filter((v2) => {
-            if (seen.has(v2.id))
+          const flatten = (r2) => {
+            var _a2;
+            return r2.status === "fulfilled" ? Array.isArray(r2.value) ? r2.value : ((_a2 = r2.value) == null ? void 0 : _a2.items) || [] : [];
+          };
+          const seenA = /* @__PURE__ */ new Set();
+          const myAthaVids = [...flatten(vidsA1), ...flatten(vidsA2)].filter((v2) => {
+            if (seenA.has(v2.id))
               return false;
-            seen.add(v2.id);
+            seenA.add(v2.id);
             return true;
           });
-          await Promise.all(myVids.map(
-            (v2) => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v2.id}/`, { avatar_url: url })
-          ));
+          const seenS = /* @__PURE__ */ new Set();
+          const mySachiVids = [...flatten(vidsS1), ...flatten(vidsS2)].filter((v2) => {
+            if (seenS.has(v2.id))
+              return false;
+            seenS.add(v2.id);
+            return true;
+          });
+          await Promise.all([
+            ...myAthaVids.map((v2) => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v2.id}/`, { avatar_url: url })),
+            ...mySachiVids.map((v2) => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url }))
+          ]);
           setVideoList((vs) => vs.map(
             (v2) => v2.user_id === currentUser.id || v2.created_by === currentUser.id ? { ...v2, avatar_url: url } : v2
           ));
