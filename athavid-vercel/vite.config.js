@@ -6,7 +6,7 @@ export default defineConfig({
     minify: false,
     rollupOptions: {
       output: {
-        entryFileNames: `assets/sachi-${Date.now()}.js`,
+        entryFileNames: 'assets/sachi-[hash].js',
         chunkFileNames: 'assets/sachi-chunk-[hash].js',
       }
     }
