@@ -1370,36 +1370,58 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}>
-          <img src={photoUrls[photoIdx]} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }} />
-          {photoIdx > 0 && (
-            <button
-              onTouchStart={e => { e.stopPropagation(); setPhotoIdx(p=>p-1); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p=>p-1); }}
-              style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", zIndex:200,
-                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:52, height:52,
-                color:"#fff", fontSize:26, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-          )}
-          {photoIdx < photoUrls.length-1 && (
-            <button
-              onTouchStart={e => { e.stopPropagation(); setPhotoIdx(p=>p+1); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p=>p+1); }}
-              style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", zIndex:200,
-                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:52, height:52,
-                color:"#fff", fontSize:26, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-          )}
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
+          onTouchStart={e => {
+            const t = e.touches[0];
+            e.currentTarget._touchStartX = t.clientX;
+            e.currentTarget._touchStartY = t.clientY;
+          }}
+          onTouchEnd={e => {
+            const dx = e.changedTouches[0].clientX - (e.currentTarget._touchStartX || 0);
+            const dy = Math.abs(e.changedTouches[0].clientY - (e.currentTarget._touchStartY || 0));
+            if (Math.abs(dx) > 40 && Math.abs(dx) > dy) {
+              if (dx < 0) setPhotoIdx(p => Math.min(p+1, photoUrls.length-1));
+              else        setPhotoIdx(p => Math.max(p-1, 0));
+            }
+          }}
+        >
+          {/* Sliding strip — all photos in a row, translate by index */}
+          <div style={{
+            display:"flex", height:"100%",
+            transform: `translateX(${-photoIdx * 100}%)`,
+            transition: "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
+            willChange: "transform",
+          }}>
+            {photoUrls.map((url, i) => (
+              <div key={i} style={{ minWidth:"100%", height:"100%", flexShrink:0 }}>
+                <img src={url} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
+              </div>
+            ))}
+          </div>
+
+          {/* Dot indicators */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6, zIndex:50, pointerEvents:"none" }}>
+            <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)",
+              display:"flex", gap:5, zIndex:100, pointerEvents:"none" }}>
               {photoUrls.map((_,i) => (
-                <div key={i} style={{ width:i===photoIdx?20:7, height:7, borderRadius:99,
-                  background:i===photoIdx?"#F5C842":"rgba(255,255,255,0.3)", transition:"all 0.25s" }} />
+                <div key={i} style={{
+                  width: i===photoIdx ? 22 : 7, height:7, borderRadius:99,
+                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.35)",
+                  transition:"all 0.25s ease",
+                  boxShadow: i===photoIdx ? "0 0 6px rgba(245,200,66,0.6)" : "none"
+                }} />
               ))}
             </div>
           )}
-          <div style={{ position:"absolute", top:60, right:16, background:"rgba(0,0,0,0.6)", borderRadius:20,
-            padding:"4px 12px", fontSize:13, fontWeight:700, color:"#fff", zIndex:50, pointerEvents:"none" }}>
-            {photoIdx+1} / {photoUrls.length}
-          </div>
+
+          {/* Counter badge */}
+          {photoUrls.length > 1 && (
+            <div style={{ position:"absolute", top:60, right:16, background:"rgba(0,0,0,0.65)",
+              borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:700,
+              color:"#fff", zIndex:100, pointerEvents:"none" }}>
+              {photoIdx+1} / {photoUrls.length}
+            </div>
+          )}
         </div>
       ) : (() => {
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");

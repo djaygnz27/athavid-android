@@ -10178,97 +10178,70 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", height: "100%", position: "relative", overflow: "hidden" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: photoUrls[photoIdx], style: { width: "100%", height: "100%", objectFit: "contain", background: "#000" } }),
-      photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onTouchStart: (e) => {
-            e.stopPropagation();
-            setPhotoIdx((p2) => p2 - 1);
-          },
-          onClick: (e) => {
-            e.stopPropagation();
-            setPhotoIdx((p2) => p2 - 1);
-          },
-          style: {
-            position: "absolute",
-            left: 12,
-            top: "50%",
-            transform: "translateY(-50%)",
-            zIndex: 200,
-            background: "rgba(0,0,0,0.6)",
-            border: "none",
-            borderRadius: "50%",
-            width: 52,
-            height: 52,
-            color: "#fff",
-            fontSize: 26,
-            cursor: "pointer",
+    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        style: { width: "100%", height: "100%", position: "relative", overflow: "hidden" },
+        onTouchStart: (e) => {
+          const t2 = e.touches[0];
+          e.currentTarget._touchStartX = t2.clientX;
+          e.currentTarget._touchStartY = t2.clientY;
+        },
+        onTouchEnd: (e) => {
+          const dx = e.changedTouches[0].clientX - (e.currentTarget._touchStartX || 0);
+          const dy = Math.abs(e.changedTouches[0].clientY - (e.currentTarget._touchStartY || 0));
+          if (Math.abs(dx) > 40 && Math.abs(dx) > dy) {
+            if (dx < 0)
+              setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls.length - 1));
+            else
+              setPhotoIdx((p2) => Math.max(p2 - 1, 0));
+          }
+        },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          },
-          children: "‹"
-        }
-      ),
-      photoIdx < photoUrls.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onTouchStart: (e) => {
-            e.stopPropagation();
-            setPhotoIdx((p2) => p2 + 1);
-          },
-          onClick: (e) => {
-            e.stopPropagation();
-            setPhotoIdx((p2) => p2 + 1);
-          },
-          style: {
+            height: "100%",
+            transform: `translateX(${-photoIdx * 100}%)`,
+            transition: "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
+            willChange: "transform"
+          }, children: photoUrls.map((url, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { minWidth: "100%", height: "100%", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" } }) }, i)) }),
+          photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
             position: "absolute",
-            right: 12,
-            top: "50%",
-            transform: "translateY(-50%)",
-            zIndex: 200,
-            background: "rgba(0,0,0,0.6)",
-            border: "none",
-            borderRadius: "50%",
-            width: 52,
-            height: 52,
-            color: "#fff",
-            fontSize: 26,
-            cursor: "pointer",
+            bottom: 110,
+            left: "50%",
+            transform: "translateX(-50%)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          },
-          children: "›"
-        }
-      ),
-      photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 110, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6, zIndex: 50, pointerEvents: "none" }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        width: i === photoIdx ? 20 : 7,
-        height: 7,
-        borderRadius: 99,
-        background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.3)",
-        transition: "all 0.25s"
-      } }, i)) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-        position: "absolute",
-        top: 60,
-        right: 16,
-        background: "rgba(0,0,0,0.6)",
-        borderRadius: 20,
-        padding: "4px 12px",
-        fontSize: 13,
-        fontWeight: 700,
-        color: "#fff",
-        zIndex: 50,
-        pointerEvents: "none"
-      }, children: [
-        photoIdx + 1,
-        " / ",
-        photoUrls.length
-      ] })
-    ] }) : (() => {
+            gap: 5,
+            zIndex: 100,
+            pointerEvents: "none"
+          }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            width: i === photoIdx ? 22 : 7,
+            height: 7,
+            borderRadius: 99,
+            background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.35)",
+            transition: "all 0.25s ease",
+            boxShadow: i === photoIdx ? "0 0 6px rgba(245,200,66,0.6)" : "none"
+          } }, i)) }),
+          photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            position: "absolute",
+            top: 60,
+            right: 16,
+            background: "rgba(0,0,0,0.65)",
+            borderRadius: 20,
+            padding: "4px 12px",
+            fontSize: 13,
+            fontWeight: 700,
+            color: "#fff",
+            zIndex: 100,
+            pointerEvents: "none"
+          }, children: [
+            photoIdx + 1,
+            " / ",
+            photoUrls.length
+          ] })
+        ]
+      }
+    ) : (() => {
       const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
       if (isImg)
         return /* @__PURE__ */ jsxRuntimeExports.jsx(
