@@ -94,3 +94,7 @@ export const uploadAthaVidVideo = base44.functions.uploadAthaVidVideo;
 export const athaVidUpload = base44.functions.athaVidUpload;
 export const athaVidPasswordReset = base44.functions.athaVidPasswordReset;
 export const sendLjJobSearchAlert = base44.functions.sendLjJobSearchAlert;
+export const passwordReset = base44.functions.passwordReset;
+export const getPublicFeed = base44.functions.getPublicFeed;
+export const podcastGoLiveNotify = base44.functions.podcastGoLiveNotify;
+export const checkPlayStoreVerification = base44.functions.checkPlayStoreVerification;
