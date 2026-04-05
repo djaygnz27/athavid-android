@@ -7884,16 +7884,22 @@ const interests = {
   },
   // Score a list of videos against user's interests and return sorted list
   async rankFeed(userId, videoList) {
+    const byDate = [...videoList].sort(
+      (a, b) => new Date(b.created_date || 0).getTime() - new Date(a.created_date || 0).getTime()
+    );
     if (!userId)
-      return videoList;
+      return byDate;
     const userInterests = await this.get(userId);
     if (!userInterests.length)
-      return videoList;
+      return byDate;
     const scoreMap = {};
     for (const i of userInterests) {
       scoreMap[i.hashtag.toLowerCase()] = i.score || 0;
     }
-    const scored = videoList.map((v2) => {
+    const totalSignal = Object.values(scoreMap).reduce((s, v2) => s + v2, 0);
+    if (totalSignal < 3)
+      return byDate;
+    const scored = byDate.map((v2) => {
       const tags = (v2.hashtags || []).map((t2) => t2.replace(/^#/, "").toLowerCase());
       let relevance = 0;
       for (const tag of tags) {
@@ -7904,8 +7910,8 @@ const interests = {
     scored.sort((a, b) => {
       const recencyA = new Date(a.created_date || 0).getTime() / 1e12;
       const recencyB = new Date(b.created_date || 0).getTime() / 1e12;
-      const scoreA = a._relevance * 0.7 + recencyA * 0.3;
-      const scoreB = b._relevance * 0.7 + recencyB * 0.3;
+      const scoreA = a._relevance * 0.5 + recencyA * 0.5;
+      const scoreB = b._relevance * 0.5 + recencyB * 0.5;
       return scoreB - scoreA;
     });
     return scored;
@@ -12129,7 +12135,8 @@ function App() {
       const data = await videos.list();
       const raw = Array.isArray(data) ? data : [];
       const activeUser = user || currentUser;
-      const ranked = activeUser ? await interests.rankFeed(activeUser.id, raw) : raw;
+      const sorted = [...raw].sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+      const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
       setVideoList(ranked);
     } catch {
       setVideoList([]);
