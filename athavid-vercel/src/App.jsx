@@ -1373,16 +1373,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}>
           <img src={photoUrls[photoIdx]} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000" }} />
           {photoIdx > 0 && (
-            <button onClick={tap(() => setPhotoIdx(p=>p-1))}
-              style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", zIndex:50,
-                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:44, height:44,
-                color:"#fff", fontSize:22, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+            <button
+              onTouchStart={e => { e.stopPropagation(); setPhotoIdx(p=>p-1); }}
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p=>p-1); }}
+              style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", zIndex:200,
+                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:52, height:52,
+                color:"#fff", fontSize:26, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
           )}
           {photoIdx < photoUrls.length-1 && (
-            <button onClick={tap(() => setPhotoIdx(p=>p+1))}
-              style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", zIndex:50,
-                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:44, height:44,
-                color:"#fff", fontSize:22, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+            <button
+              onTouchStart={e => { e.stopPropagation(); setPhotoIdx(p=>p+1); }}
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p=>p+1); }}
+              style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", zIndex:200,
+                background:"rgba(0,0,0,0.6)", border:"none", borderRadius:"50%", width:52, height:52,
+                color:"#fff", fontSize:26, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
           )}
           {photoUrls.length > 1 && (
             <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6, zIndex:50, pointerEvents:"none" }}>
@@ -1404,9 +1408,21 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
         );
         return (
-          <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
-            loop playsInline muted
-            style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+          <>
+            <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
+              loop playsInline
+              style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+            {muted && (
+              <div onTouchStart={e=>{e.stopPropagation(); if(videoRef.current){videoRef.current.muted=false; setMuted(false);}}}
+                onClick={e=>{e.stopPropagation(); if(videoRef.current){videoRef.current.muted=false; setMuted(false);}}}
+                style={{ position:"absolute", bottom:140, left:"50%", transform:"translateX(-50%)", zIndex:200,
+                  background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
+                  padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
+                  display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                🔇 Tap to unmute
+              </div>
+            )}
+          </>
         );
       })()}
 

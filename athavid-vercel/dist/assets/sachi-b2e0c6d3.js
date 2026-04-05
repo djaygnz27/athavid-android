@@ -10183,20 +10183,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
-          onClick: tap(() => setPhotoIdx((p2) => p2 - 1)),
+          onTouchStart: (e) => {
+            e.stopPropagation();
+            setPhotoIdx((p2) => p2 - 1);
+          },
+          onClick: (e) => {
+            e.stopPropagation();
+            setPhotoIdx((p2) => p2 - 1);
+          },
           style: {
             position: "absolute",
             left: 12,
             top: "50%",
             transform: "translateY(-50%)",
-            zIndex: 50,
+            zIndex: 200,
             background: "rgba(0,0,0,0.6)",
             border: "none",
             borderRadius: "50%",
-            width: 44,
-            height: 44,
+            width: 52,
+            height: 52,
             color: "#fff",
-            fontSize: 22,
+            fontSize: 26,
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
@@ -10208,20 +10215,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       photoIdx < photoUrls.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
-          onClick: tap(() => setPhotoIdx((p2) => p2 + 1)),
+          onTouchStart: (e) => {
+            e.stopPropagation();
+            setPhotoIdx((p2) => p2 + 1);
+          },
+          onClick: (e) => {
+            e.stopPropagation();
+            setPhotoIdx((p2) => p2 + 1);
+          },
           style: {
             position: "absolute",
             right: 12,
             top: "50%",
             transform: "translateY(-50%)",
-            zIndex: 50,
+            zIndex: 200,
             background: "rgba(0,0,0,0.6)",
             border: "none",
             borderRadius: "50%",
-            width: 44,
-            height: 44,
+            width: 52,
+            height: 52,
             color: "#fff",
-            fontSize: 22,
+            fontSize: 26,
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
@@ -10264,18 +10278,59 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" }
           }
         );
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "video",
-        {
-          ref: videoRef,
-          src: video.video_url,
-          poster: video.thumbnail_url,
-          loop: true,
-          playsInline: true,
-          muted: true,
-          style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
-        }
-      );
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "video",
+          {
+            ref: videoRef,
+            src: video.video_url,
+            poster: video.thumbnail_url,
+            loop: true,
+            playsInline: true,
+            style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
+          }
+        ),
+        muted && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            onTouchStart: (e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                videoRef.current.muted = false;
+                setMuted(false);
+              }
+            },
+            onClick: (e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                videoRef.current.muted = false;
+                setMuted(false);
+              }
+            },
+            style: {
+              position: "absolute",
+              bottom: 140,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 200,
+              background: "rgba(0,0,0,0.7)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: 20,
+              padding: "6px 16px",
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
+              whiteSpace: "nowrap"
+            },
+            children: "🔇 Tap to unmute"
+          }
+        )
+      ] });
     })(),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI ? 1 : 0, visibility: showUI ? "visible" : "hidden" } }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
