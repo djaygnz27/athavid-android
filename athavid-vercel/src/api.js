@@ -183,9 +183,14 @@ export const interests = {
 
   // Score a list of videos against user's interests and return sorted list
   async rankFeed(userId, videoList) {
-    if (!userId) return videoList; // guests get chronological feed
+    // Always sort newest-first as the base — most recent video always appears first
+    const byDate = [...videoList].sort((a, b) =>
+      new Date(b.created_date || 0).getTime() - new Date(a.created_date || 0).getTime()
+    );
+
+    if (!userId) return byDate; // guests: pure chronological
     const userInterests = await this.get(userId);
-    if (!userInterests.length) return videoList; // no data yet, return as-is
+    if (!userInterests.length) return byDate; // no interaction data yet: pure chronological
 
     // Build a score map: hashtag -> interest score
     const scoreMap = {};
@@ -193,8 +198,12 @@ export const interests = {
       scoreMap[i.hashtag.toLowerCase()] = i.score || 0;
     }
 
+    // Only apply interest ranking if there's meaningful data (>= 3 interest signals)
+    const totalSignal = Object.values(scoreMap).reduce((s, v) => s + v, 0);
+    if (totalSignal < 3) return byDate; // not enough data: newest first
+
     // Score each video
-    const scored = videoList.map(v => {
+    const scored = byDate.map(v => {
       const tags = (v.hashtags || []).map(t => t.replace(/^#/, "").toLowerCase());
       let relevance = 0;
       for (const tag of tags) {
@@ -203,14 +212,12 @@ export const interests = {
       return { ...v, _relevance: relevance };
     });
 
-    // Sort: high relevance first, but mix in some recency so feed doesn't get stale
-    // Top 30% by relevance, rest by date
+    // Blend: 50% recency + 50% relevance — recency always has strong weight
     scored.sort((a, b) => {
-      // Blend: 70% relevance score + 30% recency bonus
       const recencyA = new Date(a.created_date || 0).getTime() / 1e12;
       const recencyB = new Date(b.created_date || 0).getTime() / 1e12;
-      const scoreA = (a._relevance * 0.7) + (recencyA * 0.3);
-      const scoreB = (b._relevance * 0.7) + (recencyB * 0.3);
+      const scoreA = (a._relevance * 0.5) + (recencyA * 0.5);
+      const scoreB = (b._relevance * 0.5) + (recencyB * 0.5);
       return scoreB - scoreA;
     });
 
