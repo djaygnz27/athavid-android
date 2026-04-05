@@ -12208,7 +12208,33 @@ function App() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0B0C1A", minHeight: "100svh", maxWidth: 480, margin: "0 auto", position: "relative", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, paddingTop: "env(safe-area-inset-top,0px)", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-logo-512.png", alt: "Sachi", style: { height: 42, width: 42, borderRadius: 12, objectFit: "contain", filter: "drop-shadow(0 0 6px rgba(245,200,66,0.4))" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "38", height: "38", viewBox: "0 0 100 100", xmlns: "http://www.w3.org/2000/svg", style: { filter: "drop-shadow(0 0 6px rgba(245,200,66,0.5))", flexShrink: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("defs", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("radialGradient", { id: "hg", cx: "50%", cy: "50%", r: "50%", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "0%", stopColor: "#fff9e6" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "100%", stopColor: "#F5C842" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("radialGradient", { id: "pg", cx: "50%", cy: "30%", r: "70%", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "0%", stopColor: "#ffe8f5", stopOpacity: "0.95" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "60%", stopColor: "#ffb3d9", stopOpacity: "0.85" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "100%", stopColor: "#ff69b4", stopOpacity: "0.7" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("filter", { id: "glow", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("feGaussianBlur", { stdDeviation: "1.5", result: "blur" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("feMerge", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("feMergeNode", { in: "blur" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("feMergeNode", { in: "SourceGraphic" })
+              ] })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("ellipse", { cx: "50", cy: "22", rx: "10", ry: "18", fill: "url(#pg)", opacity: "0.9", transform: "rotate(0,50,50)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("ellipse", { cx: "50", cy: "22", rx: "10", ry: "18", fill: "url(#pg)", opacity: "0.9", transform: "rotate(72,50,50)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("ellipse", { cx: "50", cy: "22", rx: "10", ry: "18", fill: "url(#pg)", opacity: "0.9", transform: "rotate(144,50,50)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("ellipse", { cx: "50", cy: "22", rx: "10", ry: "18", fill: "url(#pg)", opacity: "0.9", transform: "rotate(216,50,50)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("ellipse", { cx: "50", cy: "22", rx: "10", ry: "18", fill: "url(#pg)", opacity: "0.9", transform: "rotate(288,50,50)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "50", cy: "50", r: "14", fill: "url(#hg)", filter: "url(#glow)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("text", { x: "50", y: "56", textAnchor: "middle", fontSize: "16", fontWeight: "900", fontFamily: "Georgia,serif", fill: "#c0390a", style: { filter: "url(#glow)" }, children: "S" })
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 1 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 22, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, fontWeight: 700, color: "#F5C842", lineHeight: 1, marginBottom: 2 }, children: "™" })
