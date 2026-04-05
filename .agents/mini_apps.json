@@ -2,11 +2,14 @@
   "app_id": "69b2ee18a8e6fb58c7f0261c",
   "slug": "sachi-c7f0261c",
   "pages": {
-    "Home": {
-      "title": "Home"
-    },
     "AthaVid": {
       "title": "AthaVid"
+    },
+    "CodeCopy": {
+      "title": "CodeCopy"
+    },
+    "Home": {
+      "title": "Home"
     },
     "Index": {
       "title": "Index"
@@ -14,20 +17,20 @@
     "Install": {
       "title": "Install"
     },
-    "CodeCopy": {
-      "title": "CodeCopy"
+    "SPICalculator": {
+      "title": "SPICalculator"
+    },
+    "Sachi": {
+      "title": "Sachi"
     },
     "TaycanFinder": {
       "title": "TaycanFinder"
     },
-    "SPICalculator": {
-      "title": "SPICalculator"
-    },
     "TheWatchers": {
       "title": "TheWatchers"
     },
-    "Sachi": {
-      "title": "Sachi"
+    "Dashboard": {
+      "title": "Dashboard"
     }
   }
 }
