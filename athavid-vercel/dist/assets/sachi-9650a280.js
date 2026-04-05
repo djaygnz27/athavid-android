@@ -10730,6 +10730,12 @@ const AVATAR_COLORS = [
   ["c084fc", "fff"]
 ];
 const AVATAR_NAMES = ["Nova", "Zara", "Kai", "Milo", "Aria", "Finn", "Luna", "Rex", "Sage", "Cleo", "Axel", "Nadia", "Blake", "Iris", "Cruz", "Ember", "Jax", "Lyra", "Orion", "Veda"];
+const AVATAR_STYLES = [
+  { label: "Cartoon", style: "avataaars", seeds: ["Felix", "Aneka", "Mia", "Zara", "Leo", "Nova", "Kira", "Blaze", "Pixel", "Storm", "Echo", "Sage", "Raya", "Kofi", "Priya", "Omar", "Mei", "Ava", "Jake", "Luna", "Diego", "Aisha", "Nate", "Yuki"] },
+  { label: "Portraits", style: "lorelei", seeds: ["Alex", "Sam", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Riley", "Quinn", "Avery", "Blake", "Cameron", "Dana", "Ellis", "Fynn", "Gwen", "Harley", "Indie", "Jules", "Kai"] },
+  { label: "Fun", style: "bottts", seeds: ["R2D2", "BB8", "Wall-E", "Robo", "Zap", "Bolt", "Chip", "Digi", "Glitch", "Mega", "Nano", "Pixel", "Spark", "Vibe", "Wave", "Flux", "Glow", "Nova", "Atom", "Echo"] },
+  { label: "Minimal", style: "thumbs", seeds: ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho", "Sigma", "Tau", "Upsilon"] }
+];
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = reactExports.useState(false);
   const fileRef = reactExports.useRef();
