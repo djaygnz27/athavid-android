@@ -1773,7 +1773,7 @@ const AVATAR_STYLES = [
 
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = useState(false);
-  // avatar picker uses color grid
+  const [activeStyle, setActiveStyle] = useState(0);
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
@@ -1823,21 +1823,25 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
           ))}
         </div>
 
-        {/* Avatar grid — scrollable */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, maxHeight:300, overflowY:"auto", paddingBottom:4 }}>
-          {avatarUrls.map((url, i) => (
-            <button key={i}
-              onClick={() => onSelect(url)}
-              style={{ background: currentAvatar===url ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.06)",
-                border: currentAvatar===url ? "3px solid #6c63ff" : "3px solid rgba(255,255,255,0.08)",
-                borderRadius:16, width:64, height:64, margin:"0 auto", padding:4,
-                cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"border 0.2s, transform 0.15s, box-shadow 0.2s",
-                boxShadow: currentAvatar===url ? "0 0 12px rgba(108,99,255,0.5)" : "none",
-                transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
-              <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block", borderRadius:10 }} loading="lazy" />
-            </button>
-          ))}
+        {/* Avatar grid — scrollable, uses active style */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, maxHeight:260, overflowY:"auto", paddingBottom:4 }}>
+          {AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
+            const style = AVATAR_STYLES[activeStyle].style;
+            const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
+            return (
+              <button key={i}
+                onClick={() => onSelect(url)}
+                style={{ background: currentAvatar===url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
+                  border: currentAvatar===url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
+                  borderRadius:16, width:64, height:64, margin:"0 auto", padding:4,
+                  cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"border 0.2s, transform 0.15s, box-shadow 0.2s",
+                  boxShadow: currentAvatar===url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
+                  transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
+                <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block", borderRadius:10, background:"rgba(255,255,255,0.05)" }} loading="lazy" />
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -2998,7 +3002,14 @@ function App() {
         <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
           {!currentUser ? (
             <div style={{ textAlign:"center", padding:60 }}>
-              <div style={{ fontSize:56, marginBottom:16 }}>👤</div>
+              <div style={{ position:"relative", display:"inline-block", cursor:"pointer", marginBottom:16 }}
+                onClick={() => setShowAuth(true)}>
+                <div style={{ width:90, height:90, borderRadius:"50%", background:"rgba(255,255,255,0.08)",
+                  border:"3px solid rgba(245,200,66,0.4)", display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:44 }}>👤</div>
+                <div style={{ position:"absolute", bottom:2, right:2, background:"#F5C842", borderRadius:"50%", width:26, height:26,
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0B0C1A" }}>📷</div>
+              </div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:20, marginBottom:8 }}>You're not logged in</div>
               <div style={{ color:"#666", fontSize:14, marginBottom:24 }}>Sign up to post and build your profile</div>
               <button onClick={() => setShowAuth(true)}
@@ -3353,21 +3364,27 @@ function App() {
               await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
             }
           } catch(e) { console.error("AthaVidUser avatar update failed:", e); }
-          // 3. Update avatar on all user's videos (with token) + refresh feed instantly
+          // 3. Update avatar on all user's videos (AthaVidVideo + SachiVideo) + refresh feed instantly
           try {
-            // Fetch by user_id AND created_by to catch all videos
-            const [vidsData1, vidsData2] = await Promise.allSettled([
+            // Fetch from both entities by user_id AND created_by
+            const [vidsA1, vidsA2, vidsS1, vidsS2] = await Promise.allSettled([
               request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`)
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`),
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?user_id=${currentUser.id}&limit=200`),
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`)
             ]);
-            const list1 = vidsData1.status === 'fulfilled' ? (Array.isArray(vidsData1.value) ? vidsData1.value : (vidsData1.value?.items || [])) : [];
-            const list2 = vidsData2.status === 'fulfilled' ? (Array.isArray(vidsData2.value) ? vidsData2.value : (vidsData2.value?.items || [])) : [];
-            // Deduplicate by id
-            const seen = new Set();
-            const myVids = [...list1, ...list2].filter(v => { if (seen.has(v.id)) return false; seen.add(v.id); return true; });
-            await Promise.all(myVids.map(v =>
-              request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })
-            ));
+            const flatten = (r) => r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : (r.value?.items || [])) : [];
+            // AthaVidVideo deduped
+            const seenA = new Set();
+            const myAthaVids = [...flatten(vidsA1), ...flatten(vidsA2)].filter(v => { if (seenA.has(v.id)) return false; seenA.add(v.id); return true; });
+            // SachiVideo deduped
+            const seenS = new Set();
+            const mySachiVids = [...flatten(vidsS1), ...flatten(vidsS2)].filter(v => { if (seenS.has(v.id)) return false; seenS.add(v.id); return true; });
+            await Promise.all([
+              ...myAthaVids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })),
+              ...mySachiVids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url }))
+            ]);
+            // Update feed in memory instantly
             setVideoList(vs => vs.map(v =>
               (v.user_id === currentUser.id || v.created_by === currentUser.id)
                 ? { ...v, avatar_url: url }
@@ -3382,4 +3399,4 @@ function App() {
 }
 
 export default App;
-// v1775415323
+// v1775417720513
