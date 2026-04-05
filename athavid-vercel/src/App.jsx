@@ -2811,7 +2811,7 @@ function App() {
     setLoading(true);
     try {
       const data = await videos.list();
-      const raw = Array.isArray(data) ? data : [];
+      const raw = Array.isArray(data) ? data : (data?.items || data?.records || []);
       const activeUser = user || currentUser;
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
       const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
