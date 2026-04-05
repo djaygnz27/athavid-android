@@ -7637,30 +7637,21 @@ function Landing({ onEnter }) {
           animation: tagIn 1s ease 1.2s both;
         }
       ` }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sachi-logo-icon", style: {
-      width: 96,
-      height: 96,
-      borderRadius: 28,
-      background: "linear-gradient(145deg, #1A1B30, #232440)",
-      border: "1.5px solid rgba(245,200,66,0.3)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 32
-    }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "52", height: "52", viewBox: "0 0 24 24", fill: "none", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "path",
-        {
-          d: "M12 2L14.4 9.6H22.4L16 14.4L18.4 22L12 17.2L5.6 22L8 14.4L1.6 9.6H9.6L12 2Z",
-          fill: "url(#goldGrad)",
-          stroke: "none"
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "img",
+      {
+        className: "sachi-logo-icon",
+        src: "/sachi-icon-v4.png",
+        alt: "Sachi",
+        style: {
+          width: 96,
+          height: 96,
+          borderRadius: 28,
+          marginBottom: 32,
+          filter: "drop-shadow(0 0 20px rgba(245,200,66,0.4))"
         }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("defs", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("linearGradient", { id: "goldGrad", x1: "0%", y1: "0%", x2: "100%", y2: "100%", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "0%", stopColor: "#F5C842" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "100%", stopColor: "#FF9500" })
-      ] }) })
-    ] }) }),
+      }
+    ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sachi-word", style: { textAlign: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
       fontSize: 62,
       fontWeight: 900,
