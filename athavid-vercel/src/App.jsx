@@ -2609,7 +2609,10 @@ function AdminPanel({ currentUser }) {
     <div style={{ minHeight:"100svh", background:"#0B0C1A", paddingBottom:120, paddingTop:0 }}>
       {/* Header */}
       <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 12px", position:"sticky", top:0, zIndex:100 }}>
-        <div style={{ color:"#F5C842", fontWeight:900, fontSize:20, marginBottom:10 }}>🛡️ Content Moderation</div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+          <div style={{ color:"#F5C842", fontWeight:900, fontSize:20 }}>🛡️ Mod Panel</div>
+          <button onClick={() => window.open("https://sachi-c7f0261c.base44.app/Dashboard","_blank")} style={{ background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:20, padding:"8px 16px", color:"#0B0C1A", fontWeight:800, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>📊 Analytics</button>
+        </div>
         {/* Search */}
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption or username…"
           style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10 }} />
