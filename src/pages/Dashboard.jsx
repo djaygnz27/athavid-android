@@ -4,6 +4,9 @@ import { SachiComment } from "@/api/entities";
 import { BetaTester } from "@/api/entities";
 import { SachiPodcast } from "@/api/entities";
 import { AthaVidVideo } from "@/api/entities";
+import { User } from "@/api/entities";
+
+const ALLOWED_EMAILS = ["jaygnz27@gmail.com", "lasanjaya@gmail.com"];
 
 const COLORS = {
   navy: "#0B0C1A",
@@ -120,7 +123,6 @@ function WeekSelector({ weeks, selected, onChange }) {
   );
 }
 
-// Get the Monday of a given date's week
 function getWeekStart(date) {
   const d = new Date(date);
   const day = d.getDay();
@@ -133,7 +135,6 @@ function getWeekStart(date) {
 function buildWeeks(allVideos, allComments) {
   if (allVideos.length === 0) return [];
   const allDates = allVideos.map(v => new Date(v.created_date)).sort((a, b) => a - b);
-  const allCommentDates = allComments.map(c => new Date(c.created_date));
   const earliest = getWeekStart(allDates[0]);
   const now = new Date();
   const thisWeekStart = getWeekStart(now);
@@ -155,21 +156,33 @@ function buildWeeks(allVideos, allComments) {
     });
 
     const label = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${new Date(end - 1).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
-    weeks.push({
-      key: start.toISOString(),
-      label,
-      start,
-      end,
-      videos: vids,
-      comments: cmts,
-    });
-
+    weeks.push({ key: start.toISOString(), label, start, end, videos: vids, comments: cmts });
     cursor.setDate(cursor.getDate() + 7);
   }
   return weeks.reverse();
 }
 
+function AccessDenied() {
+  return (
+    <div style={{
+      background: COLORS.navy, minHeight: "100vh",
+      display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16,
+    }}>
+      <div style={{ fontSize: 48 }}>🔒</div>
+      <div style={{ color: "#fff", fontWeight: 800, fontSize: 22 }}>Private Dashboard</div>
+      <div style={{ color: COLORS.textMuted, fontSize: 14, textAlign: "center", maxWidth: 300 }}>
+        This dashboard is only accessible to the Sachi platform owner.
+      </div>
+      <a href="https://sachistream.com" style={{
+        marginTop: 8, background: COLORS.gold, color: "#000", fontWeight: 700,
+        padding: "10px 24px", borderRadius: 20, textDecoration: "none", fontSize: 14,
+      }}>← Back to Sachi</a>
+    </div>
+  );
+}
+
 export default function Dashboard() {
+  const [authStatus, setAuthStatus] = useState("checking"); // checking | allowed | denied
   const [allVideos, setAllVideos] = useState([]);
   const [sachiVideos, setSachiVideos] = useState([]);
   const [allComments, setAllComments] = useState([]);
@@ -179,7 +192,22 @@ export default function Dashboard() {
   const [selectedWeek, setSelectedWeek] = useState(null);
 
   useEffect(() => {
-    async function load() {
+    async function init() {
+      try {
+        const me = await User.me();
+        if (me && ALLOWED_EMAILS.includes(me.email)) {
+          setAuthStatus("allowed");
+        } else {
+          setAuthStatus("denied");
+          setLoading(false);
+          return;
+        }
+      } catch {
+        setAuthStatus("denied");
+        setLoading(false);
+        return;
+      }
+
       try {
         const [v1, v2, cmts, bt, pc] = await Promise.all([
           AthaVidVideo.list(),
@@ -199,29 +227,30 @@ export default function Dashboard() {
         setLoading(false);
       }
     }
-    load();
+    init();
   }, []);
 
   const combinedVideos = [...allVideos, ...sachiVideos];
-
   const weeks = buildWeeks(combinedVideos, allComments);
 
   useEffect(() => {
-    if (weeks.length > 0 && !selectedWeek) {
-      setSelectedWeek(weeks[0].key);
-    }
+    if (weeks.length > 0 && !selectedWeek) setSelectedWeek(weeks[0].key);
   }, [weeks.length]);
 
-  const currentWeek = weeks.find(w => w.key === selectedWeek) || weeks[0];
-  const prevWeek = currentWeek ? weeks[weeks.indexOf(currentWeek) + 1] : null;
-
-  if (loading) {
+  if (authStatus === "checking" || (authStatus === "allowed" && loading)) {
     return (
       <div style={{ background: COLORS.navy, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ color: COLORS.gold, fontSize: 18 }}>Loading Sachi analytics...</div>
+        <div style={{ color: COLORS.gold, fontSize: 18 }}>
+          {authStatus === "checking" ? "Verifying access..." : "Loading Sachi analytics..."}
+        </div>
       </div>
     );
   }
+
+  if (authStatus === "denied") return <AccessDenied />;
+
+  const currentWeek = weeks.find(w => w.key === selectedWeek) || weeks[0];
+  const prevWeek = currentWeek ? weeks[weeks.indexOf(currentWeek) + 1] : null;
 
   if (!currentWeek) {
     return (
@@ -249,7 +278,6 @@ export default function Dashboard() {
     return d >= 0 ? `+${d}% vs prev week` : `${d}% vs prev week`;
   }
 
-  // Creator breakdown from this week's videos
   const creatorMap = {};
   wVideos.forEach(v => {
     const u = v.username || "unknown";
@@ -261,20 +289,12 @@ export default function Dashboard() {
   const creators = Object.entries(creatorMap).sort((a, b) => b[1].views - a[1].views);
   const maxViews = creators.length > 0 ? creators[0][1].views : 1;
 
-  // Top videos this week by views
   const topVideos = [...wVideos].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 8);
-
-  // All-time top videos
   const allTimeTop = [...combinedVideos].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 5);
 
-  // Beta tester stats
   const activeTesters = betaTesters.filter(t => t.status === "Active").length;
   const invitedTesters = betaTesters.filter(t => t.status === "Invited").length;
-
-  // Engagement rate
   const engRate = totalViews > 0 ? ((totalLikes + totalComments) / totalViews * 100).toFixed(1) : 0;
-
-  // Unique creators this week
   const uniqueCreators = new Set(wVideos.map(v => v.username)).size;
 
   return (
@@ -294,20 +314,23 @@ export default function Dashboard() {
         <div style={{ fontSize: 24 }}>🌸</div>
         <div>
           <div style={{ fontWeight: 800, fontSize: 18, color: "#fff" }}>Sachi™ Analytics</div>
-          <div style={{ color: COLORS.textMuted, fontSize: 12 }}>Weekly platform dashboard</div>
+          <div style={{ color: COLORS.textMuted, fontSize: 12 }}>Weekly platform dashboard · Owner only</div>
         </div>
-        <div style={{ marginLeft: "auto", background: COLORS.green + "22", border: `1px solid ${COLORS.green}`, color: COLORS.green, borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 600 }}>
-          🟢 Live
+        <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ background: COLORS.green + "22", border: `1px solid ${COLORS.green}`, color: COLORS.green, borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 600 }}>
+            🟢 Live
+          </div>
+          <div style={{ background: COLORS.gold + "22", border: `1px solid ${COLORS.gold}`, color: COLORS.gold, borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 600 }}>
+            🔒 Private
+          </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "28px 20px" }}>
 
-        {/* Week Selector */}
         <div style={{ marginBottom: 8, color: COLORS.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }}>Select Week</div>
         <WeekSelector weeks={weeks} selected={selectedWeek} onChange={setSelectedWeek} />
 
-        {/* KPI Cards */}
         <SectionTitle>📊 Key Metrics — {currentWeek.label}</SectionTitle>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <StatCard title="Total Views" value={totalViews.toLocaleString()} sub={delta(totalViews, prevViews)} color={COLORS.blue} icon="👁" />
@@ -322,7 +345,6 @@ export default function Dashboard() {
           <StatCard title="Podcasts" value={podcasts.length} sub={`${podcasts.filter(p => p.is_live).length} live now`} color={COLORS.coral} icon="🎙" />
         </div>
 
-        {/* Creator Breakdown */}
         {creators.length > 0 && (
           <>
             <SectionTitle>🏆 Creator Performance This Week</SectionTitle>
@@ -340,24 +362,20 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Top Videos This Week */}
         {topVideos.length > 0 && (
           <>
             <SectionTitle>🔥 Top Videos This Week</SectionTitle>
             <div style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: "8px 24px 16px" }}>
               {topVideos.map((v, i) => <VideoRow key={v.id} video={v} rank={i + 1} />)}
-              {topVideos.length === 0 && <div style={{ color: COLORS.textMuted, padding: "16px 0", textAlign: "center" }}>No videos this week</div>}
             </div>
           </>
         )}
 
-        {/* All-Time Top */}
         <SectionTitle>🌟 All-Time Top Videos</SectionTitle>
         <div style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: "8px 24px 16px" }}>
           {allTimeTop.map((v, i) => <VideoRow key={v.id} video={v} rank={i + 1} />)}
         </div>
 
-        {/* Platform totals */}
         <SectionTitle>📱 Platform Totals (All Time)</SectionTitle>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <StatCard title="Total Videos" value={combinedVideos.length} color={COLORS.gold} icon="🎬" />
@@ -366,7 +384,6 @@ export default function Dashboard() {
           <StatCard title="Total Comments" value={allComments.length} color={COLORS.purple} icon="💬" />
         </div>
 
-        {/* Beta Testing Status */}
         <SectionTitle>🧪 Beta Testing Status</SectionTitle>
         <div style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: "20px 24px" }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -374,9 +391,7 @@ export default function Dashboard() {
               <div key={t.id} style={{
                 background: t.status === "Active" ? COLORS.green + "22" : COLORS.border,
                 border: `1px solid ${t.status === "Active" ? COLORS.green : COLORS.border}`,
-                borderRadius: 20,
-                padding: "6px 14px",
-                fontSize: 12,
+                borderRadius: 20, padding: "6px 14px", fontSize: 12,
               }}>
                 <span style={{ color: t.status === "Active" ? COLORS.green : COLORS.textMuted, fontWeight: 600 }}>
                   {t.status === "Active" ? "✅" : "⏳"} {t.name}
@@ -389,7 +404,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Podcasts */}
         <SectionTitle>🎙 Podcast Status</SectionTitle>
         <div style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: "16px 24px" }}>
           {podcasts.map(p => (
@@ -417,7 +431,7 @@ export default function Dashboard() {
         </div>
 
         <div style={{ marginTop: 32, textAlign: "center", color: COLORS.textMuted, fontSize: 11 }}>
-          Sachi™ · Built by LDNA Consulting · Last updated {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          Sachi™ · LDNA Consulting · {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
         </div>
       </div>
     </div>
