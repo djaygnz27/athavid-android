@@ -2887,7 +2887,34 @@ function App() {
 
           {/* Left: Sachi logo + wordmark */}
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <img src="/sachi-logo-512.png" alt="Sachi" style={{ height:42, width:42, borderRadius:12, objectFit:"contain", filter:"drop-shadow(0 0 6px rgba(245,200,66,0.4))" }} />
+            {/* Crystal Sakura Logo — inlined SVG */}
+            <svg width="38" height="38" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{ filter:"drop-shadow(0 0 6px rgba(245,200,66,0.5))", flexShrink:0 }}>
+              <defs>
+                <radialGradient id="hg" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#fff9e6"/>
+                  <stop offset="100%" stopColor="#F5C842"/>
+                </radialGradient>
+                <radialGradient id="pg" cx="50%" cy="30%" r="70%">
+                  <stop offset="0%" stopColor="#ffe8f5" stopOpacity="0.95"/>
+                  <stop offset="60%" stopColor="#ffb3d9" stopOpacity="0.85"/>
+                  <stop offset="100%" stopColor="#ff69b4" stopOpacity="0.7"/>
+                </radialGradient>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="1.5" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              {/* Petals */}
+              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(0,50,50)"/>
+              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(72,50,50)"/>
+              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(144,50,50)"/>
+              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(216,50,50)"/>
+              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(288,50,50)"/>
+              {/* Center */}
+              <circle cx="50" cy="50" r="14" fill="url(#hg)" filter="url(#glow)"/>
+              {/* Burning S */}
+              <text x="50" y="56" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Georgia,serif" fill="#c0390a" style={{filter:"url(#glow)"}}>S</text>
+            </svg>
             <div style={{ display:"flex", alignItems:"baseline", gap:1 }}>
               <span style={{ fontSize:22, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
               <span style={{ fontSize:11, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
