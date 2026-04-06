@@ -10382,14 +10382,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               width: 28,
               height: 28,
               borderRadius: 8,
-              background: video.is_ai_detected ? "rgba(255,149,0,0.25)" : "rgba(255,255,255,0.08)",
+              background: video.is_ai_detected ? "rgba(0,255,120,0.12)" : "rgba(255,255,255,0.08)",
               backdropFilter: "blur(12px)",
-              border: video.is_ai_detected ? "1px solid rgba(255,149,0,0.5)" : "1px solid rgba(255,255,255,0.1)",
+              border: video.is_ai_detected ? "2px solid rgba(0,255,120,0.9)" : "1px solid rgba(255,255,255,0.1)",
+              boxShadow: video.is_ai_detected ? "0 0 10px 3px rgba(0,255,120,0.5), 0 0 20px 6px rgba(0,255,120,0.2)" : "none",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center"
+              justifyContent: "center",
+              transition: "all 0.3s"
             }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 13 }, children: video.is_ai_detected ? "🤖" : "🚩" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 600 }, children: video.is_ai_detected ? "AI" : "Flag" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: video.is_ai_detected ? "#00ff78" : "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700 }, children: video.is_ai_detected ? "AI" : "Flag" })
           ]
         }
       ),
