@@ -2380,7 +2380,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             {muted && (
               <div onTouchStart={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
                 onClick={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
-                style={{ position:"absolute", bottom:140, left:"50%", transform:"translateX(-50%)", zIndex:200,
+                style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
                   background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
                   padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
                   display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>

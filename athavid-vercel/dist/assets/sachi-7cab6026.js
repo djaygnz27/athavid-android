@@ -11883,7 +11883,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             },
             style: {
               position: "absolute",
-              bottom: 140,
+              bottom: 80,
               left: "50%",
               transform: "translateX(-50%)",
               zIndex: 200,
