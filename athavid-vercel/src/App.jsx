@@ -2453,7 +2453,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         live_stream_url: registerForm.live_stream_url || "",
         cover_color: cover.bg,
         cover_emoji: cover.emoji,
-        status: "Pending",
+        status: "Active",
         is_live: false,
         listener_count: 0,
         episode_count: 0,
@@ -2462,7 +2462,18 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "",
       });
       setRegisterDone(true);
+      await loadPodcasts();
       await loadMyShows();
+      // Send welcome email to host
+      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          host_email: currentUser?.email || "",
+          host_name: registerForm.host_name,
+          podcast_title: registerForm.title,
+          category: registerForm.category,
+        })
+      }).catch(() => {});
       setRegisterForm({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 });
     } catch(e) {
       console.error(e);
@@ -2655,15 +2666,15 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:24, marginBottom:10 }}>You are on the list!</div>
               <div style={{ color:"rgba(255,255,255,0.5)", fontSize:15, marginBottom:8, lineHeight:1.6 }}>
-                Your podcast is under review.<br/>We will approve it within 24 hours.
+                Your show is <strong style={{ color:"#81c784" }}>live on Sachi right now.</strong><br/>No waiting. No approval needed.
               </div>
-              <div style={{ background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:14, padding:16, margin:"20px 0 28px", textAlign:"left" }}>
-                <div style={{ color:"#F5C842", fontWeight:700, fontSize:13, marginBottom:8 }}>⚡ What happens next?</div>
+              <div style={{ background:"rgba(46,125,50,0.1)", border:"1px solid rgba(46,125,50,0.3)", borderRadius:14, padding:16, margin:"20px 0 28px", textAlign:"left" }}>
+                <div style={{ color:"#81c784", fontWeight:700, fontSize:13, marginBottom:8 }}>⚡ You are all set — here's how to go live:</div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.7 }}>
-                  1. Admin reviews your podcast (within 24h)<br/>
-                  2. You get approved — show appears in Podcasts tab<br/>
-                  3. Open your show → tap <strong style={{ color:"#fff" }}>🔴 Go Live Now</strong> anytime<br/>
-                  4. All Sachi users get an instant email notification
+                  1. Go to <strong style={{ color:"#fff" }}>Podcasts tab</strong> and find your show under "My Shows"<br/>
+                  2. Tap your show to open it<br/>
+                  3. (Optional) Add your stream link — YouTube Live, Twitch, etc.<br/>
+                  4. Tap <strong style={{ color:"#e53935" }}>🔴 Go Live Now</strong> — all Sachi users get notified instantly
                 </div>
               </div>
               <button onClick={() => { setRegisterDone(false); setShowRegister(false); }}
@@ -2781,8 +2792,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                       {p.is_live && <div style={{ background:"#e53935", borderRadius:20, padding:"2px 8px", color:"#fff", fontWeight:700, fontSize:10, flexShrink:0 }}>LIVE</div>}
                     </div>
                     <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, marginBottom:4 }}>by {p.host_name}</div>
-                    <div style={{ display:"inline-block", background: p.status==="Active" ? "rgba(46,125,50,0.25)" : p.status==="Pending" ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", borderRadius:20, padding:"2px 10px", color: p.status==="Active" ? "#81c784" : p.status==="Pending" ? "#F5C842" : "#aaa", fontSize:11, fontWeight:700 }}>
-                      {p.status==="Pending" ? "⏳ Pending Approval" : p.status==="Active" ? "✅ Active" : p.status}
+                    <div style={{ display:"inline-block", background: p.is_live ? "rgba(229,57,53,0.2)" : "rgba(46,125,50,0.2)", borderRadius:20, padding:"2px 10px", color: p.is_live ? "#ef9a9a" : "#81c784", fontSize:11, fontWeight:700 }}>
+                      {p.is_live ? "🔴 Live Now" : "✅ Active"}
                     </div>
                   </div>
                   <div style={{ color:"rgba(255,255,255,0.2)", fontSize:20 }}>›</div>
