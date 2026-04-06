@@ -25,8 +25,15 @@ const resolveMediaUrl = (url) => {
   if (match) return `https://media.base44.com/images/public/${match[1]}/${match[2]}`;
   return url;
 };
-// Get user's location for post geo-tagging (best-effort, fails silently)
+// Get user's location for post geo-tagging
+// First try: use country saved at signup. Fallback: device GPS.
 async function getPostLocation() {
+  // Use country saved during signup if available
+  const savedCountry = localStorage.getItem("sachi_country");
+  if (savedCountry) {
+    return { post_country: savedCountry, post_region: null };
+  }
+  // Fallback: try GPS reverse geocode
   try {
     const pos = await new Promise((resolve, reject) =>
       navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
