@@ -1073,17 +1073,18 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setUploading(true); setProgress(10);
     try {
       setStep("Creating text post...");
-      const TEXT_TEMPLATES_UPLOAD = [
-        { bg:["#1c1c1c","#1c1c1c"], textColor:"#ffffff", accentColor:"#b06bff", fontSize:52, emoji:"☀️", emojiTop:true },
-        { bg:["#0a2a1a","#0d3d2a"], textColor:"#4fffb0", accentColor:"#4fffb0", fontSize:48, emoji:"", emojiTop:false },
-        { bg:["#fce4ec","#fce4ec"], textColor:"#222222", accentColor:"#e91e63", fontSize:46, emoji:"🌸", emojiTop:true },
-        { bg:["#fff8f0","#fff8f0"], textColor:"#cc0000", accentColor:"#cc0000", fontSize:42, emoji:"🎟️", emojiTop:false },
-        { bg:["#000000","#000000"], textColor:"#ffffff", accentColor:"#ffffff", fontSize:48, emoji:"🌙", emojiTop:false },
-        { bg:["#0B0C1A","#1a1040"], textColor:"#F5C842", accentColor:"#ff6b9d", fontSize:48, emoji:"🌸", emojiTop:true },
-        { bg:["#FF416C","#FF9500"], textColor:"#ffffff", accentColor:"#ffe066", fontSize:48, emoji:"🌅", emojiTop:true },
-        { bg:["#0F2027","#2C5364"], textColor:"#00E5FF", accentColor:"#00E5FF", fontSize:46, emoji:"🌊", emojiTop:false },
+      // Canvas render — matches each template style
+      const UPLOAD_TPLS = [
+        { bg:["#f8b4cb","#f8b4cb"], style:"highlight", hlColor:"#e91e8c", textColor:"#111", emoji:"😊", emojiTop:true },
+        { bg:["#b8d4f0","#d6e8ff"], style:"highlight", hlColor:"#F5C842", textColor:"#222", emoji:"", emojiTop:false },
+        { bg:["#0B0C1A","#1a1040"], style:"plain", textColor:"#F5C842", emoji:"🌸", emojiTop:true },
+        { bg:["#d8e8f5","#eaf2ff"], style:"plain", textColor:"#4a6fa5", emoji:"", emojiTop:false },
+        { bg:["#111111","#111111"], style:"plain", textColor:"#ffffff", emoji:"🌙", emojiTop:true },
+        { bg:["#FF416C","#FF9500"], style:"plain", textColor:"#ffffff", emoji:"🌅", emojiTop:true },
+        { bg:["#0F2027","#2C5364"], style:"plain", textColor:"#00E5FF", emoji:"🌊", emojiTop:true },
+        { bg:["#1a1a1a","#2d1a00"], style:"plain", textColor:"#F5C842", emoji:"✨", emojiTop:true },
       ];
-      const tpl = TEXT_TEMPLATES_UPLOAD[textPostTemplate] || TEXT_TEMPLATES_UPLOAD[0];
+      const tpl = UPLOAD_TPLS[textPostTemplate] || UPLOAD_TPLS[0];
 
       const canvas = document.createElement("canvas");
       canvas.width = 540; canvas.height = 960;
@@ -1095,57 +1096,66 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 540, 960);
 
-      const words = textPostContent.trim().split(" ");
-      const half = Math.ceil(words.length / 2);
-      const part1 = words.slice(0, half).join(" ");
-      const part2 = words.slice(half).join(" ");
+      const fontSize = 58;
+      const lineH = fontSize * 1.45;
+      const maxW = 460;
+      ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
+      ctx.textBaseline = "top";
 
-      const drawWrapped = (text, color, yStart, fontSize) => {
-        ctx.fillStyle = color;
-        ctx.font = `900 ${fontSize}px Georgia, serif`;
+      // Word-wrap into lines
+      const allWords = textPostContent.trim().split(" ");
+      const lines = []; let curLine = "";
+      for (const w of allWords) {
+        const test = curLine ? curLine + " " + w : w;
+        if (ctx.measureText(test).width > maxW && curLine) { lines.push(curLine); curLine = w; }
+        else curLine = test;
+      }
+      if (curLine) lines.push(curLine);
+
+      const totalTextH = lines.length * lineH;
+      const emojiH = tpl.emoji ? 90 : 0;
+      const emojiGap = tpl.emoji ? 24 : 0;
+      const blockH = emojiH + emojiGap + totalTextH;
+      let startY = (960 - blockH) / 2;
+
+      // Emoji
+      if (tpl.emoji) {
+        ctx.font = "80px Arial"; ctx.textAlign = "left"; ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+        ctx.fillText(tpl.emoji, 40, startY);
+        startY += emojiH + emojiGap;
+      }
+
+      ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
+
+      if (tpl.style === "highlight") {
+        // Draw highlight block behind each line (left aligned)
+        const padX = 14, padY = 8;
+        lines.forEach((l, i) => {
+          const tw = ctx.measureText(l).width;
+          const rx = 36, ry = startY + i * lineH - padY;
+          // rounded rect fill
+          ctx.fillStyle = tpl.hlColor;
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(rx, ry, tw + padX*2, fontSize + padY*2, 6) :
+            ctx.rect(rx, ry, tw + padX*2, fontSize + padY*2);
+          ctx.fill();
+          ctx.fillStyle = tpl.textColor;
+          ctx.textAlign = "left";
+          ctx.fillText(l, rx + padX, startY + i * lineH);
+        });
+      } else {
+        // Plain centered text
         ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 14;
-        const maxW = 460;
-        const words2 = text.split(" ");
-        const lines = []; let line = "";
-        for (const w of words2) {
-          const test = line ? line + " " + w : w;
-          if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
-          else line = test;
-        }
-        if (line) lines.push(line);
-        lines.forEach((l, i) => ctx.fillText(l, 270, yStart + i * (fontSize * 1.35)));
-        return lines.length * (fontSize * 1.35);
-      };
-
-      let y = tpl.emojiTop ? 320 : 360;
-
-      // Top emoji
-      if (tpl.emoji && tpl.emojiTop) {
-        ctx.font = "80px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-        ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
-        ctx.fillText(tpl.emoji, 270, 200);
-      }
-
-      // Part 1 white
-      const h1 = drawWrapped(part1, "#ffffff", y, tpl.fontSize);
-      y += h1 + 10;
-      // Part 2 accent
-      if (part2) {
-        const h2 = drawWrapped(part2, tpl.accentColor, y, tpl.fontSize);
-        y += h2;
-      }
-
-      // Bottom emoji
-      if (tpl.emoji && !tpl.emojiTop) {
-        ctx.font = "64px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-        ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
-        ctx.fillText(tpl.emoji, 270, y + 24);
+        ctx.shadowColor = tpl.bg[0] === "#ffffff" ? "transparent" : "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 10;
+        lines.forEach((l, i) => {
+          ctx.fillStyle = tpl.textColor;
+          ctx.fillText(l, 270, startY + i * lineH);
+        });
       }
 
       // Watermark
-      ctx.font = "700 18px Arial"; ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.font = "700 18px Arial"; ctx.fillStyle = "rgba(0,0,0,0.15)";
       ctx.textAlign = "right"; ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
       ctx.fillText("sachi™", 520, 930);
 
@@ -1334,87 +1344,163 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
         {/* ── TEXT POST MODE ── */}
         {uploadTab === "text" && (() => {
+          // Template definitions — each has a render function for the preview
           const TEXT_TEMPLATES = [
-            // 0 — Sun vibes: dark bg, white+purple gradient text, emoji top
-            { name:"Sun Vibes", bg:"#1a1a1a", textColor:"#ffffff", accentColor:"#b06bff",
-              font:"900 italic 36px Georgia, serif", emoji:"☀️", emojiTop:true,
-              bgStyle:"#1c1c1c", pattern:"none" },
-            // 1 — Emerald: dark green gradient, teal text
-            { name:"Emerald", bg:"linear-gradient(160deg,#0a2a1a,#0d3d2a)", textColor:"#4fffb0", accentColor:"#4fffb0",
-              font:"800 32px 'Arial Black', sans-serif", emoji:"", emojiTop:false,
-              bgStyle:"linear-gradient(160deg,#0a2a1a,#0d3d2a)", pattern:"none" },
-            // 2 — Blush: light pink, black text, playful
-            { name:"Blush", bg:"#fce4ec", textColor:"#222222", accentColor:"#e91e63",
-              font:"700 30px Georgia, serif", emoji:"🌸", emojiTop:true,
-              bgStyle:"#fce4ec", pattern:"none" },
-            // 3 — Ticket: cream/white, red border, bold black
-            { name:"Ticket", bg:"#fff8f0", textColor:"#cc0000", accentColor:"#cc0000",
-              font:"900 28px 'Courier New', monospace", emoji:"🎟️", emojiTop:false,
-              bgStyle:"#fff8f0", border:"3px dashed #cc0000", pattern:"none" },
-            // 4 — Midnight: pure black, white text, newspaper style
-            { name:"Midnight", bg:"#000000", textColor:"#ffffff", accentColor:"#ffffff",
-              font:"800 30px 'Arial Black', sans-serif", emoji:"🌙", emojiTop:false,
-              bgStyle:"#000000", pattern:"none" },
-            // 5 — Sakura (Sachi branded): deep navy, gold text
-            { name:"Sakura", bg:"linear-gradient(135deg,#0B0C1A,#1a1040)", textColor:"#F5C842", accentColor:"#ff6b9d",
-              font:"900 32px Georgia, serif", emoji:"🌸", emojiTop:true,
-              bgStyle:"linear-gradient(135deg,#0B0C1A,#1a1040)", pattern:"none" },
-            // 6 — Sunset: orange gradient, white bold
-            { name:"Sunset", bg:"linear-gradient(135deg,#FF416C,#FF9500)", textColor:"#ffffff", accentColor:"#ffe066",
-              font:"900 32px 'Arial Black', sans-serif", emoji:"🌅", emojiTop:true,
-              bgStyle:"linear-gradient(135deg,#FF416C,#FF9500)", pattern:"none" },
-            // 7 — Ocean: deep blue gradient, cyan text
-            { name:"Ocean", bg:"linear-gradient(160deg,#0F2027,#2C5364)", textColor:"#00E5FF", accentColor:"#00E5FF",
-              font:"800 30px 'Arial', sans-serif", emoji:"🌊", emojiTop:false,
-              bgStyle:"linear-gradient(160deg,#0F2027,#2C5364)", pattern:"none" },
+            {
+              name:"Blush", id:0,
+              // Pink bg, black text, pink HIGHLIGHT block behind each line, emoji top-left
+              bgStyle:"#f8b4cb",
+              render:(text, mini) => {
+                const lines = text ? text.split(" ").reduce((acc,w) => {
+                  const last = acc[acc.length-1];
+                  if (last && (last + " " + w).length <= 12) { acc[acc.length-1] = last + " " + w; }
+                  else acc.push(w);
+                  return acc;
+                }, []) : ["Hey","happy","Monday"];
+                const fs = mini ? 11 : 38;
+                const pad = mini ? "2px 5px" : "6px 14px";
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap: mini?3:8, padding: mini?"8px":"20px", width:"100%" }}>
+                    {!mini && <div style={{ fontSize:36, marginBottom:4 }}>😊</div>}
+                    {mini && <div style={{ fontSize:14, marginBottom:2 }}>😊</div>}
+                    {lines.map((l,i) => (
+                      <div key={i} style={{ background:"#e91e8c", display:"inline-block", padding:pad, borderRadius:4 }}>
+                        <span style={{ fontSize:fs, fontWeight:900, color:"#111", fontFamily:"'Arial Black',sans-serif", lineHeight:1.1 }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Note", id:1,
+              bgStyle:"linear-gradient(160deg,#b8d4f0,#d6e8ff)",
+              render:(text, mini) => {
+                const lines = text ? text.split(" ").reduce((acc,w) => {
+                  const last = acc[acc.length-1];
+                  if (last && (last + " " + w).length <= 12) { acc[acc.length-1] = last + " " + w; }
+                  else acc.push(w);
+                  return acc;
+                }, []) : ["Hey","happy","Monday"];
+                const fs = mini ? 10 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?2:6, padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {lines.map((l,i) => (
+                      <div key={i} style={{ background:"#F5C842", display:"inline-block", padding:mini?"1px 5px":"4px 12px", borderRadius:3, transform:`rotate(${i%2===0?-1:1}deg)` }}>
+                        <span style={{ fontSize:fs, fontWeight:900, color:"#222", fontFamily:"'Arial Black',sans-serif", lineHeight:1.1 }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Sakura", id:2,
+              bgStyle:"linear-gradient(135deg,#0B0C1A,#1a1040)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?3:10, padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:4 }}>🌸</div>}
+                    {mini && <div style={{ fontSize:12 }}>🌸</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#F5C842", fontFamily:"Georgia,serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Misty", id:3,
+              bgStyle:"linear-gradient(160deg,#d8e8f5,#eaf2ff)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 30;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    <span style={{ fontSize:fs, fontWeight:700, color:"#4a6fa5", fontFamily:"Georgia,serif", textAlign:"center", lineHeight:1.4, wordBreak:"break-word", opacity:0.85 }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Midnight", id:4,
+              bgStyle:"#111111",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {mini && <div style={{ fontSize:12 }}>🌙</div>}
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌙</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#fff", fontFamily:"'Arial Black',sans-serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Sunset", id:5,
+              bgStyle:"linear-gradient(135deg,#FF416C,#FF9500)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌅</div>}
+                    {mini && <div style={{ fontSize:12 }}>🌅</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#fff", fontFamily:"'Arial Black',sans-serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word", textShadow:"0 2px 8px rgba(0,0,0,0.3)" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Ocean", id:6,
+              bgStyle:"linear-gradient(160deg,#0F2027,#2C5364)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 32;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌊</div>}
+                    {mini && <div style={{ fontSize:12 }}>🌊</div>}
+                    <span style={{ fontSize:fs, fontWeight:800, color:"#00E5FF", fontFamily:"Arial,sans-serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Gold", id:7,
+              bgStyle:"linear-gradient(135deg,#1a1a1a,#2d1a00)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>✨</div>}
+                    {mini && <div style={{ fontSize:12 }}>✨</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#F5C842", fontFamily:"Georgia,serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word", textShadow:"0 0 20px rgba(245,200,66,0.4)" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
           ];
-          const tpl = TEXT_TEMPLATES[textPostTemplate];
-          const words = (textPostContent || "Your text here...").split(" ");
-          // Split into two halves for two-tone effect
-          const half = Math.ceil(words.length / 2);
-          const part1 = words.slice(0, half).join(" ");
-          const part2 = words.slice(half).join(" ");
+
+          const tpl = TEXT_TEMPLATES[textPostTemplate] || TEXT_TEMPLATES[0];
+          const displayText = textPostContent || "";
 
           return (
             <div style={{ marginBottom:16 }}>
               {/* ── Big preview card ── */}
               <div style={{
-                borderRadius:20, overflow:"hidden", marginBottom:18,
-                aspectRatio:"4/5", maxHeight:400,
-                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                borderRadius:20, overflow:"hidden", marginBottom:14,
+                aspectRatio:"4/5", maxHeight:420,
+                display:"flex", flexDirection:"column", alignItems:"stretch",
                 position:"relative",
                 background: tpl.bgStyle,
-                border: tpl.border || "none",
                 boxShadow:"0 8px 40px rgba(0,0,0,0.5)",
-                padding:24,
               }}>
-                {/* Top emoji */}
-                {tpl.emoji && tpl.emojiTop && (
-                  <div style={{ fontSize:48, marginBottom:16, filter:"drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }}>{tpl.emoji}</div>
-                )}
-
-                {/* Two-tone text */}
-                <div style={{ textAlign:"center", lineHeight:1.3, padding:"0 8px" }}>
-                  {textPostContent ? (
-                    <>
-                      <span style={{ font:tpl.font, color:"#ffffff", display:"block", marginBottom:4,
-                        textShadow:"0 2px 12px rgba(0,0,0,0.5)", wordBreak:"break-word" }}>{part1}</span>
-                      {part2 && <span style={{ font:tpl.font, color:tpl.accentColor, display:"block",
-                        textShadow:"0 2px 12px rgba(0,0,0,0.3)", wordBreak:"break-word" }}>{part2}</span>}
-                    </>
-                  ) : (
-                    <span style={{ font:tpl.font, color:"rgba(255,255,255,0.3)" }}>What's on your mind?</span>
-                  )}
-                </div>
-
-                {/* Bottom emoji (some templates) */}
-                {tpl.emoji && !tpl.emojiTop && (
-                  <div style={{ fontSize:36, marginTop:16, opacity:0.7 }}>{tpl.emoji}</div>
-                )}
-
-                {/* Sachi watermark */}
+                {tpl.render(displayText, false)}
                 <div style={{ position:"absolute", bottom:10, right:14,
-                  color:"rgba(255,255,255,0.2)", fontSize:10, fontWeight:700, letterSpacing:1 }}>sachi™</div>
+                  color:"rgba(0,0,0,0.18)", fontSize:10, fontWeight:700, letterSpacing:1 }}>sachi™</div>
               </div>
 
               {/* ── Text input ── */}
@@ -1433,24 +1519,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               <div style={{ color:"#aaa", fontSize:13, fontWeight:600, marginBottom:10 }}>Select a style</div>
 
               {/* ── Template thumbnail strip ── */}
-              <div style={{ display:"flex", gap:10, overflowX:"auto", paddingBottom:6, scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+              <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:8, scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
                 {TEXT_TEMPLATES.map((t, i) => (
                   <div key={i} onClick={() => setTextPostTemplate(i)}
                     style={{
-                      flexShrink:0, width:80, height:110, borderRadius:14,
+                      flexShrink:0, width:76, height:104, borderRadius:12,
                       background: t.bgStyle,
                       border: textPostTemplate===i ? "3px solid #F5C842" : "2px solid rgba(255,255,255,0.08)",
-                      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                      cursor:"pointer", padding:6, gap:3,
-                      boxShadow: textPostTemplate===i ? "0 0 18px rgba(245,200,66,0.5)" : "0 2px 8px rgba(0,0,0,0.4)",
+                      display:"flex", alignItems:"stretch",
+                      cursor:"pointer", overflow:"hidden", position:"relative",
+                      boxShadow: textPostTemplate===i ? "0 0 16px rgba(245,200,66,0.5)" : "0 2px 8px rgba(0,0,0,0.4)",
                       transition:"all 0.15s",
-                      transform: textPostTemplate===i ? "scale(1.05)" : "scale(1)",
-                      overflow:"hidden", position:"relative",
+                      transform: textPostTemplate===i ? "scale(1.06)" : "scale(1)",
                     }}>
-                    {t.emoji && <div style={{ fontSize:16, lineHeight:1 }}>{t.emoji}</div>}
-                    <div style={{ color:"#ffffff", fontSize:9, fontWeight:800, textAlign:"center", lineHeight:1.2, wordBreak:"break-word", maxWidth:68 }}>Hey happy</div>
-                    <div style={{ color:t.accentColor, fontSize:9, fontWeight:800, textAlign:"center", lineHeight:1.2 }}>Monday</div>
-                    <div style={{ color:"rgba(255,255,255,0.35)", fontSize:7, marginTop:2 }}>{t.name}</div>
+                    {t.render(displayText || "Hey happy Monday", true)}
                   </div>
                 ))}
               </div>
