@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import { auth } from "./api.js";
+import { auth, request } from "./api.js";
+
+const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
+const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 
 // ─── Google One Tap ────────────────────────────────────────────────────────────
-// Replace this placeholder with your real Google OAuth Client ID from:
-// console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID
-const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
-
 function GoogleOneTap({ onSuccess }) {
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID") return;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-    // Load Google Identity Services script
+  useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://accounts.google.com/gsi/client";
     script.async = true;
@@ -18,67 +18,90 @@ function GoogleOneTap({ onSuccess }) {
     script.onload = () => {
       window.google.accounts.id.initialize({
         client_id: GOOGLE_CLIENT_ID,
-        callback: async (response) => {
-          try {
-            // Decode the JWT to get user info
-            const payload = JSON.parse(atob(response.credential.split(".")[1]));
-            const { email, name, picture, sub } = payload;
-
-            // Try to sign in first, if fails create account
-            try {
-              const loginData = await auth.signIn(email, `google_${sub}`);
-              const user = loginData.user || auth.getUser();
-              onSuccess(user);
-            } catch {
-              // Account doesn't exist — create it
-              try {
-                await auth.signUp(email, `google_${sub}`, name || email.split("@")[0]);
-                // Auto-verify (skip OTP for Google users)
-                try { await auth.verifyOtp(email, "google_verified"); } catch {}
-                const loginData = await auth.signIn(email, `google_${sub}`);
-                const user = loginData.user || auth.getUser();
-                // Save avatar from Google
-                if (picture && user) {
-                  try {
-                    await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${user.id}`, {
-                      method: "PUT",
-                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.getToken()}` },
-                      body: JSON.stringify({ avatar_url: picture }),
-                    });
-                  } catch {}
-                }
-                onSuccess(user);
-              } catch (e) {
-                console.error("Google signup failed:", e);
-              }
-            }
-          } catch (e) {
-            console.error("Google One Tap error:", e);
-          }
-        },
+        callback: handleCredential,
         auto_select: false,
         cancel_on_tap_outside: false,
       });
       window.google.accounts.id.renderButton(
         document.getElementById("google-signin-btn"),
-        {
-          theme: "filled_black",
-          size: "large",
-          width: 320,
-          text: "continue_with",
-          shape: "pill",
-          logo_alignment: "left",
-        }
+        { theme: "filled_black", size: "large", width: 320, text: "continue_with", shape: "pill", logo_alignment: "left" }
       );
     };
     document.head.appendChild(script);
     return () => { try { document.head.removeChild(script); } catch {} };
   }, []);
 
-  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID") return null;
+  const handleCredential = async (response) => {
+    setLoading(true); setError("");
+    try {
+      const payload = JSON.parse(atob(response.credential.split(".")[1]));
+      const { email, name, picture, sub } = payload;
+
+      // Check if user already exists in AthaVidUser entity
+      let existingUsers;
+      try {
+        existingUsers = await fetch(
+          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+          { headers: { "Content-Type": "application/json" } }
+        ).then(r => r.json());
+      } catch { existingUsers = []; }
+
+      const items = Array.isArray(existingUsers) ? existingUsers : (existingUsers?.items || []);
+      let sachiUser = items.find(u => u.email === email);
+
+      if (!sachiUser) {
+        // Create new Sachi user profile
+        const username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g,"").toLowerCase() + Math.floor(Math.random()*999);
+        try {
+          const created = await fetch(
+            `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email,
+                username,
+                display_name: name || username,
+                avatar_url: picture || "",
+                is_verified: true,
+                status: "active",
+                followers_count: 0,
+                following_count: 0,
+                videos_count: 0,
+              })
+            }
+          ).then(r => r.json());
+          sachiUser = created;
+        } catch(e) {
+          setError("Could not create your profile. Try again."); setLoading(false); return;
+        }
+      }
+
+      // Build a local session object (same shape as Base44 user)
+      const sessionUser = {
+        id: sachiUser.id || sachiUser.created_by,
+        email,
+        full_name: name || sachiUser.display_name,
+        avatar_url: picture || sachiUser.avatar_url,
+        _google: true,
+        _sachiProfileId: sachiUser.id,
+      };
+
+      // Persist to localStorage
+      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+
+      onSuccess(sessionUser);
+    } catch(e) {
+      console.error("Google sign-in error:", e);
+      setError("Sign-in failed. Please try again.");
+    } finally { setLoading(false); }
+  };
 
   return (
-    <div style={{ width: "100%", display: "flex", justifyContent: "center", marginBottom: 16 }}>
+    <div style={{ width:"100%", display:"flex", flexDirection:"column", alignItems:"center", marginBottom:16 }}>
+      {loading && <div style={{ color:"#F5C842", fontSize:13, marginBottom:8 }}>Signing you in…</div>}
+      {error && <div style={{ color:"#ff6b6b", fontSize:12, marginBottom:8 }}>{error}</div>}
       <div id="google-signin-btn" />
     </div>
   );
@@ -87,7 +110,7 @@ function GoogleOneTap({ onSuccess }) {
 // ─── Main Auth Modal ───────────────────────────────────────────────────────────
 export default function AuthModal({ onClose, onSuccess }) {
   const [mode, setMode] = useState("signup");
-  const [step, setStep] = useState("form"); // form | otp | forgot | reset
+  const [step, setStep] = useState("form");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -105,9 +128,8 @@ export default function AuthModal({ onClose, onSuccess }) {
     try {
       await auth.forgotPassword(email);
       setStep("reset");
-    } catch (e) {
-      setError(e.message || "Could not send reset email.");
-    } finally { setLoading(false); }
+    } catch (e) { setError(e.message || "Could not send reset email."); }
+    finally { setLoading(false); }
   };
 
   const submitReset = async () => {
@@ -116,19 +138,15 @@ export default function AuthModal({ onClose, onSuccess }) {
     setLoading(true); setError("");
     try {
       await auth.resetPassword(email, resetToken, newPassword);
-      setStep("form");
-      setMode("login");
-      setError("");
-      setResetToken(""); setNewPassword("");
+      setStep("form"); setMode("login"); setError(""); setResetToken(""); setNewPassword("");
       alert("✅ Password reset! Please log in with your new password.");
-    } catch (e) {
-      setError(e.message || "Invalid token. Try again.");
-    } finally { setLoading(false); }
+    } catch (e) { setError(e.message || "Invalid token. Try again."); }
+    finally { setLoading(false); }
   };
 
   const submitForm = async () => {
     if (!email || !password) return setError("Please fill in all fields.");
-    if (mode === "signup" && !agreedToTerms) return setError("You must agree to the Terms of Service and Privacy Policy to create an account.");
+    if (mode === "signup" && !agreedToTerms) return setError("You must agree to the Terms of Service and Privacy Policy.");
     if (mode === "signup" && !dob) return setError("Please enter your date of birth.");
     if (mode === "signup") {
       const birthDate = new Date(dob);
@@ -146,13 +164,11 @@ export default function AuthModal({ onClose, onSuccess }) {
         onSuccess(user);
       } else {
         await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
-        // Store DOB in localStorage for age-gating
         localStorage.setItem("sachi_dob", dob);
         setStep("otp");
       }
-    } catch (e) {
-      setError(e.message || "Something went wrong.");
-    } finally { setLoading(false); }
+    } catch (e) { setError(e.message || "Something went wrong."); }
+    finally { setLoading(false); }
   };
 
   const submitOtp = async () => {
@@ -162,29 +178,23 @@ export default function AuthModal({ onClose, onSuccess }) {
     try {
       await auth.verifyOtp(email, code);
       onSuccess(auth.getUser());
-    } catch (e) {
-      setError(e.message || "Invalid code. Try again.");
-    } finally { setLoading(false); }
+    } catch (e) { setError(e.message || "Invalid code. Try again."); }
+    finally { setLoading(false); }
   };
 
   const inp = {
-    display: "block", width: "100%", boxSizing: "border-box",
-    background: "rgba(255,255,255,0.08)", border: "1px solid rgba(245,200,66,0.15)",
-    borderRadius: 12, padding: "14px 16px", color: "#fff", fontSize: 15,
-    outline: "none", marginBottom: 12,
+    display:"block", width:"100%", boxSizing:"border-box",
+    background:"rgba(255,255,255,0.08)", border:"1px solid rgba(245,200,66,0.15)",
+    borderRadius:12, padding:"14px 16px", color:"#fff", fontSize:15,
+    outline:"none", marginBottom:12,
   };
-
   const btn = {
-    display: "block", width: "100%", padding: "14px 0",
-    background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none",
-    borderRadius: 14, color: "#0B0C1A", fontWeight: 800, fontSize: 16,
-    cursor: "pointer", marginBottom: 10,
+    display:"block", width:"100%", padding:"14px 0",
+    background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none",
+    borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16,
+    cursor:"pointer", marginBottom:10,
   };
-
-  const backBtn = {
-    display: "block", width: "100%", padding: "10px 0", background: "none",
-    border: "none", color: "#555", fontSize: 13, cursor: "pointer",
-  };
+  const backBtn = { display:"block", width:"100%", padding:"10px 0", background:"none", border:"none", color:"#555", fontSize:13, cursor:"pointer" };
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 16px" }}>
@@ -194,7 +204,6 @@ export default function AuthModal({ onClose, onSuccess }) {
         padding:"28px 24px 32px", width:"100%", maxWidth:400, maxHeight:"90vh", overflowY:"auto",
       }}>
 
-        {/* SIGN UP / LOG IN */}
         {step === "form" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
@@ -203,10 +212,10 @@ export default function AuthModal({ onClose, onSuccess }) {
               <div style={{ color:"#777", fontSize:14 }}>Your stage. Share with the world.</div>
             </div>
 
-            {/* ── Google One Tap Button ── */}
+            {/* Google One Tap */}
             <GoogleOneTap onSuccess={onSuccess} />
 
-            {/* ── Divider ── */}
+            {/* Divider */}
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
               <div style={{ flex:1, height:1, background:"rgba(255,255,255,0.1)" }} />
               <span style={{ color:"#555", fontSize:12 }}>or continue with email</span>
@@ -224,116 +233,95 @@ export default function AuthModal({ onClose, onSuccess }) {
                 </button>
               ))}
             </div>
+
             {mode==="signup" && (
               <>
                 <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inp} />
                 <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>Date of Birth <span style={{color:"#ff6b6b"}}>*</span></div>
                 <input value={dob} onChange={e => setDob(e.target.value)} type="date"
-                  max={new Date().toISOString().split("T")[0]}
-                  style={{ ...inp, colorScheme:"dark" }} />
+                  max={new Date().toISOString().slice(0,10)} style={{ ...inp, colorScheme:"dark" }} />
               </>
             )}
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email" style={inp} />
-            <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password"
-              onKeyDown={e => e.key==="Enter" && submitForm()} style={inp} />
-            {mode === "login" && (
-              <button onClick={() => { setStep("forgot"); setError(""); }}
-                style={{ display:"block", width:"100%", textAlign:"right", background:"none", border:"none",
-                  color:"#ff8e53", fontSize:13, cursor:"pointer", marginTop:-8, marginBottom:8, padding:0 }}>
-                Forgot password?
-              </button>
+            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" style={inp}
+              onKeyDown={e => e.key==="Enter" && submitForm()} />
+            <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" style={inp}
+              onKeyDown={e => e.key==="Enter" && submitForm()} />
+
+            {mode==="signup" && (
+              <label style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:16, cursor:"pointer" }}>
+                <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ marginTop:3, accentColor:"#F5C842" }} />
+                <span style={{ color:"#888", fontSize:12, lineHeight:1.5 }}>
+                  I agree to Sachi's{" "}
+                  <a href="/terms" target="_blank" style={{ color:"#F5C842" }}>Terms of Service</a> and{" "}
+                  <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
+                  By signing up, I acknowledge that Sachi and AthaVid are not liable for user-generated content.
+                </span>
+              </label>
             )}
-            {mode === "signup" && (
-              <div style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:14, marginTop:4 }}>
-                <div onClick={() => setAgreedToTerms(v => !v)}
-                  style={{ width:22, height:22, borderRadius:6, border: agreedToTerms ? "none" : "2px solid rgba(255,255,255,0.3)",
-                    background: agreedToTerms ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.06)",
-                    display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, marginTop:1 }}>
-                  {agreedToTerms && <span style={{ color:"#fff", fontSize:14, fontWeight:900 }}>✓</span>}
-                </div>
-                <div style={{ color:"#aaa", fontSize:13, lineHeight:1.6 }}>
-                  I am 18 years or older. I have read and agree to the{" "}
-                  <a href="/terms" target="_blank" rel="noopener noreferrer"
-                    style={{ color:"#ff8e53", textDecoration:"underline" }}>Terms of Service</a>
-                  {" "}and{" "}
-                  <a href="/privacy" target="_blank" rel="noopener noreferrer"
-                    style={{ color:"#ff8e53", textDecoration:"underline" }}>Privacy Policy</a>
-                  , including that <strong style={{color:"#fff"}}>Sachi is not responsible or liable for content posted by other users.</strong>
-                </div>
-              </div>
-            )}
-            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
+
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
             <button onClick={submitForm} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
               {loading ? "Please wait…" : mode==="signup" ? "Create Account" : "Log In"}
             </button>
+            {mode==="login" && (
+              <button onClick={() => { setStep("forgot"); setError(""); }} style={backBtn}>Forgot password?</button>
+            )}
+            <button onClick={onClose} style={backBtn}>Cancel</button>
           </>
         )}
 
-        {/* OTP VERIFICATION */}
         {step === "otp" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
               <div style={{ fontSize:40 }}>📧</div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 6px" }}>Check your email</div>
-              <div style={{ color:"#888", fontSize:14, lineHeight:1.6 }}>
-                We sent a 6-digit code to<br/>
-                <span style={{ color:"#F5C842", fontWeight:700 }}>{email}</span>
-              </div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 4px" }}>Check your email</div>
+              <div style={{ color:"#777", fontSize:13 }}>We sent a verification code to<br/><strong style={{color:"#F5C842"}}>{email}</strong></div>
             </div>
-            <input autoFocus value={otp} onChange={e => setOtp(e.target.value)}
-              placeholder="Enter 6-digit code" type="number"
-              onKeyDown={e => e.key==="Enter" && submitOtp()}
-              style={{ ...inp, fontSize:22, textAlign:"center", letterSpacing:8 }} />
-            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
+            <input value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter verification code" style={inp}
+              onKeyDown={e => e.key==="Enter" && submitOtp()} />
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
             <button onClick={submitOtp} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Verifying…" : "Verify & Enter Sachi"}
+              {loading ? "Verifying…" : "Verify & Join"}
             </button>
+            <button onClick={() => auth.resendOtp(email).catch(()=>{})} style={backBtn}>Resend code</button>
             <button onClick={() => { setStep("form"); setError(""); }} style={backBtn}>← Back</button>
           </>
         )}
 
-        {/* FORGOT PASSWORD */}
         {step === "forgot" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
-              <div style={{ fontSize:40 }}>🔑</div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 6px" }}>Reset Password</div>
-              <div style={{ color:"#888", fontSize:14 }}>Enter your email and we'll send a reset link</div>
+              <div style={{ fontSize:36 }}>🔑</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 4px" }}>Reset Password</div>
+              <div style={{ color:"#777", fontSize:13 }}>Enter your email and we'll send a reset code</div>
             </div>
-            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" type="email"
-              onKeyDown={e => e.key==="Enter" && submitForgot()} style={inp} />
-            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
+            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email" type="email" style={inp}
+              onKeyDown={e => e.key==="Enter" && submitForgot()} />
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
             <button onClick={submitForgot} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Sending…" : "Send Reset Link"}
+              {loading ? "Sending…" : "Send Reset Code"}
             </button>
-            <button onClick={() => { setStep("form"); setError(""); }} style={backBtn}>← Back to Log In</button>
+            <button onClick={() => { setStep("form"); setError(""); }} style={backBtn}>← Back to Login</button>
           </>
         )}
 
-        {/* RESET PASSWORD */}
         {step === "reset" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
-              <div style={{ fontSize:40 }}>📧</div>
-              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 6px" }}>Check your email</div>
-              <div style={{ color:"#888", fontSize:13, lineHeight:1.6 }}>
-                We sent a reset link to <span style={{ color:"#ff8e53", fontWeight:700 }}>{email}</span>.<br/>
-                Copy the <strong style={{color:"#fff"}}>reset token</strong> from the link and paste it below.
-              </div>
+              <div style={{ fontSize:36 }}>🔐</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:20, margin:"8px 0 4px" }}>Set New Password</div>
+              <div style={{ color:"#777", fontSize:13 }}>Enter the code from your email</div>
             </div>
-            <input autoFocus value={resetToken} onChange={e => setResetToken(e.target.value.trim())}
-              placeholder="Paste reset token here" style={{ ...inp, fontSize:13, letterSpacing:1 }} />
-            <input value={newPassword} onChange={e => setNewPassword(e.target.value)}
-              placeholder="New password (min 6 chars)" type="password"
-              onKeyDown={e => e.key==="Enter" && submitReset()} style={inp} />
-            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:10, textAlign:"center" }}>{error}</div>}
+            <input value={resetToken} onChange={e => setResetToken(e.target.value)} placeholder="Reset code" style={inp} />
+            <input value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" type="password" style={inp}
+              onKeyDown={e => e.key==="Enter" && submitReset()} />
+            {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
             <button onClick={submitReset} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Resetting…" : "Set New Password"}
+              {loading ? "Resetting…" : "Reset Password"}
             </button>
-            <button onClick={() => { setStep("form"); setError(""); }} style={backBtn}>← Back to Log In</button>
+            <button onClick={() => { setStep("form"); setError(""); }} style={backBtn}>← Back</button>
           </>
         )}
-
       </div>
     </div>
   );
