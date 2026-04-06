@@ -12422,19 +12422,29 @@ function App() {
       videos.myVideos(currentUser.id).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => setMyVideos([]));
     }
   }, [activeTab, currentUser]);
-  const handleLike = (videoId, delta) => {
-    var _a2;
+  const handleLike = React.useCallback((videoId, delta) => {
+    const feedEl = feedContainerRef.current;
+    const savedScroll = feedEl ? feedEl.scrollTop : 0;
     setVideoList((vs) => vs.map((v2) => v2.id === videoId ? { ...v2, likes_count: Math.max(0, (v2.likes_count || 0) + delta) } : v2));
-    const vid = videoList.find((v2) => v2.id === videoId);
-    if (vid) {
-      videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count || 0) + delta) }).catch(() => {
+    if (feedEl) {
+      requestAnimationFrame(() => {
+        feedEl.scrollTop = savedScroll;
       });
-      if (currentUser && ((_a2 = vid.hashtags) == null ? void 0 : _a2.length)) {
-        interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(() => {
-        });
-      }
     }
-  };
+    setVideoList((current) => {
+      var _a2;
+      const vid = current.find((v2) => v2.id === videoId);
+      if (vid) {
+        videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count || 0) + delta) }).catch(() => {
+        });
+        if (currentUser && ((_a2 = vid.hashtags) == null ? void 0 : _a2.length)) {
+          interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(() => {
+          });
+        }
+      }
+      return current;
+    });
+  }, [currentUser, feedContainerRef]);
   const handleView = (videoId) => {
     var _a2;
     setVideoList((vs) => vs.map((v2) => v2.id === videoId ? { ...v2, views_count: (v2.views_count || 0) + 1 } : v2));
@@ -12529,10 +12539,6 @@ function App() {
     activeTab === "feed" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: (el2) => {
       feedContainerRef.current = el2;
       window.__sachiEl = el2;
-      if (el2) {
-        el2.scrollTop = 0;
-        window.__sachiEl.scrollTop = 0;
-      }
     }, style: { height: "100svh", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y" }, children: [
       feedTab === "following" && followingIds.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         height: "100svh",
