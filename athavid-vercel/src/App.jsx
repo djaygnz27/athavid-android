@@ -1072,6 +1072,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
+        sound_title: selectedTrack?.title || null,
+        sound_artist: selectedTrack?.artist || null,
+        sound_url: selectedTrack?.url || null,
         ...videoGeo,
       });
       setProgress(100);
@@ -1905,14 +1908,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                         setPreviewTrack(null);
                       } else {
                         setPreviewTrack(track.id);
-                        setTimeout(() => {
-                          if (previewAudioRef.current) {
-                            previewAudioRef.current.pause();
-                            previewAudioRef.current.src = track.url;
-                            previewAudioRef.current.load();
-                            previewAudioRef.current.play().catch(err => console.log("Audio play error:", err));
-                          }
-                        }, 50);
+                        // Must call play() synchronously within the user gesture (no setTimeout)
+                        if (previewAudioRef.current) {
+                          previewAudioRef.current.pause();
+                          previewAudioRef.current.src = track.url;
+                          previewAudioRef.current.load();
+                          previewAudioRef.current.play().catch(err => console.warn("[Sachi Preview]", err));
+                        }
                       }
                     }} style={{ background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
                       border:"2px solid rgba(255,107,107,0.4)", borderRadius:"50%",
@@ -2069,6 +2071,7 @@ function getUserAge() {
 
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
   const videoRef = useRef(null);
+  const soundRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -2359,12 +2362,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <>
             <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
               loop playsInline
-              onPlay={() => { setPlaying(true); hideUIAfterDelay(1500); }}
-              onPause={() => setPlaying(false)}
+              onPlay={() => {
+                setPlaying(true); hideUIAfterDelay(1500);
+                if (soundRef.current && video.sound_url && !muted) {
+                  soundRef.current.play().catch(() => {});
+                }
+              }}
+              onPause={() => {
+                setPlaying(false);
+                if (soundRef.current) soundRef.current.pause();
+              }}
               style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+            {video.sound_url && (
+              <audio ref={soundRef} src={video.sound_url} loop preload="none"
+                style={{ display:"none" }} />
+            )}
             {muted && (
-              <div onTouchStart={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); } }}}
-                onClick={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); } }}}
+              <div onTouchStart={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
+                onClick={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
                 style={{ position:"absolute", bottom:140, left:"50%", transform:"translateX(-50%)", zIndex:200,
                   background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
                   padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
