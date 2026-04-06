@@ -1451,34 +1451,38 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </div>
           )}
 
-          {/* ── PREV: small arrow bottom-left corner ── */}
-          {photoUrls.length > 1 && photoIdx > 0 && (
-            <button
-              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p - 1); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
-              style={{
-                position:"absolute", bottom:8, left:8, zIndex:300,
-                background:"rgba(0,0,0,0.55)", border:"none",
-                borderRadius:10, width:36, height:32,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:20, color:"#fff", fontWeight:900,
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
-              }}>‹</button>
-          )}
+          {/* ── PREV + NEXT arrows centered together at bottom ── */}
+          {photoUrls.length > 1 && (
+            <div style={{
+              position:"absolute", bottom:10, left:"50%", transform:"translateX(-50%)",
+              display:"flex", alignItems:"center", gap:8, zIndex:300
+            }}>
+              <button
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                disabled={photoIdx === 0}
+                style={{
+                  background: photoIdx===0 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
+                  border:"none", borderRadius:8, width:32, height:28,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:18, color: photoIdx===0 ? "rgba(255,255,255,0.2)" : "#fff",
+                  fontWeight:900, cursor: photoIdx===0 ? "default" : "pointer",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation"
+                }}>‹</button>
 
-          {/* ── NEXT: small arrow bottom-right corner ── */}
-          {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
-            <button
-              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p + 1); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
-              style={{
-                position:"absolute", bottom:8, right:8, zIndex:300,
-                background:"rgba(0,0,0,0.55)", border:"none",
-                borderRadius:10, width:36, height:32,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:20, color:"#fff", fontWeight:900,
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
-              }}>›</button>
+              <button
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                disabled={photoIdx === photoUrls.length-1}
+                style={{
+                  background: photoIdx===photoUrls.length-1 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
+                  border:"none", borderRadius:8, width:32, height:28,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:18, color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
+                  fontWeight:900, cursor: photoIdx===photoUrls.length-1 ? "default" : "pointer",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation"
+                }}>›</button>
+            </div>
           )}
         </div>
       ) : (() => {
@@ -3490,3 +3494,4 @@ function App() {
 
 export default App;
 // v1775417720513
+
