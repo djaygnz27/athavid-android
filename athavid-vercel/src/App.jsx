@@ -880,6 +880,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [aiBlocked, setAiBlocked] = useState(false);
   const [isAiGenerated, setIsAiGenerated] = useState(false);
 
+  // Text post states
+  const [textPostContent, setTextPostContent] = useState("");
+  const [textPostBg, setTextPostBg] = useState("bg1");
+  const [textPostAlign, setTextPostAlign] = useState("center");
+  const [textPostFontSize, setTextPostFontSize] = useState(28);
+
   const checkForExplicitContent = (f, cap) => {
     const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
     const name = f.name.toLowerCase();
@@ -1064,6 +1070,95 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     }
   };
 
+  const uploadTextPost = async () => {
+    if (!textPostContent.trim()) { alert("Please write something first!"); return; }
+    setUploading(true); setProgress(10);
+    try {
+      setStep("Creating text post...");
+      // Generate a card image from the text post using a canvas
+      const canvas = document.createElement("canvas");
+      canvas.width = 540; canvas.height = 960;
+      const ctx = canvas.getContext("2d");
+
+      // Background gradient
+      const bgMap = {
+        bg1:["#1a1a2e","#16213e"], bg2:["#0F2027","#2C5364"], bg3:["#7C3AED","#A855F7"],
+        bg4:["#FF416C","#FF4B2B"], bg5:["#F5C842","#FF9500"], bg6:["#11998e","#38ef7d"],
+        bg7:["#000000","#434343"], bg8:["#ffffff","#eeeeee"],
+      };
+      const [c1, c2] = bgMap[textPostBg] || ["#1a1a2e","#16213e"];
+      const grad = ctx.createLinearGradient(0,0,540,960);
+      grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,540,960);
+
+      // Text
+      const isLight = textPostBg === "bg8";
+      ctx.fillStyle = isLight ? "#111111" : "#ffffff";
+      ctx.font = `900 ${Math.round(textPostFontSize * 1.5)}px Arial, sans-serif`;
+      ctx.textAlign = textPostAlign === "left" ? "left" : textPostAlign === "right" ? "right" : "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = isLight ? "transparent" : "rgba(0,0,0,0.4)";
+      ctx.shadowBlur = 12;
+
+      // Word wrap
+      const maxW = 460;
+      const words = textPostContent.trim().split(" ");
+      const lines = [];
+      let line = "";
+      for (const w of words) {
+        const test = line ? line + " " + w : w;
+        if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+        else { line = test; }
+      }
+      if (line) lines.push(line);
+
+      const lineH = Math.round(textPostFontSize * 1.5 * 1.3);
+      const totalH = lines.length * lineH;
+      const startY = (960 - totalH) / 2 + lineH / 2;
+      const xPos = textPostAlign === "left" ? 40 : textPostAlign === "right" ? 500 : 270;
+      lines.forEach((l, i) => ctx.fillText(l, xPos, startY + i * lineH));
+
+      // Watermark
+      ctx.font = "700 18px Arial";
+      ctx.fillStyle = isLight ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)";
+      ctx.textAlign = "right";
+      ctx.fillText("sachi™", 520, 930);
+
+      // Export canvas to file
+      setProgress(30);
+      const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.92));
+      const imgFile = new File([blob], `textpost_${Date.now()}.jpg`, { type:"image/jpeg" });
+      setStep("Uploading...");
+      const img_url = await uploadFile(imgFile);
+      setProgress(75);
+      setStep("Posting...");
+      const textGeo = await getPostLocation();
+      const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
+      await videos.create({
+        user_id: currentUser.id, username,
+        display_name: currentUser.full_name || username,
+        avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+        video_url: img_url, thumbnail_url: img_url,
+        photo_urls: JSON.stringify([img_url]),
+        is_photo: true,
+        caption: textPostContent.trim(),
+        hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
+        likes_count:0, comments_count:0, views_count:0, shares_count:0,
+        is_approved: true, is_archived: false, is_ai_detected: false,
+        is_mature: false, sound_title: "Text Post", sound_artist: "sachi",
+        ...textGeo,
+      });
+      setProgress(100);
+      setStep("Posted! 🎉");
+      setTimeout(() => { onUploaded(); onClose(); }, 1000);
+    } catch(e) {
+      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      setUploading(false); setProgress(0); setStep("");
+    }
+  };
+
   return (
     <>
     {showEditor && (
@@ -1086,21 +1181,22 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:2001 }}>
         <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 20px" }} />
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{uploadTab==="video" ? "📹 Post a Video" : "🖼️ Post Photos"}</div>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{uploadTab==="video" ? "📹 Post a Video" : uploadTab==="photo" ? "🖼️ Post Photos" : "✏️ Text Post"}</div>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:32, height:32, color:"#fff", cursor:"pointer" }}>✕</button>
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:8, marginBottom:18, background:"rgba(255,255,255,0.05)", borderRadius:14, padding:4 }}>
-          {[{id:"video",label:"🎬 Video"},{id:"photo",label:"🖼️ Photos"}].map(t => (
+          {[{id:"video",label:"🎬 Video"},{id:"photo",label:"🖼️ Photos"},{id:"text",label:"✏️ Text"}].map(t => (
             <button key={t.id} onClick={() => { setUploadTab(t.id); setFile(null); setPhotos([]); }}
               style={{ flex:1, padding:"10px 0", borderRadius:11, border:"none",
-                background: uploadTab===t.id ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "transparent",
-                color: uploadTab===t.id ? "#fff" : "#888", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                background: uploadTab===t.id ? (t.id==="text" ? "linear-gradient(135deg,#7C3AED,#A855F7)" : "linear-gradient(135deg,#ff6b6b,#ff8e53)") : "transparent",
+                color: uploadTab===t.id ? "#fff" : "#888", fontWeight:800, fontSize:13, cursor:"pointer" }}>
               {t.label}
             </button>
           ))}
         </div>
 
+        {uploadTab !== "text" && (<>
         {/* Duration Selector */}
         <div style={{ marginBottom:16 }}>
           <div style={{ color:"#aaa", fontSize:12, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:1 }}>Video Length</div>
@@ -1183,8 +1279,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
         </>
         )}
-        <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write a caption... #hashtags" rows={3}
-          style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:16 }} />
+        {uploadTab !== "text" && <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write a caption... #hashtags" rows={3}
+          style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:16 }} />}
 
         {/* Location permission prompt — only show if not yet granted */}
         {!localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && (
@@ -1215,6 +1311,101 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
+        </>)}
+
+        {/* ── TEXT POST MODE ── */}
+        {uploadTab === "text" && (
+          <div style={{ marginBottom:16 }}>
+            {/* Big text preview card */}
+            <div style={{
+              borderRadius:20, overflow:"hidden", marginBottom:14,
+              aspectRatio:"9/16", maxHeight:360, display:"flex", alignItems:"center", justifyContent:"center",
+              position:"relative",
+              background: {
+                bg1:"linear-gradient(135deg,#1a1a2e,#16213e)",
+                bg2:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)",
+                bg3:"linear-gradient(135deg,#7C3AED,#A855F7)",
+                bg4:"linear-gradient(135deg,#FF416C,#FF4B2B)",
+                bg5:"linear-gradient(135deg,#F5C842,#FF9500)",
+                bg6:"linear-gradient(135deg,#11998e,#38ef7d)",
+                bg7:"linear-gradient(135deg,#000000,#434343)",
+                bg8:"#ffffff",
+              }[textPostBg],
+            }}>
+              <div style={{
+                color: textPostBg==="bg8" ? "#000" : "#fff",
+                fontSize: textPostFontSize,
+                fontWeight:800,
+                textAlign: textPostAlign,
+                padding:24,
+                lineHeight:1.4,
+                textShadow: textPostBg==="bg8" ? "none" : "0 2px 12px rgba(0,0,0,0.4)",
+                wordBreak:"break-word",
+                width:"100%",
+                letterSpacing: textPostFontSize > 30 ? "-0.5px" : "0px",
+              }}>
+                {textPostContent || <span style={{ opacity:0.3 }}>Your text here...</span>}
+              </div>
+              {/* Sachi watermark */}
+              <div style={{ position:"absolute", bottom:10, right:12, color: textPostBg==="bg8" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)", fontSize:11, fontWeight:700 }}>sachi™</div>
+            </div>
+
+            {/* Text input */}
+            <textarea
+              autoFocus
+              value={textPostContent}
+              onChange={e => setTextPostContent(e.target.value)}
+              placeholder="What's on your mind?"
+              rows={3}
+              style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"2px solid rgba(255,255,255,0.15)", borderRadius:14, padding:"12px 14px", color:"#fff", fontSize:15, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:12, fontWeight:600 }}
+            />
+
+            {/* Background picker */}
+            <div style={{ color:"#aaa", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Background</div>
+            <div style={{ display:"flex", gap:8, marginBottom:14, overflowX:"auto", paddingBottom:4 }}>
+              {[
+                {id:"bg1", bg:"linear-gradient(135deg,#1a1a2e,#16213e)", label:"Dark"},
+                {id:"bg2", bg:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)", label:"Ocean"},
+                {id:"bg3", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", label:"Purple"},
+                {id:"bg4", bg:"linear-gradient(135deg,#FF416C,#FF4B2B)", label:"Red"},
+                {id:"bg5", bg:"linear-gradient(135deg,#F5C842,#FF9500)", label:"Gold"},
+                {id:"bg6", bg:"linear-gradient(135deg,#11998e,#38ef7d)", label:"Green"},
+                {id:"bg7", bg:"linear-gradient(135deg,#000,#434343)", label:"Black"},
+                {id:"bg8", bg:"#fff", label:"White"},
+              ].map(b => (
+                <div key={b.id} onClick={() => setTextPostBg(b.id)}
+                  style={{ flexShrink:0, width:40, height:40, borderRadius:10, background:b.bg,
+                    border: textPostBg===b.id ? "3px solid #F5C842" : "2px solid transparent",
+                    cursor:"pointer", boxShadow: textPostBg===b.id ? "0 0 10px rgba(245,200,66,0.5)" : "none",
+                    transition:"all 0.15s" }} />
+              ))}
+            </div>
+
+            {/* Font size + alignment row */}
+            <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:14 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ color:"#aaa", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Size: {textPostFontSize}px</div>
+                <input type="range" min={16} max={52} step={2} value={textPostFontSize}
+                  onChange={e => setTextPostFontSize(parseInt(e.target.value))}
+                  style={{ width:"100%", accentColor:"#A855F7" }} />
+              </div>
+              <div style={{ display:"flex", gap:6 }}>
+                {[{v:"left",icon:"⬛◻◻"},{v:"center",icon:"◻⬛◻"},{v:"right",icon:"◻◻⬛"}].map(a => (
+                  <button key={a.v} onClick={() => setTextPostAlign(a.v)}
+                    style={{ width:36, height:36, borderRadius:10, border:"none", cursor:"pointer", fontSize:10,
+                      background: textPostAlign===a.v ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.07)",
+                      color: textPostAlign===a.v ? "#A855F7" : "#666",
+                      borderColor: textPostAlign===a.v ? "#A855F7" : "transparent",
+                      borderWidth:2, borderStyle:"solid" }}>
+                    {a.v === "left" ? "⬅" : a.v === "center" ? "↔" : "➡"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {uploadTab !== "text" && <>
         {/* Music Picker Button */}
         <div onClick={() => setShowMusicPicker(s => !s)}
           style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", marginBottom:12, cursor:"pointer" }}>
@@ -1358,6 +1549,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
+        </>}
+
         {uploading && (
           <div style={{ marginBottom:16 }}>
             <div style={{ color:"#aaa", fontSize:13, marginBottom:6 }}>{step}</div>
@@ -1366,7 +1559,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             </div>
           </div>
         )}
-        {uploadTab === "photo" ? (
+        {uploadTab === "text" ? (
+          <button onClick={uploadTextPost} disabled={!textPostContent.trim() || uploading}
+            style={{ width:"100%", padding:14, background: textPostContent.trim() && !uploading ? "linear-gradient(135deg,#7C3AED,#A855F7)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: textPostContent.trim() && !uploading ? "pointer" : "not-allowed", opacity: textPostContent.trim() && !uploading ? 1 : 0.5 }}>
+            {uploading ? step : "✏️ Post Text"}
+          </button>
+        ) : uploadTab === "photo" ? (
           <button onClick={uploadPhotos} disabled={!photos.length || uploading}
             style={{ width:"100%", padding:14, background: photos.length && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: photos.length && !uploading ? "pointer" : "not-allowed", opacity: photos.length && !uploading ? 1 : 0.5 }}>
             {uploading ? step : `🖼️ Post ${photos.length > 0 ? photos.length : ""} Photo${photos.length !== 1 ? "s" : ""}`}
