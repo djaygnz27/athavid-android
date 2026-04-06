@@ -2744,7 +2744,16 @@ function App() {
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
-  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    // Pre-load from localStorage to avoid flash on reload
+    try {
+      const last = localStorage.getItem('avatar_last');
+      if (last) return last;
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('avatar_'));
+      if (keys.length > 0) return localStorage.getItem(keys[0]) || null;
+    } catch(e) {}
+    return null;
+  });
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileName, setEditProfileName] = useState('');
@@ -2778,6 +2787,7 @@ function App() {
           if (match && match.avatar_url) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
+            localStorage.setItem(`avatar_last`, match.avatar_url);
           } else if (currentUser.avatar_url) {
             setAvatarUrl(currentUser.avatar_url);
           } else {

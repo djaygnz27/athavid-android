@@ -12035,7 +12035,18 @@ function App() {
   const [loginToast, setLoginToast] = reactExports.useState(false);
   const [showAuth, setShowAuth] = reactExports.useState(false);
   const [myVideos, setMyVideos] = reactExports.useState([]);
-  const [avatarUrl, setAvatarUrl] = reactExports.useState(null);
+  const [avatarUrl, setAvatarUrl] = reactExports.useState(() => {
+    try {
+      const last = localStorage.getItem("avatar_last");
+      if (last)
+        return last;
+      const keys = Object.keys(localStorage).filter((k2) => k2.startsWith("avatar_"));
+      if (keys.length > 0)
+        return localStorage.getItem(keys[0]) || null;
+    } catch (e) {
+    }
+    return null;
+  });
   const [showAvatarPicker, setShowAvatarPicker] = reactExports.useState(false);
   const [showEditProfile, setShowEditProfile] = reactExports.useState(false);
   const [editProfileName, setEditProfileName] = reactExports.useState("");
@@ -12068,6 +12079,7 @@ function App() {
           if (match && match.avatar_url) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
+            localStorage.setItem(`avatar_last`, match.avatar_url);
           } else if (currentUser.avatar_url) {
             setAvatarUrl(currentUser.avatar_url);
           } else {
