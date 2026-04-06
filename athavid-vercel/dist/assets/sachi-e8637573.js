@@ -8762,6 +8762,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         thumbUrl = await uploadFile(thumbFile);
       } catch (_) {
       }
+      const liveGeo = await getPostLocation();
       await videos.create({
         user_id: currentUser.id,
         username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
@@ -8778,7 +8779,8 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         is_approved: true,
         is_archived: false,
         is_ai_detected: false,
-        duration_seconds: elapsed
+        duration_seconds: elapsed,
+        ...liveGeo
       });
       setPhase("done");
       setTimeout(() => {
@@ -9492,6 +9494,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       }
       setProgress(85);
       setStep("Saving to feed...");
+      const photoGeo = await getPostLocation();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       const tags = (caption.match(/#\w+/g) || []).map((t2) => t2.toLowerCase());
       await videos.create({
@@ -9513,7 +9516,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_archived: false,
         is_ai_detected: false,
         is_mature: isMature,
-        mature_reason: isMature ? matureReason : null
+        mature_reason: isMature ? matureReason : null,
+        ...photoGeo
       });
       setProgress(100);
       setStep("Posted! 🎉");
@@ -9575,6 +9579,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       }
       setProgress(80);
       setStep("Saving to feed...");
+      const videoGeo = await getPostLocation();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       const tags = (caption.match(/#\w+/g) || []).map((t2) => t2.toLowerCase());
       await videos.create({
@@ -9594,7 +9599,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_archived: false,
         is_ai_detected: false,
         is_mature: isMature,
-        mature_reason: isMature ? matureReason : null
+        mature_reason: isMature ? matureReason : null,
+        ...videoGeo
       });
       setProgress(100);
       setStep("Posted! 🎉");
@@ -10415,7 +10421,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         width: "fit-content"
       }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12 }, children: "📅" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600 }, children: formatDate(video.created_date) })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600 }, children: [
+          formatDate(video.created_date),
+          video.post_country && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: 6, opacity: 0.9 }, children: [
+            countryFlag(video.post_country),
+            video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`
+          ] })
+        ] })
       ] })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 72, left: 14, display: "flex", flexDirection: "row", alignItems: "center", gap: 10, zIndex: 999 }, children: [

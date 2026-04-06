@@ -65,8 +65,7 @@
       "type": "string"
     },
     "is_mature": {
-      "type": "boolean",
-      "description": "Mature content \u2014 fighting, violence, adult themes. Hidden from users under 18."
+      "type": "boolean"
     },
     "mature_reason": {
       "type": "string",
@@ -79,12 +78,18 @@
       ]
     },
     "is_photo": {
-      "type": "boolean",
-      "description": "True if this post is a photo carousel instead of a video"
+      "type": "boolean"
     },
     "photo_urls": {
+      "type": "string"
+    },
+    "post_country": {
       "type": "string",
-      "description": "JSON-stringified array of photo URLs for carousel posts"
+      "description": "2-letter ISO country code of poster e.g. US, AU, GB"
+    },
+    "post_region": {
+      "type": "string",
+      "description": "State/region abbreviation e.g. NJ, QLD, ON"
     }
   },
   "required": [],
