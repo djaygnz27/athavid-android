@@ -3728,7 +3728,11 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     if (endingLive) return;
                     setEndingLive(true);
                     try {
-                      await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 });
+                      await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                        method:"POST", headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
+                      }).catch(()=>{});
+                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 }); } catch {}
                       setSelectedPodcast(p => ({...p, is_live:false, listener_count:0}));
                       setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:false} : p));
                       showToast("✅ Live session ended successfully", "success");
@@ -3775,14 +3779,16 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     if (goingLive) return;
                     setGoingLive(true);
                     try {
-                      await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true });
-                      await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      // Use podcastGoLiveNotify which handles the DB update via service role
+                      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
                         method:"POST", headers:{"Content-Type":"application/json"},
-                        body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"" })
-                      }).catch(()=>{});
+                        body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
+                      });
+                      // Also try direct PATCH (works if user has token)
+                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true }); } catch {}
                       setSelectedPodcast(p => ({...p, is_live:true}));
                       setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:true} : p));
-                      showToast("🔴 You are LIVE! 11 users notified.", "live");
+                      showToast("🔴 You are LIVE! Users are being notified.", "live");
                     } catch(e) { showToast("Could not go live. Try again.", "error"); }
                     setGoingLive(false);
                   }}
