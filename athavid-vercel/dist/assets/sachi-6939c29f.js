@@ -9135,44 +9135,6 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     ] })
   ] });
 }
-const MUSIC_LIBRARY = [
-  // Lo-Fi Hip-Hop
-  { id: "lo1", genre: "Lo-Fi", title: "City Lights", artist: "Lukrembo", url: "https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3", emoji: "🌃" },
-  { id: "lo2", genre: "Lo-Fi", title: "Sunset Boulevard", artist: "Lukrembo", url: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3", emoji: "🌅" },
-  { id: "lo3", genre: "Lo-Fi", title: "Chill Lounge", artist: "Chill Music Lab", url: "https://cdn.pixabay.com/audio/2022/03/15/audio_8cb749ef8e.mp3", emoji: "☕" },
-  { id: "lo4", genre: "Lo-Fi", title: "Late Night Drive", artist: "Mubert", url: "https://cdn.pixabay.com/audio/2022/10/25/audio_fc4e2ab87f.mp3", emoji: "🚗" },
-  { id: "lo5", genre: "Lo-Fi", title: "Rainy Window", artist: "Lo-Fi Cafe", url: "https://cdn.pixabay.com/audio/2023/01/25/audio_27788ce40e.mp3", emoji: "🌧️" },
-  // Hip-Hop / Trap
-  { id: "hh1", genre: "Hip-Hop", title: "Dark Trap", artist: "SoundGuy", url: "https://cdn.pixabay.com/audio/2022/09/07/audio_51e01a5b75.mp3", emoji: "🔥" },
-  { id: "hh2", genre: "Hip-Hop", title: "Street Anthem", artist: "Beat Factory", url: "https://cdn.pixabay.com/audio/2022/11/22/audio_febc508520.mp3", emoji: "🏙️" },
-  { id: "hh3", genre: "Hip-Hop", title: "Hustle Hard", artist: "Rap Beats Lab", url: "https://cdn.pixabay.com/audio/2022/06/08/audio_c8e134dc61.mp3", emoji: "💪" },
-  { id: "hh4", genre: "Hip-Hop", title: "Midnight Flex", artist: "Urban Beats", url: "https://cdn.pixabay.com/audio/2023/02/08/audio_d1718ab358.mp3", emoji: "🌙" },
-  // Electronic / EDM
-  { id: "el1", genre: "Electronic", title: "Bass Rush", artist: "EDM Factory", url: "https://cdn.pixabay.com/audio/2022/07/25/audio_124bbbcb24.mp3", emoji: "⚡" },
-  { id: "el2", genre: "Electronic", title: "Neon Club", artist: "Synth Lab", url: "https://cdn.pixabay.com/audio/2022/08/23/audio_d16737dc28.mp3", emoji: "🎛️" },
-  { id: "el3", genre: "Electronic", title: "Future Drop", artist: "Synth Lab", url: "https://cdn.pixabay.com/audio/2021/11/13/audio_cb31b3a2ee.mp3", emoji: "🚀" },
-  { id: "el4", genre: "Electronic", title: "Cyber Pulse", artist: "Digital Wave", url: "https://cdn.pixabay.com/audio/2022/10/16/audio_99e31cb11f.mp3", emoji: "🤖" },
-  // R&B / Soul
-  { id: "rb1", genre: "R&B", title: "Smooth Feelings", artist: "Soul Kitchen", url: "https://cdn.pixabay.com/audio/2022/05/16/audio_8c7760a56c.mp3", emoji: "❤️" },
-  { id: "rb2", genre: "R&B", title: "Late Night Feels", artist: "Velvet Groove", url: "https://cdn.pixabay.com/audio/2023/03/09/audio_c8690f4a79.mp3", emoji: "🌙" },
-  { id: "rb3", genre: "R&B", title: "Golden Hour", artist: "Soul Kitchen", url: "https://cdn.pixabay.com/audio/2022/11/09/audio_b9f8252784.mp3", emoji: "✨" },
-  // Pop
-  { id: "pp1", genre: "Pop", title: "Good Vibes Only", artist: "Pop Studio", url: "https://cdn.pixabay.com/audio/2022/08/04/audio_2dde668d05.mp3", emoji: "🌈" },
-  { id: "pp2", genre: "Pop", title: "Summer Heat", artist: "Pop Studio", url: "https://cdn.pixabay.com/audio/2023/02/28/audio_7b006e5e1b.mp3", emoji: "☀️" },
-  { id: "pp3", genre: "Pop", title: "Dance Floor", artist: "Feel Good Music", url: "https://cdn.pixabay.com/audio/2022/10/10/audio_4a7ad08048.mp3", emoji: "💃" },
-  // Chill / Ambient
-  { id: "ch1", genre: "Chill", title: "Deep Breathe", artist: "Ambient Lab", url: "https://cdn.pixabay.com/audio/2022/03/10/audio_2da3e03e6c.mp3", emoji: "🌊" },
-  { id: "ch2", genre: "Chill", title: "Floating", artist: "Ambient Lab", url: "https://cdn.pixabay.com/audio/2021/10/19/audio_b0d94b61c8.mp3", emoji: "☁️" },
-  { id: "ch3", genre: "Chill", title: "Mountain Air", artist: "Nature Sounds", url: "https://cdn.pixabay.com/audio/2022/01/18/audio_d0c6ff1bab.mp3", emoji: "🏔️" },
-  // Afrobeats
-  { id: "af1", genre: "Afrobeats", title: "Lagos Nights", artist: "Afro Vibes", url: "https://cdn.pixabay.com/audio/2022/12/06/audio_a2dc6bff25.mp3", emoji: "🌍" },
-  { id: "af2", genre: "Afrobeats", title: "Move Your Body", artist: "Afro Vibes", url: "https://cdn.pixabay.com/audio/2023/01/11/audio_9b03e2b205.mp3", emoji: "🥁" },
-  // Jazz
-  { id: "jz1", genre: "Jazz", title: "Smooth Jazz Cafe", artist: "Jazz Collective", url: "https://cdn.pixabay.com/audio/2022/09/22/audio_d64adfa5d2.mp3", emoji: "🎷" },
-  { id: "jz2", genre: "Jazz", title: "Late Night Jazz", artist: "Blue Note Studio", url: "https://cdn.pixabay.com/audio/2021/09/06/audio_6ef08cb620.mp3", emoji: "🎺" },
-  { id: "jz3", genre: "Jazz", title: "Midnight Sax", artist: "Blue Note Studio", url: "https://cdn.pixabay.com/audio/2022/04/27/audio_12b0e6e3fb.mp3", emoji: "🎶" }
-];
-const MUSIC_GENRES = ["All", "Lo-Fi", "Hip-Hop", "Electronic", "R&B", "Pop", "Chill", "Afrobeats", "Jazz"];
 function GoLiveModal({ currentUser, onClose, onUploaded }) {
   const [phase, setPhase] = reactExports.useState("preview");
   const [elapsed, setElapsed] = reactExports.useState(0);
@@ -9922,6 +9884,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [musicGenreFilter, setMusicGenreFilter] = reactExports.useState("All");
   const [previewTrack, setPreviewTrack] = reactExports.useState(null);
   const previewAudioRef = reactExports.useRef(null);
+  const [musicTracks, setMusicTracks] = reactExports.useState([]);
+  const [musicLoading, setMusicLoading] = reactExports.useState(false);
+  const [musicSearch, setMusicSearch] = reactExports.useState("");
   const [uploading, setUploading] = reactExports.useState(false);
   const [progress, setProgress] = reactExports.useState(0);
   const [step, setStep] = reactExports.useState("");
@@ -10258,6 +10223,22 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setProgress(0);
       setStep("");
     }
+  };
+  const MUSIC_API_URL = "https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks";
+  const fetchMusicTracks = async (genre = "All", search = "") => {
+    setMusicLoading(true);
+    try {
+      const params = new URLSearchParams({ genre, limit: "30" });
+      if (search)
+        params.set("search", search);
+      const resp = await fetch(`${MUSIC_API_URL}?${params.toString()}`);
+      const data = await resp.json();
+      setMusicTracks(data.tracks || []);
+    } catch (e) {
+      console.error("Music fetch error:", e);
+      setMusicTracks([]);
+    }
+    setMusicLoading(false);
   };
   const detectLocation = async () => {
     setDetectingLocation(true);
@@ -11089,7 +11070,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
             {
-              onClick: () => setShowMusicPicker((s) => !s),
+              onClick: () => {
+                const next = !showMusicPicker;
+                setShowMusicPicker(next);
+                if (next && musicTracks.length === 0)
+                  fetchMusicTracks("All", "");
+              },
               style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 14px", marginBottom: 12, cursor: "pointer" },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22 }, children: "🎵" }),
@@ -11106,10 +11092,54 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             }
           ),
           showMusicPicker && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, marginBottom: 14 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, padding: "10px 10px 6px", overflowX: "auto", scrollbarWidth: "none" }, children: MUSIC_GENRES.map((g) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px 10px 0" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "8px 12px", gap: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 14 }, children: "🔍" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "input",
+                {
+                  value: musicSearch,
+                  onChange: (e) => setMusicSearch(e.target.value),
+                  onKeyDown: (e) => e.key === "Enter" && fetchMusicTracks(musicGenreFilter, musicSearch),
+                  placeholder: "Search songs, artists...",
+                  style: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: 13 }
+                }
+              ),
+              musicSearch && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => {
+                    setMusicSearch("");
+                    fetchMusicTracks(musicGenreFilter, "");
+                  },
+                  style: { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 14, padding: 0 },
+                  children: "✕"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => fetchMusicTracks(musicGenreFilter, musicSearch),
+                  style: {
+                    background: "rgba(255,107,107,0.25)",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "4px 10px",
+                    color: "#ff6b6b",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  },
+                  children: "Go"
+                }
+              )
+            ] }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, padding: "8px 10px 6px", overflowX: "auto", scrollbarWidth: "none" }, children: ["All", "Lo-Fi", "Hip-Hop", "Electronic", "R&B", "Pop", "Chill", "Afrobeats", "Jazz", "Rock", "Acoustic", "Classical"].map((g) => /* @__PURE__ */ jsxRuntimeExports.jsx(
               "button",
               {
-                onClick: () => setMusicGenreFilter(g),
+                onClick: () => {
+                  setMusicGenreFilter(g);
+                  fetchMusicTracks(g, musicSearch);
+                },
                 style: {
                   flexShrink: 0,
                   padding: "5px 12px",
@@ -11125,7 +11155,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               },
               g
             )) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { maxHeight: 200, overflowY: "auto" }, children: MUSIC_LIBRARY.filter((t2) => musicGenreFilter === "All" || t2.genre === musicGenreFilter).map((track) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { maxHeight: 220, overflowY: "auto" }, children: musicLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "20px", textAlign: "center", color: "#666", fontSize: 13 }, children: "🎵 Loading tracks..." }) : musicTracks.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "20px", textAlign: "center", color: "#666", fontSize: 13 }, children: "No tracks found. Try another genre or search." }) : musicTracks.map((track) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "div",
               {
                 onClick: () => {
@@ -11136,17 +11166,29 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                     setPreviewTrack(null);
                   }
                 },
-                style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", background: (selectedTrack == null ? void 0 : selectedTrack.id) === track.id ? "rgba(255,107,107,0.15)" : "transparent" },
+                style: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 14px",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  cursor: "pointer",
+                  background: (selectedTrack == null ? void 0 : selectedTrack.id) === track.id ? "rgba(255,107,107,0.15)" : "transparent"
+                },
                 children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 20 }, children: track.emoji }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 600, fontSize: 13 }, children: track.title }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 11 }, children: [
+                  track.image ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: track.image, style: { width: 36, height: 36, borderRadius: 6, objectFit: "cover", flexShrink: 0 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, width: 36, textAlign: "center" }, children: track.emoji || "🎵" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: track.title }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
                       track.artist,
-                      " · ",
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,107,107,0.7)" }, children: track.genre })
+                      track.duration ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,107,107,0.6)", marginLeft: 6 }, children: [
+                        Math.floor(track.duration / 60),
+                        ":",
+                        String(track.duration % 60).padStart(2, "0")
+                      ] }) : null
                     ] })
                   ] }),
+                  (selectedTrack == null ? void 0 : selectedTrack.id) === track.id && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b", fontSize: 14, marginRight: 4 }, children: "✓" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: (e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -11186,7 +11228,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 ]
               },
               track.id
-            )) })
+            )) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "6px 14px 10px", color: "#444", fontSize: 10, textAlign: "right" }, children: "Powered by Jamendo • Free music" })
           ] }),
           explicitBlocked && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,50,50,0.12)", border: "1px solid rgba(255,50,50,0.4)", borderRadius: 12, padding: "14px 16px", marginBottom: 12, display: "flex", gap: 10, alignItems: "flex-start" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, flexShrink: 0 }, children: "🔞" }),

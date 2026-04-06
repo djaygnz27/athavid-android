@@ -871,6 +871,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [musicGenreFilter, setMusicGenreFilter] = useState("All");
   const [previewTrack, setPreviewTrack] = useState(null);
   const previewAudioRef = useRef(null);
+  const [musicTracks, setMusicTracks] = useState([]);
+  const [musicLoading, setMusicLoading] = useState(false);
+  const [musicSearch, setMusicSearch] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState("");
@@ -1083,6 +1086,23 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false); setProgress(0); setStep("");
     }
+  };
+
+  const MUSIC_API_URL = "https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks";
+
+  const fetchMusicTracks = async (genre = "All", search = "") => {
+    setMusicLoading(true);
+    try {
+      const params = new URLSearchParams({ genre, limit: "30" });
+      if (search) params.set("search", search);
+      const resp = await fetch(`${MUSIC_API_URL}?${params.toString()}`);
+      const data = await resp.json();
+      setMusicTracks(data.tracks || []);
+    } catch(e) {
+      console.error("Music fetch error:", e);
+      setMusicTracks([]);
+    }
+    setMusicLoading(false);
   };
 
   const detectLocation = async () => {
@@ -1756,7 +1776,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
         {uploadTab !== "text" && <>
         {/* Music Picker Button */}
-        <div onClick={() => setShowMusicPicker(s => !s)}
+        <div onClick={() => { const next = !showMusicPicker; setShowMusicPicker(next); if(next && musicTracks.length === 0) fetchMusicTracks("All", ""); }}
           style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", marginBottom:12, cursor:"pointer" }}>
           <div style={{ fontSize:22 }}>🎵</div>
           <div style={{ flex:1 }}>
@@ -1770,10 +1790,32 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         {/* Music Library */}
         {showMusicPicker && (
           <div style={{ background:"rgba(0,0,0,0.5)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, marginBottom:14 }}>
+
+            {/* Search bar */}
+            <div style={{ padding:"10px 10px 0" }}>
+              <div style={{ display:"flex", alignItems:"center", background:"rgba(255,255,255,0.07)", borderRadius:10, padding:"8px 12px", gap:8 }}>
+                <span style={{ fontSize:14 }}>🔍</span>
+                <input
+                  value={musicSearch}
+                  onChange={e => setMusicSearch(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && fetchMusicTracks(musicGenreFilter, musicSearch)}
+                  placeholder="Search songs, artists..."
+                  style={{ flex:1, background:"transparent", border:"none", outline:"none", color:"#fff", fontSize:13 }}
+                />
+                {musicSearch && (
+                  <button onClick={() => { setMusicSearch(""); fetchMusicTracks(musicGenreFilter, ""); }}
+                    style={{ background:"none", border:"none", color:"#888", cursor:"pointer", fontSize:14, padding:0 }}>✕</button>
+                )}
+                <button onClick={() => fetchMusicTracks(musicGenreFilter, musicSearch)}
+                  style={{ background:"rgba(255,107,107,0.25)", border:"none", borderRadius:8, padding:"4px 10px",
+                    color:"#ff6b6b", fontSize:11, fontWeight:700, cursor:"pointer" }}>Go</button>
+              </div>
+            </div>
+
             {/* Genre filter tabs */}
-            <div style={{ display:"flex", gap:6, padding:"10px 10px 6px", overflowX:"auto", scrollbarWidth:"none" }}>
-              {MUSIC_GENRES.map(g => (
-                <button key={g} onClick={() => setMusicGenreFilter(g)}
+            <div style={{ display:"flex", gap:6, padding:"8px 10px 6px", overflowX:"auto", scrollbarWidth:"none" }}>
+              {["All","Lo-Fi","Hip-Hop","Electronic","R&B","Pop","Chill","Afrobeats","Jazz","Rock","Acoustic","Classical"].map(g => (
+                <button key={g} onClick={() => { setMusicGenreFilter(g); fetchMusicTracks(g, musicSearch); }}
                   style={{ flexShrink:0, padding:"5px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:700,
                     background: musicGenreFilter === g ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
                     color: musicGenreFilter === g ? "#fff" : "#aaa" }}>
@@ -1781,44 +1823,59 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 </button>
               ))}
             </div>
+
             {/* Track list */}
-            <div style={{ maxHeight:200, overflowY:"auto" }}>
-              {MUSIC_LIBRARY.filter(t => musicGenreFilter === "All" || t.genre === musicGenreFilter).map(track => (
-                <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
-                  style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
-                  <div style={{ fontSize:20 }}>{track.emoji}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ color:"#fff", fontWeight:600, fontSize:13 }}>{track.title}</div>
-                    <div style={{ color:"#888", fontSize:11 }}>{track.artist} · <span style={{ color:"rgba(255,107,107,0.7)" }}>{track.genre}</span></div>
-                  </div>
-                  <button onClick={e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    if (previewTrack === track.id) {
-                      if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.currentTime = 0; }
-                      setPreviewTrack(null);
-                    } else {
-                      setPreviewTrack(track.id);
-                      // Small delay to ensure state is set before play
-                      setTimeout(() => {
-                        if (previewAudioRef.current) {
-                          previewAudioRef.current.pause();
-                          previewAudioRef.current.src = track.url;
-                          previewAudioRef.current.load();
-                          previewAudioRef.current.play().catch(err => console.log("Audio play error:", err));
-                        }
-                      }, 50);
+            <div style={{ maxHeight:220, overflowY:"auto" }}>
+              {musicLoading ? (
+                <div style={{ padding:"20px", textAlign:"center", color:"#666", fontSize:13 }}>🎵 Loading tracks...</div>
+              ) : musicTracks.length === 0 ? (
+                <div style={{ padding:"20px", textAlign:"center", color:"#666", fontSize:13 }}>No tracks found. Try another genre or search.</div>
+              ) : (
+                musicTracks.map(track => (
+                  <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
+                    style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer",
+                      background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
+                    {/* Album art or emoji */}
+                    {track.image
+                      ? <img src={track.image} style={{ width:36, height:36, borderRadius:6, objectFit:"cover", flexShrink:0 }} />
+                      : <div style={{ fontSize:22, width:36, textAlign:"center" }}>{track.emoji || "🎵"}</div>
                     }
-                  }} style={{ background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
-                    border:"2px solid rgba(255,107,107,0.4)", borderRadius:"50%",
-                    width:38, height:38, color:"#ff6b6b", cursor:"pointer", fontSize:16,
-                    flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
-                    WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                    {previewTrack === track.id ? "⏹" : "▶"}
-                  </button>
-                </div>
-              ))}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ color:"#fff", fontWeight:600, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{track.title}</div>
+                      <div style={{ color:"#888", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {track.artist}
+                        {track.duration ? <span style={{ color:"rgba(255,107,107,0.6)", marginLeft:6 }}>{Math.floor(track.duration/60)}:{String(track.duration%60).padStart(2,"0")}</span> : null}
+                      </div>
+                    </div>
+                    {selectedTrack?.id === track.id && <span style={{ color:"#ff6b6b", fontSize:14, marginRight:4 }}>✓</span>}
+                    <button onClick={e => {
+                      e.stopPropagation(); e.preventDefault();
+                      if (previewTrack === track.id) {
+                        if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.currentTime = 0; }
+                        setPreviewTrack(null);
+                      } else {
+                        setPreviewTrack(track.id);
+                        setTimeout(() => {
+                          if (previewAudioRef.current) {
+                            previewAudioRef.current.pause();
+                            previewAudioRef.current.src = track.url;
+                            previewAudioRef.current.load();
+                            previewAudioRef.current.play().catch(err => console.log("Audio play error:", err));
+                          }
+                        }, 50);
+                      }
+                    }} style={{ background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
+                      border:"2px solid rgba(255,107,107,0.4)", borderRadius:"50%",
+                      width:38, height:38, color:"#ff6b6b", cursor:"pointer", fontSize:16,
+                      flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                      WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                      {previewTrack === track.id ? "⏹" : "▶"}
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
+            <div style={{ padding:"6px 14px 10px", color:"#444", fontSize:10, textAlign:"right" }}>Powered by Jamendo • Free music</div>
           </div>
         )}
         {/* Explicit Content Block Warning */}
