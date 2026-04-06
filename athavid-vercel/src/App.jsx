@@ -3455,17 +3455,26 @@ function App() {
     }
   }, [activeTab, currentUser]);
 
-  const handleLike = (videoId, delta) => {
+  const handleLike = React.useCallback((videoId, delta) => {
+    // Save scroll position before state update to prevent snap-to-top
+    const feedEl = feedContainerRef.current;
+    const savedScroll = feedEl ? feedEl.scrollTop : 0;
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, likes_count: Math.max(0, (v.likes_count||0)+delta) } : v));
-    const vid = videoList.find(v => v.id === videoId);
-    if (vid) {
-      videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count||0)+delta) }).catch(()=>{});
-      // Record interest signal: like = 3 points, unlike = -1 point
-      if (currentUser && vid.hashtags?.length) {
-        interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(()=>{});
-      }
+    // Restore scroll position after React re-render
+    if (feedEl) {
+      requestAnimationFrame(() => { feedEl.scrollTop = savedScroll; });
     }
-  };
+    setVideoList(current => {
+      const vid = current.find(v => v.id === videoId);
+      if (vid) {
+        videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count||0)+delta) }).catch(()=>{});
+        if (currentUser && vid.hashtags?.length) {
+          interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(()=>{});
+        }
+      }
+      return current;
+    });
+  }, [currentUser, feedContainerRef]);
 
   const handleView = (videoId) => {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, views_count: (v.views_count||0)+1 } : v));
@@ -3545,7 +3554,7 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div key={feedKey} ref={el => { feedContainerRef.current = el; window.__sachiEl = el; if (el) { el.scrollTop = 0; window.__sachiEl.scrollTop = 0; } }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y" }}>
+        <div key={feedKey} ref={el => { feedContainerRef.current = el; window.__sachiEl = el; }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
