@@ -446,16 +446,51 @@ export default function AuthModal({ onClose, onSuccess }) {
             <div style={{ textAlign:"center", marginBottom:24 }}>
               <div style={{ fontSize:40 }}>🌍</div>
               <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Where are you from?</div>
-              <div style={{ color:"#777", fontSize:14 }}>We'll add your flag to your posts</div>
+              <div style={{ color:"#777", fontSize:14 }}>We'll add your flag and city to your posts</div>
             </div>
             <select
               value={country}
               onChange={e => setCountry(e.target.value)}
-              style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"2px solid rgba(245,200,66,0.4)", borderRadius:14, padding:"16px", color: country ? "#fff" : "#888", fontSize:16, outline:"none", marginBottom:20, cursor:"pointer" }}
+              style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"2px solid rgba(245,200,66,0.4)", borderRadius:14, padding:"16px", color: country ? "#fff" : "#888", fontSize:16, outline:"none", marginBottom:16, cursor:"pointer" }}
             >
               <option value="" style={{background:"#1a1b2e", color:"#888"}}>Select your country</option>
               {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}
             </select>
+
+            {/* Location permission request */}
+            <div style={{ background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.25)", borderRadius:14, padding:"14px 16px", marginBottom:18 }}>
+              <div style={{ color:"#F5C842", fontWeight:800, fontSize:14, marginBottom:6 }}>📍 Enable precise location?</div>
+              <div style={{ color:"#888", fontSize:12, marginBottom:12, lineHeight:1.5 }}>
+                Show your city on every post — like <strong style={{color:"#fff"}}>📍 New York, US</strong>. You can change this anytime.
+              </div>
+              <button onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      // Save that location was granted
+                      localStorage.setItem("sachi_location_granted", "true");
+                      // Reverse geocode to get country/region
+                      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+                        .then(r => r.json())
+                        .then(data => {
+                          const addr = data.address || {};
+                          const detectedCountry = addr.country || "";
+                          const region = addr.state || addr.city || addr.county || "";
+                          if (detectedCountry && !country) setCountry(detectedCountry);
+                          localStorage.setItem("sachi_region", region);
+                          if (addr.country_code) localStorage.setItem("sachi_country_code", addr.country_code.toUpperCase());
+                        }).catch(()=>{});
+                    },
+                    () => { /* denied — no problem */ },
+                    { timeout: 8000 }
+                  );
+                }
+              }}
+                style={{ width:"100%", padding:"11px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:11, color:"#0B0C1A", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                📍 Yes, show my location on posts
+              </button>
+            </div>
+
             <button onClick={() => { if (country) localStorage.setItem("sachi_country", country); setStep("otp"); }}
               style={{ display:"block", width:"100%", padding:"14px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16, cursor:"pointer", marginBottom:10 }}>
               {country ? "Continue →" : "Skip for now"}

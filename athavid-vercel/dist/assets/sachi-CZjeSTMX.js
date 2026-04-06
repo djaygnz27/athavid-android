@@ -7927,20 +7927,56 @@ function AuthModal({ onClose, onSuccess }) {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "🌍" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Where are you from?" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "We'll add your flag to your posts" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "We'll add your flag and city to your posts" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "select",
           {
             value: country,
             onChange: (e) => setCountry(e.target.value),
-            style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "2px solid rgba(245,200,66,0.4)", borderRadius: 14, padding: "16px", color: country ? "#fff" : "#888", fontSize: 16, outline: "none", marginBottom: 20, cursor: "pointer" },
+            style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "2px solid rgba(245,200,66,0.4)", borderRadius: 14, padding: "16px", color: country ? "#fff" : "#888", fontSize: 16, outline: "none", marginBottom: 16, cursor: "pointer" },
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "Select your country" }),
               COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
             ]
           }
         ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.07)", border: "1px solid rgba(245,200,66,0.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, marginBottom: 6 }, children: "📍 Enable precise location?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginBottom: 12, lineHeight: 1.5 }, children: [
+            "Show your city on every post — like ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "📍 New York, US" }),
+            ". You can change this anytime."
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      localStorage.setItem("sachi_location_granted", "true");
+                      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then((r2) => r2.json()).then((data) => {
+                        const addr = data.address || {};
+                        const detectedCountry = addr.country || "";
+                        const region = addr.state || addr.city || addr.county || "";
+                        if (detectedCountry && !country) setCountry(detectedCountry);
+                        localStorage.setItem("sachi_region", region);
+                        if (addr.country_code) localStorage.setItem("sachi_country_code", addr.country_code.toUpperCase());
+                      }).catch(() => {
+                      });
+                    },
+                    () => {
+                    },
+                    { timeout: 8e3 }
+                  );
+                }
+              },
+              style: { width: "100%", padding: "11px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 11, color: "#0B0C1A", fontWeight: 800, fontSize: 14, cursor: "pointer" },
+              children: "📍 Yes, show my location on posts"
+            }
+          )
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
@@ -8114,8 +8150,13 @@ const resolveMediaUrl = (url) => {
 };
 async function getPostLocation() {
   const savedCountry = localStorage.getItem("sachi_country");
+  const savedRegion = localStorage.getItem("sachi_region");
+  const savedCode = localStorage.getItem("sachi_country_code");
+  if (savedCode) {
+    return { post_country: savedCode, post_region: savedRegion || null };
+  }
   if (savedCountry) {
-    return { post_country: savedCountry, post_region: null };
+    return { post_country: savedCountry, post_region: savedRegion || null };
   }
   try {
     const pos = await new Promise(
@@ -8129,6 +8170,8 @@ async function getPostLocation() {
     const addr = data.address || {};
     const country = addr.country_code ? addr.country_code.toUpperCase() : null;
     const region = addr.state || addr.city || addr.county || null;
+    if (country) localStorage.setItem("sachi_country_code", country);
+    if (region) localStorage.setItem("sachi_region", region);
     return { post_country: country, post_region: region };
   } catch {
     return {};
@@ -9557,6 +9600,33 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 12, color: "#fff", fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box", marginBottom: 16 }
           }
         ),
+        !localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.07)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 13, marginBottom: 4 }, children: "📍 Add your location to this post?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 11, marginBottom: 10 }, children: "Posts with location get more reach. Enable once, applies to all future posts." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then((r2) => r2.json()).then((data) => {
+                    const addr = data.address || {};
+                    const code = addr.country_code ? addr.country_code.toUpperCase() : null;
+                    const region = addr.state || addr.city || addr.county || null;
+                    if (code) {
+                      localStorage.setItem("sachi_country_code", code);
+                    }
+                    if (region) {
+                      localStorage.setItem("sachi_region", region);
+                    }
+                  }).catch(() => {
+                  });
+                },
+                () => {
+                },
+                { timeout: 8e3 }
+              );
+            }
+          }, style: { width: "100%", padding: "10px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 10, color: "#0B0C1A", fontWeight: 800, fontSize: 13, cursor: "pointer" }, children: "📍 Enable Location" })
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
@@ -10278,10 +10348,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12 }, children: "📅" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600 }, children: [
           formatDate(video.created_date),
-          video.post_country && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: 6, opacity: 0.9 }, children: [
+          video.post_country ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: 6, opacity: 0.9 }, children: [
             countryFlag(video.post_country),
             video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`
-          ] })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { marginLeft: 6, color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: "📍 Location not shared" })
         ] })
       ] })
     ] }),

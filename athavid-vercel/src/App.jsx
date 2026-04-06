@@ -26,12 +26,16 @@ const resolveMediaUrl = (url) => {
   return url;
 };
 // Get user's location for post geo-tagging
-// First try: use country saved at signup. Fallback: device GPS.
 async function getPostLocation() {
-  // Use country saved during signup if available
   const savedCountry = localStorage.getItem("sachi_country");
+  const savedRegion = localStorage.getItem("sachi_region");
+  const savedCode = localStorage.getItem("sachi_country_code");
+  // Use precise GPS-derived data if available
+  if (savedCode) {
+    return { post_country: savedCode, post_region: savedRegion || null };
+  }
   if (savedCountry) {
-    return { post_country: savedCountry, post_region: null };
+    return { post_country: savedCountry, post_region: savedRegion || null };
   }
   // Fallback: try GPS reverse geocode
   try {
@@ -46,6 +50,8 @@ async function getPostLocation() {
     const addr = data.address || {};
     const country = addr.country_code ? addr.country_code.toUpperCase() : null;
     const region = addr.state || addr.city || addr.county || null;
+    if (country) localStorage.setItem("sachi_country_code", country);
+    if (region) localStorage.setItem("sachi_region", region);
     return { post_country: country, post_region: region };
   } catch {
     return {};
@@ -1080,6 +1086,36 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
         <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write a caption... #hashtags" rows={3}
           style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:16 }} />
+
+        {/* Location permission prompt — only show if not yet granted */}
+        {!localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && (
+          <div style={{ background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
+            <div style={{ color:"#F5C842", fontWeight:800, fontSize:13, marginBottom:4 }}>📍 Add your location to this post?</div>
+            <div style={{ color:"#777", fontSize:11, marginBottom:10 }}>Posts with location get more reach. Enable once, applies to all future posts.</div>
+            <button onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+                      .then(r => r.json())
+                      .then(data => {
+                        const addr = data.address || {};
+                        const code = addr.country_code ? addr.country_code.toUpperCase() : null;
+                        const region = addr.state || addr.city || addr.county || null;
+                        if (code) { localStorage.setItem("sachi_country_code", code); }
+                        if (region) { localStorage.setItem("sachi_region", region); }
+                      }).catch(()=>{});
+                  },
+                  () => {},
+                  { timeout: 8000 }
+                );
+              }
+            }} style={{ width:"100%", padding:"10px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:10, color:"#0B0C1A", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+              📍 Enable Location
+            </button>
+          </div>
+        )}
+
         {/* Music Picker Button */}
         <div onClick={() => setShowMusicPicker(s => !s)}
           style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", marginBottom:12, cursor:"pointer" }}>
@@ -1656,11 +1692,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <span style={{ fontSize:12 }}>📅</span>
             <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
               {formatDate(video.created_date)}
-              {video.post_country && (
+              {video.post_country ? (
                 <span style={{ marginLeft:6, opacity:0.9 }}>
                   {countryFlag(video.post_country)}
                   {video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`}
                 </span>
+              ) : (
+                <span style={{ marginLeft:6, color:"rgba(255,255,255,0.3)", fontSize:11 }}>📍 Location not shared</span>
               )}
             </span>
           </div>
