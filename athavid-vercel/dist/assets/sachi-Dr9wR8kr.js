@@ -7753,6 +7753,13 @@ function AuthModal({ onClose, onSuccess }) {
       if (mode === "login") {
         const loginData = await auth.signIn(email, password);
         const user = loginData.user || auth.getUser();
+        const hasLocation = localStorage.getItem("sachi_country_code") || localStorage.getItem("sachi_country");
+        if (!hasLocation) {
+          setStep("location_prompt");
+          setLoading(false);
+          window._sachiPendingUser = user;
+          return;
+        }
         onSuccess(user);
       } else {
         await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
@@ -7988,6 +7995,67 @@ function AuthModal({ onClose, onSuccess }) {
             children: country ? "Continue →" : "Skip for now"
           }
         )
+      ] }),
+      step === "location_prompt" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 44 }, children: "📍" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Where are you posting from?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "We'll add your flag to your posts. You can skip this." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "select",
+          {
+            value: country,
+            onChange: (e) => setCountry(e.target.value),
+            style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "2px solid rgba(245,200,66,0.4)", borderRadius: 14, padding: "16px", color: country ? "#fff" : "#888", fontSize: 16, outline: "none", marginBottom: 16, cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
+              COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.07)", border: "1px solid rgba(245,200,66,0.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 16 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, marginBottom: 6 }, children: "📍 Or use my precise location" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginBottom: 10, lineHeight: 1.5 }, children: [
+            "Auto-detects your city — shows as ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "📍 New York, US" }),
+            " on posts."
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then((r2) => r2.json()).then((data) => {
+                    const addr = data.address || {};
+                    const code = addr.country_code ? addr.country_code.toUpperCase() : null;
+                    const region = addr.state || addr.city || addr.county || null;
+                    if (code) {
+                      localStorage.setItem("sachi_country_code", code);
+                      setCountry(addr.country || code);
+                    }
+                    if (region) localStorage.setItem("sachi_region", region);
+                    const u2 = window._sachiPendingUser;
+                    delete window._sachiPendingUser;
+                    onSuccess(u2);
+                  }).catch(() => {
+                    const u2 = window._sachiPendingUser;
+                    delete window._sachiPendingUser;
+                    onSuccess(u2);
+                  });
+                },
+                () => {
+                },
+                { timeout: 8e3 }
+              );
+            }
+          }, style: { width: "100%", padding: "11px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 11, color: "#0B0C1A", fontWeight: 800, fontSize: 14, cursor: "pointer" }, children: "📍 Use My Location" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+          if (country) localStorage.setItem("sachi_country", country);
+          const u2 = window._sachiPendingUser;
+          delete window._sachiPendingUser;
+          onSuccess(u2);
+        }, style: { display: "block", width: "100%", padding: "14px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 10 }, children: country ? "Save & Continue →" : "Skip for now" })
       ] }),
       step === "otp" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
@@ -10348,10 +10416,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12 }, children: "📅" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600 }, children: [
           formatDate(video.created_date),
-          video.post_country ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: 6, opacity: 0.9 }, children: [
+          video.post_country && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: 6, opacity: 0.9 }, children: [
             countryFlag(video.post_country),
             video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { marginLeft: 6, color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: "📍 Location not shared" })
+          ] })
         ] })
       ] })
     ] }),
