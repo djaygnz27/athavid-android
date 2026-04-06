@@ -7331,7 +7331,155 @@ const interests = {
 const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-function GoogleOneTap({ onSuccess }) {
+function GoogleFinishStep({ googlePayload, onSuccess }) {
+  const { email, name, picture, sub } = googlePayload;
+  const suggestedUsername = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
+  const [username, setUsername] = reactExports.useState(suggestedUsername);
+  const [dob, setDob] = reactExports.useState("");
+  const [is18, setIs18] = reactExports.useState(false);
+  const [loading, setLoading] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState("");
+  const inp = {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(245,200,66,0.15)",
+    borderRadius: 12,
+    padding: "14px 16px",
+    color: "#fff",
+    fontSize: 15,
+    outline: "none",
+    marginBottom: 12
+  };
+  const btn = {
+    display: "block",
+    width: "100%",
+    padding: "14px 0",
+    background: "linear-gradient(135deg,#F5C842,#FF9500)",
+    border: "none",
+    borderRadius: 14,
+    color: "#0B0C1A",
+    fontWeight: 800,
+    fontSize: 16,
+    cursor: "pointer",
+    marginBottom: 10
+  };
+  const handleFinish = async () => {
+    if (!username.trim()) return setError("Please enter a username.");
+    if (!dob) return setError("Please enter your birthday.");
+    if (!is18) return setError("You must confirm you are 18 years or older.");
+    const birthDate = new Date(dob);
+    const today = /* @__PURE__ */ new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m2 = today.getMonth() - birthDate.getMonth();
+    if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
+    if (age < 13) return setError("You must be at least 13 years old to join Sachi.");
+    setLoading(true);
+    setError("");
+    try {
+      let existingUsers;
+      try {
+        const res = await fetch(
+          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+          { headers: { "Content-Type": "application/json" } }
+        );
+        existingUsers = await res.json();
+      } catch {
+        existingUsers = [];
+      }
+      const items = Array.isArray(existingUsers) ? existingUsers : (existingUsers == null ? void 0 : existingUsers.items) || [];
+      let sachiUser = items.find((u2) => u2.email === email);
+      if (!sachiUser) {
+        const created = await fetch(
+          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              username: username.trim().toLowerCase(),
+              display_name: name || username.trim(),
+              avatar_url: picture || "",
+              is_verified: true,
+              is_18_plus: true,
+              status: "active",
+              followers_count: 0,
+              following_count: 0,
+              videos_count: 0
+            })
+          }
+        ).then((r2) => r2.json());
+        sachiUser = created;
+      }
+      localStorage.setItem("sachi_dob", dob);
+      const sessionUser = {
+        id: sachiUser.id || sachiUser.created_by,
+        email,
+        full_name: name || sachiUser.display_name,
+        avatar_url: picture || sachiUser.avatar_url,
+        _google: true,
+        _sachiProfileId: sachiUser.id
+      };
+      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+      onSuccess(sessionUser);
+    } catch (e) {
+      console.error(e);
+      setError("Could not create your profile. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }, children: [
+      picture && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: picture, style: { width: 72, height: 72, borderRadius: "50%", border: "3px solid #F5C842", marginBottom: 10 } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 17 }, children: name }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13 }, children: email }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(80,200,80,0.12)", border: "1px solid rgba(80,200,80,0.3)", borderRadius: 20, padding: "4px 14px", marginTop: 8, color: "#6fcf6f", fontSize: 12, fontWeight: 700 }, children: "✓ Verified with Google" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 16 }, children: "Just a few more details to set up your profile:" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        value: username,
+        onChange: (e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase()),
+        placeholder: "Choose a username",
+        style: inp,
+        maxLength: 30
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
+      "Birthday ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        value: dob,
+        onChange: (e) => setDob(e.target.value),
+        type: "date",
+        max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+        style: { ...inp, colorScheme: "dark" }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          type: "checkbox",
+          checked: is18,
+          onChange: (e) => setIs18(e.target.checked),
+          style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 18 years or older" })
+    ] }),
+    error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12 }, children: error }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleFinish, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Setting up your profile…" : "Let's Go 🚀" })
+  ] });
+}
+function GoogleOneTap({ onGoogleVerified }) {
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
   reactExports.useEffect(() => {
@@ -7364,59 +7512,35 @@ function GoogleOneTap({ onSuccess }) {
     setError("");
     try {
       const payload = JSON.parse(atob(response.credential.split(".")[1]));
-      const { email, name, picture, sub } = payload;
       let existingUsers;
       try {
-        existingUsers = await fetch(
-          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+        const res = await fetch(
+          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(payload.email)}&limit=5`,
           { headers: { "Content-Type": "application/json" } }
-        ).then((r2) => r2.json());
+        );
+        existingUsers = await res.json();
       } catch {
         existingUsers = [];
       }
       const items = Array.isArray(existingUsers) ? existingUsers : (existingUsers == null ? void 0 : existingUsers.items) || [];
-      let sachiUser = items.find((u2) => u2.email === email);
-      if (!sachiUser) {
-        const username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() + Math.floor(Math.random() * 999);
-        try {
-          const created = await fetch(
-            `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email,
-                username,
-                display_name: name || username,
-                avatar_url: picture || "",
-                is_verified: true,
-                status: "active",
-                followers_count: 0,
-                following_count: 0,
-                videos_count: 0
-              })
-            }
-          ).then((r2) => r2.json());
-          sachiUser = created;
-        } catch (e) {
-          setError("Could not create your profile. Try again.");
-          setLoading(false);
-          return;
-        }
+      const sachiUser = items.find((u2) => u2.email === payload.email);
+      if (sachiUser) {
+        const sessionUser = {
+          id: sachiUser.id,
+          email: payload.email,
+          full_name: payload.name || sachiUser.display_name,
+          avatar_url: payload.picture || sachiUser.avatar_url,
+          _google: true,
+          _sachiProfileId: sachiUser.id
+        };
+        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+        onGoogleVerified({ payload, existingUser: sessionUser });
+      } else {
+        onGoogleVerified({ payload, existingUser: null });
       }
-      const sessionUser = {
-        id: sachiUser.id || sachiUser.created_by,
-        email,
-        full_name: name || sachiUser.display_name,
-        avatar_url: picture || sachiUser.avatar_url,
-        _google: true,
-        _sachiProfileId: sachiUser.id
-      };
-      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-      onSuccess(sessionUser);
     } catch (e) {
-      console.error("Google sign-in error:", e);
+      console.error(e);
       setError("Sign-in failed. Please try again.");
     } finally {
       setLoading(false);
@@ -7431,6 +7555,7 @@ function GoogleOneTap({ onSuccess }) {
 function AuthModal({ onClose, onSuccess }) {
   const [mode, setMode] = reactExports.useState("signup");
   const [step, setStep] = reactExports.useState("form");
+  const [googlePayload, setGooglePayload] = reactExports.useState(null);
   const [email, setEmail] = reactExports.useState("");
   const [password, setPassword] = reactExports.useState("");
   const [name, setName] = reactExports.useState("");
@@ -7441,6 +7566,14 @@ function AuthModal({ onClose, onSuccess }) {
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
   const [agreedToTerms, setAgreedToTerms] = reactExports.useState(false);
+  const handleGoogleVerified = ({ payload, existingUser }) => {
+    if (existingUser) {
+      onSuccess(existingUser);
+    } else {
+      setGooglePayload(payload);
+      setStep("google_finish");
+    }
+  };
   const submitForgot = async () => {
     if (!email) return setError("Enter your email address.");
     setLoading(true);
@@ -7558,13 +7691,14 @@ function AuthModal({ onClose, onSuccess }) {
       maxHeight: "90vh",
       overflowY: "auto"
     }, children: [
+      step === "google_finish" && googlePayload && /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleFinishStep, { googlePayload, onSuccess }),
       step === "form" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "🎬" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Join Sachi" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "Your stage. Share with the world." })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleOneTap, { onSuccess }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleOneTap, { onGoogleVerified: handleGoogleVerified }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 12 }, children: "or continue with email" }),

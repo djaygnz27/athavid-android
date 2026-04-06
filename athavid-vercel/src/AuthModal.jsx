@@ -1,12 +1,160 @@
 import { useState, useEffect } from "react";
-import { auth, request } from "./api.js";
+import { auth } from "./api.js";
 
 const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 
-// ─── Google One Tap ────────────────────────────────────────────────────────────
-function GoogleOneTap({ onSuccess }) {
+// ─── Google Finish Step (username + dob + 18+ confirm) ───────────────────────
+function GoogleFinishStep({ googlePayload, onSuccess }) {
+  const { email, name, picture, sub } = googlePayload;
+  const suggestedUsername = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g,"").toLowerCase();
+
+  const [username, setUsername] = useState(suggestedUsername);
+  const [dob, setDob] = useState("");
+  const [is18, setIs18] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const inp = {
+    display:"block", width:"100%", boxSizing:"border-box",
+    background:"rgba(255,255,255,0.08)", border:"1px solid rgba(245,200,66,0.15)",
+    borderRadius:12, padding:"14px 16px", color:"#fff", fontSize:15,
+    outline:"none", marginBottom:12,
+  };
+  const btn = {
+    display:"block", width:"100%", padding:"14px 0",
+    background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none",
+    borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16,
+    cursor:"pointer", marginBottom:10,
+  };
+
+  const handleFinish = async () => {
+    if (!username.trim()) return setError("Please enter a username.");
+    if (!dob) return setError("Please enter your birthday.");
+    if (!is18) return setError("You must confirm you are 18 years or older.");
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+    if (age < 13) return setError("You must be at least 13 years old to join Sachi.");
+
+    setLoading(true); setError("");
+    try {
+      // Check if user already exists
+      let existingUsers;
+      try {
+        const res = await fetch(
+          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+          { headers: { "Content-Type": "application/json" } }
+        );
+        existingUsers = await res.json();
+      } catch { existingUsers = []; }
+
+      const items = Array.isArray(existingUsers) ? existingUsers : (existingUsers?.items || []);
+      let sachiUser = items.find(u => u.email === email);
+
+      if (!sachiUser) {
+        // Create new profile
+        const created = await fetch(
+          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              username: username.trim().toLowerCase(),
+              display_name: name || username.trim(),
+              avatar_url: picture || "",
+              is_verified: true,
+              is_18_plus: true,
+              status: "active",
+              followers_count: 0,
+              following_count: 0,
+              videos_count: 0,
+            })
+          }
+        ).then(r => r.json());
+        sachiUser = created;
+      }
+
+      localStorage.setItem("sachi_dob", dob);
+
+      const sessionUser = {
+        id: sachiUser.id || sachiUser.created_by,
+        email,
+        full_name: name || sachiUser.display_name,
+        avatar_url: picture || sachiUser.avatar_url,
+        _google: true,
+        _sachiProfileId: sachiUser.id,
+      };
+
+      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+      onSuccess(sessionUser);
+    } catch(e) {
+      console.error(e);
+      setError("Could not create your profile. Try again.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div style={{ textAlign:"center" }}>
+      {/* Google profile preview */}
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:20 }}>
+        {picture && <img src={picture} style={{ width:72, height:72, borderRadius:"50%", border:"3px solid #F5C842", marginBottom:10 }} />}
+        <div style={{ color:"#fff", fontWeight:800, fontSize:17 }}>{name}</div>
+        <div style={{ color:"#888", fontSize:13 }}>{email}</div>
+        <div style={{ background:"rgba(80,200,80,0.12)", border:"1px solid rgba(80,200,80,0.3)", borderRadius:20, padding:"4px 14px", marginTop:8, color:"#6fcf6f", fontSize:12, fontWeight:700 }}>
+          ✓ Verified with Google
+        </div>
+      </div>
+
+      <div style={{ color:"#aaa", fontSize:13, marginBottom:16 }}>Just a few more details to set up your profile:</div>
+
+      <input
+        value={username}
+        onChange={e => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g,"").toLowerCase())}
+        placeholder="Choose a username"
+        style={inp}
+        maxLength={30}
+      />
+
+      <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
+        Birthday <span style={{color:"#ff6b6b"}}>*</span>
+      </div>
+      <input
+        value={dob}
+        onChange={e => setDob(e.target.value)}
+        type="date"
+        max={new Date().toISOString().slice(0,10)}
+        style={{ ...inp, colorScheme:"dark" }}
+      />
+
+      <label style={{ display:"flex", gap:10, alignItems:"center", marginBottom:16, cursor:"pointer", textAlign:"left" }}>
+        <input
+          type="checkbox"
+          checked={is18}
+          onChange={e => setIs18(e.target.checked)}
+          style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0 }}
+        />
+        <span style={{ color:"#ccc", fontSize:14, fontWeight:600 }}>
+          I confirm I am 18 years or older
+        </span>
+      </label>
+
+      {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12 }}>{error}</div>}
+
+      <button onClick={handleFinish} disabled={loading} style={{ ...btn, opacity: loading ? 0.7 : 1 }}>
+        {loading ? "Setting up your profile…" : "Let's Go 🚀"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Google One Tap Button ─────────────────────────────────────────────────────
+function GoogleOneTap({ onGoogleVerified }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,65 +183,39 @@ function GoogleOneTap({ onSuccess }) {
     setLoading(true); setError("");
     try {
       const payload = JSON.parse(atob(response.credential.split(".")[1]));
-      const { email, name, picture, sub } = payload;
 
-      // Check if user already exists in AthaVidUser entity
+      // Check if returning user (already has a profile)
       let existingUsers;
       try {
-        existingUsers = await fetch(
-          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+        const res = await fetch(
+          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(payload.email)}&limit=5`,
           { headers: { "Content-Type": "application/json" } }
-        ).then(r => r.json());
+        );
+        existingUsers = await res.json();
       } catch { existingUsers = []; }
 
       const items = Array.isArray(existingUsers) ? existingUsers : (existingUsers?.items || []);
-      let sachiUser = items.find(u => u.email === email);
+      const sachiUser = items.find(u => u.email === payload.email);
 
-      if (!sachiUser) {
-        // Create new Sachi user profile
-        const username = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g,"").toLowerCase() + Math.floor(Math.random()*999);
-        try {
-          const created = await fetch(
-            `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email,
-                username,
-                display_name: name || username,
-                avatar_url: picture || "",
-                is_verified: true,
-                status: "active",
-                followers_count: 0,
-                following_count: 0,
-                videos_count: 0,
-              })
-            }
-          ).then(r => r.json());
-          sachiUser = created;
-        } catch(e) {
-          setError("Could not create your profile. Try again."); setLoading(false); return;
-        }
+      if (sachiUser) {
+        // Returning user — log straight in, no extra steps
+        const sessionUser = {
+          id: sachiUser.id,
+          email: payload.email,
+          full_name: payload.name || sachiUser.display_name,
+          avatar_url: payload.picture || sachiUser.avatar_url,
+          _google: true,
+          _sachiProfileId: sachiUser.id,
+        };
+        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+        onGoogleVerified({ payload, existingUser: sessionUser });
+      } else {
+        // New user — show finish step
+        onGoogleVerified({ payload, existingUser: null });
       }
-
-      // Build a local session object (same shape as Base44 user)
-      const sessionUser = {
-        id: sachiUser.id || sachiUser.created_by,
-        email,
-        full_name: name || sachiUser.display_name,
-        avatar_url: picture || sachiUser.avatar_url,
-        _google: true,
-        _sachiProfileId: sachiUser.id,
-      };
-
-      // Persist to localStorage
-      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-
-      onSuccess(sessionUser);
     } catch(e) {
-      console.error("Google sign-in error:", e);
+      console.error(e);
       setError("Sign-in failed. Please try again.");
     } finally { setLoading(false); }
   };
@@ -110,7 +232,9 @@ function GoogleOneTap({ onSuccess }) {
 // ─── Main Auth Modal ───────────────────────────────────────────────────────────
 export default function AuthModal({ onClose, onSuccess }) {
   const [mode, setMode] = useState("signup");
-  const [step, setStep] = useState("form");
+  const [step, setStep] = useState("form"); // form | otp | forgot | reset | google_finish
+  const [googlePayload, setGooglePayload] = useState(null);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -121,6 +245,17 @@ export default function AuthModal({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const handleGoogleVerified = ({ payload, existingUser }) => {
+    if (existingUser) {
+      // Returning user — straight in
+      onSuccess(existingUser);
+    } else {
+      // New user — show the finish step
+      setGooglePayload(payload);
+      setStep("google_finish");
+    }
+  };
 
   const submitForgot = async () => {
     if (!email) return setError("Enter your email address.");
@@ -204,6 +339,12 @@ export default function AuthModal({ onClose, onSuccess }) {
         padding:"28px 24px 32px", width:"100%", maxWidth:400, maxHeight:"90vh", overflowY:"auto",
       }}>
 
+        {/* ── Google Finish Step ── */}
+        {step === "google_finish" && googlePayload && (
+          <GoogleFinishStep googlePayload={googlePayload} onSuccess={onSuccess} />
+        )}
+
+        {/* ── Main Form ── */}
         {step === "form" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
@@ -212,10 +353,8 @@ export default function AuthModal({ onClose, onSuccess }) {
               <div style={{ color:"#777", fontSize:14 }}>Your stage. Share with the world.</div>
             </div>
 
-            {/* Google One Tap */}
-            <GoogleOneTap onSuccess={onSuccess} />
+            <GoogleOneTap onGoogleVerified={handleGoogleVerified} />
 
-            {/* Divider */}
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
               <div style={{ flex:1, height:1, background:"rgba(255,255,255,0.1)" }} />
               <span style={{ color:"#555", fontSize:12 }}>or continue with email</span>
@@ -270,6 +409,7 @@ export default function AuthModal({ onClose, onSuccess }) {
           </>
         )}
 
+        {/* ── OTP Step ── */}
         {step === "otp" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
@@ -288,6 +428,7 @@ export default function AuthModal({ onClose, onSuccess }) {
           </>
         )}
 
+        {/* ── Forgot Password ── */}
         {step === "forgot" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
@@ -305,6 +446,7 @@ export default function AuthModal({ onClose, onSuccess }) {
           </>
         )}
 
+        {/* ── Reset Password ── */}
         {step === "reset" && (
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
@@ -322,6 +464,7 @@ export default function AuthModal({ onClose, onSuccess }) {
             <button onClick={() => { setStep("form"); setError(""); }} style={backBtn}>← Back</button>
           </>
         )}
+
       </div>
     </div>
   );
