@@ -1225,26 +1225,41 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   useEffect(() => {
     const el = photoCarouselRef.current;
     if (!el) return;
-    let startX = 0, startY = 0;
+    let startX = 0, startY = 0, locked = null;
     const onTouchStart = (e) => {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
+      locked = null;
     };
     const onTouchMove = (e) => {
-      const dx = Math.abs(e.touches[0].clientX - startX);
-      const dy = Math.abs(e.touches[0].clientY - startY);
-      if (dx > dy && dx > 8) {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (locked === null) {
+        locked = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      }
+      if (locked === 'h') {
         e.preventDefault();
         e.stopPropagation();
       }
     };
+    const onTouchEnd = (e) => {
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = Math.abs(e.changedTouches[0].clientY - startY);
+      if (locked === 'h' && Math.abs(dx) > 30) {
+        if (dx < 0) setPhotoIdx(p => Math.min(p + 1, (photoUrls ? photoUrls.length - 1 : 0)));
+        else        setPhotoIdx(p => Math.max(p - 1, 0));
+      }
+      locked = null;
+    };
     el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
+    el.addEventListener('touchend',   onTouchEnd,   { passive: true });
     return () => {
       el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchmove',  onTouchMove);
+      el.removeEventListener('touchend',   onTouchEnd);
     };
-  }, [photoCarouselRef.current]);
+  }, [photoCarouselRef.current, photoUrls]);
 
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
@@ -1432,33 +1447,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div ref={photoCarouselRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", touchAction:"none" }}
-          onTouchStart={e => {
-            const t = e.touches[0];
-            e.currentTarget._touchStartX = t.clientX;
-            e.currentTarget._touchStartY = t.clientY;
-            e.currentTarget._touchMoved = false;
-          }}
-          onTouchMove={e => {
-            const dx = Math.abs(e.touches[0].clientX - (e.currentTarget._touchStartX || 0));
-            const dy = Math.abs(e.touches[0].clientY - (e.currentTarget._touchStartY || 0));
-            // If clearly horizontal, prevent vertical scroll from stealing the gesture
-            if (dx > dy && dx > 10) {
-              e.stopPropagation();
-              e.preventDefault && e.preventDefault();
-              e.currentTarget._touchMoved = true;
-            }
-          }}
-          onTouchEnd={e => {
-            const dx = e.changedTouches[0].clientX - (e.currentTarget._touchStartX || 0);
-            const dy = Math.abs(e.changedTouches[0].clientY - (e.currentTarget._touchStartY || 0));
-            if (Math.abs(dx) > 30 && Math.abs(dx) > dy) {
-              e.stopPropagation();
-              if (dx < 0) setPhotoIdx(p => Math.min(p+1, photoUrls.length-1));
-              else        setPhotoIdx(p => Math.max(p-1, 0));
-            }
-          }}
-        >
+        <div ref={photoCarouselRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", touchAction:"pan-y" }}>
           {/* Sliding strip — all photos in a row, translate by index */}
           <div style={{
             display:"flex", height:"100%",
