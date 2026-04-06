@@ -10335,7 +10335,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       ] });
     })(),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI ? 1 : 0, visibility: showUI ? "visible" : "hidden" } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
+    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
         onClick: tap(() => {
@@ -10351,7 +10351,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         style: { position: "absolute", top: 60, left: 0, right: 0, bottom: 80, zIndex: 50, cursor: "pointer" }
       }
     ),
-    !playing && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: tap(doTogglePlay), style: {
+    !playing && !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: tap(doTogglePlay), style: {
       background: "rgba(11,12,26,0.7)",
       border: "1.5px solid rgba(245,200,66,0.4)",
       borderRadius: "50%",

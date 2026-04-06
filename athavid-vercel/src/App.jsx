@@ -1470,21 +1470,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* Tap hint removed — content-first UI */}
 
-      {/* ── TAP: toggle UI visibility on images, toggle play/pause on videos ── */}
-      <div onClick={tap(() => {
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
-        if (isImg || !(video.video_url)) {
-          setShowUI(v => !v);
-          if (!showUI) setShowFullCaption(true);
-        } else {
-          // Always toggle play/pause on tap (TikTok-style)
-          doTogglePlay();
-        }
-      })}
-        style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+      {/* ── TAP: toggle UI visibility on images/photos, toggle play/pause on videos ── */}
+      {!photoUrls && (
+        <div onClick={tap(() => {
+          const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+          if (isImg || !(video.video_url)) {
+            setShowUI(v => !v);
+            if (!showUI) setShowFullCaption(true);
+          } else {
+            // Always toggle play/pause on tap (TikTok-style)
+            doTogglePlay();
+          }
+        })}
+          style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+      )}
 
-      {/* ── PLAY/PAUSE INDICATOR ── */}
-      {!playing && (
+      {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
+      {!playing && !photoUrls && (
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
           <div onClick={tap(doTogglePlay)} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:64, height:64,
             display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:26 }}>▶</div>
