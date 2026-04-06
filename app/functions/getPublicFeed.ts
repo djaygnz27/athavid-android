@@ -1,6 +1,6 @@
 import base44 from "../base44_sdk_stub.ts";
 
-// v2 - force redeploy
+// v5 - force redeploy 1744
 export default async function handler(req: Request): Promise<Response> {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",

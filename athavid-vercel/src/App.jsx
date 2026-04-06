@@ -2865,7 +2865,7 @@ function App() {
         const el = feedContainerRef.current || window.__sachiEl;
         if (el) el.scrollTo({ top: 0, behavior: 'instant' });
       });
-    } catch { setVideoList([]); }
+    } catch(err) { console.error('loadVideos error:', err); setVideoList([]); }
     setLoading(false);
   };
 
