@@ -1508,12 +1508,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column" }}>
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
           {/* Photo takes up most of the space */}
-          <div style={{ flex:1, position:"relative", overflow:"hidden" }}>
+          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
-              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none" }}
+              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
             />
             {/* Counter badge top-left */}
             {photoUrls.length > 1 && (
@@ -1637,7 +1637,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:250, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
         <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
@@ -1742,7 +1742,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDE ACTION BAR — vertical stack, TikTok style ── */}
-      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex: photoUrls ? 140 : 260, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex: 500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}

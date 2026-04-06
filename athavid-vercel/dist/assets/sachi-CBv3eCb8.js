@@ -10056,13 +10056,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", background: "#000", display: "flex", flexDirection: "column" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden" }, children: [
+    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", background: "#000", display: "flex", flexDirection: "column", touchAction: "pan-y" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden", pointerEvents: "none" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "img",
           {
             src: resolveMediaUrl(photoUrls[photoIdx]),
-            style: { width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none", WebkitUserSelect: "none" }
+            style: { width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none", WebkitUserSelect: "none", pointerEvents: "none" }
           }
         ),
         photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
@@ -10288,7 +10288,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       cursor: "pointer",
       fontSize: 26
     }, children: "▶" }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 148, left: 16, right: 16, zIndex: 250, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 148, left: 16, right: 16, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "div",
         {
@@ -10406,7 +10406,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 12, bottom: 120, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: photoUrls ? 140 : 260, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 12, bottom: 120, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
