@@ -1180,7 +1180,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               <div style={{ width:20, height:20, borderRadius:5,
                 border:`2px solid ${isAiGenerated ? "#FF9500" : "#555"}`,
                 background: isAiGenerated ? "#FF9500" : "transparent",
-                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s",
+                boxShadow: isAiGenerated ? "0 0 10px 3px rgba(255,149,0,0.7), 0 0 20px 6px rgba(255,149,0,0.3)" : "none" }}>
                 {isAiGenerated && <span style={{ color:"#fff", fontSize:13, fontWeight:900 }}>✓</span>}
               </div>
               <div style={{ color: isAiGenerated ? "#FF9500" : "#888", fontSize:13, lineHeight:1.4 }}>
