@@ -3381,7 +3381,7 @@ function App() {
 
               {/* Log Out */}
               <div style={{ padding:"24px 20px 32px" }}>
-                <button onClick={() => { auth.signOut(); setCurrentUser(null); setActiveTab("feed"); }}
+                <button onClick={() => { auth.signOut(); localStorage.removeItem('sachi_google_user'); setCurrentUser(null); setActiveTab('feed'); }}
                   style={{ width:"100%", padding:"14px 0", background:"rgba(255,50,50,0.1)",
                     border:"1.5px solid rgba(255,80,80,0.3)", borderRadius:14,
                     color:"#ff5555", fontWeight:700, fontSize:15, cursor:"pointer",
