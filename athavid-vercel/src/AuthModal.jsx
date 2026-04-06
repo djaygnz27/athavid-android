@@ -331,8 +331,7 @@ export default function AuthModal({ onClose, onSuccess }) {
       } else {
         await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
         localStorage.setItem("sachi_dob", dob);
-        if (country) localStorage.setItem("sachi_country", country);
-        setStep("otp");
+        setStep("country");
       }
     } catch (e) { setError(e.message || "Something went wrong."); }
     finally { setLoading(false); }
@@ -417,17 +416,6 @@ export default function AuthModal({ onClose, onSuccess }) {
                 <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>Birthday <span style={{color:"#ff6b6b"}}>*</span></div>
                 <input value={dob} onChange={e => setDob(e.target.value)} type="date"
                   max={new Date().toISOString().slice(0,10)} style={{ ...inp, colorScheme:"dark" }} />
-                <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>
-                  Where are you from? <span style={{color:"#888", fontSize:11}}>(optional)</span>
-                </div>
-                <select
-                  value={country}
-                  onChange={e => setCountry(e.target.value)}
-                  style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"1px solid rgba(245,200,66,0.3)", borderRadius:12, padding:"14px 16px", color: country ? "#fff" : "#888", fontSize:15, outline:"none", marginBottom:12, cursor:"pointer" }}
-                >
-                  <option value="" style={{background:"#1a1b2e", color:"#888"}}>🌍 Select your country</option>
-                  {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}
-                </select>
                 <label style={{ display:"flex", gap:10, alignItems:"center", marginBottom:12, cursor:"pointer" }}>
                   <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)}
                     style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0 }} />
@@ -449,6 +437,29 @@ export default function AuthModal({ onClose, onSuccess }) {
               <button onClick={() => { setStep("forgot"); setError(""); }} style={backBtn}>Forgot password?</button>
             )}
             <button onClick={onClose} style={backBtn}>Cancel</button>
+          </>
+        )}
+
+        {/* ── Country Step ── */}
+        {step === "country" && (
+          <>
+            <div style={{ textAlign:"center", marginBottom:24 }}>
+              <div style={{ fontSize:40 }}>🌍</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Where are you from?</div>
+              <div style={{ color:"#777", fontSize:14 }}>We'll add your flag to your posts</div>
+            </div>
+            <select
+              value={country}
+              onChange={e => setCountry(e.target.value)}
+              style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"2px solid rgba(245,200,66,0.4)", borderRadius:14, padding:"16px", color: country ? "#fff" : "#888", fontSize:16, outline:"none", marginBottom:20, cursor:"pointer" }}
+            >
+              <option value="" style={{background:"#1a1b2e", color:"#888"}}>Select your country</option>
+              {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}
+            </select>
+            <button onClick={() => { if (country) localStorage.setItem("sachi_country", country); setStep("otp"); }}
+              style={{ display:"block", width:"100%", padding:"14px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16, cursor:"pointer", marginBottom:10 }}>
+              {country ? "Continue →" : "Skip for now"}
+            </button>
           </>
         )}
 

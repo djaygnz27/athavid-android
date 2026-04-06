@@ -7757,8 +7757,7 @@ function AuthModal({ onClose, onSuccess }) {
       } else {
         await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
         localStorage.setItem("sachi_dob", dob);
-        if (country) localStorage.setItem("sachi_country", country);
-        setStep("otp");
+        setStep("country");
       }
     } catch (e) {
       setError(e.message || "Something went wrong.");
@@ -7894,22 +7893,6 @@ function AuthModal({ onClose, onSuccess }) {
               style: { ...inp, colorScheme: "dark" }
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4, color: "#888", fontSize: 12 }, children: [
-            "Where are you from? ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "select",
-            {
-              value: country,
-              onChange: (e) => setCountry(e.target.value),
-              style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
-                COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
-              ]
-            }
-          ),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: "pointer" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               "input",
@@ -7939,6 +7922,36 @@ function AuthModal({ onClose, onSuccess }) {
           setError("");
         }, style: backBtn, children: "Forgot password?" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: backBtn, children: "Cancel" })
+      ] }),
+      step === "country" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "🌍" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Where are you from?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "We'll add your flag to your posts" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "select",
+          {
+            value: country,
+            onChange: (e) => setCountry(e.target.value),
+            style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "2px solid rgba(245,200,66,0.4)", borderRadius: 14, padding: "16px", color: country ? "#fff" : "#888", fontSize: 16, outline: "none", marginBottom: 20, cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "Select your country" }),
+              COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              if (country) localStorage.setItem("sachi_country", country);
+              setStep("otp");
+            },
+            style: { display: "block", width: "100%", padding: "14px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 10 },
+            children: country ? "Continue →" : "Skip for now"
+          }
+        )
       ] }),
       step === "otp" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
