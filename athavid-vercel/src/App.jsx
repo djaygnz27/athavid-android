@@ -1493,8 +1493,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {photoUrls.length > 1 && (
             <div style={{
               position:"absolute", bottom:70, left:"50%", transform:"translateX(-50%)",
-              display:"flex", alignItems:"center", gap:10, zIndex:400,
-              background:"rgba(0,0,0,0.55)", borderRadius:30, padding:"6px 12px",
+              display:"flex", alignItems:"center", gap:16, zIndex:400,
+              background:"rgba(0,0,0,0.6)", borderRadius:40, padding:"10px 20px",
               backdropFilter:"blur(4px)"
             }}>
               {/* PREV */}
@@ -1503,21 +1503,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
                 disabled={photoIdx === 0}
                 style={{
-                  background:"none", border:"none", padding:"2px 6px",
-                  fontSize:22, fontWeight:900, lineHeight:1,
-                  color: photoIdx===0 ? "rgba(255,255,255,0.2)" : "#fff",
+                  background: photoIdx===0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
+                  border:"none", borderRadius:"50%",
+                  width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, fontWeight:900, lineHeight:1,
+                  color: photoIdx===0 ? "rgba(255,255,255,0.25)" : "#fff",
                   cursor: photoIdx===0 ? "default" : "pointer",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation"
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
+                  transition:"all 0.2s"
                 }}>‹</button>
 
               {/* DOTS */}
-              <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                 {photoUrls.map((_,i) => (
                   <div key={i} style={{
-                    width: i===photoIdx ? 20 : 7, height:7, borderRadius:99,
+                    width: i===photoIdx ? 28 : 10, height:10, borderRadius:99,
                     background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
                     transition:"all 0.25s ease",
-                    boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.8)" : "none"
+                    boxShadow: i===photoIdx ? "0 0 10px rgba(245,200,66,0.9)" : "none"
                   }} />
                 ))}
               </div>
@@ -1528,11 +1531,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
                 disabled={photoIdx === photoUrls.length-1}
                 style={{
-                  background:"none", border:"none", padding:"2px 6px",
-                  fontSize:22, fontWeight:900, lineHeight:1,
-                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
+                  background: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
+                  border:"none", borderRadius:"50%",
+                  width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, fontWeight:900, lineHeight:1,
+                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.25)" : "#fff",
                   cursor: photoIdx===photoUrls.length-1 ? "default" : "pointer",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation"
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
+                  transition:"all 0.2s"
                 }}>›</button>
             </div>
           )}
