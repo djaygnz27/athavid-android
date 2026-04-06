@@ -10224,16 +10224,67 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("");
     }
   };
-  const MUSIC_API_URL = "https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks";
+  const JAMENDO_CLIENT_ID = "c9f4d87f";
+  const GENRE_TAG_MAP = {
+    "All": "",
+    "Lo-Fi": "lounge",
+    "Hip-Hop": "hiphop",
+    "Electronic": "electronic",
+    "R&B": "rnb",
+    "Pop": "pop",
+    "Chill": "relaxation",
+    "Afrobeats": "afrobeats",
+    "Jazz": "jazz",
+    "Rock": "rock",
+    "Acoustic": "acoustic",
+    "Classical": "classical"
+  };
+  const GENRE_EMOJI = {
+    "lounge": "🌆",
+    "hiphop": "🔥",
+    "electronic": "⚡",
+    "rnb": "❤️",
+    "pop": "🌈",
+    "relaxation": "🌊",
+    "afrobeats": "🌍",
+    "jazz": "🎷",
+    "rock": "🎸",
+    "acoustic": "🎸",
+    "classical": "🎻"
+  };
   const fetchMusicTracks = async (genre = "All", search = "") => {
     setMusicLoading(true);
     try {
-      const params = new URLSearchParams({ genre, limit: "30" });
+      const tag = GENRE_TAG_MAP[genre] || "";
+      const params = new URLSearchParams({
+        client_id: JAMENDO_CLIENT_ID,
+        format: "json",
+        limit: "30",
+        order: "popularity_week",
+        include: "musicinfo",
+        audioformat: "mp31",
+        imagesize: "100"
+      });
+      if (tag)
+        params.set("tags", tag);
       if (search)
-        params.set("search", search);
-      const resp = await fetch(`${MUSIC_API_URL}?${params.toString()}`);
+        params.set("namesearch", search);
+      const resp = await fetch(`https://api.jamendo.com/v3.0/tracks/?${params.toString()}`);
       const data = await resp.json();
-      setMusicTracks(data.tracks || []);
+      const tracks = (data.results || []).map((t2) => {
+        var _a, _b, _c;
+        return {
+          id: `j_${t2.id}`,
+          title: t2.name,
+          artist: t2.artist_name,
+          url: t2.audio,
+          genre: genre === "All" ? ((_c = (_b = (_a = t2.musicinfo) == null ? void 0 : _a.tags) == null ? void 0 : _b.genres) == null ? void 0 : _c[0]) || "Music" : genre,
+          emoji: GENRE_EMOJI[tag] || "🎵",
+          duration: t2.duration,
+          image: t2.image
+        };
+      }).filter((t2) => t2.url);
+      setMusicTracks(tracks);
     } catch (e) {
       console.error("Music fetch error:", e);
       setMusicTracks([]);
