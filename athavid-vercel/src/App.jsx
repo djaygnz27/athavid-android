@@ -2083,6 +2083,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   // Use global mute state so unmuting one video unmutes all
   const muted = globalMuted !== undefined ? globalMuted : true;
   const setMuted = (val) => { if (onMuteChange) onMuteChange(typeof val === 'function' ? val(muted) : val); };
+  // Ref so IntersectionObserver (stale closure) always reads latest muted value
+  const mutedRef = useRef(muted);
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
   const [photoIdx, setPhotoIdx] = useState(0);
   const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
@@ -2142,11 +2145,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        el.muted = muted; // respect global mute state
+        const currentlyMuted = mutedRef.current; // always reads latest value
+        el.muted = currentlyMuted;
         el.play().catch(() => {});
         setPlaying(true);
         // Start sound track if unmuted and post has music
-        if (!muted && soundRef.current && video.sound_url) {
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
           soundRef.current.play().catch(() => {});
         }
         setShowUI(true);
