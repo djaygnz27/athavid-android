@@ -3047,8 +3047,8 @@ function App() {
   // Load all followed user IDs once on login
   React.useEffect(() => {
     if (!currentUser) { setFollowedUserIds(new Set()); return; }
-    follows.list().then(recs => {
-      setFollowedUserIds(new Set((recs.items || recs || []).map(r => r.following_id)));
+    follows.getFollowing(currentUser.id).then(res => {
+      setFollowedUserIds(new Set((res.items || res || []).map(r => r.following_id)));
     }).catch(() => {});
   }, [currentUser]);
 

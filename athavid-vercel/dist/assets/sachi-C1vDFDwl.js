@@ -11877,8 +11877,8 @@ function App() {
       setFollowedUserIds(/* @__PURE__ */ new Set());
       return;
     }
-    follows.list().then((recs) => {
-      setFollowedUserIds(new Set((recs.items || recs || []).map((r2) => r2.following_id)));
+    follows.getFollowing(currentUser.id).then((res) => {
+      setFollowedUserIds(new Set((res.items || res || []).map((r2) => r2.following_id)));
     }).catch(() => {
     });
   }, [currentUser]);
