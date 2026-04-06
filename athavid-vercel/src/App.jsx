@@ -330,6 +330,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
       } catch(_) {}
 
       // Save to DB
+      const liveGeo = await getPostLocation();
       await videos.create({
         user_id: currentUser.id,
         username: currentUser.username || currentUser.email?.split("@")[0] || "user",
@@ -342,6 +343,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
         duration_seconds: elapsed,
+        ...liveGeo,
       });
 
       setPhase("done");
@@ -828,6 +830,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setProgress(10 + Math.round(((i+1)/photos.length)*70));
       }
       setProgress(85); setStep("Saving to feed...");
+      const photoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
       await videos.create({
@@ -842,6 +845,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        ...photoGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -886,6 +890,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
       setProgress(80);
       setStep("Saving to feed...");
+      const videoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
       await videos.create({
@@ -896,6 +901,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        ...videoGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -1529,7 +1535,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:8,
             background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px", width:"fit-content" }}>
             <span style={{ fontSize:12 }}>📅</span>
-            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>{formatDate(video.created_date)}</span>
+            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
+              {formatDate(video.created_date)}
+              {video.post_country && (
+                <span style={{ marginLeft:6, opacity:0.9 }}>
+                  {countryFlag(video.post_country)}
+                  {video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`}
+                </span>
+              )}
+            </span>
           </div>
         )}
       </div>
