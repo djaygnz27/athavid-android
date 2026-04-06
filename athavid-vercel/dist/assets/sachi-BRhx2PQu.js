@@ -9701,12 +9701,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                  transition: "all 0.2s"
+                  transition: "all 0.2s",
+                  boxShadow: isAiGenerated ? "0 0 10px 3px rgba(255,149,0,0.7), 0 0 20px 6px rgba(255,149,0,0.3)" : "none"
                 }, children: isAiGenerated && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontSize: 13, fontWeight: 900 }, children: "✓" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: isAiGenerated ? "#FF9500" : "#888", fontSize: 13, lineHeight: 1.4 }, children: [
-                  "🤖 This content was ",
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "AI generated" }),
-                  " — let your viewers know"
+                  "🤖 ",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "Flag as AI" }),
+                  " — let your viewers know this content was AI generated"
                 ] })
               ]
             }
