@@ -7584,10 +7584,10 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
       {
         value: country,
         onChange: (e) => setCountry(e.target.value),
-        style: { ...inp, colorScheme: "dark", appearance: "none", WebkitAppearance: "none" },
+        style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "🌍 Select your country" }),
-          COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, children: c }, c))
+          /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
+          COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
         ]
       }
     ),
@@ -7903,10 +7903,10 @@ function AuthModal({ onClose, onSuccess }) {
             {
               value: country,
               onChange: (e) => setCountry(e.target.value),
-              style: { ...inp, colorScheme: "dark", appearance: "none", WebkitAppearance: "none", marginBottom: 12 },
+              style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
               children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "🌍 Select your country" }),
-                COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, children: c }, c))
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
+                COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
               ]
             }
           ),
