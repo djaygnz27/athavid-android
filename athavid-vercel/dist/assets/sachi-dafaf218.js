@@ -10000,12 +10000,37 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [liked, setLiked] = reactExports.useState(false);
   const [muted, setMuted] = reactExports.useState(true);
   const [photoIdx, setPhotoIdx] = reactExports.useState(0);
+  const photoCarouselRef = reactExports.useRef(null);
   const [followRecord, setFollowRecord] = reactExports.useState(null);
   const [followLoading, setFollowLoading] = reactExports.useState(false);
   const [reportTarget, setReportTarget] = reactExports.useState(null);
   const [showUI, setShowUI] = reactExports.useState(false);
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    const el2 = photoCarouselRef.current;
+    if (!el2)
+      return;
+    let startX = 0, startY = 0;
+    const onTouchStart = (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e) => {
+      const dx = Math.abs(e.touches[0].clientX - startX);
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if (dx > dy && dx > 8) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    el2.addEventListener("touchstart", onTouchStart, { passive: true });
+    el2.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      el2.removeEventListener("touchstart", onTouchStart);
+      el2.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [photoCarouselRef.current]);
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || currentUser.username && currentUser.username === video.username);
   const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
   const userAge = getUserAge();
@@ -10200,7 +10225,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
-        style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", touchAction: "pan-x" },
+        ref: photoCarouselRef,
+        style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", touchAction: "none" },
         onTouchStart: (e) => {
           const t2 = e.touches[0];
           e.currentTarget._touchStartX = t2.clientX;

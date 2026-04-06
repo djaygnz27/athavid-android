@@ -1184,12 +1184,39 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [liked, setLiked] = useState(false);
   const [muted, setMuted] = useState(true);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [showUI, setShowUI] = useState(false);
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
+
+  // Non-passive touch handler to prevent vertical feed from stealing horizontal photo swipes
+  useEffect(() => {
+    const el = photoCarouselRef.current;
+    if (!el) return;
+    let startX = 0, startY = 0;
+    const onTouchStart = (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    };
+    const onTouchMove = (e) => {
+      const dx = Math.abs(e.touches[0].clientX - startX);
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if (dx > dy && dx > 8) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [photoCarouselRef.current]);
+
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
   const [ageGateUnlocked, setAgeGateUnlocked] = useState(false);
@@ -1376,7 +1403,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", touchAction:"pan-x" }}
+        <div ref={photoCarouselRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", touchAction:"none" }}
           onTouchStart={e => {
             const t = e.touches[0];
             e.currentTarget._touchStartX = t.clientX;
