@@ -10253,40 +10253,60 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     "classical": "🎻"
   };
   const fetchMusicTracks = async (genre = "All", search = "") => {
-    var _a;
     setMusicLoading(true);
     setMusicTracks([]);
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
-      let apiUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
-      if (tag)
-        apiUrl += `&tags=${encodeURIComponent(tag)}`;
+      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
       if (search)
-        apiUrl += `&namesearch=${encodeURIComponent(search)}`;
-      console.log("[Sachi Music] Fetching:", apiUrl);
-      const resp = await fetch(apiUrl);
-      if (!resp.ok)
-        throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      console.log("[Sachi Music] Results:", (_a = data == null ? void 0 : data.headers) == null ? void 0 : _a.results_count, "genre:", genre, "tag:", tag);
-      const tracks = (data.results || []).map((t2) => {
-        var _a2, _b, _c;
-        return {
-          id: `j_${t2.id}`,
-          title: t2.name,
-          artist: t2.artist_name,
-          url: t2.audio || t2.audiodownload,
-          genre: genre === "All" ? ((_c = (_b = (_a2 = t2.musicinfo) == null ? void 0 : _a2.tags) == null ? void 0 : _b.genres) == null ? void 0 : _c[0]) || "Music" : genre,
-          emoji: GENRE_EMOJI[tag] || "🎵",
-          duration: t2.duration,
-          image: t2.image
-        };
-      }).filter((t2) => t2.url);
-      console.log("[Sachi Music] Tracks after filter:", tracks.length);
-      setMusicTracks(tracks);
+        apiUrl += `&search=${encodeURIComponent(search)}`;
+      console.log("[Sachi Music] Fetching via proxy:", apiUrl);
+      let tracks = [];
+      try {
+        const resp = await fetch(apiUrl);
+        if (resp.ok) {
+          const data = await resp.json();
+          tracks = data.tracks || [];
+          console.log("[Sachi Music] Proxy results:", tracks.length);
+        }
+      } catch (proxyErr) {
+        console.warn("[Sachi Music] Proxy failed, trying direct:", proxyErr);
+      }
+      if (tracks.length === 0) {
+        let directUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
+        if (tag)
+          directUrl += `&tags=${encodeURIComponent(tag)}`;
+        if (search)
+          directUrl += `&namesearch=${encodeURIComponent(search)}`;
+        console.log("[Sachi Music] Trying direct:", directUrl);
+        const resp2 = await fetch(directUrl);
+        if (resp2.ok) {
+          const data2 = await resp2.json();
+          tracks = (data2.results || []).map((t2) => {
+            var _a, _b, _c;
+            return {
+              id: `j_${t2.id}`,
+              title: t2.name,
+              artist: t2.artist_name,
+              url: t2.audio || t2.audiodownload,
+              genre: genre === "All" ? ((_c = (_b = (_a = t2.musicinfo) == null ? void 0 : _a.tags) == null ? void 0 : _b.genres) == null ? void 0 : _c[0]) || "Music" : genre,
+              emoji: GENRE_EMOJI[tag] || "🎵",
+              duration: t2.duration,
+              image: t2.image
+            };
+          }).filter((t2) => t2.url);
+          console.log("[Sachi Music] Direct results:", tracks.length);
+        }
+      }
+      if (tracks.length > 0) {
+        setMusicTracks(tracks);
+      } else {
+        throw new Error("No tracks from any source");
+      }
     } catch (e) {
-      console.error("[Sachi Music] Fetch error:", e);
-      setMusicTracks([]);
+      console.error("[Sachi Music] All sources failed:", e);
+      const fallback = MUSIC_TRACKS.filter((t2) => genre === "All" || t2.genre === genre);
+      setMusicTracks(fallback.length > 0 ? fallback : MUSIC_TRACKS);
     }
     setMusicLoading(false);
   };
