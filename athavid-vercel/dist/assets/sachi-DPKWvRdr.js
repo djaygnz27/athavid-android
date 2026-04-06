@@ -9879,6 +9879,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             poster: video.thumbnail_url,
             loop: true,
             playsInline: true,
+            onPlay: () => {
+              setPlaying(true);
+              hideUIAfterDelay(1500);
+            },
+            onPause: () => setPlaying(false),
             style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
           }
         ),
