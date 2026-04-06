@@ -8392,6 +8392,32 @@ function formatCount(n2) {
     return (n2 / 1e3).toFixed(1) + "K";
   return String(n2);
 }
+async function getPostLocation() {
+  try {
+    const pos = await new Promise(
+      (resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5e3 })
+    );
+    const { latitude, longitude } = pos.coords;
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+    );
+    const data = await res.json();
+    const addr = data.address || {};
+    const country = addr.country_code ? addr.country_code.toUpperCase() : null;
+    const region = addr.state || addr.city || addr.county || null;
+    return { post_country: country, post_region: region };
+  } catch {
+    return {};
+  }
+}
+function countryFlag(code) {
+  if (!code || code.length !== 2)
+    return "";
+  return code.toUpperCase().replace(
+    /./g,
+    (c) => String.fromCodePoint(127397 + c.charCodeAt(0))
+  );
+}
 async function captureThumbnail(file) {
   return new Promise((resolve) => {
     const video = document.createElement("video");

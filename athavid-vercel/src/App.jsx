@@ -18,6 +18,35 @@ function formatCount(n) {
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
   return String(n);
 }
+// Get user's location for post geo-tagging (best-effort, fails silently)
+async function getPostLocation() {
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+    );
+    const { latitude, longitude } = pos.coords;
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+    );
+    const data = await res.json();
+    const addr = data.address || {};
+    const country = addr.country_code ? addr.country_code.toUpperCase() : null;
+    const region = addr.state || addr.city || addr.county || null;
+    return { post_country: country, post_region: region };
+  } catch {
+    return {};
+  }
+}
+
+// Country code -> emoji flag
+function countryFlag(code) {
+  if (!code || code.length !== 2) return "";
+  return code.toUpperCase().replace(/./g, c =>
+    String.fromCodePoint(127397 + c.charCodeAt(0))
+  );
+}
+
+
 
 async function captureThumbnail(file) {
   return new Promise((resolve) => {
