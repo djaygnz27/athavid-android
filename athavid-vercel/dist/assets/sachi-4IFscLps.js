@@ -10868,12 +10868,20 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
       }
     ) }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 280, marginBottom: 24 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 12, textAlign: "center", marginBottom: 8 }, children: "🔍 Zoom" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 12 }, children: "🔍 Zoom" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+          const img = imgRef.current;
+          const fit = Math.min(SIZE / img.width, SIZE / img.height);
+          setScale(fit);
+          setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+        }, style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.4)", borderRadius: 8, padding: "3px 10px", color: "#F5C842", fontSize: 11, fontWeight: 700, cursor: "pointer" }, children: "Fit whole image" })
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "input",
         {
           type: "range",
-          min: 0.5,
+          min: 0.05,
           max: 4,
           step: 0.01,
           value: scale,
@@ -13698,9 +13706,12 @@ function App() {
       }
     ),
     showAvatarPicker && /* @__PURE__ */ jsxRuntimeExports.jsx(AvatarPickerModal, { currentAvatar: avatarUrl, onSelect: async (url) => {
+      var _a2, _b;
       setAvatarUrl(url);
+      localStorage.setItem("avatar_last", url);
       if (currentUser) {
         localStorage.setItem(`avatar_${currentUser.id}`, url);
+        localStorage.setItem("avatar_last", url);
         try {
           await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
           setCurrentUser((u2) => ({ ...u2, avatar_url: url }));
@@ -13708,14 +13719,24 @@ function App() {
           console.error("Auth avatar update failed:", e);
         }
         try {
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
-          const users = Array.isArray(usersData) ? usersData : usersData.items || [];
-          const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
-          if (match) {
-            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+          const [usersDataA, usersDataS] = await Promise.allSettled([
+            request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`),
+            request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiUser/?email=${encodeURIComponent(currentUser.email)}`).catch(() => null)
+          ]);
+          const athavUsers = Array.isArray(usersDataA.value) ? usersDataA.value : ((_a2 = usersDataA.value) == null ? void 0 : _a2.items) || [];
+          const matchA = athavUsers.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id || u2.created_by === currentUser.id);
+          if (matchA) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${matchA.id}/`, { avatar_url: url });
+          if (usersDataS.status === "fulfilled" && usersDataS.value) {
+            const sachiUsers = Array.isArray(usersDataS.value) ? usersDataS.value : ((_b = usersDataS.value) == null ? void 0 : _b.items) || [];
+            const matchS = sachiUsers.find((u2) => u2.email === currentUser.email || u2.created_by === currentUser.id);
+            if (matchS) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiUser/${matchS.id}/`, { avatar_url: url });
           }
+          const fallbackA = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`).catch(() => null);
+          const fallbackUsers = Array.isArray(fallbackA) ? fallbackA : (fallbackA == null ? void 0 : fallbackA.items) || [];
+          const fallbackMatch = fallbackUsers.find((u2) => u2.id !== (matchA == null ? void 0 : matchA.id));
+          if (fallbackMatch) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${fallbackMatch.id}/`, { avatar_url: url });
         } catch (e) {
-          console.error("AthaVidUser avatar update failed:", e);
+          console.error("User entity avatar update failed:", e);
         }
         try {
           const [vidsA1, vidsA2, vidsS1, vidsS2] = await Promise.allSettled([
@@ -13725,8 +13746,8 @@ function App() {
             request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`)
           ]);
           const flatten = (r2) => {
-            var _a2;
-            return r2.status === "fulfilled" ? Array.isArray(r2.value) ? r2.value : ((_a2 = r2.value) == null ? void 0 : _a2.items) || [] : [];
+            var _a3;
+            return r2.status === "fulfilled" ? Array.isArray(r2.value) ? r2.value : ((_a3 = r2.value) == null ? void 0 : _a3.items) || [] : [];
           };
           const seenA = /* @__PURE__ */ new Set();
           const myAthaVids = [...flatten(vidsA1), ...flatten(vidsA2)].filter((v2) => {

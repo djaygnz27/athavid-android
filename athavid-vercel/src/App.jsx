@@ -2068,10 +2068,20 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
 
       {/* Zoom slider */}
       <div style={{ width:"100%", maxWidth:280, marginBottom:24 }}>
-        <div style={{ color:"#aaa", fontSize:12, textAlign:"center", marginBottom:8 }}>🔍 Zoom</div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+          <div style={{ color:"#aaa", fontSize:12 }}>🔍 Zoom</div>
+          <button onClick={() => {
+            const img = imgRef.current;
+            const fit = Math.min(SIZE / img.width, SIZE / img.height);
+            setScale(fit);
+            setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+          }} style={{ background:"rgba(245,200,66,0.15)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:8, padding:"3px 10px", color:"#F5C842", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+            Fit whole image
+          </button>
+        </div>
         <input
           type="range"
-          min={0.5}
+          min={0.05}
           max={4}
           step={0.01}
           value={scale}
@@ -4364,22 +4374,36 @@ function App() {
       )}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
         setAvatarUrl(url);
+        localStorage.setItem('avatar_last', url);
         if (currentUser) {
           localStorage.setItem(`avatar_${currentUser.id}`, url);
+          localStorage.setItem('avatar_last', url);
           // 1. Update auth profile (with token)
           try {
             await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
             setCurrentUser(u => ({ ...u, avatar_url: url }));
           } catch(e) { console.error("Auth avatar update failed:", e); }
-          // 2. Update AthaVidUser entity (with token)
+          // 2. Update AthaVidUser + SachiUser entity (with token)
           try {
-            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
-            const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
-            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) {
-              await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+            const [usersDataA, usersDataS] = await Promise.allSettled([
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`),
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiUser/?email=${encodeURIComponent(currentUser.email)}`).catch(() => null)
+            ]);
+            const athavUsers = Array.isArray(usersDataA.value) ? usersDataA.value : (usersDataA.value?.items || []);
+            const matchA = athavUsers.find(u => u.email === currentUser.email || u.user_id === currentUser.id || u.created_by === currentUser.id);
+            if (matchA) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${matchA.id}/`, { avatar_url: url });
+            // Also try SachiUser if it exists
+            if (usersDataS.status === "fulfilled" && usersDataS.value) {
+              const sachiUsers = Array.isArray(usersDataS.value) ? usersDataS.value : (usersDataS.value?.items || []);
+              const matchS = sachiUsers.find(u => u.email === currentUser.email || u.created_by === currentUser.id);
+              if (matchS) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiUser/${matchS.id}/`, { avatar_url: url });
             }
-          } catch(e) { console.error("AthaVidUser avatar update failed:", e); }
+            // Also update by created_by in case email lookup missed it
+            const fallbackA = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`).catch(() => null);
+            const fallbackUsers = Array.isArray(fallbackA) ? fallbackA : (fallbackA?.items || []);
+            const fallbackMatch = fallbackUsers.find(u => u.id !== matchA?.id);
+            if (fallbackMatch) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${fallbackMatch.id}/`, { avatar_url: url });
+          } catch(e) { console.error("User entity avatar update failed:", e); }
           // 3. Update avatar on all user's videos (AthaVidVideo + SachiVideo) + refresh feed instantly
           try {
             // Fetch from both entities by user_id AND created_by
