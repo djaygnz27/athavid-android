@@ -10273,6 +10273,74 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         transition: "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
         willChange: "transform"
       }, children: photoUrls.map((url, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { minWidth: "100%", height: "100%", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" } }) }, i)) }),
+      photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            setPhotoIdx((p2) => p2 - 1);
+          },
+          style: {
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "20%",
+            height: "100%",
+            zIndex: 120,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            paddingLeft: 10,
+            cursor: "pointer"
+          },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            background: "rgba(0,0,0,0.55)",
+            borderRadius: "50%",
+            width: 38,
+            height: 38,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            color: "#fff",
+            fontWeight: 900
+          }, children: "‹" })
+        }
+      ),
+      photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            setPhotoIdx((p2) => p2 + 1);
+          },
+          style: {
+            position: "absolute",
+            right: 0,
+            top: 0,
+            width: "20%",
+            height: "100%",
+            zIndex: 120,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            paddingRight: 10,
+            cursor: "pointer"
+          },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            background: "rgba(0,0,0,0.55)",
+            borderRadius: "50%",
+            width: 38,
+            height: 38,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            color: "#fff",
+            fontWeight: 900
+          }, children: "›" })
+        }
+      ),
       photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         position: "absolute",
         bottom: 110,

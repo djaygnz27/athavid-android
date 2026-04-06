@@ -1463,6 +1463,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             ))}
           </div>
 
+          {/* ── LEFT / RIGHT TAP ZONES ── always visible, large hit areas */}
+          {photoIdx > 0 && (
+            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
+              style={{ position:"absolute", left:0, top:0, width:"20%", height:"100%", zIndex:120,
+                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:10, cursor:"pointer" }}>
+              <div style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:38, height:38,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, color:"#fff", fontWeight:900 }}>‹</div>
+            </div>
+          )}
+          {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
+            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
+              style={{ position:"absolute", right:0, top:0, width:"20%", height:"100%", zIndex:120,
+                display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:10, cursor:"pointer" }}>
+              <div style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:38, height:38,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, color:"#fff", fontWeight:900 }}>›</div>
+            </div>
+          )}
+
           {/* Dot indicators */}
           {photoUrls.length > 1 && (
             <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)",
