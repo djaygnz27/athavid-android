@@ -2697,15 +2697,28 @@ function AdminPanel({ currentUser }) {
       const totalLikes  = videos.reduce((s,v) => s+(v.likes_count||0), 0);
       const matureCount = videos.filter(v => v.is_mature).length;
 
+      // Today & this week registrations
+      const todayStr = new Date().toISOString().slice(0,10);
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+      const newToday = users.filter(u => (u.created_date||"").slice(0,10) === todayStr).length;
+      const newThisWeek = users.filter(u => new Date(u.created_date) >= weekAgo).length;
+
+      // Recent registrants (last 20)
+      const recentUsers = [...users]
+        .sort((a,b) => new Date(b.created_date) - new Date(a.created_date))
+        .slice(0, 20);
+
       setAnalyticsData({
         totalVideos: videos.length,
         totalUsers: users.length,
         totalComments: comments.length,
         totalViews, totalLikes, matureCount,
+        newToday, newThisWeek,
         dailyVideos: byDay(videos, "created_date"),
         dailyUsers: byDay(users, "created_date"),
         topCreators,
         topVideos,
+        recentUsers,
       });
     } catch(e) { console.error("analytics error", e); }
     setAnalyticsLoading(false);
@@ -2810,6 +2823,42 @@ function AdminPanel({ currentUser }) {
                     <div style={{ color:"#555", fontSize:10, marginTop:3 }}>{label}</div>
                   </div>
                 ))}
+              </div>
+
+              {/* Registrations Summary */}
+              <div style={{ background:"rgba(107,138,255,0.07)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.2)" }}>
+                <div style={{ color:"#6B8AFF", fontWeight:900, fontSize:15, marginBottom:12 }}>👥 User Registrations</div>
+                <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+                  {[
+                    ["Today",analyticsData.newToday,"#6BFFB8"],
+                    ["This Week",analyticsData.newThisWeek,"#F5C842"],
+                    ["All Time",analyticsData.totalUsers,"#6B8AFF"],
+                  ].map(([label,val,color]) => (
+                    <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:"10px 6px", textAlign:"center" }}>
+                      <div style={{ color, fontWeight:900, fontSize:22, lineHeight:1 }}>{val}</div>
+                      <div style={{ color:"#555", fontSize:10, marginTop:4 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* Recent registrants list */}
+                <div style={{ color:"#888", fontWeight:700, fontSize:11, marginBottom:8, letterSpacing:0.5, textTransform:"uppercase" }}>Recent Sign-ups</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {(analyticsData.recentUsers||[]).map((u,i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"8px 10px" }}>
+                      <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                        style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, objectFit:"cover" }} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {u.display_name || u.username || "—"}
+                        </div>
+                        <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.email || "@" + (u.username||"")}</div>
+                      </div>
+                      <div style={{ color:"#444", fontSize:10, flexShrink:0 }}>
+                        {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Daily Videos — bar chart */}
