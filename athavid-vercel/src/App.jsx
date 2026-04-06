@@ -2007,13 +2007,15 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, SIZE, SIZE);
-    ctx.drawImage(imgRef.current, o.x, o.y, imgRef.current.width * s, imgRef.current.height * s);
-    // Circle clip overlay
+    // White background so JPEG export works correctly
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    // Clip to circle before drawing image
     ctx.save();
-    ctx.globalCompositeOperation = "destination-in";
     ctx.beginPath();
     ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.clip();
+    ctx.drawImage(imgRef.current, o.x, o.y, imgRef.current.width * s, imgRef.current.height * s);
     ctx.restore();
   };
 
@@ -4393,66 +4395,41 @@ function App() {
         </div>
       )}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
+        // Immediately update UI — works for both base64 and CDN URLs
         setAvatarUrl(url);
-        localStorage.setItem('avatar_last', url);
+        setCurrentUser(u => ({ ...u, avatar_url: url }));
         if (currentUser) {
           localStorage.setItem(`avatar_${currentUser.id}`, url);
           localStorage.setItem('avatar_last', url);
-          // 1. Update auth profile (with token)
-          try {
-            await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
-            setCurrentUser(u => ({ ...u, avatar_url: url }));
-          } catch(e) { console.error("Auth avatar update failed:", e); }
-          // 2. Update AthaVidUser + SachiUser entity (with token)
-          try {
-            const [usersDataA, usersDataS] = await Promise.allSettled([
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiUser/?email=${encodeURIComponent(currentUser.email)}`).catch(() => null)
-            ]);
-            const athavUsers = Array.isArray(usersDataA.value) ? usersDataA.value : (usersDataA.value?.items || []);
-            const matchA = athavUsers.find(u => u.email === currentUser.email || u.user_id === currentUser.id || u.created_by === currentUser.id);
-            if (matchA) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${matchA.id}/`, { avatar_url: url });
-            // Also try SachiUser if it exists
-            if (usersDataS.status === "fulfilled" && usersDataS.value) {
-              const sachiUsers = Array.isArray(usersDataS.value) ? usersDataS.value : (usersDataS.value?.items || []);
-              const matchS = sachiUsers.find(u => u.email === currentUser.email || u.created_by === currentUser.id);
-              if (matchS) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiUser/${matchS.id}/`, { avatar_url: url });
-            }
-            // Also update by created_by in case email lookup missed it
-            const fallbackA = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`).catch(() => null);
-            const fallbackUsers = Array.isArray(fallbackA) ? fallbackA : (fallbackA?.items || []);
-            const fallbackMatch = fallbackUsers.find(u => u.id !== matchA?.id);
-            if (fallbackMatch) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${fallbackMatch.id}/`, { avatar_url: url });
-          } catch(e) { console.error("User entity avatar update failed:", e); }
-          // 3. Update avatar on all user's videos (AthaVidVideo + SachiVideo) + refresh feed instantly
-          try {
-            // Fetch from both entities by user_id AND created_by
-            const [vidsA1, vidsA2, vidsS1, vidsS2] = await Promise.allSettled([
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?user_id=${currentUser.id}&limit=200`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`)
-            ]);
-            const flatten = (r) => r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : (r.value?.items || [])) : [];
-            // AthaVidVideo deduped
-            const seenA = new Set();
-            const myAthaVids = [...flatten(vidsA1), ...flatten(vidsA2)].filter(v => { if (seenA.has(v.id)) return false; seenA.add(v.id); return true; });
-            // SachiVideo deduped
-            const seenS = new Set();
-            const mySachiVids = [...flatten(vidsS1), ...flatten(vidsS2)].filter(v => { if (seenS.has(v.id)) return false; seenS.add(v.id); return true; });
-            await Promise.all([
-              ...myAthaVids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })),
-              ...mySachiVids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url }))
-            ]);
-            // Update feed in memory instantly
-            setVideoList(vs => vs.map(v =>
-              (v.user_id === currentUser.id || v.created_by === currentUser.id)
-                ? { ...v, avatar_url: url }
-                : v
-            ));
-          } catch(e) { console.error("Video avatar sync failed:", e); }
         }
         setShowAvatarPicker(false);
+
+        // Background sync to DB — only for CDN URLs (not base64, too large for DB)
+        if (currentUser && !url.startsWith("data:")) {
+          try {
+            await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+          } catch(e) { console.warn("Auth avatar update failed:", e); }
+          try {
+            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`);
+            const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
+            if (users[0]) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${users[0].id}/`, { avatar_url: url });
+          } catch(e) { console.warn("User entity update failed:", e); }
+          try {
+            const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
+            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || []);
+            await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
+            setVideoList(vs => vs.map(v =>
+              (v.user_id === currentUser.id || v.created_by === currentUser.id)
+                ? { ...v, avatar_url: url } : v
+            ));
+          } catch(e) { console.warn("Video avatar sync failed:", e); }
+        } else if (currentUser && url.startsWith("data:")) {
+          // For base64 avatars — still update the feed in memory
+          setVideoList(vs => vs.map(v =>
+            (v.user_id === currentUser.id || v.created_by === currentUser.id)
+              ? { ...v, avatar_url: url } : v
+          ));
+        }
       }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
   );
