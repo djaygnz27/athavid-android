@@ -12654,6 +12654,8 @@ function App() {
     showAuth && /* @__PURE__ */ jsxRuntimeExports.jsx(AuthModal, { onClose: () => setShowAuth(false), onSuccess: (user) => {
       setCurrentUser(user);
       setShowAuth(false);
+      setActiveTab("feed");
+      setFeedKey((k2) => k2 + 1);
       setLoginToast(true);
       setTimeout(() => setLoginToast(false), 4e3);
     } }),

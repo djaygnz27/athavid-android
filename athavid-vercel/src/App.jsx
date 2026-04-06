@@ -3629,7 +3629,7 @@ function App() {
           </div>
         </div>
       )}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => setShowEditProfile(false)}>
