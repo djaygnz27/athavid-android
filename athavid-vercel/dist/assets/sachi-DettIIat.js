@@ -12633,24 +12633,88 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tapping Go Live notifies ALL Sachi users instantly via email" })
           ] })
         ] }),
-        !isHost && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "a",
-          {
-            href: selectedPodcast.live_stream_url || "https://sachistream.com",
-            target: "_blank",
-            rel: "noopener noreferrer",
-            style: { display: "flex", width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 10, textDecoration: "none", boxShadow: "0 4px 20px rgba(229,57,53,0.35)", boxSizing: "border-box", marginBottom: 12 },
-            children: "🎧 Tune In Now"
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+        !isHost && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+          const getEmbedUrl = (url) => {
+            if (!url) return null;
+            if (url.includes("youtube.com/embed/")) return url + "?autoplay=1&rel=0";
+            const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+            if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+            const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+            if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+            const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+            if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+            return null;
+          };
+          const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
+          return embedUrl ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935", fontWeight: 800, fontSize: 13, letterSpacing: 1 }, children: "LIVE NOW" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: [
+                "· ",
+                selectedPodcast.listener_count || 0,
+                " watching"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: 14, overflow: "hidden", background: "#000", boxShadow: "0 4px 24px rgba(229,57,53,0.25)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "iframe",
+              {
+                src: embedUrl,
+                style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" },
+                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                allowFullScreen: true,
+                title: selectedPodcast.title
+              }
+            ) })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "a",
+            {
+              href: selectedPodcast.live_stream_url,
+              target: "_blank",
+              rel: "noopener noreferrer",
+              style: { display: "flex", width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 10, textDecoration: "none", marginBottom: 12 },
+              children: "🎧 Tune In Now"
+            }
+          );
+        })() : !selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
             onClick: () => showToast("🔔 You will be notified when " + selectedPodcast.title + " goes live!", "success"),
             style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 },
             children: "🔔 Follow & Get Notified"
           }
-        ) }),
-        !isHost && !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 16 }, children: "Sign in to Follow" }),
+        ) : null }),
+        !isHost && !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+          const getEmbedUrl = (url) => {
+            if (!url) return null;
+            if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
+            const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+            if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+            const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+            if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+            const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+            if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+            return null;
+          };
+          const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
+          return embedUrl ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935", fontWeight: 800, fontSize: 13, letterSpacing: 1 }, children: "LIVE NOW" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: 14, overflow: "hidden", background: "#000", boxShadow: "0 4px 24px rgba(229,57,53,0.25)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "iframe",
+              {
+                src: embedUrl,
+                style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" },
+                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                allowFullScreen: true,
+                title: selectedPodcast.title
+              }
+            ) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", marginTop: 12, padding: "13px 0", background: "rgba(108,60,247,0.15)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 14, color: "#a78bfa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Sign in to Follow this Podcast" })
+          ] }) : null;
+        })() : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 16 }, children: "Sign in to Follow" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
       ] })
     ] });
