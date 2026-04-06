@@ -10033,6 +10033,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [showUI, setShowUI] = reactExports.useState(false);
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
+  const photoUrls = video.is_photo && video.photo_urls ? Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls) : null;
   reactExports.useEffect(() => {
     const el2 = photoCarouselRef.current;
     if (!el2)
@@ -10220,7 +10221,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       alert("Failed to delete. Try again.");
     }
   };
-  const photoUrls = video.is_photo && video.photo_urls ? Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls) : null;
   const tap = (fn) => (e) => {
     e.stopPropagation();
     fn();

@@ -1221,6 +1221,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
 
+  // Derived from video prop — must be declared before useEffect that references it
+  const photoUrls = video.is_photo && video.photo_urls
+    ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
+    : null;
+
   // Non-passive touch handler to prevent vertical feed from stealing horizontal photo swipes
   useEffect(() => {
     const el = photoCarouselRef.current;
@@ -1408,10 +1413,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       onDelete && onDelete(video.id);
     } catch(err) { alert("Failed to delete. Try again."); }
   };
-
-  const photoUrls = video.is_photo && video.photo_urls
-    ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
-    : null;
 
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
