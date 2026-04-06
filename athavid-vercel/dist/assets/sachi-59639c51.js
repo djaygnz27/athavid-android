@@ -8381,7 +8381,7 @@ function formatDate(d) {
   if (!d)
     return "";
   const dt = new Date(d);
-  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" });
 }
 function formatCount(n2) {
   if (!n2)
