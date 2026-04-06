@@ -8866,7 +8866,14 @@ function VideoEditor({ file, onDone, onSkip }) {
   const [trimEnd, setTrimEnd] = reactExports.useState(0);
   const [currentTime, setCurrentTime] = reactExports.useState(0);
   const [trimming, setTrimming] = reactExports.useState(false);
-  const [cropMode, setCropMode] = reactExports.useState("original");
+  const [activeMode, setActiveMode] = reactExports.useState(null);
+  const [textOverlays, setTextOverlays] = reactExports.useState([]);
+  const [showTextInput, setShowTextInput] = reactExports.useState(false);
+  const [textInputVal, setTextInputVal] = reactExports.useState("");
+  const [textColor, setTextColor] = reactExports.useState("#ffffff");
+  const [textBg, setTextBg] = reactExports.useState("none");
+  const [textSize, setTextSize] = reactExports.useState(22);
+  const [isPlaying, setIsPlaying] = reactExports.useState(true);
   const previewUrl = reactExports.useMemo(() => URL.createObjectURL(file), [file]);
   reactExports.useEffect(() => {
     return () => URL.revokeObjectURL(previewUrl);
@@ -8881,22 +8888,39 @@ function VideoEditor({ file, onDone, onSkip }) {
     var _a;
     return setCurrentTime(((_a = videoRef.current) == null ? void 0 : _a.currentTime) || 0);
   };
-  const seekTo = (t2) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = t2;
+  const fmtTime = (s) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
     }
   };
-  const fmtTime = (s) => {
-    const m2 = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m2}:${sec.toString().padStart(2, "0")}`;
+  const addTextOverlay = () => {
+    if (!textInputVal.trim()) return;
+    setTextOverlays((prev) => [...prev, {
+      id: Date.now(),
+      text: textInputVal.trim(),
+      color: textColor,
+      bg: textBg,
+      size: textSize,
+      x: 50,
+      y: 50
+    }]);
+    setTextInputVal("");
+    setShowTextInput(false);
+    setActiveMode(null);
   };
-  const doTrim = async () => {
-    if (trimStart <= 0.5 && trimEnd >= duration - 0.5 && cropMode === "original") {
-      onDone(file);
+  const removeOverlay = (id2) => setTextOverlays((prev) => prev.filter((o) => o.id !== id2));
+  const doPost = async () => {
+    setTrimming(true);
+    if (trimStart <= 0.5 && trimEnd >= duration - 0.5) {
+      onDone(file, textOverlays);
       return;
     }
-    setTrimming(true);
     try {
       const video = document.createElement("video");
       video.src = previewUrl;
@@ -8906,47 +8930,15 @@ function VideoEditor({ file, onDone, onSkip }) {
         video.load();
       });
       const canvas = document.createElement("canvas");
-      const vw = video.videoWidth;
-      const vh2 = video.videoHeight;
-      if (cropMode === "square") {
-        const size = Math.min(vw, vh2);
-        canvas.width = size;
-        canvas.height = size;
-      } else if (cropMode === "portrait") {
-        const targetH = Math.round(vw * (16 / 9));
-        canvas.width = vw;
-        canvas.height = Math.min(targetH, vh2);
-      } else {
-        canvas.width = vw;
-        canvas.height = vh2;
-      }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       const stream = canvas.captureStream(30);
-      let audioStream = null;
-      try {
-        const audioCtx = new AudioContext();
-        const source = audioCtx.createMediaElementSource(video);
-        const dest = audioCtx.createMediaStreamDestination();
-        source.connect(dest);
-        audioStream = dest.stream;
-      } catch {
-      }
-      const combinedStream = audioStream ? new MediaStream([...stream.getTracks(), ...audioStream.getTracks()]) : stream;
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus") ? "video/webm;codecs=vp9,opus" : "video/webm";
-      const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 4e6 });
+      const mimeType = "video/webm";
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4e6 });
       const chunks = [];
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunks.push(e.data);
-      };
-      let animFrame;
-      const drawFrame = () => {
-        if (video.paused || video.ended) return;
-        const sx = cropMode === "square" ? (vw - Math.min(vw, vh2)) / 2 : 0;
-        const sy = cropMode === "square" ? (vh2 - Math.min(vw, vh2)) / 2 : 0;
-        const sw = cropMode === "square" ? Math.min(vw, vh2) : vw;
-        const sh2 = cropMode === "square" ? Math.min(vw, vh2) : cropMode === "portrait" ? canvas.height : vh2;
-        ctx.drawImage(video, sx, sy, sw, sh2, 0, 0, canvas.width, canvas.height);
-        animFrame = requestAnimationFrame(drawFrame);
       };
       const blob = await new Promise((resolve) => {
         recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
@@ -8954,186 +8946,324 @@ function VideoEditor({ file, onDone, onSkip }) {
         video.oncanplay = async () => {
           video.oncanplay = null;
           recorder.start(100);
-          drawFrame();
+          const draw = () => {
+            if (!video.paused && !video.ended) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              requestAnimationFrame(draw);
+            }
+          };
+          draw();
           await video.play();
-          const remaining = (trimEnd - trimStart) * 1e3;
           setTimeout(() => {
-            cancelAnimationFrame(animFrame);
             video.pause();
             recorder.stop();
-          }, remaining);
+          }, (trimEnd - trimStart) * 1e3);
         };
       });
-      const ext = mimeType.includes("mp4") ? "mp4" : "webm";
-      const trimmedFile = new File([blob], `trimmed_${Date.now()}.${ext}`, { type: mimeType });
-      onDone(trimmedFile);
-    } catch (err) {
-      console.error("Trim failed", err);
-      onDone(file);
+      onDone(new File([blob], `trimmed.webm`, { type: mimeType }), textOverlays);
+    } catch {
+      onDone(file, textOverlays);
     }
     setTrimming(false);
   };
-  const trimDuration = Math.max(0, trimEnd - trimStart);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, background: "#000", display: "flex", flexDirection: "column" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #222" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onSkip, style: { background: "none", border: "none", color: "#aaa", fontSize: 15, cursor: "pointer" }, children: "Skip" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "✂️ Edit Video" }),
+  const TEXT_COLORS = ["#ffffff", "#000000", "#FF6B6B", "#F5C842", "#00E5FF", "#FF69B4", "#7CFC00", "#FF8C00"];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, background: "#000", display: "flex", flexDirection: "column", userSelect: "none" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
-          onClick: doTrim,
+          onClick: onSkip,
+          style: { width: 36, height: 36, borderRadius: "50%", background: "rgba(0,0,0,0.5)", border: "1.5px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+          children: "✕"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(0,0,0,0.55)", border: "1.5px solid rgba(255,255,255,0.25)", borderRadius: 20, padding: "7px 14px", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, backdropFilter: "blur(8px)" }, children: "🎵 Add sound" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 36 } })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden" }, onClick: activeMode ? void 0 : togglePlay, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "video",
+        {
+          ref: videoRef,
+          src: previewUrl,
+          onLoadedMetadata: onMeta,
+          onTimeUpdate,
+          style: { width: "100%", height: "100%", objectFit: "cover" },
+          autoPlay: true,
+          loop: true,
+          playsInline: true
+        }
+      ),
+      textOverlays.map((ov) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          style: {
+            position: "absolute",
+            top: `${ov.y}%`,
+            left: `${ov.x}%`,
+            transform: "translate(-50%,-50%)",
+            color: ov.color,
+            fontSize: ov.size,
+            fontWeight: 900,
+            letterSpacing: 0.5,
+            background: ov.bg === "dark" ? "rgba(0,0,0,0.55)" : ov.bg === "colored" ? ov.color.replace(")", ",0.2)").replace("rgb", "rgba") : "transparent",
+            padding: ov.bg !== "none" ? "4px 10px" : 0,
+            borderRadius: 8,
+            textShadow: "0 1px 6px rgba(0,0,0,0.8)",
+            whiteSpace: "nowrap",
+            cursor: "pointer",
+            zIndex: 5,
+            maxWidth: "85vw",
+            wordBreak: "break-word",
+            textAlign: "center"
+          },
+          onClick: (e) => {
+            e.stopPropagation();
+            removeOverlay(ov.id);
+          },
+          children: ov.text
+        },
+        ov.id
+      )),
+      !isPlaying && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 70, height: 70, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }, children: "▶" }) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 20, zIndex: 10 }, children: [
+      { icon: "T", label: "Text", mode: "text" },
+      { icon: "✂️", label: "Trim", mode: "trim" }
+    ].map((tool) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        onClick: () => {
+          setActiveMode((m2) => m2 === tool.mode ? null : tool.mode);
+        },
+        style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: activeMode === tool.mode ? "rgba(245,200,66,0.9)" : "rgba(0,0,0,0.55)",
+            border: activeMode === tool.mode ? "2px solid #F5C842" : "1.5px solid rgba(255,255,255,0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: tool.icon === "T" ? 20 : 18,
+            fontWeight: 900,
+            color: activeMode === tool.mode ? "#000" : "#fff",
+            backdropFilter: "blur(8px)",
+            boxShadow: activeMode === tool.mode ? "0 0 14px rgba(245,200,66,0.5)" : "none"
+          }, children: tool.icon }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 10, fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9)" }, children: tool.label })
+        ]
+      },
+      tool.mode
+    )) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10, padding: "0 20px 40px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: "center", gap: 18, marginBottom: 20 }, children: [
+        { label: "10m" },
+        { label: "60s" },
+        { label: "15s" },
+        { label: "PHOTO", active: false },
+        { label: "TEXT", action: "text" }
+      ].map((m2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          onClick: () => m2.action === "text" ? (setActiveMode("text"), setShowTextInput(true)) : null,
+          style: {
+            color: m2.action === "text" && activeMode === "text" ? "#F5C842" : "#fff",
+            fontWeight: m2.action === "text" ? 900 : 600,
+            fontSize: m2.action === "text" ? 16 : 14,
+            opacity: m2.action === "text" ? 1 : 0.7,
+            cursor: m2.action ? "pointer" : "default",
+            padding: m2.action === "text" ? "4px 10px" : "4px 0",
+            borderBottom: m2.action === "text" && activeMode === "text" ? "2px solid #F5C842" : "none",
+            textShadow: "0 1px 6px rgba(0,0,0,0.9)"
+          },
+          children: m2.label
+        },
+        i
+      )) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: doPost,
           disabled: trimming,
-          style: { background: "linear-gradient(135deg,#ff6b6b,#ff8e53)", border: "none", borderRadius: 20, padding: "8px 18px", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" },
-          children: trimming ? "Processing..." : "Done"
+          style: {
+            width: "100%",
+            padding: "16px 0",
+            background: trimming ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+            border: "none",
+            borderRadius: 16,
+            color: "#fff",
+            fontWeight: 900,
+            fontSize: 17,
+            cursor: trimming ? "default" : "pointer",
+            letterSpacing: 0.5,
+            boxShadow: "0 4px 20px rgba(255,107,107,0.4)"
+          },
+          children: trimming ? "Processing..." : "Next →"
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#111", overflow: "hidden" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "video",
-      {
-        ref: videoRef,
-        src: previewUrl,
-        onLoadedMetadata: onMeta,
-        onTimeUpdate,
-        onClick: () => {
-          var _a;
-          return ((_a = videoRef.current) == null ? void 0 : _a.paused) ? videoRef.current.play() : videoRef.current.pause();
-        },
-        style: {
-          maxWidth: "100%",
-          maxHeight: "100%",
-          aspectRatio: cropMode === "square" ? "1/1" : cropMode === "portrait" ? "9/16" : "auto",
-          objectFit: cropMode === "original" ? "contain" : "cover",
-          cursor: "pointer"
-        },
-        playsInline: true,
-        loop: true,
-        muted: false
-      }
-    ) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0f0f1a", padding: "20px 20px 40px" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 12, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }, children: "Crop" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8 }, children: ["original", "square", "portrait"].map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setCropMode(m2),
-            style: {
-              flex: 1,
-              padding: "10px 0",
-              borderRadius: 12,
-              border: cropMode === m2 ? "2px solid #ff6b6b" : "2px solid #333",
-              background: cropMode === m2 ? "rgba(255,107,107,0.15)" : "#1a1a2e",
-              color: cropMode === m2 ? "#ff6b6b" : "#888",
-              fontWeight: 700,
-              fontSize: 12,
-              cursor: "pointer"
-            },
-            children: m2 === "original" ? "📐 Original" : m2 === "square" ? "⬜ Square" : "📱 Portrait"
-          },
-          m2
-        )) })
+    activeMode === "trim" && duration > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 140, left: 0, right: 0, zIndex: 15, background: "rgba(15,15,26,0.95)", borderRadius: "20px 20px 0 0", padding: "20px 20px 10px", backdropFilter: "blur(16px)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 14, textAlign: "center" }, children: [
+        "✂️ Trim — ",
+        fmtTime(trimStart),
+        " to ",
+        fmtTime(trimEnd)
       ] }),
-      duration > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }, children: "Trim" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#ff6b6b", fontSize: 13, fontWeight: 700 }, children: [
-            fmtTime(trimStart),
-            " – ",
-            fmtTime(trimEnd),
-            " (",
-            fmtTime(trimDuration),
-            ")"
-          ] })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 4 }, children: [
+          "Start: ",
+          fmtTime(trimStart)
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", height: 44, background: "#1a1a2e", borderRadius: 12, overflow: "hidden", marginBottom: 8 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: `${trimStart / duration * 100}%`,
-            width: `${(trimEnd - trimStart) / duration * 100}%`,
-            background: "rgba(255,107,107,0.25)",
-            border: "2px solid #ff6b6b",
-            borderRadius: 8
-          } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            width: 2,
-            background: "#fff",
-            left: `${currentTime / duration * 100}%`
-          } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "input",
-            {
-              type: "range",
-              min: 0,
-              max: duration,
-              step: 0.1,
-              value: trimStart,
-              onChange: (e) => {
-                const v2 = Math.min(parseFloat(e.target.value), trimEnd - 1);
-                setTrimStart(v2);
-                seekTo(v2);
-              },
-              style: { position: "absolute", inset: 0, width: "100%", opacity: 0, cursor: "ew-resize", zIndex: 2 }
-            }
-          )
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type: "range",
+            min: 0,
+            max: duration,
+            step: 0.1,
+            value: trimStart,
+            onChange: (e) => {
+              const v2 = Math.min(parseFloat(e.target.value), trimEnd - 1);
+              setTrimStart(v2);
+              if (videoRef.current) videoRef.current.currentTime = v2;
+            },
+            style: { width: "100%", accentColor: "#ff6b6b" }
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 4 }, children: [
+          "End: ",
+          fmtTime(trimEnd)
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 11, marginBottom: 4 }, children: [
-              "Start: ",
-              fmtTime(trimStart)
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                type: "range",
-                min: 0,
-                max: duration,
-                step: 0.1,
-                value: trimStart,
-                onChange: (e) => {
-                  const v2 = Math.min(parseFloat(e.target.value), trimEnd - 1);
-                  setTrimStart(v2);
-                  seekTo(v2);
-                },
-                style: { width: "100%", accentColor: "#ff6b6b" }
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 11, marginBottom: 4 }, children: [
-              "End: ",
-              fmtTime(trimEnd)
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                type: "range",
-                min: 0,
-                max: duration,
-                step: 0.1,
-                value: trimEnd,
-                onChange: (e) => {
-                  const v2 = Math.max(parseFloat(e.target.value), trimStart + 1);
-                  setTrimEnd(v2);
-                  seekTo(v2);
-                },
-                style: { width: "100%", accentColor: "#ff6b6b" }
-              }
-            )
-          ] })
-        ] })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type: "range",
+            min: 0,
+            max: duration,
+            step: 0.1,
+            value: trimEnd,
+            onChange: (e) => {
+              const v2 = Math.max(parseFloat(e.target.value), trimStart + 1);
+              setTrimEnd(v2);
+              if (videoRef.current) videoRef.current.currentTime = v2;
+            },
+            style: { width: "100%", accentColor: "#ff6b6b" }
+          }
+        )
       ] })
     ] }),
-    trimming && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 10 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 16 }, children: "✂️" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 18, fontWeight: 700 }, children: "Processing video..." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 14, marginTop: 8 }, children: "This may take a moment" })
+    (activeMode === "text" || showTextInput) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, zIndex: 20, background: "rgba(0,0,0,0.75)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        color: textColor,
+        fontSize: textSize,
+        fontWeight: 900,
+        marginBottom: 20,
+        background: textBg === "dark" ? "rgba(0,0,0,0.55)" : "transparent",
+        padding: textBg !== "none" ? "6px 16px" : 0,
+        borderRadius: 10,
+        textShadow: "0 1px 8px rgba(0,0,0,0.9)",
+        minHeight: 40,
+        textAlign: "center",
+        maxWidth: "85vw",
+        wordBreak: "break-word"
+      }, children: textInputVal || /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { opacity: 0.3 }, children: "Start typing..." }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          autoFocus: true,
+          value: textInputVal,
+          onChange: (e) => setTextInputVal(e.target.value),
+          placeholder: "Type something...",
+          style: { width: "100%", maxWidth: 400, background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.3)", borderRadius: 14, padding: "14px 16px", color: "#fff", fontSize: 16, outline: "none", marginBottom: 16, textAlign: "center" },
+          onKeyDown: (e) => e.key === "Enter" && addTextOverlay()
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 14 }, children: TEXT_COLORS.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          onClick: () => setTextColor(c),
+          style: {
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            background: c,
+            border: textColor === c ? "3px solid #F5C842" : "2px solid rgba(255,255,255,0.2)",
+            cursor: "pointer",
+            boxShadow: textColor === c ? "0 0 10px rgba(245,200,66,0.6)" : "none",
+            flexShrink: 0
+          }
+        },
+        c
+      )) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 400, marginBottom: 14 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 6, textAlign: "center" }, children: [
+          "Size: ",
+          textSize,
+          "px"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type: "range",
+            min: 14,
+            max: 48,
+            step: 1,
+            value: textSize,
+            onChange: (e) => setTextSize(parseInt(e.target.value)),
+            style: { width: "100%", accentColor: "#F5C842" }
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 20 }, children: [{ v: "none", l: "No BG" }, { v: "dark", l: "Dark BG" }, { v: "colored", l: "Color BG" }].map((b) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: () => setTextBg(b.v),
+          style: {
+            padding: "8px 14px",
+            borderRadius: 20,
+            border: "none",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 700,
+            background: textBg === b.v ? "#F5C842" : "rgba(255,255,255,0.12)",
+            color: textBg === b.v ? "#000" : "#fff"
+          },
+          children: b.l
+        },
+        b.v
+      )) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, width: "100%", maxWidth: 400 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              setShowTextInput(false);
+              setActiveMode(null);
+              setTextInputVal("");
+            },
+            style: { flex: 1, padding: "13px 0", background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 14, color: "#aaa", fontWeight: 700, fontSize: 15, cursor: "pointer" },
+            children: "Cancel"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: addTextOverlay,
+            style: { flex: 2, padding: "13px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#000", fontWeight: 900, fontSize: 15, cursor: "pointer" },
+            children: "✓ Add Text"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11, marginTop: 12 }, children: "Tap a text overlay on video to remove it" })
+    ] }),
+    trimming && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 30 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 16 }, children: "⚙️" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "Processing video..." })
     ] })
   ] });
 }
@@ -9480,8 +9610,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       VideoEditor,
       {
         file,
-        onDone: (processed) => {
+        onDone: (processed, overlays) => {
           setEditedFile(processed);
+          if (overlays && overlays.length > 0) {
+            const overlayText = overlays.map((o) => o.text).join(" · ");
+            setCaption((prev) => prev ? prev + "\n" + overlayText : overlayText);
+          }
           setShowEditor(false);
         },
         onSkip: () => {
