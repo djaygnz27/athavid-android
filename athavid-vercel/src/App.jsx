@@ -1303,16 +1303,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const nm = !muted;
     setMuted(nm);
     el.muted = nm;
-    if (!nm) {
-      // Unmuting on mobile requires user gesture — we already have it here
-      const t = el.currentTime;
-      el.pause();
-      el.muted = false;
-      el.currentTime = t;
-      el.play().catch(() => {});
-      // Auto-hide UI when video autoplays
-      hideUIAfterDelay(2000);
-    }
+    // Do NOT auto-play on mute/unmute — only change the mute state
+    // If video was paused, keep it paused; if playing, keep it playing
   };
 
 

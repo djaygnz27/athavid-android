@@ -9636,15 +9636,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const nm = !muted;
     setMuted(nm);
     el2.muted = nm;
-    if (!nm) {
-      const t2 = el2.currentTime;
-      el2.pause();
-      el2.muted = false;
-      el2.currentTime = t2;
-      el2.play().catch(() => {
-      });
-      hideUIAfterDelay(2e3);
-    }
   };
   const doTogglePlay = () => {
     const el2 = videoRef.current;
