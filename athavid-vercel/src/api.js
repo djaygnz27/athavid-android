@@ -59,7 +59,9 @@ export const auth = {
 
 export const videos = {
   async list() {
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
+    // Cache-bust so Home refresh always gets the very latest posts
+    const cb = Date.now();
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb}`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);

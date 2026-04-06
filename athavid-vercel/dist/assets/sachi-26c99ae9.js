@@ -7759,7 +7759,8 @@ const auth = {
 };
 const videos = {
   async list() {
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
+    const cb2 = Date.now();
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb2}`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
@@ -12153,10 +12154,15 @@ function App() {
     try {
       const data = await videos.list();
       const raw = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
-      const activeUser = user || currentUser;
       const sorted = [...raw].sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+      const activeUser = user || currentUser;
       const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
       setVideoList(ranked);
+      requestAnimationFrame(() => {
+        const el2 = feedContainerRef.current || window.__sachiEl;
+        if (el2)
+          el2.scrollTo({ top: 0, behavior: "instant" });
+      });
     } catch {
       setVideoList([]);
     }
@@ -12164,18 +12170,11 @@ function App() {
   };
   const goHome = () => {
     setActiveTab("feed");
-    setVideoList([]);
-    setFeedKey((k2) => k2 + 1);
-    setTimeout(() => {
-      loadVideos();
-      setTimeout(() => {
-        const el2 = feedContainerRef.current || window.__sachiEl;
-        if (el2) {
-          el2.scrollTop = 0;
-          el2.scrollTo({ top: 0, behavior: "instant" });
-        }
-      }, 200);
-    }, 80);
+    const el2 = feedContainerRef.current || window.__sachiEl;
+    if (el2) {
+      el2.scrollTo({ top: 0, behavior: "instant" });
+    }
+    loadVideos();
   };
   reactExports.useEffect(() => {
     if (activeTab === "profile" && currentUser) {
