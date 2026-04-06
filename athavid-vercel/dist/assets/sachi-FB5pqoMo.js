@@ -9579,7 +9579,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
   const photoUrls = video.is_photo && video.photo_urls ? Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls) : null;
-  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || currentUser.username && currentUser.username === video.username);
+  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || currentUser.username && currentUser.username === video.username || currentUser.email && currentUser.email === video.email);
   const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
   const userAge = getUserAge();
   const isUnder18 = userAge !== null && userAge < 18;
@@ -9623,14 +9623,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     obs.observe(el2);
     return () => obs.disconnect();
   }, []);
-  reactExports.useEffect(() => {
-    if (!currentUser || isOwnVideo) return;
-    follows.getFollowing(currentUser.id).then((res) => {
-      const rec = (res.items || res || []).find((r2) => r2.following_id === video.user_id);
-      if (rec) setFollowRecord(rec);
-    }).catch(() => {
-    });
-  }, [currentUser, video.user_id]);
   const doMute = () => {
     const el2 = videoRef.current;
     if (!el2) return;
@@ -9679,8 +9671,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (isOwnVideo) return;
     setFollowLoading(true);
     try {
-      if (followRecord || isFollowing) {
-        if (followRecord) await follows.unfollow(followRecord.id);
+      if (isFollowing) {
+        try {
+          const res = await follows.getFollowing(currentUser.id);
+          const rec = (res.items || res || []).find((r2) => r2.following_id === (video.user_id || video.created_by));
+          if (rec) await follows.unfollow(rec.id);
+        } catch (e) {
+        }
         setFollowRecord(null);
         if (onFollowChange) onFollowChange(video.user_id || video.created_by, false);
       } else {
