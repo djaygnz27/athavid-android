@@ -10253,40 +10253,39 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     "classical": "🎻"
   };
   const fetchMusicTracks = async (genre = "All", search = "") => {
+    var _a;
     setMusicLoading(true);
+    setMusicTracks([]);
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
-      const params = new URLSearchParams({
-        client_id: JAMENDO_CLIENT_ID,
-        format: "json",
-        limit: "30",
-        order: "popularity_week",
-        include: "musicinfo",
-        audioformat: "mp31",
-        imagesize: "100"
-      });
+      let apiUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
       if (tag)
-        params.set("tags", tag);
+        apiUrl += `&tags=${encodeURIComponent(tag)}`;
       if (search)
-        params.set("namesearch", search);
-      const resp = await fetch(`https://api.jamendo.com/v3.0/tracks/?${params.toString()}`);
+        apiUrl += `&namesearch=${encodeURIComponent(search)}`;
+      console.log("[Sachi Music] Fetching:", apiUrl);
+      const resp = await fetch(apiUrl);
+      if (!resp.ok)
+        throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
+      console.log("[Sachi Music] Results:", (_a = data == null ? void 0 : data.headers) == null ? void 0 : _a.results_count, "genre:", genre, "tag:", tag);
       const tracks = (data.results || []).map((t2) => {
-        var _a, _b, _c;
+        var _a2, _b, _c;
         return {
           id: `j_${t2.id}`,
           title: t2.name,
           artist: t2.artist_name,
-          url: t2.audio,
-          genre: genre === "All" ? ((_c = (_b = (_a = t2.musicinfo) == null ? void 0 : _a.tags) == null ? void 0 : _b.genres) == null ? void 0 : _c[0]) || "Music" : genre,
+          url: t2.audio || t2.audiodownload,
+          genre: genre === "All" ? ((_c = (_b = (_a2 = t2.musicinfo) == null ? void 0 : _a2.tags) == null ? void 0 : _b.genres) == null ? void 0 : _c[0]) || "Music" : genre,
           emoji: GENRE_EMOJI[tag] || "🎵",
           duration: t2.duration,
           image: t2.image
         };
       }).filter((t2) => t2.url);
+      console.log("[Sachi Music] Tracks after filter:", tracks.length);
       setMusicTracks(tracks);
     } catch (e) {
-      console.error("Music fetch error:", e);
+      console.error("[Sachi Music] Fetch error:", e);
       setMusicTracks([]);
     }
     setMusicLoading(false);

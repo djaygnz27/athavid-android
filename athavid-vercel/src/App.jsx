@@ -1101,34 +1101,32 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   const fetchMusicTracks = async (genre = "All", search = "") => {
     setMusicLoading(true);
+    setMusicTracks([]);
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
-      const params = new URLSearchParams({
-        client_id: JAMENDO_CLIENT_ID,
-        format: "json",
-        limit: "30",
-        order: "popularity_week",
-        include: "musicinfo",
-        audioformat: "mp31",
-        imagesize: "100",
-      });
-      if (tag)    params.set("tags", tag);
-      if (search) params.set("namesearch", search);
-      const resp = await fetch(`https://api.jamendo.com/v3.0/tracks/?${params.toString()}`);
+      // Build URL manually to avoid encoding issues
+      let apiUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
+      if (tag)    apiUrl += `&tags=${encodeURIComponent(tag)}`;
+      if (search) apiUrl += `&namesearch=${encodeURIComponent(search)}`;
+      console.log("[Sachi Music] Fetching:", apiUrl);
+      const resp = await fetch(apiUrl);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
+      console.log("[Sachi Music] Results:", data?.headers?.results_count, "genre:", genre, "tag:", tag);
       const tracks = (data.results || []).map(t => ({
         id:       `j_${t.id}`,
         title:    t.name,
         artist:   t.artist_name,
-        url:      t.audio,
+        url:      t.audio || t.audiodownload,
         genre:    genre === "All" ? (t.musicinfo?.tags?.genres?.[0] || "Music") : genre,
         emoji:    GENRE_EMOJI[tag] || "🎵",
         duration: t.duration,
         image:    t.image,
       })).filter(t => t.url);
+      console.log("[Sachi Music] Tracks after filter:", tracks.length);
       setMusicTracks(tracks);
     } catch(e) {
-      console.error("Music fetch error:", e);
+      console.error("[Sachi Music] Fetch error:", e);
       setMusicTracks([]);
     }
     setMusicLoading(false);
