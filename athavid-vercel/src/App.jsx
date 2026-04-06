@@ -2074,13 +2074,15 @@ function getUserAge() {
   return age;
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, globalMuted, onMuteChange }) {
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [muted, setMuted] = useState(true);
+  // Use global mute state so unmuting one video unmutes all
+  const muted = globalMuted !== undefined ? globalMuted : true;
+  const setMuted = (val) => { if (onMuteChange) onMuteChange(typeof val === 'function' ? val(muted) : val); };
   const [photoIdx, setPhotoIdx] = useState(0);
   const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
@@ -2125,23 +2127,35 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => { if (uiTimerRef.current) clearTimeout(uiTimerRef.current); };
   }, []);
 
+  // Sync video element muted attribute whenever global mute state changes
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted;
+    if (soundRef.current) {
+      if (muted) { soundRef.current.pause(); }
+      else if (playing && video.sound_url) { soundRef.current.play().catch(() => {}); }
+    }
+  }, [muted]);
+
   // Auto-play via IntersectionObserver
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        el.muted = true;
-        setMuted(true);
+        el.muted = muted; // respect global mute state
         el.play().catch(() => {});
         setPlaying(true);
-        // Show UI briefly then hide
+        // Start sound track if unmuted and post has music
+        if (!muted && soundRef.current && video.sound_url) {
+          soundRef.current.play().catch(() => {});
+        }
         setShowUI(true);
         hideUIAfterDelay(1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
         setPlaying(false);
+        if (soundRef.current) soundRef.current.pause();
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
         setShowUI(false);
         setUserTapped(false);
@@ -4527,6 +4541,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
+  const [globalMuted, setGlobalMuted] = useState(true);
   const feedContainerRef = useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = useState(true);
@@ -4850,7 +4865,9 @@ function App() {
               onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
               onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
               followedUserIds={followedUserIds}
-              onFollowChange={handleFollowChange} />
+              onFollowChange={handleFollowChange}
+              globalMuted={globalMuted}
+              onMuteChange={setGlobalMuted} />
           ))}
         </div>
       )}
