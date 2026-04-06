@@ -1233,45 +1233,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
     : null;
 
-  // Non-passive touch handler to prevent vertical feed from stealing horizontal photo swipes
-  useEffect(() => {
-    const el = photoCarouselRef.current;
-    if (!el) return;
-    let startX = 0, startY = 0, locked = null;
-    const onTouchStart = (e) => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      locked = null;
-    };
-    const onTouchMove = (e) => {
-      const dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
-      if (locked === null) {
-        locked = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
-      }
-      if (locked === 'h') {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    const onTouchEnd = (e) => {
-      const dx = e.changedTouches[0].clientX - startX;
-      const dy = Math.abs(e.changedTouches[0].clientY - startY);
-      if (locked === 'h' && Math.abs(dx) > 30) {
-        if (dx < 0) setPhotoIdx(p => Math.min(p + 1, (photoUrls ? photoUrls.length - 1 : 0)));
-        else        setPhotoIdx(p => Math.max(p - 1, 0));
-      }
-      locked = null;
-    };
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove',  onTouchMove,  { passive: false });
-    el.addEventListener('touchend',   onTouchEnd,   { passive: true });
-    return () => {
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove',  onTouchMove);
-      el.removeEventListener('touchend',   onTouchEnd);
-    };
-  }, [photoCarouselRef.current, photoUrls]);
+  // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
 
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
@@ -1455,59 +1417,59 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div ref={photoCarouselRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", touchAction:"pan-y" }}>
-          {/* Sliding strip — all photos in a row, translate by index */}
-          <div style={{
-            display:"flex", height:"100%",
-            transform: `translateX(${-photoIdx * 100}%)`,
-            transition: "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
-            willChange: "transform",
-          }}>
-            {photoUrls.map((url, i) => (
-              <div key={i} style={{ minWidth:"100%", height:"100%", flexShrink:0 }}>
-                <img src={resolveMediaUrl(url)} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
-              </div>
-            ))}
-          </div>
+        <div ref={photoCarouselRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000" }}>
+          {/* Single photo shown at a time */}
+          <img
+            src={resolveMediaUrl(photoUrls[photoIdx])}
+            style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none" }}
+          />
 
-          {/* ── LEFT / RIGHT TAP ZONES ── always visible, large hit areas */}
+          {/* ── LEFT HALF — tap to go back ── */}
           {photoIdx > 0 && (
-            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
-              style={{ position:"absolute", left:0, top:0, width:"20%", height:"100%", zIndex:120,
-                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:10, cursor:"pointer" }}>
-              <div style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:38, height:38,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, color:"#fff", fontWeight:900 }}>‹</div>
+            <div
+              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p - 1); }}
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
+              style={{ position:"absolute", left:0, top:0, width:"45%", height:"100%", zIndex:150, cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:12 }}>
+              <div style={{ background:"rgba(0,0,0,0.6)", borderRadius:"50%", width:44, height:44,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:24, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 12px rgba(0,0,0,0.5)" }}>‹</div>
             </div>
           )}
-          {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
-            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
-              style={{ position:"absolute", right:0, top:0, width:"20%", height:"100%", zIndex:120,
-                display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:10, cursor:"pointer" }}>
-              <div style={{ background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:38, height:38,
-                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, color:"#fff", fontWeight:900 }}>›</div>
+
+          {/* ── RIGHT HALF — tap to advance ── */}
+          {photoIdx < photoUrls.length - 1 && (
+            <div
+              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p + 1); }}
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
+              style={{ position:"absolute", right:0, top:0, width:"45%", height:"100%", zIndex:150, cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:12 }}>
+              <div style={{ background:"rgba(0,0,0,0.6)", borderRadius:"50%", width:44, height:44,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:24, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 12px rgba(0,0,0,0.5)" }}>›</div>
             </div>
           )}
 
           {/* Dot indicators */}
           {photoUrls.length > 1 && (
             <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)",
-              display:"flex", gap:5, zIndex:100, pointerEvents:"none" }}>
+              display:"flex", gap:6, zIndex:200, pointerEvents:"none" }}>
               {photoUrls.map((_,i) => (
                 <div key={i} style={{
                   width: i===photoIdx ? 22 : 7, height:7, borderRadius:99,
-                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.35)",
+                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
                   transition:"all 0.25s ease",
-                  boxShadow: i===photoIdx ? "0 0 6px rgba(245,200,66,0.6)" : "none"
+                  boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.7)" : "none"
                 }} />
               ))}
             </div>
           )}
 
-          {/* Counter badge */}
+          {/* Counter badge top-right */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", top:60, right:16, background:"rgba(0,0,0,0.65)",
-              borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:700,
-              color:"#fff", zIndex:100, pointerEvents:"none" }}>
+            <div style={{ position:"absolute", top:60, right:16, background:"rgba(0,0,0,0.7)",
+              borderRadius:20, padding:"4px 14px", fontSize:13, fontWeight:700,
+              color:"#fff", zIndex:200, pointerEvents:"none", letterSpacing:0.5 }}>
               {photoIdx+1} / {photoUrls.length}
             </div>
           )}

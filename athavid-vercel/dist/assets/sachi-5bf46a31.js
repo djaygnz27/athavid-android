@@ -10042,47 +10042,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
   const photoUrls = video.is_photo && video.photo_urls ? Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls) : null;
-  reactExports.useEffect(() => {
-    const el2 = photoCarouselRef.current;
-    if (!el2)
-      return;
-    let startX = 0, startY = 0, locked = null;
-    const onTouchStart = (e) => {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      locked = null;
-    };
-    const onTouchMove = (e) => {
-      const dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
-      if (locked === null) {
-        locked = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
-      }
-      if (locked === "h") {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    const onTouchEnd = (e) => {
-      const dx = e.changedTouches[0].clientX - startX;
-      Math.abs(e.changedTouches[0].clientY - startY);
-      if (locked === "h" && Math.abs(dx) > 30) {
-        if (dx < 0)
-          setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls ? photoUrls.length - 1 : 0));
-        else
-          setPhotoIdx((p2) => Math.max(p2 - 1, 0));
-      }
-      locked = null;
-    };
-    el2.addEventListener("touchstart", onTouchStart, { passive: true });
-    el2.addEventListener("touchmove", onTouchMove, { passive: false });
-    el2.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => {
-      el2.removeEventListener("touchstart", onTouchStart);
-      el2.removeEventListener("touchmove", onTouchMove);
-      el2.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [photoCarouselRef.current, photoUrls]);
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || currentUser.username && currentUser.username === video.username);
   const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
   const userAge = getUserAge();
@@ -10273,17 +10232,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: photoCarouselRef, style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", touchAction: "pan-y" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        display: "flex",
-        height: "100%",
-        transform: `translateX(${-photoIdx * 100}%)`,
-        transition: "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
-        willChange: "transform"
-      }, children: photoUrls.map((url, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { minWidth: "100%", height: "100%", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(url), style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" } }) }, i)) }),
+    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: photoCarouselRef, style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", background: "#000" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "img",
+        {
+          src: resolveMediaUrl(photoUrls[photoIdx]),
+          style: { width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none", WebkitUserSelect: "none" }
+        }
+      ),
       photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
         "div",
         {
+          onTouchEnd: (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setPhotoIdx((p2) => p2 - 1);
+          },
           onClick: (e) => {
             e.stopPropagation();
             setPhotoIdx((p2) => p2 - 1);
@@ -10292,32 +10256,39 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             position: "absolute",
             left: 0,
             top: 0,
-            width: "20%",
+            width: "45%",
             height: "100%",
-            zIndex: 120,
+            zIndex: 150,
+            cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-start",
-            paddingLeft: 10,
-            cursor: "pointer"
+            paddingLeft: 12
           },
           children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            background: "rgba(0,0,0,0.55)",
+            background: "rgba(0,0,0,0.6)",
             borderRadius: "50%",
-            width: 38,
-            height: 38,
+            width: 44,
+            height: 44,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 18,
+            fontSize: 24,
             color: "#fff",
-            fontWeight: 900
+            fontWeight: 900,
+            lineHeight: 1,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.5)"
           }, children: "‹" })
         }
       ),
-      photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      photoIdx < photoUrls.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
         "div",
         {
+          onTouchEnd: (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setPhotoIdx((p2) => p2 + 1);
+          },
           onClick: (e) => {
             e.stopPropagation();
             setPhotoIdx((p2) => p2 + 1);
@@ -10326,26 +10297,28 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             position: "absolute",
             right: 0,
             top: 0,
-            width: "20%",
+            width: "45%",
             height: "100%",
-            zIndex: 120,
+            zIndex: 150,
+            cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            paddingRight: 10,
-            cursor: "pointer"
+            paddingRight: 12
           },
           children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            background: "rgba(0,0,0,0.55)",
+            background: "rgba(0,0,0,0.6)",
             borderRadius: "50%",
-            width: 38,
-            height: 38,
+            width: 44,
+            height: 44,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 18,
+            fontSize: 24,
             color: "#fff",
-            fontWeight: 900
+            fontWeight: 900,
+            lineHeight: 1,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.5)"
           }, children: "›" })
         }
       ),
@@ -10355,29 +10328,30 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         left: "50%",
         transform: "translateX(-50%)",
         display: "flex",
-        gap: 5,
-        zIndex: 100,
+        gap: 6,
+        zIndex: 200,
         pointerEvents: "none"
       }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         width: i === photoIdx ? 22 : 7,
         height: 7,
         borderRadius: 99,
-        background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.35)",
+        background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
         transition: "all 0.25s ease",
-        boxShadow: i === photoIdx ? "0 0 6px rgba(245,200,66,0.6)" : "none"
+        boxShadow: i === photoIdx ? "0 0 8px rgba(245,200,66,0.7)" : "none"
       } }, i)) }),
       photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         position: "absolute",
         top: 60,
         right: 16,
-        background: "rgba(0,0,0,0.65)",
+        background: "rgba(0,0,0,0.7)",
         borderRadius: 20,
-        padding: "4px 12px",
+        padding: "4px 14px",
         fontSize: 13,
         fontWeight: 700,
         color: "#fff",
-        zIndex: 100,
-        pointerEvents: "none"
+        zIndex: 200,
+        pointerEvents: "none",
+        letterSpacing: 0.5
       }, children: [
         photoIdx + 1,
         " / ",
