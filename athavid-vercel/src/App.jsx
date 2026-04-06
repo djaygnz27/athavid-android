@@ -1415,9 +1415,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       </div>
     )}
 
-    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end" }}>
+    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)" }} />
-      <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:2001 }}>
+      <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", zIndex:2001,
+        maxHeight:"92vh", display:"flex", flexDirection:"column",
+        paddingBottom:"env(safe-area-inset-bottom, 24px)" }}>
+        {/* Scrollable inner content */}
+        <div style={{ overflowY:"auto", flex:1, padding:"24px 24px 32px", WebkitOverflowScrolling:"touch" }}>
         <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 20px" }} />
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
           <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{uploadTab==="video" ? "📹 Post a Video" : uploadTab==="photo" ? "🖼️ Post Photos" : "✏️ Text Post"}</div>
@@ -1934,6 +1938,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             {uploading ? step : "Next →"}
           </button>
         )}
+        </div>{/* end scrollable inner */}
       </div>
     </div>
     {/* Audio preview player - always mounted */}
