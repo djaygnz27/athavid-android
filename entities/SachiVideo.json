@@ -77,6 +77,14 @@
         "strong_language",
         "other"
       ]
+    },
+    "is_photo": {
+      "type": "boolean",
+      "description": "True if this post is a photo carousel instead of a video"
+    },
+    "photo_urls": {
+      "type": "string",
+      "description": "JSON-stringified array of photo URLs for carousel posts"
     }
   },
   "required": [],
