@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
-// Known Sachi user emails - updated from User entity as of April 2026
-// This list is used as fallback when asServiceRole can't fetch users
+// Known Sachi users - updated April 2026
 const SACHI_USER_EMAILS = [
   "jaygnz27@gmail.com",
   "lasanjaya@gmail.com",
@@ -32,7 +31,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const body = await req.json().catch(() => ({}));
 
-    const { podcast_id, podcast_title, host_name, live_stream_url } = body;
+    const { podcast_title, host_name, live_stream_url } = body;
 
     if (!podcast_title) {
       return Response.json({ error: "podcast_title required" }, { status: 400, headers: corsHeaders });
@@ -53,16 +52,17 @@ Deno.serve(async (req) => {
     }
 
     const uniqueEmails = [...new Set(emailsToNotify)] as string[];
-
     const liveUrl = live_stream_url || "https://sachistream.com";
     const results: any[] = [];
     let sent = 0;
 
     for (const email of uniqueEmails) {
       try {
-        await base44.asServiceRole.integrations.email.sendEmail({
+        // Correct Base44 SDK pattern: integrations.Core.SendEmail
+        await base44.asServiceRole.integrations.Core.SendEmail({
           to: email,
           subject: `🔴 LIVE NOW on Sachi: ${podcast_title}`,
+          sender_name: "Sachi Stream",
           body: `
             <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; background: #0B0C1A; color: #fff; padding: 32px; border-radius: 16px;">
               <div style="text-align: center; margin-bottom: 24px;">
@@ -72,10 +72,9 @@ Deno.serve(async (req) => {
                 </div>
               </div>
               <h2 style="text-align: center; color: #F5C842; margin: 0 0 8px; font-size: 22px;">${podcast_title}</h2>
-              <p style="text-align: center; color: rgba(255,255,255,0.55); margin: 0 0 28px; font-size: 14px;">Hosted by <strong style="color:rgba(255,255,255,0.8)">${host_name}</strong></p>
+              <p style="text-align: center; color: rgba(255,255,255,0.55); margin: 0 0 28px; font-size: 14px;">Hosted by <strong style="color:rgba(255,255,255,0.85)">${host_name}</strong></p>
               <div style="text-align: center; margin-bottom: 28px;">
-                <a href="${liveUrl}" 
-                   style="background: linear-gradient(135deg, #e53935, #b71c1c); color: #fff; text-decoration: none; padding: 15px 36px; border-radius: 30px; font-weight: 800; font-size: 16px; display: inline-block; box-shadow: 0 4px 20px rgba(229,57,53,0.4);">
+                <a href="${liveUrl}" style="background: linear-gradient(135deg, #e53935, #b71c1c); color: #fff; text-decoration: none; padding: 15px 36px; border-radius: 30px; font-weight: 800; font-size: 16px; display: inline-block; box-shadow: 0 4px 20px rgba(229,57,53,0.4);">
                   🎧 &nbsp;Tune In Now
                 </a>
               </div>
@@ -94,19 +93,10 @@ Deno.serve(async (req) => {
     }
 
     return Response.json(
-      {
-        ok: true,
-        podcast_title,
-        emails_sent: sent,
-        total_users: uniqueEmails.length,
-        results,
-      },
+      { ok: true, podcast_title, emails_sent: sent, total_users: uniqueEmails.length, results },
       { headers: corsHeaders }
     );
   } catch (error: any) {
-    return Response.json(
-      { error: error.message || String(error) },
-      { status: 500, headers: corsHeaders }
-    );
+    return Response.json({ error: error.message || String(error) }, { status: 500, headers: corsHeaders });
   }
 });
