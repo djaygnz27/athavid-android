@@ -10202,6 +10202,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: (postLocation == null ? void 0 : postLocation.name) || null,
+        sound_title: (selectedTrack == null ? void 0 : selectedTrack.title) || null,
+        sound_artist: (selectedTrack == null ? void 0 : selectedTrack.artist) || null,
+        sound_url: (selectedTrack == null ? void 0 : selectedTrack.url) || null,
         ...videoGeo
       });
       setProgress(100);
@@ -11270,14 +11273,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                       setPreviewTrack(null);
                     } else {
                       setPreviewTrack(track.id);
-                      setTimeout(() => {
-                        if (previewAudioRef.current) {
-                          previewAudioRef.current.pause();
-                          previewAudioRef.current.src = track.url;
-                          previewAudioRef.current.load();
-                          previewAudioRef.current.play().catch((err) => console.log("Audio play error:", err));
-                        }
-                      }, 50);
+                      if (previewAudioRef.current) {
+                        previewAudioRef.current.pause();
+                        previewAudioRef.current.src = track.url;
+                        previewAudioRef.current.load();
+                        previewAudioRef.current.play().catch((err) => console.warn("[Sachi Preview]", err));
+                      }
                     }
                   }, style: {
                     background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
@@ -11462,6 +11463,7 @@ function getUserAge() {
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
   var _a;
   const videoRef = reactExports.useRef(null);
+  const soundRef = reactExports.useRef(null);
   const viewedRef = reactExports.useRef(false);
   const [playing, setPlaying] = reactExports.useState(false);
   const [liked, setLiked] = reactExports.useState(false);
@@ -11815,9 +11817,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             onPlay: () => {
               setPlaying(true);
               hideUIAfterDelay(1500);
+              if (soundRef.current && video.sound_url && !muted) {
+                soundRef.current.play().catch(() => {
+                });
+              }
             },
-            onPause: () => setPlaying(false),
+            onPause: () => {
+              setPlaying(false);
+              if (soundRef.current)
+                soundRef.current.pause();
+            },
             style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
+          }
+        ),
+        video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "audio",
+          {
+            ref: soundRef,
+            src: video.sound_url,
+            loop: true,
+            preload: "none",
+            style: { display: "none" }
           }
         ),
         muted && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -11835,6 +11855,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   });
                   setPlaying(true);
                   hideUIAfterDelay(1500);
+                  if (soundRef.current && video.sound_url) {
+                    soundRef.current.play().catch(() => {
+                    });
+                  }
                 }
               }
             },
@@ -11850,6 +11874,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   });
                   setPlaying(true);
                   hideUIAfterDelay(1500);
+                  if (soundRef.current && video.sound_url) {
+                    soundRef.current.play().catch(() => {
+                    });
+                  }
                 }
               }
             },
