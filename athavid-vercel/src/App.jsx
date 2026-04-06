@@ -1424,29 +1424,29 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none" }}
           />
 
-          {/* ── LEFT HALF — tap to go back ── */}
+          {/* ── LEFT TAP ZONE — 40% of screen, avoid right icon stack ── */}
           {photoIdx > 0 && (
             <div
               onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p - 1); }}
               onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
-              style={{ position:"absolute", left:0, top:0, width:"45%", height:"100%", zIndex:150, cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:12 }}>
-              <div style={{ background:"rgba(0,0,0,0.6)", borderRadius:"50%", width:44, height:44,
+              style={{ position:"absolute", left:0, top:"15%", width:"40%", height:"65%", zIndex:150, cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:10 }}>
+              <div style={{ background:"rgba(0,0,0,0.65)", borderRadius:"50%", width:48, height:48,
                 display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:24, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 12px rgba(0,0,0,0.5)" }}>‹</div>
+                fontSize:26, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 16px rgba(0,0,0,0.6)" }}>‹</div>
             </div>
           )}
 
-          {/* ── RIGHT HALF — tap to advance ── */}
+          {/* ── RIGHT TAP ZONE — 40% of screen, left-aligned so icons don't block ── */}
           {photoIdx < photoUrls.length - 1 && (
             <div
               onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p + 1); }}
               onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
-              style={{ position:"absolute", right:0, top:0, width:"45%", height:"100%", zIndex:150, cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:12 }}>
-              <div style={{ background:"rgba(0,0,0,0.6)", borderRadius:"50%", width:44, height:44,
+              style={{ position:"absolute", left:"50%", top:"15%", width:"35%", height:"65%", zIndex:150, cursor:"pointer",
+                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:10 }}>
+              <div style={{ background:"rgba(0,0,0,0.65)", borderRadius:"50%", width:48, height:48,
                 display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:24, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 12px rgba(0,0,0,0.5)" }}>›</div>
+                fontSize:26, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 16px rgba(0,0,0,0.6)" }}>›</div>
             </div>
           )}
 
@@ -1465,9 +1465,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </div>
           )}
 
-          {/* Counter badge top-right */}
+          {/* Counter badge top-left (moved away from right icons) */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", top:60, right:16, background:"rgba(0,0,0,0.7)",
+            <div style={{ position:"absolute", top:60, left:16, background:"rgba(0,0,0,0.7)",
               borderRadius:20, padding:"4px 14px", fontSize:13, fontWeight:700,
               color:"#fff", zIndex:200, pointerEvents:"none", letterSpacing:0.5 }}>
               {photoIdx+1} / {photoUrls.length}
@@ -1621,7 +1621,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDE ACTION BAR — vertical stack, TikTok style ── */}
-      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:260, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex: photoUrls ? 140 : 260, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
