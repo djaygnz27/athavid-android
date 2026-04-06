@@ -8392,6 +8392,14 @@ function formatCount(n2) {
     return (n2 / 1e3).toFixed(1) + "K";
   return String(n2);
 }
+const resolveMediaUrl = (url) => {
+  if (!url)
+    return url;
+  const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
+  if (match)
+    return `https://media.base44.com/images/public/${match[1]}/${match[2]}`;
+  return url;
+};
 async function getPostLocation() {
   try {
     const pos = await new Promise(
@@ -10272,7 +10280,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         transform: `translateX(${-photoIdx * 100}%)`,
         transition: "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
         willChange: "transform"
-      }, children: photoUrls.map((url, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { minWidth: "100%", height: "100%", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" } }) }, i)) }),
+      }, children: photoUrls.map((url, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { minWidth: "100%", height: "100%", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(url), style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" } }) }, i)) }),
       photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
         "div",
         {
@@ -10586,7 +10594,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 90, left: 16, right: 16, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 10, zIndex: 260, transition: "opacity 0.4s ease, transform 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, transform: showUI || !!photoUrls ? "translateY(0)" : "translateY(10px)", pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 12, bottom: 120, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, zIndex: 260, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {

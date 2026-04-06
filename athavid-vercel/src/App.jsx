@@ -18,6 +18,13 @@ function formatCount(n) {
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
   return String(n);
 }
+
+const resolveMediaUrl = (url) => {
+  if (!url) return url;
+  const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
+  if (match) return `https://media.base44.com/images/public/${match[1]}/${match[2]}`;
+  return url;
+};
 // Get user's location for post geo-tagging (best-effort, fails silently)
 async function getPostLocation() {
   try {
@@ -1458,7 +1465,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           }}>
             {photoUrls.map((url, i) => (
               <div key={i} style={{ minWidth:"100%", height:"100%", flexShrink:0 }}>
-                <img src={url} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
+                <img src={resolveMediaUrl(url)} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
               </div>
             ))}
           </div>
@@ -1651,8 +1658,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
       </div>
 
-      {/* ── BOTTOM ACTION BAR — fades with UI — Sachi style ── */}
-      <div style={{ position:"absolute", bottom:90, left:16, right:16, display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"flex-end", gap:10, zIndex:260, transition:"opacity 0.4s ease, transform 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, transform: (showUI || !!photoUrls) ? "translateY(0)" : "translateY(10px)", pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      {/* ── RIGHT SIDE ACTION BAR — vertical stack, TikTok style ── */}
+      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:18, zIndex:260, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
