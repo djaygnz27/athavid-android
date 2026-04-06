@@ -11205,11 +11205,17 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
     setLoading(true);
     Promise.all([
       request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
-      videos.byUser(userId).catch(() => [])
-    ]).then(([userRes, vids]) => {
+      videos.byUser(userId).catch(() => []),
+      // Live follower count: how many people follow this profile
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      // Live following count: how many people this profile follows
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
+    ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = (userRes == null ? void 0 : userRes.items) || userRes || [];
       const u2 = allUsers.find((x2) => x2.id === userId || x2.created_by === userId) || null;
-      setProfile(u2);
+      const liveFollowers = ((followersRes == null ? void 0 : followersRes.items) || followersRes || []).length;
+      const liveFollowing = ((followingRes == null ? void 0 : followingRes.items) || followingRes || []).length;
+      setProfile(u2 ? { ...u2, followers_count: liveFollowers, following_count: liveFollowing } : { followers_count: liveFollowers, following_count: liveFollowing });
       const vidList = Array.isArray(vids) ? vids : (vids == null ? void 0 : vids.items) || [];
       setUserVideos(vidList);
       setLoading(false);
@@ -11230,6 +11236,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       if (followRecord) {
         await follows.unfollow(followRecord.id);
         setFollowRecord(null);
+        setProfile((p2) => p2 ? { ...p2, followers_count: Math.max(0, (p2.followers_count || 1) - 1) } : p2);
       } else {
         const rec = await follows.follow(
           currentUser.id,
@@ -11238,6 +11245,14 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
           username
         );
         setFollowRecord(rec);
+        setProfile((p2) => p2 ? { ...p2, followers_count: (p2.followers_count || 0) + 1 } : p2);
+      }
+      try {
+        const myFollowingRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingCount = ((myFollowingRes == null ? void 0 : myFollowingRes.items) || myFollowingRes || []).length;
+        setProfile((p2) => p2 ? { ...p2 } : p2);
+        localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
+      } catch (e) {
       }
     } catch (e) {
       console.error(e);
@@ -12788,6 +12803,8 @@ function App() {
   const [loginToast, setLoginToast] = reactExports.useState(false);
   const [showAuth, setShowAuth] = reactExports.useState(false);
   const [myVideos, setMyVideos] = reactExports.useState([]);
+  const [meFollowersCount, setMeFollowersCount] = reactExports.useState(0);
+  const [meFollowingCount, setMeFollowingCount] = reactExports.useState(0);
   const [avatarUrl, setAvatarUrl] = reactExports.useState(() => {
     try {
       const last = localStorage.getItem("avatar_last");
@@ -12912,6 +12929,10 @@ function App() {
   reactExports.useEffect(() => {
     if (activeTab === "profile" && currentUser) {
       videos.myVideos(currentUser.id).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => setMyVideos([]));
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).then((res) => setMeFollowersCount(((res == null ? void 0 : res.items) || res || []).length)).catch(() => {
+      });
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).then((res) => setMeFollowingCount(((res == null ? void 0 : res.items) || res || []).length)).catch(() => {
+      });
     }
   }, [activeTab, currentUser]);
   const handleLike = React.useCallback((videoId, delta) => {
@@ -13227,8 +13248,12 @@ function App() {
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: "Videos" })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "0" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: meFollowersCount }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: "Followers" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: meFollowingCount }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: "Following" })
           ] })
         ] })
       ] }),

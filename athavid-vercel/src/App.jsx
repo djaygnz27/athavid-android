@@ -2302,11 +2302,17 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
     setLoading(true);
     Promise.all([
       request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
-      videos.byUser(userId).catch(() => [])
-    ]).then(([userRes, vids]) => {
+      videos.byUser(userId).catch(() => []),
+      // Live follower count: how many people follow this profile
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      // Live following count: how many people this profile follows
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
+    ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = userRes?.items || userRes || [];
       const u = allUsers.find(x => x.id === userId || x.created_by === userId) || null;
-      setProfile(u);
+      const liveFollowers = (followersRes?.items || followersRes || []).length;
+      const liveFollowing = (followingRes?.items || followingRes || []).length;
+      setProfile(u ? { ...u, followers_count: liveFollowers, following_count: liveFollowing } : { followers_count: liveFollowers, following_count: liveFollowing });
       const vidList = Array.isArray(vids) ? vids : (vids?.items || []);
       setUserVideos(vidList);
       setLoading(false);
@@ -2326,6 +2332,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       if (followRecord) {
         await follows.unfollow(followRecord.id);
         setFollowRecord(null);
+        setProfile(p => p ? { ...p, followers_count: Math.max(0, (p.followers_count || 1) - 1) } : p);
       } else {
         const rec = await follows.follow(
           currentUser.id,
@@ -2334,7 +2341,16 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
           username
         );
         setFollowRecord(rec);
+        setProfile(p => p ? { ...p, followers_count: (p.followers_count || 0) + 1 } : p);
       }
+      // Refresh live following count for the current user's Me tab too
+      try {
+        const myFollowingRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingCount = (myFollowingRes?.items || myFollowingRes || []).length;
+        setProfile(p => p ? { ...p } : p); // trigger re-render if needed
+        // store for Me tab
+        localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
+      } catch(e) {}
     } catch(e) { console.error(e); }
     setFollowLoading(false);
   };
@@ -3703,6 +3719,8 @@ function App() {
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
+  const [meFollowersCount, setMeFollowersCount] = useState(0);
+  const [meFollowingCount, setMeFollowingCount] = useState(0);
   const [avatarUrl, setAvatarUrl] = useState(() => {
     // Pre-load from localStorage to avoid flash on reload
     try {
@@ -3824,6 +3842,11 @@ function App() {
       videos.myVideos(currentUser.id)
         .then(r => setMyVideos(Array.isArray(r) ? r : []))
         .catch(() => setMyVideos([]));
+      // Live follow counts for Me tab
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`)
+        .then(res => setMeFollowersCount((res?.items || res || []).length)).catch(()=>{});
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`)
+        .then(res => setMeFollowingCount((res?.items || res || []).length)).catch(()=>{});
     }
   }, [activeTab, currentUser]);
 
@@ -4036,8 +4059,12 @@ function App() {
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
                   <div style={{ textAlign:"center" }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>0</div>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowersCount}</div>
                     <div style={{ color:"#888", fontSize:12 }}>Followers</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowingCount}</div>
+                    <div style={{ color:"#888", fontSize:12 }}>Following</div>
                   </div>
                 </div>
               </div>
