@@ -1375,11 +1375,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             const t = e.touches[0];
             e.currentTarget._touchStartX = t.clientX;
             e.currentTarget._touchStartY = t.clientY;
+            e.currentTarget._touchMoved = false;
+          }}
+          onTouchMove={e => {
+            const dx = Math.abs(e.touches[0].clientX - (e.currentTarget._touchStartX || 0));
+            const dy = Math.abs(e.touches[0].clientY - (e.currentTarget._touchStartY || 0));
+            // If clearly horizontal, prevent vertical scroll from stealing the gesture
+            if (dx > dy && dx > 10) {
+              e.stopPropagation();
+              e.currentTarget._touchMoved = true;
+            }
           }}
           onTouchEnd={e => {
             const dx = e.changedTouches[0].clientX - (e.currentTarget._touchStartX || 0);
             const dy = Math.abs(e.changedTouches[0].clientY - (e.currentTarget._touchStartY || 0));
-            if (Math.abs(dx) > 40 && Math.abs(dx) > dy) {
+            if (Math.abs(dx) > 30 && Math.abs(dx) > dy) {
+              e.stopPropagation();
               if (dx < 0) setPhotoIdx(p => Math.min(p+1, photoUrls.length-1));
               else        setPhotoIdx(p => Math.max(p-1, 0));
             }

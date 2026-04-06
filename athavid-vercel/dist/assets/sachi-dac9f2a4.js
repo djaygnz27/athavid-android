@@ -10199,11 +10199,21 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           const t2 = e.touches[0];
           e.currentTarget._touchStartX = t2.clientX;
           e.currentTarget._touchStartY = t2.clientY;
+          e.currentTarget._touchMoved = false;
+        },
+        onTouchMove: (e) => {
+          const dx = Math.abs(e.touches[0].clientX - (e.currentTarget._touchStartX || 0));
+          const dy = Math.abs(e.touches[0].clientY - (e.currentTarget._touchStartY || 0));
+          if (dx > dy && dx > 10) {
+            e.stopPropagation();
+            e.currentTarget._touchMoved = true;
+          }
         },
         onTouchEnd: (e) => {
           const dx = e.changedTouches[0].clientX - (e.currentTarget._touchStartX || 0);
           const dy = Math.abs(e.changedTouches[0].clientY - (e.currentTarget._touchStartY || 0));
-          if (Math.abs(dx) > 40 && Math.abs(dx) > dy) {
+          if (Math.abs(dx) > 30 && Math.abs(dx) > dy) {
+            e.stopPropagation();
             if (dx < 0)
               setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls.length - 1));
             else
