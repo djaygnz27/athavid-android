@@ -7328,6 +7328,116 @@ const interests = {
     return scored;
   }
 };
+const COUNTRIES = [
+  "Afghanistan",
+  "Albania",
+  "Algeria",
+  "Argentina",
+  "Armenia",
+  "Australia",
+  "Austria",
+  "Azerbaijan",
+  "Bahamas",
+  "Bahrain",
+  "Bangladesh",
+  "Belarus",
+  "Belgium",
+  "Bolivia",
+  "Bosnia",
+  "Brazil",
+  "Bulgaria",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Chile",
+  "China",
+  "Colombia",
+  "Costa Rica",
+  "Croatia",
+  "Cuba",
+  "Cyprus",
+  "Czech Republic",
+  "Denmark",
+  "Dominican Republic",
+  "Ecuador",
+  "Egypt",
+  "El Salvador",
+  "Ethiopia",
+  "Finland",
+  "France",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Greece",
+  "Guatemala",
+  "Haiti",
+  "Honduras",
+  "Hungary",
+  "India",
+  "Indonesia",
+  "Iran",
+  "Iraq",
+  "Ireland",
+  "Israel",
+  "Italy",
+  "Jamaica",
+  "Japan",
+  "Jordan",
+  "Kazakhstan",
+  "Kenya",
+  "Kuwait",
+  "Lebanon",
+  "Libya",
+  "Malaysia",
+  "Mexico",
+  "Morocco",
+  "Myanmar",
+  "Nepal",
+  "Netherlands",
+  "New Zealand",
+  "Nigeria",
+  "North Korea",
+  "Norway",
+  "Oman",
+  "Pakistan",
+  "Panama",
+  "Paraguay",
+  "Peru",
+  "Philippines",
+  "Poland",
+  "Portugal",
+  "Qatar",
+  "Romania",
+  "Russia",
+  "Saudi Arabia",
+  "Senegal",
+  "Serbia",
+  "Singapore",
+  "Somalia",
+  "South Africa",
+  "South Korea",
+  "Spain",
+  "Sri Lanka",
+  "Sudan",
+  "Sweden",
+  "Switzerland",
+  "Syria",
+  "Taiwan",
+  "Tanzania",
+  "Thailand",
+  "Turkey",
+  "Uganda",
+  "Ukraine",
+  "United Arab Emirates",
+  "United Kingdom",
+  "United States",
+  "Uruguay",
+  "Uzbekistan",
+  "Venezuela",
+  "Vietnam",
+  "Yemen",
+  "Zimbabwe"
+];
 const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
@@ -7336,6 +7446,7 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
   const suggestedUsername = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
   const [username, setUsername] = reactExports.useState(suggestedUsername);
   const [dob, setDob] = reactExports.useState("");
+  const [country, setCountry] = reactExports.useState("");
   const [is18, setIs18] = reactExports.useState(false);
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
@@ -7413,6 +7524,7 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
         sachiUser = created;
       }
       localStorage.setItem("sachi_dob", dob);
+      if (country) localStorage.setItem("sachi_country", country);
       const sessionUser = {
         id: sachiUser.id || sachiUser.created_by,
         email,
@@ -7461,6 +7573,22 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
         type: "date",
         max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
         style: { ...inp, colorScheme: "dark" }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
+      "Where are you from? ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "select",
+      {
+        value: country,
+        onChange: (e) => setCountry(e.target.value),
+        style: { ...inp, colorScheme: "dark", appearance: "none", WebkitAppearance: "none" },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "🌍 Select your country" }),
+          COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, children: c }, c))
+        ]
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
@@ -7560,6 +7688,7 @@ function AuthModal({ onClose, onSuccess }) {
   const [password, setPassword] = reactExports.useState("");
   const [name, setName] = reactExports.useState("");
   const [dob, setDob] = reactExports.useState("");
+  const [country, setCountry] = reactExports.useState("");
   const [otp, setOtp] = reactExports.useState("");
   const [resetToken, setResetToken] = reactExports.useState("");
   const [newPassword, setNewPassword] = reactExports.useState("");
@@ -7628,6 +7757,7 @@ function AuthModal({ onClose, onSuccess }) {
       } else {
         await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
         localStorage.setItem("sachi_dob", dob);
+        if (country) localStorage.setItem("sachi_country", country);
         setStep("otp");
       }
     } catch (e) {
@@ -7762,6 +7892,22 @@ function AuthModal({ onClose, onSuccess }) {
               type: "date",
               max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
               style: { ...inp, colorScheme: "dark" }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4, color: "#888", fontSize: 12 }, children: [
+            "Where are you from? ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "select",
+            {
+              value: country,
+              onChange: (e) => setCountry(e.target.value),
+              style: { ...inp, colorScheme: "dark", appearance: "none", WebkitAppearance: "none", marginBottom: 12 },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "🌍 Select your country" }),
+                COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, children: c }, c))
+              ]
             }
           ),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: "pointer" }, children: [
@@ -7954,6 +8100,10 @@ const resolveMediaUrl = (url) => {
   return url;
 };
 async function getPostLocation() {
+  const savedCountry = localStorage.getItem("sachi_country");
+  if (savedCountry) {
+    return { post_country: savedCountry, post_region: null };
+  }
   try {
     const pos = await new Promise(
       (resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5e3 })

@@ -1,3 +1,19 @@
+
+const COUNTRIES = [
+  "Afghanistan","Albania","Algeria","Argentina","Armenia","Australia","Austria","Azerbaijan",
+  "Bahamas","Bahrain","Bangladesh","Belarus","Belgium","Bolivia","Bosnia","Brazil","Bulgaria",
+  "Cambodia","Cameroon","Canada","Chile","China","Colombia","Costa Rica","Croatia","Cuba","Cyprus",
+  "Czech Republic","Denmark","Dominican Republic","Ecuador","Egypt","El Salvador","Ethiopia",
+  "Finland","France","Georgia","Germany","Ghana","Greece","Guatemala","Haiti","Honduras",
+  "Hungary","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan",
+  "Jordan","Kazakhstan","Kenya","Kuwait","Lebanon","Libya","Malaysia","Mexico","Morocco",
+  "Myanmar","Nepal","Netherlands","New Zealand","Nigeria","North Korea","Norway","Oman",
+  "Pakistan","Panama","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania",
+  "Russia","Saudi Arabia","Senegal","Serbia","Singapore","Somalia","South Africa","South Korea",
+  "Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria","Taiwan","Tanzania","Thailand",
+  "Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States",
+  "Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zimbabwe"
+];
 import { useState, useEffect } from "react";
 import { auth } from "./api.js";
 
@@ -12,6 +28,7 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
 
   const [username, setUsername] = useState(suggestedUsername);
   const [dob, setDob] = useState("");
+  const [country, setCountry] = useState("");
   const [is18, setIs18] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -80,6 +97,7 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
       }
 
       localStorage.setItem("sachi_dob", dob);
+      if (country) localStorage.setItem("sachi_country", country);
 
       const sessionUser = {
         id: sachiUser.id || sachiUser.created_by,
@@ -131,6 +149,18 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
         max={new Date().toISOString().slice(0,10)}
         style={{ ...inp, colorScheme:"dark" }}
       />
+
+      <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
+        Where are you from? <span style={{color:"#888", fontSize:11}}>(optional)</span>
+      </div>
+      <select
+        value={country}
+        onChange={e => setCountry(e.target.value)}
+        style={{ ...inp, colorScheme:"dark", appearance:"none", WebkitAppearance:"none" }}
+      >
+        <option value="">🌍 Select your country</option>
+        {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+      </select>
 
       <label style={{ display:"flex", gap:10, alignItems:"center", marginBottom:16, cursor:"pointer", textAlign:"left" }}>
         <input
@@ -239,6 +269,7 @@ export default function AuthModal({ onClose, onSuccess }) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
+  const [country, setCountry] = useState("");
   const [otp, setOtp] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -300,6 +331,7 @@ export default function AuthModal({ onClose, onSuccess }) {
       } else {
         await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
         localStorage.setItem("sachi_dob", dob);
+        if (country) localStorage.setItem("sachi_country", country);
         setStep("otp");
       }
     } catch (e) { setError(e.message || "Something went wrong."); }
@@ -385,6 +417,17 @@ export default function AuthModal({ onClose, onSuccess }) {
                 <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>Birthday <span style={{color:"#ff6b6b"}}>*</span></div>
                 <input value={dob} onChange={e => setDob(e.target.value)} type="date"
                   max={new Date().toISOString().slice(0,10)} style={{ ...inp, colorScheme:"dark" }} />
+                <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>
+                  Where are you from? <span style={{color:"#888", fontSize:11}}>(optional)</span>
+                </div>
+                <select
+                  value={country}
+                  onChange={e => setCountry(e.target.value)}
+                  style={{ ...inp, colorScheme:"dark", appearance:"none", WebkitAppearance:"none", marginBottom:12 }}
+                >
+                  <option value="">🌍 Select your country</option>
+                  {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
                 <label style={{ display:"flex", gap:10, alignItems:"center", marginBottom:12, cursor:"pointer" }}>
                   <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)}
                     style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0 }} />
