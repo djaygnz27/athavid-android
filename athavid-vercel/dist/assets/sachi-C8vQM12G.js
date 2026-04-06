@@ -10844,6 +10844,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const setMuted = (val) => {
     if (onMuteChange) onMuteChange(typeof val === "function" ? val(muted) : val);
   };
+  const mutedRef = reactExports.useRef(muted);
+  reactExports.useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
   const [photoIdx, setPhotoIdx] = reactExports.useState(0);
   reactExports.useRef(null);
   const [followRecord, setFollowRecord] = reactExports.useState(null);
@@ -10887,11 +10891,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el2) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        el2.muted = muted;
+        const currentlyMuted = mutedRef.current;
+        el2.muted = currentlyMuted;
         el2.play().catch(() => {
         });
         setPlaying(true);
-        if (!muted && soundRef.current && video.sound_url) {
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
           soundRef.current.play().catch(() => {
           });
         }
