@@ -10842,10 +10842,8 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
   const onTouchEnd = () => setDragging(false);
   const handleSave = () => {
     const canvas = canvasRef.current;
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      onSave(blob);
-    }, "image/png", 0.95);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    onSave(dataUrl);
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 18, marginBottom: 8 }, children: "✂️ Crop your avatar" }),
@@ -10906,15 +10904,26 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     const url = URL.createObjectURL(file);
     setCropImageUrl(url);
   };
-  const handleCropSave = async (blob) => {
+  const handleCropSave = async (dataUrl) => {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      const file = new File([blob], "avatar.png", { type: "image/png" });
-      const url = await uploadFile(file);
-      onSelect(url);
-    } catch {
-      alert("Upload failed, try again.");
+      const token = localStorage.getItem("sachi_token");
+      if (token) {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        try {
+          const url = await uploadFile(file);
+          onSelect(url);
+          return;
+        } catch (e) {
+          console.warn("Server upload failed, falling back to base64:", e);
+        }
+      }
+      onSelect(dataUrl);
+    } catch (e) {
+      alert("Could not save avatar. Try again.");
     } finally {
       setUploading(false);
     }
@@ -12850,15 +12859,15 @@ function App() {
           const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : usersData.items || [];
           const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
-          if (match && match.avatar_url) {
+          const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
+          if (localSaved) {
+            setAvatarUrl(localSaved);
+          } else if (match && match.avatar_url) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
             localStorage.setItem(`avatar_last`, match.avatar_url);
           } else if (currentUser.avatar_url) {
             setAvatarUrl(currentUser.avatar_url);
-          } else {
-            const saved = localStorage.getItem(`avatar_${currentUser.id}`);
-            if (saved) setAvatarUrl(saved);
           }
         } catch (e) {
           if (currentUser.avatar_url) setAvatarUrl(currentUser.avatar_url);

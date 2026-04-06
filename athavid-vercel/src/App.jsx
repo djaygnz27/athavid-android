@@ -2044,10 +2044,9 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
 
   const handleSave = () => {
     const canvas = canvasRef.current;
-    canvas.toBlob(blob => {
-      if (!blob) return;
-      onSave(blob);
-    }, "image/png", 0.95);
+    // Return base64 data URL directly — works for all auth types (Google, email)
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    onSave(dataUrl);
   };
 
   return (
@@ -2122,14 +2121,28 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(url);
   };
 
-  const handleCropSave = async (blob) => {
+  const handleCropSave = async (dataUrl) => {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      const file = new File([blob], "avatar.png", { type: "image/png" });
-      const url = await uploadFile(file);
-      onSelect(url);
-    } catch { alert("Upload failed, try again."); }
+      // Try to upload to server first (works for email-login users with token)
+      const token = localStorage.getItem("sachi_token");
+      if (token) {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        try {
+          const url = await uploadFile(file);
+          onSelect(url);
+          return;
+        } catch(e) {
+          console.warn("Server upload failed, falling back to base64:", e);
+        }
+      }
+      // Fallback: use base64 dataURL directly (Google login users, or upload failure)
+      // Store compressed in localStorage and use as avatar
+      onSelect(dataUrl);
+    } catch(e) { alert("Could not save avatar. Try again."); }
     finally { setUploading(false); }
   };
 
@@ -3777,15 +3790,16 @@ function App() {
           const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-          if (match && match.avatar_url) {
+          // Prioritize localStorage (may contain freshly cropped base64 or recent upload)
+          const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
+          if (localSaved) {
+            setAvatarUrl(localSaved);
+          } else if (match && match.avatar_url) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
             localStorage.setItem(`avatar_last`, match.avatar_url);
           } else if (currentUser.avatar_url) {
             setAvatarUrl(currentUser.avatar_url);
-          } else {
-            const saved = localStorage.getItem(`avatar_${currentUser.id}`);
-            if (saved) setAvatarUrl(saved);
           }
         } catch(e) {
           // Fall back to auth user avatar_url first, then localStorage
