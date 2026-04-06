@@ -882,9 +882,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   // Text post states
   const [textPostContent, setTextPostContent] = useState("");
-  const [textPostBg, setTextPostBg] = useState("bg1");
-  const [textPostAlign, setTextPostAlign] = useState("center");
-  const [textPostFontSize, setTextPostFontSize] = useState(28);
+  const [textPostTemplate, setTextPostTemplate] = useState(0);
 
   const checkForExplicitContent = (f, cap) => {
     const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
@@ -1075,64 +1073,88 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setUploading(true); setProgress(10);
     try {
       setStep("Creating text post...");
-      // Generate a card image from the text post using a canvas
+      const TEXT_TEMPLATES_UPLOAD = [
+        { bg:["#1c1c1c","#1c1c1c"], textColor:"#ffffff", accentColor:"#b06bff", fontSize:52, emoji:"☀️", emojiTop:true },
+        { bg:["#0a2a1a","#0d3d2a"], textColor:"#4fffb0", accentColor:"#4fffb0", fontSize:48, emoji:"", emojiTop:false },
+        { bg:["#fce4ec","#fce4ec"], textColor:"#222222", accentColor:"#e91e63", fontSize:46, emoji:"🌸", emojiTop:true },
+        { bg:["#fff8f0","#fff8f0"], textColor:"#cc0000", accentColor:"#cc0000", fontSize:42, emoji:"🎟️", emojiTop:false },
+        { bg:["#000000","#000000"], textColor:"#ffffff", accentColor:"#ffffff", fontSize:48, emoji:"🌙", emojiTop:false },
+        { bg:["#0B0C1A","#1a1040"], textColor:"#F5C842", accentColor:"#ff6b9d", fontSize:48, emoji:"🌸", emojiTop:true },
+        { bg:["#FF416C","#FF9500"], textColor:"#ffffff", accentColor:"#ffe066", fontSize:48, emoji:"🌅", emojiTop:true },
+        { bg:["#0F2027","#2C5364"], textColor:"#00E5FF", accentColor:"#00E5FF", fontSize:46, emoji:"🌊", emojiTop:false },
+      ];
+      const tpl = TEXT_TEMPLATES_UPLOAD[textPostTemplate] || TEXT_TEMPLATES_UPLOAD[0];
+
       const canvas = document.createElement("canvas");
       canvas.width = 540; canvas.height = 960;
       const ctx = canvas.getContext("2d");
 
-      // Background gradient
-      const bgMap = {
-        bg1:["#1a1a2e","#16213e"], bg2:["#0F2027","#2C5364"], bg3:["#7C3AED","#A855F7"],
-        bg4:["#FF416C","#FF4B2B"], bg5:["#F5C842","#FF9500"], bg6:["#11998e","#38ef7d"],
-        bg7:["#000000","#434343"], bg8:["#ffffff","#eeeeee"],
-      };
-      const [c1, c2] = bgMap[textPostBg] || ["#1a1a2e","#16213e"];
-      const grad = ctx.createLinearGradient(0,0,540,960);
-      grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+      // Background
+      const grad = ctx.createLinearGradient(0, 0, 540, 960);
+      grad.addColorStop(0, tpl.bg[0]); grad.addColorStop(1, tpl.bg[1]);
       ctx.fillStyle = grad;
-      ctx.fillRect(0,0,540,960);
+      ctx.fillRect(0, 0, 540, 960);
 
-      // Text
-      const isLight = textPostBg === "bg8";
-      ctx.fillStyle = isLight ? "#111111" : "#ffffff";
-      ctx.font = `900 ${Math.round(textPostFontSize * 1.5)}px Arial, sans-serif`;
-      ctx.textAlign = textPostAlign === "left" ? "left" : textPostAlign === "right" ? "right" : "center";
-      ctx.textBaseline = "middle";
-      ctx.shadowColor = isLight ? "transparent" : "rgba(0,0,0,0.4)";
-      ctx.shadowBlur = 12;
-
-      // Word wrap
-      const maxW = 460;
       const words = textPostContent.trim().split(" ");
-      const lines = [];
-      let line = "";
-      for (const w of words) {
-        const test = line ? line + " " + w : w;
-        if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
-        else { line = test; }
-      }
-      if (line) lines.push(line);
+      const half = Math.ceil(words.length / 2);
+      const part1 = words.slice(0, half).join(" ");
+      const part2 = words.slice(half).join(" ");
 
-      const lineH = Math.round(textPostFontSize * 1.5 * 1.3);
-      const totalH = lines.length * lineH;
-      const startY = (960 - totalH) / 2 + lineH / 2;
-      const xPos = textPostAlign === "left" ? 40 : textPostAlign === "right" ? 500 : 270;
-      lines.forEach((l, i) => ctx.fillText(l, xPos, startY + i * lineH));
+      const drawWrapped = (text, color, yStart, fontSize) => {
+        ctx.fillStyle = color;
+        ctx.font = `900 ${fontSize}px Georgia, serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowBlur = 14;
+        const maxW = 460;
+        const words2 = text.split(" ");
+        const lines = []; let line = "";
+        for (const w of words2) {
+          const test = line ? line + " " + w : w;
+          if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+          else line = test;
+        }
+        if (line) lines.push(line);
+        lines.forEach((l, i) => ctx.fillText(l, 270, yStart + i * (fontSize * 1.35)));
+        return lines.length * (fontSize * 1.35);
+      };
+
+      let y = tpl.emojiTop ? 320 : 360;
+
+      // Top emoji
+      if (tpl.emoji && tpl.emojiTop) {
+        ctx.font = "80px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+        ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+        ctx.fillText(tpl.emoji, 270, 200);
+      }
+
+      // Part 1 white
+      const h1 = drawWrapped(part1, "#ffffff", y, tpl.fontSize);
+      y += h1 + 10;
+      // Part 2 accent
+      if (part2) {
+        const h2 = drawWrapped(part2, tpl.accentColor, y, tpl.fontSize);
+        y += h2;
+      }
+
+      // Bottom emoji
+      if (tpl.emoji && !tpl.emojiTop) {
+        ctx.font = "64px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+        ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+        ctx.fillText(tpl.emoji, 270, y + 24);
+      }
 
       // Watermark
-      ctx.font = "700 18px Arial";
-      ctx.fillStyle = isLight ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)";
-      ctx.textAlign = "right";
+      ctx.font = "700 18px Arial"; ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.textAlign = "right"; ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
       ctx.fillText("sachi™", 520, 930);
 
-      // Export canvas to file
       setProgress(30);
       const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.92));
       const imgFile = new File([blob], `textpost_${Date.now()}.jpg`, { type:"image/jpeg" });
       setStep("Uploading...");
       const img_url = await uploadFile(imgFile);
-      setProgress(75);
-      setStep("Posting...");
+      setProgress(75); setStep("Posting...");
       const textGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       await videos.create({
@@ -1141,17 +1163,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url, thumbnail_url: img_url,
-        photo_urls: JSON.stringify([img_url]),
-        is_photo: true,
+        photo_urls: JSON.stringify([img_url]), is_photo: true,
         caption: textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
         likes_count:0, comments_count:0, views_count:0, shares_count:0,
-        is_approved: true, is_archived: false, is_ai_detected: false,
-        is_mature: false, sound_title: "Text Post", sound_artist: "sachi",
-        ...textGeo,
+        is_approved: true, is_archived: false, is_ai_detected: false, is_mature: false,
+        sound_title: "Text Post", sound_artist: "sachi", ...textGeo,
       });
-      setProgress(100);
-      setStep("Posted! 🎉");
+      setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
     } catch(e) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
@@ -1314,96 +1333,130 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         </>)}
 
         {/* ── TEXT POST MODE ── */}
-        {uploadTab === "text" && (
-          <div style={{ marginBottom:16 }}>
-            {/* Big text preview card */}
-            <div style={{
-              borderRadius:20, overflow:"hidden", marginBottom:14,
-              aspectRatio:"9/16", maxHeight:360, display:"flex", alignItems:"center", justifyContent:"center",
-              position:"relative",
-              background: {
-                bg1:"linear-gradient(135deg,#1a1a2e,#16213e)",
-                bg2:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)",
-                bg3:"linear-gradient(135deg,#7C3AED,#A855F7)",
-                bg4:"linear-gradient(135deg,#FF416C,#FF4B2B)",
-                bg5:"linear-gradient(135deg,#F5C842,#FF9500)",
-                bg6:"linear-gradient(135deg,#11998e,#38ef7d)",
-                bg7:"linear-gradient(135deg,#000000,#434343)",
-                bg8:"#ffffff",
-              }[textPostBg],
-            }}>
+        {uploadTab === "text" && (() => {
+          const TEXT_TEMPLATES = [
+            // 0 — Sun vibes: dark bg, white+purple gradient text, emoji top
+            { name:"Sun Vibes", bg:"#1a1a1a", textColor:"#ffffff", accentColor:"#b06bff",
+              font:"900 italic 36px Georgia, serif", emoji:"☀️", emojiTop:true,
+              bgStyle:"#1c1c1c", pattern:"none" },
+            // 1 — Emerald: dark green gradient, teal text
+            { name:"Emerald", bg:"linear-gradient(160deg,#0a2a1a,#0d3d2a)", textColor:"#4fffb0", accentColor:"#4fffb0",
+              font:"800 32px 'Arial Black', sans-serif", emoji:"", emojiTop:false,
+              bgStyle:"linear-gradient(160deg,#0a2a1a,#0d3d2a)", pattern:"none" },
+            // 2 — Blush: light pink, black text, playful
+            { name:"Blush", bg:"#fce4ec", textColor:"#222222", accentColor:"#e91e63",
+              font:"700 30px Georgia, serif", emoji:"🌸", emojiTop:true,
+              bgStyle:"#fce4ec", pattern:"none" },
+            // 3 — Ticket: cream/white, red border, bold black
+            { name:"Ticket", bg:"#fff8f0", textColor:"#cc0000", accentColor:"#cc0000",
+              font:"900 28px 'Courier New', monospace", emoji:"🎟️", emojiTop:false,
+              bgStyle:"#fff8f0", border:"3px dashed #cc0000", pattern:"none" },
+            // 4 — Midnight: pure black, white text, newspaper style
+            { name:"Midnight", bg:"#000000", textColor:"#ffffff", accentColor:"#ffffff",
+              font:"800 30px 'Arial Black', sans-serif", emoji:"🌙", emojiTop:false,
+              bgStyle:"#000000", pattern:"none" },
+            // 5 — Sakura (Sachi branded): deep navy, gold text
+            { name:"Sakura", bg:"linear-gradient(135deg,#0B0C1A,#1a1040)", textColor:"#F5C842", accentColor:"#ff6b9d",
+              font:"900 32px Georgia, serif", emoji:"🌸", emojiTop:true,
+              bgStyle:"linear-gradient(135deg,#0B0C1A,#1a1040)", pattern:"none" },
+            // 6 — Sunset: orange gradient, white bold
+            { name:"Sunset", bg:"linear-gradient(135deg,#FF416C,#FF9500)", textColor:"#ffffff", accentColor:"#ffe066",
+              font:"900 32px 'Arial Black', sans-serif", emoji:"🌅", emojiTop:true,
+              bgStyle:"linear-gradient(135deg,#FF416C,#FF9500)", pattern:"none" },
+            // 7 — Ocean: deep blue gradient, cyan text
+            { name:"Ocean", bg:"linear-gradient(160deg,#0F2027,#2C5364)", textColor:"#00E5FF", accentColor:"#00E5FF",
+              font:"800 30px 'Arial', sans-serif", emoji:"🌊", emojiTop:false,
+              bgStyle:"linear-gradient(160deg,#0F2027,#2C5364)", pattern:"none" },
+          ];
+          const tpl = TEXT_TEMPLATES[textPostTemplate];
+          const words = (textPostContent || "Your text here...").split(" ");
+          // Split into two halves for two-tone effect
+          const half = Math.ceil(words.length / 2);
+          const part1 = words.slice(0, half).join(" ");
+          const part2 = words.slice(half).join(" ");
+
+          return (
+            <div style={{ marginBottom:16 }}>
+              {/* ── Big preview card ── */}
               <div style={{
-                color: textPostBg==="bg8" ? "#000" : "#fff",
-                fontSize: textPostFontSize,
-                fontWeight:800,
-                textAlign: textPostAlign,
+                borderRadius:20, overflow:"hidden", marginBottom:18,
+                aspectRatio:"4/5", maxHeight:400,
+                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                position:"relative",
+                background: tpl.bgStyle,
+                border: tpl.border || "none",
+                boxShadow:"0 8px 40px rgba(0,0,0,0.5)",
                 padding:24,
-                lineHeight:1.4,
-                textShadow: textPostBg==="bg8" ? "none" : "0 2px 12px rgba(0,0,0,0.4)",
-                wordBreak:"break-word",
-                width:"100%",
-                letterSpacing: textPostFontSize > 30 ? "-0.5px" : "0px",
               }}>
-                {textPostContent || <span style={{ opacity:0.3 }}>Your text here...</span>}
+                {/* Top emoji */}
+                {tpl.emoji && tpl.emojiTop && (
+                  <div style={{ fontSize:48, marginBottom:16, filter:"drop-shadow(0 2px 8px rgba(0,0,0,0.4))" }}>{tpl.emoji}</div>
+                )}
+
+                {/* Two-tone text */}
+                <div style={{ textAlign:"center", lineHeight:1.3, padding:"0 8px" }}>
+                  {textPostContent ? (
+                    <>
+                      <span style={{ font:tpl.font, color:"#ffffff", display:"block", marginBottom:4,
+                        textShadow:"0 2px 12px rgba(0,0,0,0.5)", wordBreak:"break-word" }}>{part1}</span>
+                      {part2 && <span style={{ font:tpl.font, color:tpl.accentColor, display:"block",
+                        textShadow:"0 2px 12px rgba(0,0,0,0.3)", wordBreak:"break-word" }}>{part2}</span>}
+                    </>
+                  ) : (
+                    <span style={{ font:tpl.font, color:"rgba(255,255,255,0.3)" }}>What's on your mind?</span>
+                  )}
+                </div>
+
+                {/* Bottom emoji (some templates) */}
+                {tpl.emoji && !tpl.emojiTop && (
+                  <div style={{ fontSize:36, marginTop:16, opacity:0.7 }}>{tpl.emoji}</div>
+                )}
+
+                {/* Sachi watermark */}
+                <div style={{ position:"absolute", bottom:10, right:14,
+                  color:"rgba(255,255,255,0.2)", fontSize:10, fontWeight:700, letterSpacing:1 }}>sachi™</div>
               </div>
-              {/* Sachi watermark */}
-              <div style={{ position:"absolute", bottom:10, right:12, color: textPostBg==="bg8" ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)", fontSize:11, fontWeight:700 }}>sachi™</div>
-            </div>
 
-            {/* Text input */}
-            <textarea
-              autoFocus
-              value={textPostContent}
-              onChange={e => setTextPostContent(e.target.value)}
-              placeholder="What's on your mind?"
-              rows={3}
-              style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"2px solid rgba(255,255,255,0.15)", borderRadius:14, padding:"12px 14px", color:"#fff", fontSize:15, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:12, fontWeight:600 }}
-            />
+              {/* ── Text input ── */}
+              <textarea
+                autoFocus
+                value={textPostContent}
+                onChange={e => setTextPostContent(e.target.value)}
+                placeholder="What's on your mind?"
+                rows={2}
+                style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"2px solid rgba(255,255,255,0.12)",
+                  borderRadius:14, padding:"12px 14px", color:"#fff", fontSize:16, resize:"none", outline:"none",
+                  boxSizing:"border-box", marginBottom:14, fontWeight:600, lineHeight:1.5 }}
+              />
 
-            {/* Background picker */}
-            <div style={{ color:"#aaa", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Background</div>
-            <div style={{ display:"flex", gap:8, marginBottom:14, overflowX:"auto", paddingBottom:4 }}>
-              {[
-                {id:"bg1", bg:"linear-gradient(135deg,#1a1a2e,#16213e)", label:"Dark"},
-                {id:"bg2", bg:"linear-gradient(135deg,#0F2027,#203A43,#2C5364)", label:"Ocean"},
-                {id:"bg3", bg:"linear-gradient(135deg,#7C3AED,#A855F7)", label:"Purple"},
-                {id:"bg4", bg:"linear-gradient(135deg,#FF416C,#FF4B2B)", label:"Red"},
-                {id:"bg5", bg:"linear-gradient(135deg,#F5C842,#FF9500)", label:"Gold"},
-                {id:"bg6", bg:"linear-gradient(135deg,#11998e,#38ef7d)", label:"Green"},
-                {id:"bg7", bg:"linear-gradient(135deg,#000,#434343)", label:"Black"},
-                {id:"bg8", bg:"#fff", label:"White"},
-              ].map(b => (
-                <div key={b.id} onClick={() => setTextPostBg(b.id)}
-                  style={{ flexShrink:0, width:40, height:40, borderRadius:10, background:b.bg,
-                    border: textPostBg===b.id ? "3px solid #F5C842" : "2px solid transparent",
-                    cursor:"pointer", boxShadow: textPostBg===b.id ? "0 0 10px rgba(245,200,66,0.5)" : "none",
-                    transition:"all 0.15s" }} />
-              ))}
-            </div>
+              {/* ── "Select a style" label ── */}
+              <div style={{ color:"#aaa", fontSize:13, fontWeight:600, marginBottom:10 }}>Select a style</div>
 
-            {/* Font size + alignment row */}
-            <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:14 }}>
-              <div style={{ flex:1 }}>
-                <div style={{ color:"#aaa", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Size: {textPostFontSize}px</div>
-                <input type="range" min={16} max={52} step={2} value={textPostFontSize}
-                  onChange={e => setTextPostFontSize(parseInt(e.target.value))}
-                  style={{ width:"100%", accentColor:"#A855F7" }} />
-              </div>
-              <div style={{ display:"flex", gap:6 }}>
-                {[{v:"left",icon:"⬛◻◻"},{v:"center",icon:"◻⬛◻"},{v:"right",icon:"◻◻⬛"}].map(a => (
-                  <button key={a.v} onClick={() => setTextPostAlign(a.v)}
-                    style={{ width:36, height:36, borderRadius:10, border:"none", cursor:"pointer", fontSize:10,
-                      background: textPostAlign===a.v ? "rgba(168,85,247,0.4)" : "rgba(255,255,255,0.07)",
-                      color: textPostAlign===a.v ? "#A855F7" : "#666",
-                      borderColor: textPostAlign===a.v ? "#A855F7" : "transparent",
-                      borderWidth:2, borderStyle:"solid" }}>
-                    {a.v === "left" ? "⬅" : a.v === "center" ? "↔" : "➡"}
-                  </button>
+              {/* ── Template thumbnail strip ── */}
+              <div style={{ display:"flex", gap:10, overflowX:"auto", paddingBottom:6, scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+                {TEXT_TEMPLATES.map((t, i) => (
+                  <div key={i} onClick={() => setTextPostTemplate(i)}
+                    style={{
+                      flexShrink:0, width:80, height:110, borderRadius:14,
+                      background: t.bgStyle,
+                      border: textPostTemplate===i ? "3px solid #F5C842" : "2px solid rgba(255,255,255,0.08)",
+                      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                      cursor:"pointer", padding:6, gap:3,
+                      boxShadow: textPostTemplate===i ? "0 0 18px rgba(245,200,66,0.5)" : "0 2px 8px rgba(0,0,0,0.4)",
+                      transition:"all 0.15s",
+                      transform: textPostTemplate===i ? "scale(1.05)" : "scale(1)",
+                      overflow:"hidden", position:"relative",
+                    }}>
+                    {t.emoji && <div style={{ fontSize:16, lineHeight:1 }}>{t.emoji}</div>}
+                    <div style={{ color:"#ffffff", fontSize:9, fontWeight:800, textAlign:"center", lineHeight:1.2, wordBreak:"break-word", maxWidth:68 }}>Hey happy</div>
+                    <div style={{ color:t.accentColor, fontSize:9, fontWeight:800, textAlign:"center", lineHeight:1.2 }}>Monday</div>
+                    <div style={{ color:"rgba(255,255,255,0.35)", fontSize:7, marginTop:2 }}>{t.name}</div>
+                  </div>
                 ))}
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {uploadTab !== "text" && <>
         {/* Music Picker Button */}
