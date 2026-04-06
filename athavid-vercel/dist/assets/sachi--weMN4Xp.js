@@ -9640,6 +9640,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!nm && wasPlaying) {
       el2.play().catch(() => {
       });
+      setPlaying(true);
+      hideUIAfterDelay(1500);
     }
   };
   const doTogglePlay = () => {
@@ -9890,8 +9892,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 const wasPlaying = !el2.paused;
                 el2.muted = false;
                 setMuted(false);
-                if (wasPlaying) el2.play().catch(() => {
-                });
+                if (wasPlaying) {
+                  el2.play().catch(() => {
+                  });
+                  setPlaying(true);
+                  hideUIAfterDelay(1500);
+                }
               }
             },
             onClick: (e) => {
@@ -9901,8 +9907,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 const wasPlaying = !el2.paused;
                 el2.muted = false;
                 setMuted(false);
-                if (wasPlaying) el2.play().catch(() => {
-                });
+                if (wasPlaying) {
+                  el2.play().catch(() => {
+                  });
+                  setPlaying(true);
+                  hideUIAfterDelay(1500);
+                }
               }
             },
             style: {
