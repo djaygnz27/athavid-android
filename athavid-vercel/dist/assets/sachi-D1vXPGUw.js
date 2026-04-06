@@ -9817,13 +9817,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       setShowUI(true);
     }
   };
+  const likeLockedRef = React.useRef(false);
   const doLike = () => {
     if (!currentUser) {
       onNeedAuth();
       return;
     }
-    setLiked((l2) => !l2);
-    onLike(video.id, liked ? -1 : 1);
+    if (likeLockedRef.current) return;
+    likeLockedRef.current = true;
+    setTimeout(() => {
+      likeLockedRef.current = false;
+    }, 500);
+    setLiked((prev) => {
+      const newLiked = !prev;
+      onLike(video.id, newLiked ? 1 : -1);
+      return newLiked;
+    });
   };
   const doFollow = async () => {
     var _a2;
