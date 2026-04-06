@@ -9633,9 +9633,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const doMute = () => {
     const el2 = videoRef.current;
     if (!el2) return;
+    const wasPlaying = !el2.paused;
     const nm = !muted;
-    setMuted(nm);
     el2.muted = nm;
+    setMuted(nm);
+    if (!nm && wasPlaying) {
+      el2.play().catch(() => {
+      });
+    }
   };
   const doTogglePlay = () => {
     const el2 = videoRef.current;
@@ -9880,16 +9885,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {
             onTouchStart: (e) => {
               e.stopPropagation();
-              if (videoRef.current) {
-                videoRef.current.muted = false;
+              const el2 = videoRef.current;
+              if (el2) {
+                const wasPlaying = !el2.paused;
+                el2.muted = false;
                 setMuted(false);
+                if (wasPlaying) el2.play().catch(() => {
+                });
               }
             },
             onClick: (e) => {
               e.stopPropagation();
-              if (videoRef.current) {
-                videoRef.current.muted = false;
+              const el2 = videoRef.current;
+              if (el2) {
+                const wasPlaying = !el2.paused;
+                el2.muted = false;
                 setMuted(false);
+                if (wasPlaying) el2.play().catch(() => {
+                });
               }
             },
             style: {

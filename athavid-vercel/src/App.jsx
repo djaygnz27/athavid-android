@@ -1300,11 +1300,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const doMute = () => {
     const el = videoRef.current;
     if (!el) return;
+    const wasPlaying = !el.paused;
     const nm = !muted;
-    setMuted(nm);
     el.muted = nm;
-    // Do NOT auto-play on mute/unmute — only change the mute state
-    // If video was paused, keep it paused; if playing, keep it playing
+    setMuted(nm);
+    // If video was already playing and we're unmuting, browser needs .play()
+    // at this exact user-gesture moment to allow audio — but only resume if
+    // it was already playing. If it was paused, do nothing extra.
+    if (!nm && wasPlaying) {
+      el.play().catch(() => {});
+    }
   };
 
 
@@ -1486,8 +1491,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               loop playsInline
               style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
             {muted && (
-              <div onTouchStart={e=>{e.stopPropagation(); if(videoRef.current){videoRef.current.muted=false; setMuted(false);}}}
-                onClick={e=>{e.stopPropagation(); if(videoRef.current){videoRef.current.muted=false; setMuted(false);}}}
+              <div onTouchStart={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying) el.play().catch(()=>{}); }}}
+                onClick={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying) el.play().catch(()=>{}); }}}
                 style={{ position:"absolute", bottom:140, left:"50%", transform:"translateX(-50%)", zIndex:200,
                   background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
                   padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
