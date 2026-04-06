@@ -1417,60 +1417,73 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div ref={photoCarouselRef} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000" }}>
-          {/* Single photo shown at a time */}
-          <img
-            src={resolveMediaUrl(photoUrls[photoIdx])}
-            style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none" }}
-          />
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column" }}>
+          {/* Photo takes up most of the space */}
+          <div style={{ flex:1, position:"relative", overflow:"hidden" }}>
+            <img
+              src={resolveMediaUrl(photoUrls[photoIdx])}
+              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none" }}
+            />
+            {/* Counter badge top-left */}
+            {photoUrls.length > 1 && (
+              <div style={{ position:"absolute", top:12, left:12, background:"rgba(0,0,0,0.7)",
+                borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:700,
+                color:"#fff", zIndex:50, pointerEvents:"none", letterSpacing:0.5 }}>
+                {photoIdx+1} / {photoUrls.length}
+              </div>
+            )}
+          </div>
 
-          {/* ── LEFT TAP ZONE — 40% of screen, avoid right icon stack ── */}
-          {photoIdx > 0 && (
-            <div
-              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p - 1); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
-              style={{ position:"absolute", left:0, top:"15%", width:"40%", height:"65%", zIndex:150, cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:10 }}>
-              <div style={{ background:"rgba(0,0,0,0.65)", borderRadius:"50%", width:48, height:48,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:26, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 16px rgba(0,0,0,0.6)" }}>‹</div>
-            </div>
-          )}
-
-          {/* ── RIGHT TAP ZONE — 40% of screen, left-aligned so icons don't block ── */}
-          {photoIdx < photoUrls.length - 1 && (
-            <div
-              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p + 1); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
-              style={{ position:"absolute", left:"50%", top:"15%", width:"35%", height:"65%", zIndex:150, cursor:"pointer",
-                display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:10 }}>
-              <div style={{ background:"rgba(0,0,0,0.65)", borderRadius:"50%", width:48, height:48,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:26, color:"#fff", fontWeight:900, lineHeight:1, boxShadow:"0 2px 16px rgba(0,0,0,0.6)" }}>›</div>
-            </div>
-          )}
-
-          {/* Dot indicators */}
+          {/* ── BELOW-PHOTO NAV BAR — arrows + dots — sits just above bottom nav ── */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)",
-              display:"flex", gap:6, zIndex:200, pointerEvents:"none" }}>
-              {photoUrls.map((_,i) => (
-                <div key={i} style={{
-                  width: i===photoIdx ? 22 : 7, height:7, borderRadius:99,
-                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
-                  transition:"all 0.25s ease",
-                  boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.7)" : "none"
-                }} />
-              ))}
-            </div>
-          )}
+            <div style={{
+              position:"absolute", bottom:75, left:0, right:0,
+              display:"flex", alignItems:"center", justifyContent:"space-between",
+              padding:"8px 16px", zIndex:300,
+            }}>
+              {/* LEFT ARROW */}
+              <button
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                disabled={photoIdx === 0}
+                style={{
+                  background: photoIdx === 0 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
+                  border: photoIdx === 0 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
+                  borderRadius:14, width:56, height:48,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, color: photoIdx === 0 ? "rgba(255,255,255,0.2)" : "#fff",
+                  fontWeight:900, cursor: photoIdx === 0 ? "default" : "pointer",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
+                  backdropFilter:"blur(8px)", transition:"all 0.2s"
+                }}>‹</button>
 
-          {/* Counter badge top-left (moved away from right icons) */}
-          {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", top:60, left:16, background:"rgba(0,0,0,0.7)",
-              borderRadius:20, padding:"4px 14px", fontSize:13, fontWeight:700,
-              color:"#fff", zIndex:200, pointerEvents:"none", letterSpacing:0.5 }}>
-              {photoIdx+1} / {photoUrls.length}
+              {/* Dot indicators */}
+              <div style={{ display:"flex", gap:7, alignItems:"center" }}>
+                {photoUrls.map((_,i) => (
+                  <div key={i} style={{
+                    width: i===photoIdx ? 22 : 8, height:8, borderRadius:99,
+                    background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
+                    transition:"all 0.25s ease",
+                    boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.8)" : "none"
+                  }} />
+                ))}
+              </div>
+
+              {/* RIGHT ARROW */}
+              <button
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                disabled={photoIdx === photoUrls.length - 1}
+                style={{
+                  background: photoIdx === photoUrls.length-1 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
+                  border: photoIdx === photoUrls.length-1 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
+                  borderRadius:14, width:56, height:48,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, color: photoIdx === photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
+                  fontWeight:900, cursor: photoIdx === photoUrls.length-1 ? "default" : "pointer",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
+                  backdropFilter:"blur(8px)", transition:"all 0.2s"
+                }}>›</button>
             </div>
           )}
         </div>
