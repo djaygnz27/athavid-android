@@ -9,7 +9,7 @@ import Privacy from "./Privacy.jsx";
 function formatDate(d) {
   if (!d) return "";
   const dt = new Date(d);
-  return dt.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  return dt.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric", timeZone:"America/New_York" });
 }
 
 function formatCount(n) {
@@ -330,6 +330,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
       } catch(_) {}
 
       // Save to DB
+      const liveGeo = await getPostLocation();
       await videos.create({
         user_id: currentUser.id,
         username: currentUser.username || currentUser.email?.split("@")[0] || "user",
@@ -342,6 +343,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
         duration_seconds: elapsed,
+        ...liveGeo,
       });
 
       setPhase("done");
@@ -828,6 +830,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setProgress(10 + Math.round(((i+1)/photos.length)*70));
       }
       setProgress(85); setStep("Saving to feed...");
+      const photoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
       await videos.create({
@@ -842,6 +845,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        ...photoGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -886,6 +890,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
       setProgress(80);
       setStep("Saving to feed...");
+      const videoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
       await videos.create({
@@ -896,6 +901,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        ...videoGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -1375,11 +1381,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             const t = e.touches[0];
             e.currentTarget._touchStartX = t.clientX;
             e.currentTarget._touchStartY = t.clientY;
+            e.currentTarget._touchMoved = false;
+          }}
+          onTouchMove={e => {
+            const dx = Math.abs(e.touches[0].clientX - (e.currentTarget._touchStartX || 0));
+            const dy = Math.abs(e.touches[0].clientY - (e.currentTarget._touchStartY || 0));
+            // If clearly horizontal, prevent vertical scroll from stealing the gesture
+            if (dx > dy && dx > 10) {
+              e.stopPropagation();
+              e.currentTarget._touchMoved = true;
+            }
           }}
           onTouchEnd={e => {
             const dx = e.changedTouches[0].clientX - (e.currentTarget._touchStartX || 0);
             const dy = Math.abs(e.changedTouches[0].clientY - (e.currentTarget._touchStartY || 0));
-            if (Math.abs(dx) > 40 && Math.abs(dx) > dy) {
+            if (Math.abs(dx) > 30 && Math.abs(dx) > dy) {
+              e.stopPropagation();
               if (dx < 0) setPhotoIdx(p => Math.min(p+1, photoUrls.length-1));
               else        setPhotoIdx(p => Math.max(p-1, 0));
             }
@@ -1453,21 +1470,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* Tap hint removed — content-first UI */}
 
-      {/* ── TAP: toggle UI visibility on images, toggle play/pause on videos ── */}
-      <div onClick={tap(() => {
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
-        if (isImg || !(video.video_url)) {
-          setShowUI(v => !v);
-          if (!showUI) setShowFullCaption(true);
-        } else {
-          // Always toggle play/pause on tap (TikTok-style)
-          doTogglePlay();
-        }
-      })}
-        style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+      {/* ── TAP: toggle UI visibility on images/photos, toggle play/pause on videos ── */}
+      {!photoUrls && (
+        <div onClick={tap(() => {
+          const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+          if (isImg || !(video.video_url)) {
+            setShowUI(v => !v);
+            if (!showUI) setShowFullCaption(true);
+          } else {
+            // Always toggle play/pause on tap (TikTok-style)
+            doTogglePlay();
+          }
+        })}
+          style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+      )}
 
-      {/* ── PLAY/PAUSE INDICATOR ── */}
-      {!playing && (
+      {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
+      {!playing && !photoUrls && (
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
           <div onClick={tap(doTogglePlay)} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:64, height:64,
             display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:26 }}>▶</div>
@@ -1518,7 +1537,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:8,
             background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px", width:"fit-content" }}>
             <span style={{ fontSize:12 }}>📅</span>
-            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>{formatDate(video.created_date)}</span>
+            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
+              {formatDate(video.created_date)}
+              {video.post_country && (
+                <span style={{ marginLeft:6, opacity:0.9 }}>
+                  {countryFlag(video.post_country)}
+                  {video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`}
+                </span>
+              )}
+            </span>
           </div>
         )}
       </div>
@@ -1773,7 +1800,7 @@ const AVATAR_STYLES = [
 
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = useState(false);
-  // avatar picker uses color grid
+  const [activeStyle, setActiveStyle] = useState(0);
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
@@ -1823,21 +1850,25 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
           ))}
         </div>
 
-        {/* Avatar grid — scrollable */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, maxHeight:300, overflowY:"auto", paddingBottom:4 }}>
-          {avatarUrls.map((url, i) => (
-            <button key={i}
-              onClick={() => onSelect(url)}
-              style={{ background: currentAvatar===url ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.06)",
-                border: currentAvatar===url ? "3px solid #6c63ff" : "3px solid rgba(255,255,255,0.08)",
-                borderRadius:16, width:64, height:64, margin:"0 auto", padding:4,
-                cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"border 0.2s, transform 0.15s, box-shadow 0.2s",
-                boxShadow: currentAvatar===url ? "0 0 12px rgba(108,99,255,0.5)" : "none",
-                transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
-              <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block", borderRadius:10 }} loading="lazy" />
-            </button>
-          ))}
+        {/* Avatar grid — scrollable, uses active style */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, maxHeight:260, overflowY:"auto", paddingBottom:4 }}>
+          {AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
+            const style = AVATAR_STYLES[activeStyle].style;
+            const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
+            return (
+              <button key={i}
+                onClick={() => onSelect(url)}
+                style={{ background: currentAvatar===url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
+                  border: currentAvatar===url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
+                  borderRadius:16, width:64, height:64, margin:"0 auto", padding:4,
+                  cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"border 0.2s, transform 0.15s, box-shadow 0.2s",
+                  boxShadow: currentAvatar===url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
+                  transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
+                <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block", borderRadius:10, background:"rgba(255,255,255,0.05)" }} loading="lazy" />
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -2740,7 +2771,16 @@ function App() {
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
-  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    // Pre-load from localStorage to avoid flash on reload
+    try {
+      const last = localStorage.getItem('avatar_last');
+      if (last) return last;
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('avatar_'));
+      if (keys.length > 0) return localStorage.getItem(keys[0]) || null;
+    } catch(e) {}
+    return null;
+  });
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileName, setEditProfileName] = useState('');
@@ -2774,6 +2814,7 @@ function App() {
           if (match && match.avatar_url) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
+            localStorage.setItem(`avatar_last`, match.avatar_url);
           } else if (currentUser.avatar_url) {
             setAvatarUrl(currentUser.avatar_url);
           } else {
@@ -2812,26 +2853,28 @@ function App() {
     try {
       const data = await videos.list();
       const raw = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const activeUser = user || currentUser;
+      // Always sort newest-first first
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
+      const activeUser = user || currentUser;
+      // Only apply interest ranking if user exists; otherwise pure chronological (newest on top)
       const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
       setVideoList(ranked);
+      // Scroll to top after new list is set
+      requestAnimationFrame(() => {
+        const el = feedContainerRef.current || window.__sachiEl;
+        if (el) el.scrollTo({ top: 0, behavior: 'instant' });
+      });
     } catch { setVideoList([]); }
     setLoading(false);
   };
 
   const goHome = () => {
     setActiveTab("feed");
-    setVideoList([]);
-    setFeedKey(k => k + 1);
-    setTimeout(() => {
-      loadVideos();
-      // Force scroll to top after videos load
-      setTimeout(() => {
-        const el = feedContainerRef.current || window.__sachiEl;
-        if (el) { el.scrollTop = 0; el.scrollTo({ top: 0, behavior: 'instant' }); }
-      }, 200);
-    }, 80);
+    // Scroll to top immediately (keep existing videos visible while refreshing)
+    const el = feedContainerRef.current || window.__sachiEl;
+    if (el) { el.scrollTo({ top: 0, behavior: 'instant' }); }
+    // Then reload fresh data
+    loadVideos();
   };
 
   useEffect(() => {
@@ -2998,7 +3041,14 @@ function App() {
         <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
           {!currentUser ? (
             <div style={{ textAlign:"center", padding:60 }}>
-              <div style={{ fontSize:56, marginBottom:16 }}>👤</div>
+              <div style={{ position:"relative", display:"inline-block", cursor:"pointer", marginBottom:16 }}
+                onClick={() => setShowAuth(true)}>
+                <div style={{ width:90, height:90, borderRadius:"50%", background:"rgba(255,255,255,0.08)",
+                  border:"3px solid rgba(245,200,66,0.4)", display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:44 }}>👤</div>
+                <div style={{ position:"absolute", bottom:2, right:2, background:"#F5C842", borderRadius:"50%", width:26, height:26,
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0B0C1A" }}>📷</div>
+              </div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:20, marginBottom:8 }}>You're not logged in</div>
               <div style={{ color:"#666", fontSize:14, marginBottom:24 }}>Sign up to post and build your profile</div>
               <button onClick={() => setShowAuth(true)}
@@ -3353,21 +3403,27 @@ function App() {
               await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
             }
           } catch(e) { console.error("AthaVidUser avatar update failed:", e); }
-          // 3. Update avatar on all user's videos (with token) + refresh feed instantly
+          // 3. Update avatar on all user's videos (AthaVidVideo + SachiVideo) + refresh feed instantly
           try {
-            // Fetch by user_id AND created_by to catch all videos
-            const [vidsData1, vidsData2] = await Promise.allSettled([
+            // Fetch from both entities by user_id AND created_by
+            const [vidsA1, vidsA2, vidsS1, vidsS2] = await Promise.allSettled([
               request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`)
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`),
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?user_id=${currentUser.id}&limit=200`),
+              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`)
             ]);
-            const list1 = vidsData1.status === 'fulfilled' ? (Array.isArray(vidsData1.value) ? vidsData1.value : (vidsData1.value?.items || [])) : [];
-            const list2 = vidsData2.status === 'fulfilled' ? (Array.isArray(vidsData2.value) ? vidsData2.value : (vidsData2.value?.items || [])) : [];
-            // Deduplicate by id
-            const seen = new Set();
-            const myVids = [...list1, ...list2].filter(v => { if (seen.has(v.id)) return false; seen.add(v.id); return true; });
-            await Promise.all(myVids.map(v =>
-              request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })
-            ));
+            const flatten = (r) => r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : (r.value?.items || [])) : [];
+            // AthaVidVideo deduped
+            const seenA = new Set();
+            const myAthaVids = [...flatten(vidsA1), ...flatten(vidsA2)].filter(v => { if (seenA.has(v.id)) return false; seenA.add(v.id); return true; });
+            // SachiVideo deduped
+            const seenS = new Set();
+            const mySachiVids = [...flatten(vidsS1), ...flatten(vidsS2)].filter(v => { if (seenS.has(v.id)) return false; seenS.add(v.id); return true; });
+            await Promise.all([
+              ...myAthaVids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })),
+              ...mySachiVids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url }))
+            ]);
+            // Update feed in memory instantly
             setVideoList(vs => vs.map(v =>
               (v.user_id === currentUser.id || v.created_by === currentUser.id)
                 ? { ...v, avatar_url: url }
@@ -3382,4 +3438,4 @@ function App() {
 }
 
 export default App;
-// v1775415323
+// v1775417720513

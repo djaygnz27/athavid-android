@@ -10201,7 +10201,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
       {
-        style: { width: "100%", height: "100%", position: "relative", overflow: "hidden" },
+        style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", touchAction: "pan-x" },
         onTouchStart: (e) => {
           const t2 = e.touches[0];
           e.currentTarget._touchStartX = t2.clientX;
@@ -10213,6 +10213,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           const dy = Math.abs(e.touches[0].clientY - (e.currentTarget._touchStartY || 0));
           if (dx > dy && dx > 10) {
             e.stopPropagation();
+            e.preventDefault && e.preventDefault();
             e.currentTarget._touchMoved = true;
           }
         },
@@ -12306,7 +12307,7 @@ function App() {
         el2.scrollTop = 0;
         window.__sachiEl.scrollTop = 0;
       }
-    }, style: { height: "100svh", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate" }, children: [
+    }, style: { height: "100svh", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y" }, children: [
       feedTab === "following" && followingIds.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         height: "100svh",
         display: "flex",
@@ -12643,10 +12644,14 @@ function App() {
         "button",
         {
           onClick: () => requireAuth(() => setShowUpload(true)),
-          style: { padding: "0 4px 0", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent" },
+          style: { flex: 1, minWidth: 52, padding: "8px 10px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg,#F5C842,#FF9500)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(245,200,66,0.5)", marginTop: -16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 28, fontWeight: 300, color: "#0B0C1A", lineHeight: 1 }, children: "+" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#4A4A6A", fontWeight: 400, letterSpacing: 0.3, marginTop: 2 }, children: "Post" })
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: "#F5C842", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "10" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "12", y1: "8", x2: "12", y2: "16" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8", y1: "12", x2: "16", y2: "12" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#F5C842", fontWeight: 600, letterSpacing: 0.3 }, children: "Post" })
           ]
         }
       ),
