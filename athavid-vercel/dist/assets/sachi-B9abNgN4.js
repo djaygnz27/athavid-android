@@ -11298,19 +11298,48 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
     ] }) })
   ] });
 }
+function Toast({ msg, type = "success" }) {
+  if (!msg) return null;
+  const bg2 = type === "error" ? "linear-gradient(135deg,#c62828,#b71c1c)" : type === "live" ? "linear-gradient(135deg,#e53935,#b71c1c)" : "linear-gradient(135deg,#2e7d32,#1b5e20)";
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", zIndex: 9999, background: bg2, color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 24px", borderRadius: 30, boxShadow: "0 6px 28px rgba(0,0,0,0.5)", whiteSpace: "nowrap", pointerEvents: "none" }, children: msg });
+}
+const PODCAST_COVER_COLORS = [
+  { bg: "linear-gradient(135deg,#6c3cf7,#4527a0)", emoji: "🎙️" },
+  { bg: "linear-gradient(135deg,#e53935,#b71c1c)", emoji: "🔥" },
+  { bg: "linear-gradient(135deg,#0288d1,#01579b)", emoji: "🌊" },
+  { bg: "linear-gradient(135deg,#2e7d32,#1b5e20)", emoji: "🌿" },
+  { bg: "linear-gradient(135deg,#f57c00,#e65100)", emoji: "⚡" },
+  { bg: "linear-gradient(135deg,#ad1457,#880e4f)", emoji: "💫" },
+  { bg: "linear-gradient(135deg,#00838f,#006064)", emoji: "🎵" },
+  { bg: "linear-gradient(135deg,#4e342e,#3e2723)", emoji: "☕" }
+];
 function PodcastPage({ currentUser, onNeedAuth }) {
+  var _a;
   const CATEGORIES = ["All", "News & Politics", "Business", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Education"];
   const [podcasts, setPodcasts] = reactExports.useState([]);
+  const [myShows, setMyShows] = reactExports.useState([]);
   const [loadingPodcasts, setLoadingPodcasts] = reactExports.useState(true);
   const [selectedCat, setSelectedCat] = reactExports.useState("All");
   const [selectedPodcast, setSelectedPodcast] = reactExports.useState(null);
   const [showRegister, setShowRegister] = reactExports.useState(false);
-  const [registerForm, setRegisterForm] = reactExports.useState({ title: "", host_name: "", description: "", category: "Business", cover_image_url: "" });
+  const [registerForm, setRegisterForm] = reactExports.useState({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
   const [registering, setRegistering] = reactExports.useState(false);
   const [registerDone, setRegisterDone] = reactExports.useState(false);
+  const [toast, setToast] = reactExports.useState(null);
+  const [goingLive, setGoingLive] = reactExports.useState(false);
+  const [endingLive, setEndingLive] = reactExports.useState(false);
+  const [editingStream, setEditingStream] = reactExports.useState(false);
+  const [newStreamUrl, setNewStreamUrl] = reactExports.useState("");
+  const showToast = (msg, type = "success", ms = 3e3) => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), ms);
+  };
   reactExports.useEffect(() => {
     loadPodcasts();
   }, []);
+  reactExports.useEffect(() => {
+    if (currentUser) loadMyShows();
+  }, [currentUser]);
   const loadPodcasts = async () => {
     setLoadingPodcasts(true);
     try {
@@ -11324,209 +11353,362 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       setLoadingPodcasts(false);
     }
   };
+  const loadMyShows = async () => {
+    if (!currentUser) return;
+    try {
+      const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
+      const data = await request("GET", `/apps/${APP_ID2}/entities/SachiPodcast`);
+      const all = Array.isArray(data) ? data : data.records || data.items || [];
+      const mine = all.filter(
+        (p2) => {
+          var _a2;
+          return p2.host_user_id === currentUser.id || p2.host_username === (currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0])) || p2.created_by === currentUser.email || currentUser.email === "jaygnz27@gmail.com" || currentUser.email === "lasanjaya@gmail.com";
+        }
+      );
+      setMyShows(mine);
+    } catch (e) {
+      console.error("loadMyShows failed:", e);
+    }
+  };
   const filtered = selectedCat === "All" ? podcasts : podcasts.filter((p2) => p2.category === selectedCat);
   const livePodcasts = filtered.filter((p2) => p2.is_live);
   const regularPodcasts = filtered.filter((p2) => !p2.is_live);
   const handleRegister = async () => {
-    var _a;
+    var _a2;
     if (!registerForm.title || !registerForm.host_name) return;
     setRegistering(true);
     try {
+      const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
       await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
-        ...registerForm,
+        title: registerForm.title,
+        host_name: registerForm.host_name,
+        description: registerForm.description,
+        category: registerForm.category,
+        live_stream_url: registerForm.live_stream_url || "",
+        cover_color: cover.bg,
+        cover_emoji: cover.emoji,
         status: "Pending",
         is_live: false,
         listener_count: 0,
         episode_count: 0,
         follower_count: 0,
         host_user_id: (currentUser == null ? void 0 : currentUser.id) || "",
-        host_username: (currentUser == null ? void 0 : currentUser.full_name) || ((_a = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a.split("@")[0]) || ""
+        host_username: (currentUser == null ? void 0 : currentUser.full_name) || ((_a2 = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a2.split("@")[0]) || ""
       });
       setRegisterDone(true);
-      setShowRegister(false);
-      setRegisterForm({ title: "", host_name: "", description: "", category: "Business", cover_image_url: "" });
+      await loadMyShows();
+      setRegisterForm({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
     } catch (e) {
       console.error(e);
+      showToast("Something went wrong. Please try again.", "error");
     }
     setRegistering(false);
   };
   if (selectedPodcast) {
-    const isHost = currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === "jaygnz27@gmail.com");
+    const isHost = currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === selectedPodcast.created_by || currentUser.full_name && currentUser.full_name === selectedPodcast.host_username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) === selectedPodcast.host_username || currentUser.email === "jaygnz27@gmail.com" || currentUser.email === "lasanjaya@gmail.com");
+    const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
+    const coverEmoji = selectedPodcast.cover_emoji || "🎙️";
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", height: 260, background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }, children: [
+      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", height: 240, background: coverBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
             onClick: () => setSelectedPodcast(null),
-            style: { position: "absolute", top: 16, left: 16, background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+            style: { position: "absolute", top: 16, left: 16, background: "rgba(0,0,0,0.3)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
             children: "←"
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 56, marginBottom: 12 }, children: "🎙️" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20, textAlign: "center", padding: "0 20px" }, children: selectedPodcast.title }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginTop: 4 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 60, marginBottom: 10 }, children: coverEmoji }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20, textAlign: "center", padding: "0 60px", textShadow: "0 2px 8px rgba(0,0,0,0.5)" }, children: selectedPodcast.title }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: 4 }, children: [
           "by ",
           selectedPodcast.host_name
         ] }),
-        selectedPodcast.is_live && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 16, right: 16, background: "#e53935", borderRadius: 20, padding: "4px 12px", display: "flex", alignItems: "center", gap: 6 }, children: [
+        selectedPodcast.is_live && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 16, right: 16, background: "#e53935", borderRadius: 20, padding: "5px 12px", display: "flex", alignItems: "center", gap: 6, animation: "pulse 1.5s infinite" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 7, height: 7, borderRadius: "50%", background: "#fff" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 12 }, children: "LIVE" })
-        ] })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 12 }, children: "LIVE" })
+        ] }),
+        selectedPodcast.status === "Pending" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 16, right: 16, background: "rgba(245,200,66,0.9)", borderRadius: 20, padding: "5px 12px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#000", fontWeight: 800, fontSize: 11 }, children: "⏳ PENDING REVIEW" }) })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px 20px 40px" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 24, marginBottom: 20 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18 }, children: selectedPodcast.follower_count || 0 }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: "Followers" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18 }, children: selectedPodcast.episode_count || 0 }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: "Episodes" })
-          ] }),
-          selectedPodcast.is_live && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#e53935", fontWeight: 800, fontSize: 18 }, children: selectedPodcast.listener_count || 0 }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: "Listening" })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px 20px 100px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 0, marginBottom: 20, background: "rgba(255,255,255,0.04)", borderRadius: 16, overflow: "hidden" }, children: [
+          { val: selectedPodcast.follower_count || 0, label: "Followers" },
+          { val: selectedPodcast.episode_count || 0, label: "Episodes" },
+          { val: selectedPodcast.is_live ? selectedPodcast.listener_count || 0 : "—", label: "Listening", red: selectedPodcast.is_live }
+        ].map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, textAlign: "center", padding: "14px 0", borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.06)" : "none" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: s.red ? "#e53935" : "#fff", fontWeight: 800, fontSize: 18 }, children: s.val }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2 }, children: s.label })
+        ] }, i)) }),
+        selectedPodcast.description ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 16, marginBottom: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 1.6 }, children: selectedPodcast.description }) }) : null,
+        isHost && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ Host Controls" }),
+          selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(229,57,53,0.08)", border: "1px solid rgba(229,57,53,0.3)", borderRadius: 14, padding: 14, marginBottom: 12, textAlign: "center" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#e53935", fontWeight: 700, fontSize: 13 }, children: "🔴 You are currently LIVE" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 4 }, children: [
+                selectedPodcast.listener_count || 0,
+                " listeners tuned in"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: async () => {
+                  if (endingLive) return;
+                  setEndingLive(true);
+                  try {
+                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
+                    setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
+                    setPodcasts((ps) => ps.map((p2) => p2.id === selectedPodcast.id ? { ...p2, is_live: false } : p2));
+                    showToast("✅ Live session ended successfully", "success");
+                  } catch (e) {
+                    showToast("Failed to end session. Try again.", "error");
+                  }
+                  setEndingLive(false);
+                },
+                style: { width: "100%", padding: "15px 0", background: endingLive ? "rgba(229,57,53,0.3)" : "rgba(229,57,53,0.12)", border: "2px solid #e53935", borderRadius: 16, color: "#e53935", fontWeight: 800, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 },
+                children: endingLive ? "Ending..." : "⏹️ End Live Session"
+              }
+            )
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 6 }, children: [
+                "🔗 Stream URL ",
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.25)" }, children: "(YouTube Live, Twitch, etc.)" })
+              ] }),
+              editingStream ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    value: newStreamUrl,
+                    onChange: (e) => setNewStreamUrl(e.target.value),
+                    placeholder: "https://youtube.com/live/...",
+                    style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none" }
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+                  try {
+                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
+                    setEditingStream(false);
+                    showToast("✅ Stream URL saved!", "success");
+                  } catch (e) {
+                    showToast("Failed to save URL", "error");
+                  }
+                }, style: { background: "#6c3cf7", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }, children: "Save" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingStream(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontSize: 13, cursor: "pointer" }, children: "✕" })
+              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }, children: selectedPodcast.live_stream_url || "No stream URL set yet" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: () => {
+                      setNewStreamUrl(selectedPodcast.live_stream_url || "");
+                      setEditingStream(true);
+                    },
+                    style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 8, padding: "5px 12px", color: "#a78bfa", fontSize: 12, cursor: "pointer", fontWeight: 600, flexShrink: 0 },
+                    children: selectedPodcast.live_stream_url ? "Edit" : "Add URL"
+                  }
+                )
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: async () => {
+                  if (goingLive) return;
+                  setGoingLive(true);
+                  try {
+                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
+                    await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "" })
+                    }).catch(() => {
+                    });
+                    setSelectedPodcast((p2) => ({ ...p2, is_live: true }));
+                    setPodcasts((ps) => ps.map((p2) => p2.id === selectedPodcast.id ? { ...p2, is_live: true } : p2));
+                    showToast("🔴 You are LIVE! 11 users notified.", "live");
+                  } catch (e) {
+                    showToast("Could not go live. Try again.", "error");
+                  }
+                  setGoingLive(false);
+                },
+                style: { width: "100%", padding: "16px 0", background: goingLive ? "rgba(229,57,53,0.4)" : "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "0 4px 24px rgba(229,57,53,0.35)" },
+                children: goingLive ? "Going Live..." : "🔴 Go Live Now"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tapping Go Live notifies ALL Sachi users instantly via email" })
           ] })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 16, marginBottom: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 1.6 }, children: selectedPodcast.description || "No description yet." }) }),
-        isHost && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
-          selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: async () => {
-                if (!confirm("End your live session?")) return;
-                await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
-                setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
-                alert("Live session ended.");
-              },
-              style: { width: "100%", padding: "16px 0", background: "rgba(229,57,53,0.15)", border: "2px solid #e53935", borderRadius: 16, color: "#e53935", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 8 },
-              children: "⏹️ End Live Session"
-            }
-          ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: async () => {
-                if (!confirm("Go live now? All Sachi users will be notified instantly!")) return;
-                await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
-                await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "" })
-                });
-                setSelectedPodcast((p2) => ({ ...p2, is_live: true }));
-                alert("🔴 You are LIVE! Notifications sent to all Sachi users.");
-              },
-              style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 8, boxShadow: "0 4px 20px rgba(229,57,53,0.4)" },
-              children: "🔴 Go Live Now"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center" }, children: selectedPodcast.is_live ? "You are currently live" : "Tapping Go Live notifies ALL Sachi users instantly" })
-        ] }),
-        !isHost && (selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "button",
+        !isHost && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "a",
           {
-            onClick: () => {
-              if (!currentUser) {
-                onNeedAuth();
-                return;
-              }
-              alert("Tuning in! Live streaming player coming soon.");
-            },
-            style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "🎧" }),
-              " Listen Live Now"
-            ]
+            href: selectedPodcast.live_stream_url || "https://sachistream.com",
+            target: "_blank",
+            rel: "noopener noreferrer",
+            style: { display: "flex", width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 10, textDecoration: "none", boxShadow: "0 4px 20px rgba(229,57,53,0.35)", boxSizing: "border-box", marginBottom: 12 },
+            children: "🎧 Tune In Now"
           }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => {
-              if (!currentUser) {
-                onNeedAuth();
-                return;
-              }
-              alert("Following " + selectedPodcast.title + "! You will be notified when they go live.");
-            },
+            onClick: () => showToast("🔔 You will be notified when " + selectedPodcast.title + " goes live!", "success"),
             style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "🔔" }),
-              " Follow & Get Notified"
-            ]
+            children: "🔔 Follow & Get Notified"
           }
-        )),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
+        ) }),
+        !isHost && !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 16 }, children: "Sign in to Follow" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
       ] })
     ] });
   }
   if (showRegister) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px", paddingTop: "calc(env(safe-area-inset-top,0px) + 20px)" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowRegister(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", fontSize: 18, cursor: "pointer" }, children: "←" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "🎙️ Register Your Podcast" })
-      ] }),
-      registerDone ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64, marginBottom: 16 }, children: "🎉" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, marginBottom: 8 }, children: "You are on the list!" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 14, marginBottom: 24 }, children: "We will review your podcast within 24 hours. Welcome to Sachi Podcasts!" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          setRegisterDone(false);
-          setShowRegister(false);
-        }, style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "12px 28px", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Back to Podcasts" })
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 16 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "linear-gradient(135deg,rgba(108,60,247,0.15),rgba(69,39,160,0.1))", border: "1px solid rgba(108,60,247,0.3)", borderRadius: 16, padding: 16 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a78bfa", fontWeight: 700, fontSize: 14, marginBottom: 4 }, children: "Why podcast on Sachi?" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.5 }, children: "Your live sessions auto-clip to the For You feed. New listeners discover you every day without extra work." })
+    const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
+      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px", paddingTop: "calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom: 60 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowRegister(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 20, cursor: "pointer", flexShrink: 0 }, children: "←" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "🎙️ Register Your Podcast" })
         ] }),
-        [{ label: "Podcast Title *", key: "title", placeholder: "e.g. The Daily Grind" }, { label: "Host Name *", key: "host_name", placeholder: "Your name" }, { label: "Cover Image URL", key: "cover_image_url", placeholder: "https://..." }].map((f2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: f2.label }),
+        registerDone ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "40px 20px" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 72, marginBottom: 16 }, children: "🎉" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 24, marginBottom: 10 }, children: "You are on the list!" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 15, marginBottom: 8, lineHeight: 1.6 }, children: [
+            "Your podcast is under review.",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+            "We will approve it within 24 hours."
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 14, padding: 16, margin: "20px 0 28px", textAlign: "left" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 13, marginBottom: 8 }, children: "⚡ What happens next?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.7 }, children: [
+              "1. Admin reviews your podcast (within 24h)",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+              "2. You get approved — show appears in Podcasts tab",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+              "3. Open your show → tap ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "🔴 Go Live Now" }),
+              " anytime",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+              "4. All Sachi users get an instant email notification"
+            ] })
+          ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "input",
+            "button",
             {
-              value: registerForm[f2.key],
-              onChange: (e) => setRegisterForm((p2) => ({ ...p2, [f2.key]: e.target.value })),
-              placeholder: f2.placeholder,
-              style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }
+              onClick: () => {
+                setRegisterDone(false);
+                setShowRegister(false);
+              },
+              style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "14px 36px", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer" },
+              children: "Back to Podcasts"
             }
           )
-        ] }, f2.key)),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "Description" }),
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 18 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 10, fontWeight: 600 }, children: "Choose Your Show Cover" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" }, children: PODCAST_COVER_COLORS.map((c, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => setRegisterForm((p2) => ({ ...p2, coverIdx: i })),
+                style: { width: 52, height: 52, borderRadius: 14, background: c.bg, border: registerForm.coverIdx === i ? "3px solid #F5C842" : "3px solid transparent", cursor: "pointer", fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center" },
+                children: c.emoji
+              },
+              i
+            )) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 12, width: "100%", height: 70, borderRadius: 16, background: selectedCover.bg, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 32 }, children: selectedCover.emoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 15, opacity: registerForm.title ? 1 : 0.4 }, children: registerForm.title || "Your Show Name" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
+              "Podcast Title ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935" }, children: "*" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                value: registerForm.title,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, title: e.target.value })),
+                placeholder: "e.g. The Daily Grind",
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
+              "Your Name ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935" }, children: "*" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                value: registerForm.host_name,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, host_name: e.target.value })),
+                placeholder: "Full name or stage name",
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "What is your podcast about?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "textarea",
+              {
+                value: registerForm.description,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, description: e.target.value })),
+                placeholder: "Tell listeners what to expect — topics, guests, vibe...",
+                rows: 3,
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", resize: "none", boxSizing: "border-box" }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "Category" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "select",
+              {
+                value: registerForm.category,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, category: e.target.value })),
+                style: { width: "100%", background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none" },
+                children: ["Business", "News & Politics", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Society & Culture", "Education", "Other"].map(
+                  (c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#111" }, children: c }, c)
+                )
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
+              "Stream URL ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.25)", fontWeight: 400 }, children: "(optional — add later too)" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                value: registerForm.live_stream_url,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, live_stream_url: e.target.value })),
+                placeholder: "https://youtube.com/live/... or Twitch link",
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.25)", fontSize: 12, marginTop: 5 }, children: "Where listeners will tune in when you go live. You can update this anytime." })
+          ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "textarea",
+            "button",
             {
-              value: registerForm.description,
-              onChange: (e) => setRegisterForm((p2) => ({ ...p2, description: e.target.value })),
-              placeholder: "What is your podcast about?",
-              rows: 3,
-              style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none", resize: "none", boxSizing: "border-box" }
+              onClick: handleRegister,
+              disabled: registering || !registerForm.title || !registerForm.host_name,
+              style: { width: "100%", padding: "16px 0", background: !registerForm.title || !registerForm.host_name ? "rgba(108,60,247,0.3)" : registering ? "rgba(108,60,247,0.5)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: !registerForm.title || !registerForm.host_name ? "not-allowed" : "pointer", marginTop: 4 },
+              children: registering ? "⏳ Submitting..." : "Submit My Podcast →"
             }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "Category" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "select",
-            {
-              value: registerForm.category,
-              onChange: (e) => setRegisterForm((p2) => ({ ...p2, category: e.target.value })),
-              style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none" },
-              children: ["Business", "News & Politics", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Society & Culture", "Education", "Other"].map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#111" }, children: c }, c))
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: handleRegister,
-            disabled: registering || !registerForm.title || !registerForm.host_name,
-            style: { width: "100%", padding: "16px 0", background: registering ? "rgba(108,60,247,0.4)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginTop: 8 },
-            children: registering ? "Submitting..." : "Submit My Podcast"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", paddingBottom: 40 }, children: "We review all podcasts within 24 hours." })
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center" }, children: "Reviewed and approved within 24 hours" })
+        ] })
       ] })
-    ] }) });
+    ] });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px", background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius: 20, padding: "24px 20px", position: "relative", overflow: "hidden" }, children: [
@@ -11552,6 +11734,36 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           children: "🎙️ Register Your Podcast"
         }
       )
+    ] }),
+    currentUser && myShows.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ My Shows" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: myShows.map((p2) => {
+        const coverBg = p2.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
+        const coverEmoji = p2.cover_emoji || "🎙️";
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => setSelectedPodcast(p2),
+            style: { background: "rgba(245,200,66,0.05)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 16, padding: 14, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 52, height: 52, borderRadius: 12, background: coverBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: coverEmoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
+                  p2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#e53935", borderRadius: 20, padding: "2px 8px", color: "#fff", fontWeight: 700, fontSize: 10, flexShrink: 0 }, children: "LIVE" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 4 }, children: [
+                  "by ",
+                  p2.host_name
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: p2.status === "Active" ? "rgba(46,125,50,0.25)" : p2.status === "Pending" ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", borderRadius: 20, padding: "2px 10px", color: p2.status === "Active" ? "#81c784" : p2.status === "Pending" ? "#F5C842" : "#aaa", fontSize: 11, fontWeight: 700 }, children: p2.status === "Pending" ? "⏳ Pending Approval" : p2.status === "Active" ? "✅ Active" : p2.status })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
+            ]
+          },
+          p2.id
+        );
+      }) })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
       "button",
