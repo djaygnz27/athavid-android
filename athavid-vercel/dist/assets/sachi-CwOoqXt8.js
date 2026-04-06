@@ -8507,44 +8507,43 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   ] });
 }
 const MUSIC_LIBRARY = [
-  // ── Pop ──────────────────────────────────────────────────────────────────
-  { id: "pop1", genre: "Pop", title: "Summer Vibes", artist: "Free Beats", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", emoji: "🌊" },
-  { id: "pop2", genre: "Pop", title: "Happy Days", artist: "Feel Good Music", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", emoji: "☀️" },
-  { id: "pop3", genre: "Pop", title: "Good Energy", artist: "Pop Studio", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3", emoji: "✨" },
-  { id: "pop4", genre: "Pop", title: "Dance All Night", artist: "Pop Studio", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", emoji: "💃" },
-  { id: "pop5", genre: "Pop", title: "Neon Lights", artist: "Synth Pop", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3", emoji: "🌈" },
-  // ── Jazz ─────────────────────────────────────────────────────────────────
-  { id: "jz1", genre: "Jazz", title: "Smooth Jazz Cafe", artist: "Jazz Collective", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", emoji: "🎷" },
-  { id: "jz2", genre: "Jazz", title: "Late Night Jazz", artist: "Blue Note Studio", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", emoji: "🌙" },
-  { id: "jz3", genre: "Jazz", title: "Uptown Swing", artist: "Jazz Collective", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", emoji: "🎺" },
-  { id: "jz4", genre: "Jazz", title: "Bossa Nova Breeze", artist: "Cafe Jazz", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", emoji: "🌴" },
-  { id: "jz5", genre: "Jazz", title: "Midnight Sax", artist: "Blue Note Studio", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3", emoji: "🎶" },
-  // ── Classic Rock ─────────────────────────────────────────────────────────
-  { id: "cr1", genre: "Classic Rock", title: "Guitar Highway", artist: "Rock Legends", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", emoji: "🎸" },
-  { id: "cr2", genre: "Classic Rock", title: "Power Chord", artist: "Rock Legends", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", emoji: "🤘" },
-  { id: "cr3", genre: "Classic Rock", title: "Road Trip Anthem", artist: "Fuzz & Roll", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", emoji: "🛣️" },
-  { id: "cr4", genre: "Classic Rock", title: "Stadium Rock", artist: "Fuzz & Roll", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3", emoji: "🏟️" },
-  { id: "cr5", genre: "Classic Rock", title: "Blues Driver", artist: "Rock Legends", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", emoji: "🔥" },
-  // ── Contemporary ─────────────────────────────────────────────────────────
-  { id: "co1", genre: "Contemporary", title: "Midnight Drive", artist: "Lo-Fi Studio", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3", emoji: "🚗" },
-  { id: "co2", genre: "Contemporary", title: "Urban Groove", artist: "Street Beats", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3", emoji: "🏙️" },
-  { id: "co3", genre: "Contemporary", title: "Chill Wave", artist: "Ambient Lab", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-18.mp3", emoji: "🌊" },
-  { id: "co4", genre: "Contemporary", title: "Deep Focus", artist: "Study Sounds", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-19.mp3", emoji: "🧠" },
-  { id: "co5", genre: "Contemporary", title: "Indie Morning", artist: "Indie Lab", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-20.mp3", emoji: "☕" },
-  // ── Lo-Fi / Chill ────────────────────────────────────────────────────────
-  { id: "lo1", genre: "Lo-Fi", title: "Rainy Day Study", artist: "Lo-Fi Beats", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-21.mp3", emoji: "🌧️" },
-  { id: "lo2", genre: "Lo-Fi", title: "Coffee Shop Vibes", artist: "Lo-Fi Cafe", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-22.mp3", emoji: "☕" },
-  { id: "lo3", genre: "Lo-Fi", title: "Evening Chill", artist: "Chill Lab", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-23.mp3", emoji: "🌅" },
-  // ── Hip-Hop / R&B ────────────────────────────────────────────────────────
-  { id: "hh1", genre: "Hip-Hop", title: "Energy Boost", artist: "Epic Sounds", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-24.mp3", emoji: "⚡" },
-  { id: "hh2", genre: "Hip-Hop", title: "Street Heat", artist: "Street Beats", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-25.mp3", emoji: "🔥" },
-  { id: "hh3", genre: "Hip-Hop", title: "Trap Sunrise", artist: "Beat Factory", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-26.mp3", emoji: "🌄" },
-  // ── Electronic ───────────────────────────────────────────────────────────
-  { id: "el1", genre: "Electronic", title: "Neon Rush", artist: "Synth Lab", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-27.mp3", emoji: "🤖" },
-  { id: "el2", genre: "Electronic", title: "Bass Drop", artist: "EDM Factory", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-28.mp3", emoji: "🎛️" },
-  { id: "el3", genre: "Electronic", title: "Future Wave", artist: "Synth Lab", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-29.mp3", emoji: "🚀" }
+  // Lo-Fi Hip-Hop
+  { id: "lo1", genre: "Lo-Fi", title: "City Lights", artist: "Lukrembo", url: "https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3", emoji: "🌃" },
+  { id: "lo2", genre: "Lo-Fi", title: "Sunset Boulevard", artist: "Lukrembo", url: "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3", emoji: "🌅" },
+  { id: "lo3", genre: "Lo-Fi", title: "Chill Lounge", artist: "Chill Music Lab", url: "https://cdn.pixabay.com/audio/2022/03/15/audio_8cb749ef8e.mp3", emoji: "☕" },
+  { id: "lo4", genre: "Lo-Fi", title: "Late Night Drive", artist: "Mubert", url: "https://cdn.pixabay.com/audio/2022/10/25/audio_fc4e2ab87f.mp3", emoji: "🚗" },
+  { id: "lo5", genre: "Lo-Fi", title: "Rainy Window", artist: "Lo-Fi Cafe", url: "https://cdn.pixabay.com/audio/2023/01/25/audio_27788ce40e.mp3", emoji: "🌧️" },
+  // Hip-Hop / Trap
+  { id: "hh1", genre: "Hip-Hop", title: "Dark Trap", artist: "SoundGuy", url: "https://cdn.pixabay.com/audio/2022/09/07/audio_51e01a5b75.mp3", emoji: "🔥" },
+  { id: "hh2", genre: "Hip-Hop", title: "Street Anthem", artist: "Beat Factory", url: "https://cdn.pixabay.com/audio/2022/11/22/audio_febc508520.mp3", emoji: "🏙️" },
+  { id: "hh3", genre: "Hip-Hop", title: "Hustle Hard", artist: "Rap Beats Lab", url: "https://cdn.pixabay.com/audio/2022/06/08/audio_c8e134dc61.mp3", emoji: "💪" },
+  { id: "hh4", genre: "Hip-Hop", title: "Midnight Flex", artist: "Urban Beats", url: "https://cdn.pixabay.com/audio/2023/02/08/audio_d1718ab358.mp3", emoji: "🌙" },
+  // Electronic / EDM
+  { id: "el1", genre: "Electronic", title: "Bass Rush", artist: "EDM Factory", url: "https://cdn.pixabay.com/audio/2022/07/25/audio_124bbbcb24.mp3", emoji: "⚡" },
+  { id: "el2", genre: "Electronic", title: "Neon Club", artist: "Synth Lab", url: "https://cdn.pixabay.com/audio/2022/08/23/audio_d16737dc28.mp3", emoji: "🎛️" },
+  { id: "el3", genre: "Electronic", title: "Future Drop", artist: "Synth Lab", url: "https://cdn.pixabay.com/audio/2021/11/13/audio_cb31b3a2ee.mp3", emoji: "🚀" },
+  { id: "el4", genre: "Electronic", title: "Cyber Pulse", artist: "Digital Wave", url: "https://cdn.pixabay.com/audio/2022/10/16/audio_99e31cb11f.mp3", emoji: "🤖" },
+  // R&B / Soul
+  { id: "rb1", genre: "R&B", title: "Smooth Feelings", artist: "Soul Kitchen", url: "https://cdn.pixabay.com/audio/2022/05/16/audio_8c7760a56c.mp3", emoji: "❤️" },
+  { id: "rb2", genre: "R&B", title: "Late Night Feels", artist: "Velvet Groove", url: "https://cdn.pixabay.com/audio/2023/03/09/audio_c8690f4a79.mp3", emoji: "🌙" },
+  { id: "rb3", genre: "R&B", title: "Golden Hour", artist: "Soul Kitchen", url: "https://cdn.pixabay.com/audio/2022/11/09/audio_b9f8252784.mp3", emoji: "✨" },
+  // Pop
+  { id: "pp1", genre: "Pop", title: "Good Vibes Only", artist: "Pop Studio", url: "https://cdn.pixabay.com/audio/2022/08/04/audio_2dde668d05.mp3", emoji: "🌈" },
+  { id: "pp2", genre: "Pop", title: "Summer Heat", artist: "Pop Studio", url: "https://cdn.pixabay.com/audio/2023/02/28/audio_7b006e5e1b.mp3", emoji: "☀️" },
+  { id: "pp3", genre: "Pop", title: "Dance Floor", artist: "Feel Good Music", url: "https://cdn.pixabay.com/audio/2022/10/10/audio_4a7ad08048.mp3", emoji: "💃" },
+  // Chill / Ambient
+  { id: "ch1", genre: "Chill", title: "Deep Breathe", artist: "Ambient Lab", url: "https://cdn.pixabay.com/audio/2022/03/10/audio_2da3e03e6c.mp3", emoji: "🌊" },
+  { id: "ch2", genre: "Chill", title: "Floating", artist: "Ambient Lab", url: "https://cdn.pixabay.com/audio/2021/10/19/audio_b0d94b61c8.mp3", emoji: "☁️" },
+  { id: "ch3", genre: "Chill", title: "Mountain Air", artist: "Nature Sounds", url: "https://cdn.pixabay.com/audio/2022/01/18/audio_d0c6ff1bab.mp3", emoji: "🏔️" },
+  // Afrobeats
+  { id: "af1", genre: "Afrobeats", title: "Lagos Nights", artist: "Afro Vibes", url: "https://cdn.pixabay.com/audio/2022/12/06/audio_a2dc6bff25.mp3", emoji: "🌍" },
+  { id: "af2", genre: "Afrobeats", title: "Move Your Body", artist: "Afro Vibes", url: "https://cdn.pixabay.com/audio/2023/01/11/audio_9b03e2b205.mp3", emoji: "🥁" },
+  // Jazz
+  { id: "jz1", genre: "Jazz", title: "Smooth Jazz Cafe", artist: "Jazz Collective", url: "https://cdn.pixabay.com/audio/2022/09/22/audio_d64adfa5d2.mp3", emoji: "🎷" },
+  { id: "jz2", genre: "Jazz", title: "Late Night Jazz", artist: "Blue Note Studio", url: "https://cdn.pixabay.com/audio/2021/09/06/audio_6ef08cb620.mp3", emoji: "🎺" },
+  { id: "jz3", genre: "Jazz", title: "Midnight Sax", artist: "Blue Note Studio", url: "https://cdn.pixabay.com/audio/2022/04/27/audio_12b0e6e3fb.mp3", emoji: "🎶" }
 ];
-const MUSIC_GENRES = ["All", "Pop", "Jazz", "Classic Rock", "Contemporary", "Lo-Fi", "Hip-Hop", "Electronic"];
+const MUSIC_GENRES = ["All", "Lo-Fi", "Hip-Hop", "Electronic", "R&B", "Pop", "Chill", "Afrobeats", "Jazz"];
 function GoLiveModal({ currentUser, onClose, onUploaded }) {
   const [phase, setPhase] = reactExports.useState("preview");
   const [elapsed, setElapsed] = reactExports.useState(0);
