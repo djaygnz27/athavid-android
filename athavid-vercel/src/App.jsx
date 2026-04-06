@@ -2853,12 +2853,20 @@ function App() {
     setLoading(true);
     try {
       const data = await videos.list();
+      console.log('loadVideos data type:', typeof data, Array.isArray(data), data?.length || data?.count);
       const raw = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      console.log('loadVideos raw count:', raw.length);
+      if (!raw.length) { setVideoList([]); setLoading(false); return; }
       // Always sort newest-first first
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
       const activeUser = user || currentUser;
       // Only apply interest ranking if user exists; otherwise pure chronological (newest on top)
-      const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
+      let ranked = sorted;
+      if (activeUser) {
+        try { ranked = await interests.rankFeed(activeUser.id, sorted); }
+        catch(re) { console.error('rankFeed error:', re); ranked = sorted; }
+      }
+      console.log('loadVideos setting', ranked.length, 'videos');
       setVideoList(ranked);
       // Scroll to top after new list is set
       requestAnimationFrame(() => {

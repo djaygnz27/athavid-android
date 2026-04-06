@@ -12167,10 +12167,26 @@ function App() {
     setLoading(true);
     try {
       const data = await videos.list();
+      console.log("loadVideos data type:", typeof data, Array.isArray(data), (data == null ? void 0 : data.length) || (data == null ? void 0 : data.count));
       const raw = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
+      console.log("loadVideos raw count:", raw.length);
+      if (!raw.length) {
+        setVideoList([]);
+        setLoading(false);
+        return;
+      }
       const sorted = [...raw].sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
       const activeUser = user || currentUser;
-      const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
+      let ranked = sorted;
+      if (activeUser) {
+        try {
+          ranked = await interests.rankFeed(activeUser.id, sorted);
+        } catch (re2) {
+          console.error("rankFeed error:", re2);
+          ranked = sorted;
+        }
+      }
+      console.log("loadVideos setting", ranked.length, "videos");
       setVideoList(ranked);
       requestAnimationFrame(() => {
         const el2 = feedContainerRef.current || window.__sachiEl;
