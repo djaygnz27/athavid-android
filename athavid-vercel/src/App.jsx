@@ -2356,6 +2356,36 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 }}>›</button>
             </div>
           )}
+
+          {/* ── SOUND for photo posts ── */}
+          {video.sound_url && (
+            <>
+              <audio ref={soundRef} src={video.sound_url} loop preload="auto"
+                style={{ display:"none" }}
+                onCanPlay={() => { if(!muted && soundRef.current) soundRef.current.play().catch(()=>{}); }} />
+              {muted ? (
+                <div
+                  onTouchStart={e => { e.stopPropagation(); setMuted(false); if(soundRef.current){ soundRef.current.play().catch(()=>{}); } }}
+                  onClick={e => { e.stopPropagation(); setMuted(false); if(soundRef.current){ soundRef.current.play().catch(()=>{}); } }}
+                  style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
+                    background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
+                    padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
+                    display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                  🔇 Tap to hear music
+                </div>
+              ) : (
+                <div
+                  onTouchStart={e => { e.stopPropagation(); setMuted(true); if(soundRef.current){ soundRef.current.pause(); } }}
+                  onClick={e => { e.stopPropagation(); setMuted(true); if(soundRef.current){ soundRef.current.pause(); } }}
+                  style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
+                    background:"rgba(245,200,66,0.2)", border:"1px solid rgba(245,200,66,0.5)", borderRadius:20,
+                    padding:"6px 16px", color:"#F5C842", fontSize:12, fontWeight:700, letterSpacing:1,
+                    display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                  🎵 {video.sound_title || "Playing music"}
+                </div>
+              )}
+            </>
+          )}
         </div>
       ) : (() => {
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
