@@ -1434,57 +1434,51 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
           </div>
 
-          {/* ── BELOW-PHOTO NAV BAR — arrows + dots — sits just above bottom nav ── */}
+          {/* ── DOTS ONLY — centered at bottom of photo ── */}
           {photoUrls.length > 1 && (
             <div style={{
-              position:"absolute", bottom:75, left:0, right:0,
-              display:"flex", alignItems:"center", justifyContent:"space-between",
-              padding:"8px 16px", zIndex:300,
+              position:"absolute", bottom:16, left:"50%", transform:"translateX(-50%)",
+              display:"flex", gap:7, alignItems:"center", zIndex:300, pointerEvents:"none"
             }}>
-              {/* LEFT ARROW */}
-              <button
-                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
-                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
-                disabled={photoIdx === 0}
-                style={{
-                  background: photoIdx === 0 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
-                  border: photoIdx === 0 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
-                  borderRadius:14, width:56, height:48,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:28, color: photoIdx === 0 ? "rgba(255,255,255,0.2)" : "#fff",
-                  fontWeight:900, cursor: photoIdx === 0 ? "default" : "pointer",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
-                  backdropFilter:"blur(8px)", transition:"all 0.2s"
-                }}>‹</button>
-
-              {/* Dot indicators */}
-              <div style={{ display:"flex", gap:7, alignItems:"center" }}>
-                {photoUrls.map((_,i) => (
-                  <div key={i} style={{
-                    width: i===photoIdx ? 22 : 8, height:8, borderRadius:99,
-                    background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
-                    transition:"all 0.25s ease",
-                    boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.8)" : "none"
-                  }} />
-                ))}
-              </div>
-
-              {/* RIGHT ARROW */}
-              <button
-                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-                disabled={photoIdx === photoUrls.length - 1}
-                style={{
-                  background: photoIdx === photoUrls.length-1 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
-                  border: photoIdx === photoUrls.length-1 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
-                  borderRadius:14, width:56, height:48,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:28, color: photoIdx === photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
-                  fontWeight:900, cursor: photoIdx === photoUrls.length-1 ? "default" : "pointer",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
-                  backdropFilter:"blur(8px)", transition:"all 0.2s"
-                }}>›</button>
+              {photoUrls.map((_,i) => (
+                <div key={i} style={{
+                  width: i===photoIdx ? 22 : 8, height:8, borderRadius:99,
+                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
+                  transition:"all 0.25s ease",
+                  boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.8)" : "none"
+                }} />
+              ))}
             </div>
+          )}
+
+          {/* ── PREV: small arrow bottom-left corner ── */}
+          {photoUrls.length > 1 && photoIdx > 0 && (
+            <button
+              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p - 1); }}
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p - 1); }}
+              style={{
+                position:"absolute", bottom:8, left:8, zIndex:300,
+                background:"rgba(0,0,0,0.55)", border:"none",
+                borderRadius:10, width:36, height:32,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:20, color:"#fff", fontWeight:900,
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+              }}>‹</button>
+          )}
+
+          {/* ── NEXT: small arrow bottom-right corner ── */}
+          {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
+            <button
+              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => p + 1); }}
+              onClick={e => { e.stopPropagation(); setPhotoIdx(p => p + 1); }}
+              style={{
+                position:"absolute", bottom:8, right:8, zIndex:300,
+                background:"rgba(0,0,0,0.55)", border:"none",
+                borderRadius:10, width:36, height:32,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:20, color:"#fff", fontWeight:900,
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+              }}>›</button>
           )}
         </div>
       ) : (() => {
