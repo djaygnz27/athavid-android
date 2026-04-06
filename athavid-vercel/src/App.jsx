@@ -2074,18 +2074,28 @@ function getUserAge() {
   return age;
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, globalMuted, onMuteChange }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
-  // Use global mute state so unmuting one video unmutes all
-  const muted = globalMuted !== undefined ? globalMuted : true;
-  const setMuted = (val) => { if (onMuteChange) onMuteChange(typeof val === 'function' ? val(muted) : val); };
-  // Ref so IntersectionObserver (stale closure) always reads latest muted value
-  const mutedRef = useRef(muted);
-  useEffect(() => { mutedRef.current = muted; }, [muted]);
+  // Global mute stored on window — readable by stale closures, no prop-drilling
+  if (window.__sachiMuted === undefined) window.__sachiMuted = true;
+  const [muted, _setMutedLocal] = useState(() => window.__sachiMuted);
+  const setMuted = (val) => {
+    const newVal = typeof val === 'function' ? val(window.__sachiMuted) : val;
+    window.__sachiMuted = newVal;
+    _setMutedLocal(newVal);
+    // Broadcast to all other mounted VideoCards
+    window.dispatchEvent(new CustomEvent('sachi-mute-change', { detail: newVal }));
+  };
+  // Listen for mute changes from other cards
+  useEffect(() => {
+    const handler = (e) => { _setMutedLocal(e.detail); };
+    window.addEventListener('sachi-mute-change', handler);
+    return () => window.removeEventListener('sachi-mute-change', handler);
+  }, []);
   const [photoIdx, setPhotoIdx] = useState(0);
   const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
@@ -2145,7 +2155,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        const currentlyMuted = mutedRef.current; // always reads latest value
+        const currentlyMuted = window.__sachiMuted !== undefined ? window.__sachiMuted : true;
         el.muted = currentlyMuted;
         el.play().catch(() => {});
         setPlaying(true);
@@ -4545,7 +4555,6 @@ function App() {
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
-  const [globalMuted, setGlobalMuted] = useState(true);
   const feedContainerRef = useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = useState(true);
@@ -4870,8 +4879,7 @@ function App() {
               onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
               followedUserIds={followedUserIds}
               onFollowChange={handleFollowChange}
-              globalMuted={globalMuted}
-              onMuteChange={setGlobalMuted} />
+              />
           ))}
         </div>
       )}

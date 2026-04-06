@@ -10833,21 +10833,28 @@ function getUserAge() {
   if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
   return age;
 }
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, globalMuted, onMuteChange }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
   var _a;
   const videoRef = reactExports.useRef(null);
   const soundRef = reactExports.useRef(null);
   const viewedRef = reactExports.useRef(false);
   const [playing, setPlaying] = reactExports.useState(false);
   const [liked, setLiked] = reactExports.useState(false);
-  const muted = globalMuted !== void 0 ? globalMuted : true;
+  if (window.__sachiMuted === void 0) window.__sachiMuted = true;
+  const [muted, _setMutedLocal] = reactExports.useState(() => window.__sachiMuted);
   const setMuted = (val) => {
-    if (onMuteChange) onMuteChange(typeof val === "function" ? val(muted) : val);
+    const newVal = typeof val === "function" ? val(window.__sachiMuted) : val;
+    window.__sachiMuted = newVal;
+    _setMutedLocal(newVal);
+    window.dispatchEvent(new CustomEvent("sachi-mute-change", { detail: newVal }));
   };
-  const mutedRef = reactExports.useRef(muted);
   reactExports.useEffect(() => {
-    mutedRef.current = muted;
-  }, [muted]);
+    const handler = (e) => {
+      _setMutedLocal(e.detail);
+    };
+    window.addEventListener("sachi-mute-change", handler);
+    return () => window.removeEventListener("sachi-mute-change", handler);
+  }, []);
   const [photoIdx, setPhotoIdx] = reactExports.useState(0);
   reactExports.useRef(null);
   const [followRecord, setFollowRecord] = reactExports.useState(null);
@@ -10891,7 +10898,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el2) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        const currentlyMuted = mutedRef.current;
+        const currentlyMuted = window.__sachiMuted !== void 0 ? window.__sachiMuted : true;
         el2.muted = currentlyMuted;
         el2.play().catch(() => {
         });
@@ -13842,7 +13849,6 @@ function App() {
   const [currentUser, setCurrentUser] = reactExports.useState(() => auth.getUser());
   (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
-  const [globalMuted, setGlobalMuted] = reactExports.useState(true);
   const feedContainerRef = reactExports.useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = reactExports.useState(true);
@@ -14201,9 +14207,7 @@ function App() {
           onDelete: (id2) => setVideoList((prev) => prev.filter((v22) => v22.id !== id2)),
           onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname }),
           followedUserIds,
-          onFollowChange: handleFollowChange,
-          globalMuted,
-          onMuteChange: setGlobalMuted
+          onFollowChange: handleFollowChange
         },
         v2.id
       ))
