@@ -1573,6 +1573,18 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         </div>
       )}
+      {/* Real / AI badge */}
+      <div style={{ display:"flex", gap:6, marginBottom:4, flexWrap:"wrap" }}>
+        {!video.is_ai_detected ? (
+          <span style={{ fontSize:10, background:"rgba(107,255,154,0.15)", color:"#6BFFB8", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(107,255,154,0.3)" }}>
+            ✓ Real
+          </span>
+        ) : (
+          <span style={{ fontSize:10, background:"rgba(255,149,0,0.15)", color:"#FF9500", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(255,149,0,0.3)" }}>
+            🤖 AI Generated
+          </span>
+        )}
+      </div>
       {video.caption && (
         <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>
           {showFullCaption || (video.caption || "").length <= 80
@@ -1657,6 +1669,28 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
             }
           </div>
+        </button>
+
+        {/* Flag AI */}
+        <button onClick={tap(async () => {
+          if (!currentUser) { onNeedAuth(); return; }
+          if (!window.confirm(video.is_ai_detected ? "Clear AI flag from this post?" : "Flag this post as AI-generated content?")) return;
+          try {
+            const newFlag = !video.is_ai_detected;
+            await videos.update(video.id, { is_ai_detected: newFlag });
+            onLike(video.id, 0); // trigger re-render via parent
+          } catch(e) {}
+        })}
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <div style={{ width:28, height:28, borderRadius:8,
+            background: video.is_ai_detected ? "rgba(255,149,0,0.25)" : "rgba(255,255,255,0.08)",
+            backdropFilter:"blur(12px)",
+            border: video.is_ai_detected ? "1px solid rgba(255,149,0,0.5)" : "1px solid rgba(255,255,255,0.1)",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <span style={{ fontSize:13 }}>{video.is_ai_detected ? "🤖" : "🚩"}</span>
+          </div>
+          <div style={{ color:"rgba(255,255,255,0.5)", fontSize:9, fontWeight:600 }}>{video.is_ai_detected ? "AI" : "Flag"}</div>
         </button>
 
         {/* Like */}
@@ -2895,7 +2929,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
 // ─── Admin Panel ─────────────────────────────────────────────────────────────
 function AdminPanel({ currentUser }) {
-  const [modTab, setModTab] = useState("videos"); // videos | analytics
+  const [modTab, setModTab] = useState("videos"); // videos | ai | analytics
   const [allVideos, setAllVideos] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -3016,6 +3050,16 @@ function AdminPanel({ currentUser }) {
     setSaving(null);
   };
 
+  const flagAI = async (video) => {
+    setSaving(video.id);
+    try {
+      const newFlag = !video.is_ai_detected;
+      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      setAllVideos(prev => prev.map(v => v.id === video.id ? { ...v, is_ai_detected: newFlag } : v));
+    } catch(e) { alert("Failed to update: " + e.message); }
+    setSaving(null);
+  };
+
   const filtered = allVideos.filter(v => {
     if (filter === "mature" && !v.is_mature) return false;
     if (filter === "clean" && v.is_mature) return false;
@@ -3038,7 +3082,7 @@ function AdminPanel({ currentUser }) {
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["analytics","📊 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["analytics","📊 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
@@ -3201,6 +3245,70 @@ function AdminPanel({ currentUser }) {
       )}
 
       {/* ── VIDEOS TAB ── */}
+      {/* ── AI FLAGGED TAB ── */}
+      {modTab === "ai" && (
+        <div style={{ padding:"16px" }}>
+          <div style={{ display:"flex", gap:12, marginBottom:16 }}>
+            {[
+              ["🤖 AI Flagged", allVideos.filter(v=>v.is_ai_detected).length, "#FF9500"],
+              ["✅ Verified Real", allVideos.filter(v=>!v.is_ai_detected && v.is_approved).length, "#6BFFB8"],
+            ].map(([label,count,color]) => (
+              <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:"10px 0", textAlign:"center", border:`1px solid ${color}22` }}>
+                <div style={{ color, fontWeight:900, fontSize:20 }}>{count}</div>
+                <div style={{ color:"#555", fontSize:11 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          {allVideos.filter(v => v.is_ai_detected).length === 0 ? (
+            <div style={{ textAlign:"center", color:"#555", padding:40 }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+              <div style={{ fontSize:14, fontWeight:600, color:"#6BFFB8" }}>No AI-flagged posts!</div>
+              <div style={{ fontSize:12, color:"#444", marginTop:6 }}>All content looks clean.</div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {allVideos.filter(v => v.is_ai_detected).map(video => (
+                <div key={video.id} style={{ background:"rgba(255,149,0,0.06)", borderRadius:16, border:"1px solid rgba(255,149,0,0.3)", overflow:"hidden" }}>
+                  <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
+                    <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
+                      {video.thumbnail_url
+                        ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                        : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                        <span style={{ fontSize:11, background:"rgba(255,149,0,0.2)", color:"#FF9500", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>🤖 AI Detected</span>
+                      </div>
+                      <div style={{ color:"#aaa", fontSize:11, marginBottom:3 }}>@{video.username || "unknown"}</div>
+                      <div style={{ color:"#fff", fontSize:13, fontWeight:600, marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {video.caption || "(no caption)"}
+                      </div>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <span style={{ fontSize:11, color:"#555" }}>👁 {video.views_count||0}</span>
+                        <span style={{ fontSize:11, color:"#555" }}>❤️ {video.likes_count||0}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:0, borderTop:"1px solid rgba(255,255,255,0.05)" }}>
+                    <button onClick={() => flagAI(video)} disabled={saving===video.id}
+                      style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                        borderRight:"1px solid rgba(255,255,255,0.05)",
+                        background:"rgba(107,255,154,0.08)", color:"#6bff9a" }}>
+                      {saving===video.id ? "Saving…" : "✅ Clear AI Flag"}
+                    </button>
+                    <button onClick={() => deleteVideo(video)} disabled={saving===video.id}
+                      style={{ width:56, padding:"10px 0", border:"none", cursor:"pointer", fontSize:16,
+                        background:"rgba(255,0,0,0.06)", color:"#ff4444" }}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {modTab === "videos" && (<>
       {/* Stats bar */}
       <div style={{ display:"flex", gap:12, padding:"12px 20px" }}>
