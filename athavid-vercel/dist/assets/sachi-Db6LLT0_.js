@@ -11387,7 +11387,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         live_stream_url: registerForm.live_stream_url || "",
         cover_color: cover.bg,
         cover_emoji: cover.emoji,
-        status: "Pending",
+        status: "Active",
         is_live: false,
         listener_count: 0,
         episode_count: 0,
@@ -11396,7 +11396,19 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         host_username: (currentUser == null ? void 0 : currentUser.full_name) || ((_a2 = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a2.split("@")[0]) || ""
       });
       setRegisterDone(true);
+      await loadPodcasts();
       await loadMyShows();
+      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          host_email: (currentUser == null ? void 0 : currentUser.email) || "",
+          host_name: registerForm.host_name,
+          podcast_title: registerForm.title,
+          category: registerForm.category
+        })
+      }).catch(() => {
+      });
       setRegisterForm({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
     } catch (e) {
       console.error(e);
@@ -11577,22 +11589,25 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 72, marginBottom: 16 }, children: "🎉" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 24, marginBottom: 10 }, children: "You are on the list!" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 15, marginBottom: 8, lineHeight: 1.6 }, children: [
-            "Your podcast is under review.",
+            "Your show is ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#81c784" }, children: "live on Sachi right now." }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-            "We will approve it within 24 hours."
+            "No waiting. No approval needed."
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 14, padding: 16, margin: "20px 0 28px", textAlign: "left" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 13, marginBottom: 8 }, children: "⚡ What happens next?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(46,125,50,0.1)", border: "1px solid rgba(46,125,50,0.3)", borderRadius: 14, padding: 16, margin: "20px 0 28px", textAlign: "left" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#81c784", fontWeight: 700, fontSize: 13, marginBottom: 8 }, children: "⚡ You are all set — here's how to go live:" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.7 }, children: [
-              "1. Admin reviews your podcast (within 24h)",
+              "1. Go to ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Podcasts tab" }),
+              ' and find your show under "My Shows"',
               /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-              "2. You get approved — show appears in Podcasts tab",
+              "2. Tap your show to open it",
               /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-              "3. Open your show → tap ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "🔴 Go Live Now" }),
-              " anytime",
+              "3. (Optional) Add your stream link — YouTube Live, Twitch, etc.",
               /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-              "4. All Sachi users get an instant email notification"
+              "4. Tap ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#e53935" }, children: "🔴 Go Live Now" }),
+              " — all Sachi users get notified instantly"
             ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -11756,7 +11771,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   "by ",
                   p2.host_name
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: p2.status === "Active" ? "rgba(46,125,50,0.25)" : p2.status === "Pending" ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", borderRadius: 20, padding: "2px 10px", color: p2.status === "Active" ? "#81c784" : p2.status === "Pending" ? "#F5C842" : "#aaa", fontSize: 11, fontWeight: 700 }, children: p2.status === "Pending" ? "⏳ Pending Approval" : p2.status === "Active" ? "✅ Active" : p2.status })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: p2.is_live ? "rgba(229,57,53,0.2)" : "rgba(46,125,50,0.2)", borderRadius: 20, padding: "2px 10px", color: p2.is_live ? "#ef9a9a" : "#81c784", fontSize: 11, fontWeight: 700 }, children: p2.is_live ? "🔴 Live Now" : "✅ Active" })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
             ]
