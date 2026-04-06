@@ -9249,7 +9249,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         comments_count: 0,
         views_count: 0,
         shares_count: 0,
-        is_approved: true,
+        is_approved: !isAiGenerated,
         is_archived: false,
         is_ai_detected: isAiGenerated,
         is_mature: isMature,
@@ -9257,11 +9257,18 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         ...photoGeo
       });
       setProgress(100);
-      setStep("Posted! 🎉");
-      setTimeout(() => {
-        onUploaded();
-        onClose();
-      }, 1e3);
+      if (isAiGenerated) {
+        setStep("🤖 Bruh, AI has been flagged! Sent to MOD for review.");
+        setTimeout(() => {
+          onClose();
+        }, 2500);
+      } else {
+        setStep("Posted! 🎉");
+        setTimeout(() => {
+          onUploaded();
+          onClose();
+        }, 1e3);
+      }
     } catch (e) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false);
@@ -9331,7 +9338,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         comments_count: 0,
         views_count: 0,
         shares_count: 0,
-        is_approved: true,
+        is_approved: !isAiGenerated,
         is_archived: false,
         is_ai_detected: isAiGenerated,
         is_mature: isMature,
@@ -9339,11 +9346,18 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         ...videoGeo
       });
       setProgress(100);
-      setStep("Posted! 🎉");
-      setTimeout(() => {
-        onUploaded();
-        onClose();
-      }, 1e3);
+      if (isAiGenerated) {
+        setStep("🤖 Bruh, AI has been flagged! Sent to MOD for review.");
+        setTimeout(() => {
+          onClose();
+        }, 2500);
+      } else {
+        setStep("Posted! 🎉");
+        setTimeout(() => {
+          onUploaded();
+          onClose();
+        }, 1e3);
+      }
     } catch (e) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false);
@@ -9713,9 +9727,11 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             }
           ),
           isAiGenerated && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 8, padding: "10px 14px", background: "rgba(255,149,0,0.07)", borderRadius: 10, border: "1px solid rgba(255,149,0,0.2)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#FF9500", fontSize: 12, lineHeight: 1.5 }, children: [
-            "✅ Your post will display an ",
+            "⚠️ Your post will be ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "held for MOD review" }),
+            " before going live. If approved, it will show an ",
             /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "🤖 AI Generated" }),
-            " badge so viewers know this content was created by AI. Sachi values truth and transparency."
+            " badge. Sachi values truth — thanks for being honest."
           ] }) })
         ] }),
         !aiBlocked && !explicitBlocked && !isAiGenerated && file && /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -12265,17 +12281,75 @@ function AdminPanel({ currentUser }) {
     ] }) }),
     modTab === "ai" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, marginBottom: 16 }, children: [
-        ["🤖 AI Flagged", allVideos.filter((v2) => v2.is_ai_detected).length, "#FF9500"],
-        ["✅ Verified Real", allVideos.filter((v2) => !v2.is_ai_detected && v2.is_approved).length, "#6BFFB8"]
+        ["⏳ Pending Review", allVideos.filter((v2) => v2.is_ai_detected && !v2.is_approved).length, "#FF9500"],
+        ["🤖 Live AI Posts", allVideos.filter((v2) => v2.is_ai_detected && v2.is_approved).length, "#ffcc44"],
+        ["✅ Clean Posts", allVideos.filter((v2) => !v2.is_ai_detected && v2.is_approved).length, "#6BFFB8"]
       ].map(([label, count, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 0", textAlign: "center", border: `1px solid ${color}22` }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 20 }, children: count }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 11 }, children: label })
       ] }, label)) }),
-      allVideos.filter((v2) => v2.is_ai_detected).length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12 }, children: "✅" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 14, fontWeight: 600, color: "#6BFFB8" }, children: "No AI-flagged posts!" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "#444", marginTop: 6 }, children: "All content looks clean." })
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: allVideos.filter((v2) => v2.is_ai_detected).map((video) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,149,0,0.06)", borderRadius: 16, border: "1px solid rgba(255,149,0,0.3)", overflow: "hidden" }, children: [
+      allVideos.filter((v2) => v2.is_ai_detected && !v2.is_approved).length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#FF9500", fontWeight: 800, fontSize: 13, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }, children: "⏳ Pending Your Review" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: allVideos.filter((v2) => v2.is_ai_detected && !v2.is_approved).map((video) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,149,0,0.08)", borderRadius: 16, border: "2px solid rgba(255,149,0,0.5)", overflow: "hidden" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, padding: "12px 14px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 80, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#1a1a2e" }, children: video.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: video.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontSize: 24 }, children: "🎬" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, background: "rgba(255,149,0,0.3)", color: "#FF9500", padding: "2px 8px", borderRadius: 20, fontWeight: 700 }, children: "⏳ Awaiting MOD" }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 3 }, children: [
+                "@",
+                video.username || "unknown"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 13, fontWeight: 600, marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: video.caption || "(no caption)" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 11, color: "#FF9500" }, children: "Creator self-disclosed as AI" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 0, borderTop: "1px solid rgba(255,255,255,0.05)" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: async () => {
+                  setSaving(video.id);
+                  await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true });
+                  setAllVideos((p2) => p2.map((v2) => v2.id === video.id ? { ...v2, is_approved: true } : v2));
+                  setSaving(null);
+                },
+                disabled: saving === video.id,
+                style: {
+                  flex: 1,
+                  padding: "10px 0",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  borderRight: "1px solid rgba(255,255,255,0.05)",
+                  background: "rgba(107,255,154,0.1)",
+                  color: "#6bff9a"
+                },
+                children: saving === video.id ? "Saving…" : "✅ Approve & Post with AI Badge"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => deleteVideo(video),
+                disabled: saving === video.id,
+                style: {
+                  width: 56,
+                  padding: "10px 0",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 16,
+                  background: "rgba(255,0,0,0.08)",
+                  color: "#ff4444"
+                },
+                children: "🗑"
+              }
+            )
+          ] })
+        ] }, video.id)) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ffcc44", fontWeight: 800, fontSize: 13, marginBottom: 10 }, children: "🤖 Live AI-Badged Posts" }),
+      allVideos.filter((v2) => v2.is_ai_detected && v2.is_approved).length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "#444" }, children: "No approved AI posts yet." }) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: allVideos.filter((v2) => v2.is_ai_detected && v2.is_approved).map((video) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,149,0,0.06)", borderRadius: 16, border: "1px solid rgba(255,149,0,0.3)", overflow: "hidden" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, padding: "12px 14px" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 80, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#1a1a2e" }, children: video.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: video.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontSize: 24 }, children: "🎬" }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
