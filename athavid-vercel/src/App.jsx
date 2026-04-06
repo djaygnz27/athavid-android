@@ -2629,8 +2629,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
 // ─── Admin Panel ─────────────────────────────────────────────────────────────
 function AdminPanel({ currentUser }) {
+  const [modTab, setModTab] = useState("videos"); // videos | analytics
   const [allVideos, setAllVideos] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState(null);
   const [saving, setSaving] = useState(null);
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
@@ -2638,13 +2642,77 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=200&sort=-created_date");
+      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch(e) { console.error(e); }
     setLoading(false);
   };
 
+  const loadAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const [vRes, uRes, cRes] = await Promise.all([
+        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
+        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date"),
+        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date"),
+      ]);
+      const videos = vRes.items || vRes || [];
+      const users  = uRes.items || uRes || [];
+      const comments = cRes.items || cRes || [];
+      setAllUsers(users);
+
+      // Build daily buckets for last 14 days
+      const now = new Date();
+      const days = Array.from({length:14}, (_,i) => {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (13-i));
+        return d.toISOString().slice(0,10);
+      });
+
+      const byDay = (arr, dateField) => {
+        const map = {};
+        days.forEach(d => map[d] = 0);
+        arr.forEach(item => {
+          const d = (item[dateField]||"").slice(0,10);
+          if (map[d] !== undefined) map[d]++;
+        });
+        return days.map(d => ({ date: d, count: map[d] }));
+      };
+
+      // Top creators by video count
+      const creatorMap = {};
+      videos.forEach(v => {
+        const u = v.username || "unknown";
+        creatorMap[u] = (creatorMap[u]||0) + 1;
+      });
+      const topCreators = Object.entries(creatorMap)
+        .sort((a,b) => b[1]-a[1]).slice(0,5)
+        .map(([username, count]) => ({ username, count }));
+
+      // Top videos by views
+      const topVideos = [...videos].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,5);
+
+      // Totals
+      const totalViews  = videos.reduce((s,v) => s+(v.views_count||0), 0);
+      const totalLikes  = videos.reduce((s,v) => s+(v.likes_count||0), 0);
+      const matureCount = videos.filter(v => v.is_mature).length;
+
+      setAnalyticsData({
+        totalVideos: videos.length,
+        totalUsers: users.length,
+        totalComments: comments.length,
+        totalViews, totalLikes, matureCount,
+        dailyVideos: byDay(videos, "created_date"),
+        dailyUsers: byDay(users, "created_date"),
+        topCreators,
+        topVideos,
+      });
+    } catch(e) { console.error("analytics error", e); }
+    setAnalyticsLoading(false);
+  };
+
   useEffect(() => { loadVideos(); }, []);
+  useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
 
   const toggleMature = async (video, reason) => {
     setSaving(video.id);
@@ -2681,28 +2749,144 @@ function AdminPanel({ currentUser }) {
   return (
     <div style={{ minHeight:"100svh", background:"#0B0C1A", paddingBottom:120, paddingTop:0 }}>
       {/* Header */}
-      <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 12px", position:"sticky", top:0, zIndex:100 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+      <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 10px", position:"sticky", top:0, zIndex:100 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div style={{ color:"#F5C842", fontWeight:900, fontSize:20 }}>🛡️ Mod Panel</div>
-          <button onClick={() => window.open("https://sachi-c7f0261c.base44.app/Dashboard","_blank")} style={{ background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:20, padding:"8px 16px", color:"#0B0C1A", fontWeight:800, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>📊 Analytics</button>
+          <button onClick={() => modTab==="analytics" ? loadAnalytics() : loadVideos()}
+            style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:20, padding:"7px 14px", color:"#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
+            ↻ Refresh
+          </button>
         </div>
-        {/* Search */}
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption or username…"
-          style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10 }} />
-        {/* Filter tabs */}
-        <div style={{ display:"flex", gap:8 }}>
-          {[["all","All"],["mature","🔞 Mature"],["clean","✅ Clean"]].map(([val,label]) => (
-            <button key={val} onClick={() => setFilter(val)}
-              style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
-                background: filter===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
-                color: filter===val ? "#0B0C1A" : "#888" }}>
+        {/* Tab switcher */}
+        <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
+          {[["videos","🎬 Videos"],["analytics","📊 Analytics"]].map(([val,label]) => (
+            <button key={val} onClick={() => setModTab(val)}
+              style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
+                color: modTab===val ? "#0B0C1A" : "#888", transition:"all 0.2s" }}>
               {label}
             </button>
           ))}
-          <button onClick={loadVideos} style={{ marginLeft:"auto", padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, background:"rgba(255,255,255,0.07)", color:"#888" }}>↻ Refresh</button>
         </div>
+        {/* Search + filter — only on videos tab */}
+        {modTab === "videos" && (<>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption or username…"
+            style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10 }} />
+          <div style={{ display:"flex", gap:8 }}>
+            {[["all","All"],["mature","🔞 Mature"],["clean","✅ Clean"]].map(([val,label]) => (
+              <button key={val} onClick={() => setFilter(val)}
+                style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                  background: filter===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
+                  color: filter===val ? "#0B0C1A" : "#888" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </>)}
       </div>
 
+      {/* ── ANALYTICS TAB ── */}
+      {modTab === "analytics" && (
+        <div style={{ padding:"16px 16px 20px" }}>
+          {analyticsLoading ? (
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>Loading analytics…</div>
+          ) : !analyticsData ? (
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>No data yet.</div>
+          ) : (
+            <>
+              {/* KPI Cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+                {[
+                  ["👥","Users",analyticsData.totalUsers,"#6B8AFF"],
+                  ["🎬","Videos",analyticsData.totalVideos,"#F5C842"],
+                  ["💬","Comments",analyticsData.totalComments,"#FF6B6B"],
+                  ["👁","Views",analyticsData.totalViews,"#6BFFB8"],
+                  ["❤️","Likes",analyticsData.totalLikes,"#FF9500"],
+                  ["🔞","Mature",analyticsData.matureCount,"#FF6B6B"],
+                ].map(([icon,label,val,color]) => (
+                  <div key={label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 10px", textAlign:"center", border:`1px solid ${color}22` }}>
+                    <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
+                    <div style={{ color, fontWeight:900, fontSize:18, lineHeight:1 }}>{val.toLocaleString()}</div>
+                    <div style={{ color:"#555", fontSize:10, marginTop:3 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Daily Videos — bar chart */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(245,200,66,0.1)" }}>
+                <div style={{ color:"#F5C842", fontWeight:800, fontSize:14, marginBottom:12 }}>📈 Daily Videos (14 days)</div>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
+                  {analyticsData.dailyVideos.map(({date,count},i) => {
+                    const maxV = Math.max(...analyticsData.dailyVideos.map(d=>d.count), 1);
+                    const h = Math.max((count/maxV)*56, count>0?4:1);
+                    return (
+                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <div style={{ fontSize:9, color:"#555" }}>{count>0?count:""}</div>
+                        <div style={{ width:"100%", height:h, borderRadius:3, background: count>0 ? "linear-gradient(180deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.06)", transition:"height 0.3s" }} />
+                        <div style={{ fontSize:8, color:"#444", writingMode:"vertical-rl", transform:"rotate(180deg)", height:22, overflow:"hidden" }}>
+                          {date.slice(5)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Daily Users — bar chart */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.15)" }}>
+                <div style={{ color:"#6B8AFF", fontWeight:800, fontSize:14, marginBottom:12 }}>👥 Daily New Users (14 days)</div>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
+                  {analyticsData.dailyUsers.map(({date,count},i) => {
+                    const maxV = Math.max(...analyticsData.dailyUsers.map(d=>d.count), 1);
+                    const h = Math.max((count/maxV)*56, count>0?4:1);
+                    return (
+                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <div style={{ fontSize:9, color:"#555" }}>{count>0?count:""}</div>
+                        <div style={{ width:"100%", height:h, borderRadius:3, background: count>0 ? "linear-gradient(180deg,#6B8AFF,#4A67FF)" : "rgba(255,255,255,0.06)", transition:"height 0.3s" }} />
+                        <div style={{ fontSize:8, color:"#444", writingMode:"vertical-rl", transform:"rotate(180deg)", height:22, overflow:"hidden" }}>
+                          {date.slice(5)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Top Creators */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,255,184,0.1)" }}>
+                <div style={{ color:"#6BFFB8", fontWeight:800, fontSize:14, marginBottom:10 }}>🏆 Top Creators</div>
+                {analyticsData.topCreators.map(({username,count},i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                    <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
+                    <div style={{ flex:1, color:"#fff", fontSize:13 }}>@{username}</div>
+                    <div style={{ background:"rgba(245,200,66,0.15)", color:"#F5C842", fontWeight:800, fontSize:12, padding:"3px 10px", borderRadius:20 }}>{count} videos</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Top Videos */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", border:"1px solid rgba(255,107,107,0.1)" }}>
+                <div style={{ color:"#FF6B6B", fontWeight:800, fontSize:14, marginBottom:10 }}>🔥 Top Videos by Views</div>
+                {analyticsData.topVideos.map((v,i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                    <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
+                    <div style={{ width:36, height:44, borderRadius:8, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
+                      {v.thumbnail_url ? <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ color:"#333", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", height:"100%" }}>🎬</div>}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ color:"#fff", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.caption||"(no caption)"}</div>
+                      <div style={{ color:"#555", fontSize:11 }}>@{v.username} · 👁 {(v.views_count||0).toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── VIDEOS TAB ── */}
+      {modTab === "videos" && (<>
       {/* Stats bar */}
       <div style={{ display:"flex", gap:12, padding:"12px 20px" }}>
         {[
@@ -2780,6 +2964,7 @@ function AdminPanel({ currentUser }) {
           ))}
         </div>
       )}
+      </>)}
     </div>
   );
 }
