@@ -156,10 +156,10 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
       <select
         value={country}
         onChange={e => setCountry(e.target.value)}
-        style={{ ...inp, colorScheme:"dark", appearance:"none", WebkitAppearance:"none" }}
+        style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"1px solid rgba(245,200,66,0.3)", borderRadius:12, padding:"14px 16px", color: country ? "#fff" : "#888", fontSize:15, outline:"none", marginBottom:12, cursor:"pointer" }}
       >
-        <option value="">🌍 Select your country</option>
-        {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+        <option value="" style={{background:"#1a1b2e", color:"#888"}}>🌍 Select your country</option>
+        {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}
       </select>
 
       <label style={{ display:"flex", gap:10, alignItems:"center", marginBottom:16, cursor:"pointer", textAlign:"left" }}>
@@ -423,10 +423,10 @@ export default function AuthModal({ onClose, onSuccess }) {
                 <select
                   value={country}
                   onChange={e => setCountry(e.target.value)}
-                  style={{ ...inp, colorScheme:"dark", appearance:"none", WebkitAppearance:"none", marginBottom:12 }}
+                  style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"1px solid rgba(245,200,66,0.3)", borderRadius:12, padding:"14px 16px", color: country ? "#fff" : "#888", fontSize:15, outline:"none", marginBottom:12, cursor:"pointer" }}
                 >
-                  <option value="">🌍 Select your country</option>
-                  {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="" style={{background:"#1a1b2e", color:"#888"}}>🌍 Select your country</option>
+                  {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}
                 </select>
                 <label style={{ display:"flex", gap:10, alignItems:"center", marginBottom:12, cursor:"pointer" }}>
                   <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)}
