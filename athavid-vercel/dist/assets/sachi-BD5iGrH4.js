@@ -7441,10 +7441,10 @@ const COUNTRIES = [
 const GOOGLE_CLIENT_ID = "200749117149-l9litb11sb8aanco05im228chukbf0o6.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-function GoogleFinishStep({ googlePayload, onSuccess }) {
-  const { email, name, picture, sub } = googlePayload;
-  const suggestedUsername = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
-  const [username, setUsername] = reactExports.useState(suggestedUsername);
+function FinishStep({ googlePayload, onSuccess }) {
+  const { email, name, picture } = googlePayload;
+  const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
+  const [username, setUsername] = reactExports.useState(suggested);
   const [dob, setDob] = reactExports.useState("");
   const [country, setCountry] = reactExports.useState("");
   const [is18, setIs18] = reactExports.useState(false);
@@ -7466,7 +7466,7 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
   const btn = {
     display: "block",
     width: "100%",
-    padding: "12px 0",
+    padding: "14px 0",
     background: "linear-gradient(135deg,#F5C842,#FF9500)",
     border: "none",
     borderRadius: 14,
@@ -7489,49 +7489,34 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
     setLoading(true);
     setError("");
     try {
-      let existingUsers;
-      try {
-        const res = await fetch(
-          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
-          { headers: { "Content-Type": "application/json" } }
-        );
-        existingUsers = await res.json();
-      } catch {
-        existingUsers = [];
-      }
-      const items = Array.isArray(existingUsers) ? existingUsers : (existingUsers == null ? void 0 : existingUsers.items) || [];
-      let sachiUser = items.find((u2) => u2.email === email);
-      if (!sachiUser) {
-        const created = await fetch(
-          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email,
-              username: username.trim().toLowerCase(),
-              display_name: name || username.trim(),
-              avatar_url: picture || "",
-              is_verified: true,
-              is_18_plus: true,
-              status: "active",
-              followers_count: 0,
-              following_count: 0,
-              videos_count: 0
-            })
-          }
-        ).then((r2) => r2.json());
-        sachiUser = created;
-      }
+      const created = await fetch(
+        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            username: username.trim().toLowerCase(),
+            display_name: name || username.trim(),
+            avatar_url: picture || "",
+            is_verified: true,
+            is_18_plus: true,
+            status: "active",
+            followers_count: 0,
+            following_count: 0,
+            videos_count: 0
+          })
+        }
+      ).then((r2) => r2.json());
       localStorage.setItem("sachi_dob", dob);
       if (country) localStorage.setItem("sachi_country", country);
       const sessionUser = {
-        id: sachiUser.id || sachiUser.created_by,
+        id: created.id,
         email,
-        full_name: name || sachiUser.display_name,
-        avatar_url: picture || sachiUser.avatar_url,
+        full_name: name || username.trim(),
+        avatar_url: picture || "",
         _google: true,
-        _sachiProfileId: sachiUser.id
+        _sachiProfileId: created.id
       };
       localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
       localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
@@ -7603,12 +7588,20 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 18 years or older" })
     ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginBottom: 14, lineHeight: 1.5 }, children: [
+      "By joining you agree to our",
+      " ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842" }, children: "Terms" }),
+      " &",
+      " ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
+      "."
+    ] }),
     error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12 }, children: error }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleFinish, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Setting up your profile…" : "Let's Go 🚀" })
   ] });
 }
-function GoogleOneTap({ onGoogleVerified }) {
-  const [loading, setLoading] = reactExports.useState(false);
+function GoogleSignInButton({ onVerified }) {
   const [error, setError] = reactExports.useState("");
   reactExports.useEffect(() => {
     const script = document.createElement("script");
@@ -7636,183 +7629,54 @@ function GoogleOneTap({ onGoogleVerified }) {
     };
   }, []);
   const handleCredential = async (response) => {
-    setLoading(true);
     setError("");
     try {
       const payload = JSON.parse(atob(response.credential.split(".")[1]));
-      let existingUsers;
+      let existingUser = null;
       try {
         const res = await fetch(
           `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(payload.email)}&limit=5`,
           { headers: { "Content-Type": "application/json" } }
         );
-        existingUsers = await res.json();
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || [];
+        const found = items.find((u2) => u2.email === payload.email);
+        if (found) {
+          existingUser = {
+            id: found.id,
+            email: found.email,
+            full_name: found.display_name || payload.name,
+            avatar_url: found.avatar_url || payload.picture,
+            _google: true,
+            _sachiProfileId: found.id
+          };
+          localStorage.setItem("sachi_google_user", JSON.stringify(existingUser));
+          localStorage.setItem("sachi_user", JSON.stringify(existingUser));
+        }
       } catch {
-        existingUsers = [];
       }
-      const items = Array.isArray(existingUsers) ? existingUsers : (existingUsers == null ? void 0 : existingUsers.items) || [];
-      const sachiUser = items.find((u2) => u2.email === payload.email);
-      if (sachiUser) {
-        const sessionUser = {
-          id: sachiUser.id,
-          email: payload.email,
-          full_name: payload.name || sachiUser.display_name,
-          avatar_url: payload.picture || sachiUser.avatar_url,
-          _google: true,
-          _sachiProfileId: sachiUser.id
-        };
-        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-        onGoogleVerified({ payload, existingUser: sessionUser });
-      } else {
-        onGoogleVerified({ payload, existingUser: null });
-      }
+      onVerified({ payload, existingUser });
     } catch (e) {
       console.error(e);
       setError("Sign-in failed. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 16 }, children: [
-    loading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 13, marginBottom: 8 }, children: "Signing you in…" }),
-    error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 12, marginBottom: 8 }, children: error }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "google-signin-btn" })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "google-signin-btn", style: { minHeight: 44 } }),
+    error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13 }, children: error })
   ] });
 }
 function AuthModal({ onClose, onSuccess }) {
-  const [mode, setMode] = reactExports.useState("signup");
-  const [step, setStep] = reactExports.useState("form");
+  const [step, setStep] = reactExports.useState("google");
   const [googlePayload, setGooglePayload] = reactExports.useState(null);
-  const [email, setEmail] = reactExports.useState("");
-  const [password, setPassword] = reactExports.useState("");
-  const [name, setName] = reactExports.useState("");
-  const [dob, setDob] = reactExports.useState("");
-  const [country, setCountry] = reactExports.useState("");
-  const [otp, setOtp] = reactExports.useState("");
-  const [resetToken, setResetToken] = reactExports.useState("");
-  const [newPassword, setNewPassword] = reactExports.useState("");
-  const [loading, setLoading] = reactExports.useState(false);
-  const [error, setError] = reactExports.useState("");
-  const [agreedToTerms, setAgreedToTerms] = reactExports.useState(false);
-  const handleGoogleVerified = ({ payload, existingUser }) => {
+  const handleVerified = ({ payload, existingUser }) => {
     if (existingUser) {
       onSuccess(existingUser);
     } else {
       setGooglePayload(payload);
-      setStep("google_finish");
+      setStep("finish");
     }
   };
-  const submitForgot = async () => {
-    if (!email) return setError("Enter your email address.");
-    setLoading(true);
-    setError("");
-    try {
-      await auth.forgotPassword(email);
-      setStep("reset");
-    } catch (e) {
-      setError(e.message || "Could not send reset email.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const submitReset = async () => {
-    if (!resetToken || !newPassword) return setError("Enter the reset token and your new password.");
-    if (newPassword.length < 6) return setError("Password must be at least 6 characters.");
-    setLoading(true);
-    setError("");
-    try {
-      await auth.resetPassword(email, resetToken, newPassword);
-      setStep("form");
-      setMode("login");
-      setError("");
-      setResetToken("");
-      setNewPassword("");
-      alert("✅ Password reset! Please log in with your new password.");
-    } catch (e) {
-      setError(e.message || "Invalid token. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const submitForm = async () => {
-    if (!email || !password) return setError("Please fill in all fields.");
-    if (mode === "signup" && !agreedToTerms) return setError("Please confirm you are 18 years or older.");
-    if (mode === "signup" && !dob) return setError("Please enter your date of birth.");
-    if (mode === "signup") {
-      const birthDate = new Date(dob);
-      const today = /* @__PURE__ */ new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m2 = today.getMonth() - birthDate.getMonth();
-      if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
-      if (age < 13) return setError("You must be at least 13 years old to join Sachi.");
-    }
-    setLoading(true);
-    setError("");
-    try {
-      if (mode === "login") {
-        const loginData = await auth.signIn(email, password);
-        const user = loginData.user || auth.getUser();
-        const hasLocation = localStorage.getItem("sachi_country_code") || localStorage.getItem("sachi_country");
-        if (!hasLocation) {
-          setStep("location_prompt");
-          setLoading(false);
-          window._sachiPendingUser = user;
-          return;
-        }
-        onSuccess(user);
-      } else {
-        await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
-        localStorage.setItem("sachi_dob", dob);
-        setStep("country");
-      }
-    } catch (e) {
-      setError(e.message || "Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const submitOtp = async () => {
-    const code = otp.trim();
-    if (!code) return setError("Enter the code from your email.");
-    setLoading(true);
-    setError("");
-    try {
-      await auth.verifyOtp(email, code);
-      onSuccess(auth.getUser());
-    } catch (e) {
-      setError(e.message || "Invalid code. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const inp = {
-    display: "block",
-    width: "100%",
-    boxSizing: "border-box",
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(245,200,66,0.15)",
-    borderRadius: 12,
-    padding: "14px 16px",
-    color: "#fff",
-    fontSize: 15,
-    outline: "none",
-    marginBottom: 12
-  };
-  const btn = {
-    display: "block",
-    width: "100%",
-    padding: "14px 0",
-    background: "linear-gradient(135deg,#F5C842,#FF9500)",
-    border: "none",
-    borderRadius: 14,
-    color: "#0B0C1A",
-    fontWeight: 800,
-    fontSize: 16,
-    cursor: "pointer",
-    marginBottom: 10
-  };
-  const backBtn = { display: "block", width: "100%", padding: "10px 0", background: "none", border: "none", color: "#555", fontSize: 13, cursor: "pointer" };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.88)" } }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
@@ -7821,320 +7685,29 @@ function AuthModal({ onClose, onSuccess }) {
       background: "#12132A",
       borderRadius: 24,
       border: "1px solid rgba(245,200,66,0.1)",
-      padding: "20px 20px 24px",
+      padding: "28px 24px 32px",
       width: "100%",
       maxWidth: 400,
       maxHeight: "92vh",
       overflowY: "auto"
     }, children: [
-      step === "google_finish" && googlePayload && /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleFinishStep, { googlePayload, onSuccess }),
-      step === "form" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "🎬" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Join Sachi" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "Your stage. Share with the world." })
+      step === "google" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 8 }, children: "🌸" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 24, marginBottom: 6 }, children: "Join Sachi" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14, marginBottom: 28 }, children: "Your stage. Share your truth with the world." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleSignInButton, { onVerified: handleVerified }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginTop: 20, lineHeight: 1.6 }, children: [
+          "By continuing you agree to our",
+          " ",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842" }, children: "Terms" }),
+          " &",
+          " ",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
+          "."
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleOneTap, { onGoogleVerified: handleGoogleVerified }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 12 }, children: "or continue with email" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: 4, marginBottom: 12 }, children: ["signup", "login"].map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => {
-              setMode(m2);
-              setError("");
-            },
-            style: {
-              flex: 1,
-              padding: "10px 0",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-              fontWeight: 700,
-              fontSize: 14,
-              background: mode === m2 ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "transparent",
-              color: mode === m2 ? "#fff" : "#666"
-            },
-            children: m2 === "signup" ? "Sign Up" : "Log In"
-          },
-          m2
-        )) }),
-        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Your name", style: inp }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            value: email,
-            onChange: (e) => setEmail(e.target.value),
-            placeholder: "Email",
-            type: "email",
-            style: inp,
-            onKeyDown: (e) => e.key === "Enter" && submitForm()
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            value: password,
-            onChange: (e) => setPassword(e.target.value),
-            placeholder: "Password (min 6 chars)",
-            type: "password",
-            style: inp,
-            onKeyDown: (e) => e.key === "Enter" && submitForm()
-          }
-        ),
-        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4, color: "#888", fontSize: 12 }, children: [
-            "Birthday ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "input",
-            {
-              value: dob,
-              onChange: (e) => setDob(e.target.value),
-              type: "date",
-              max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
-              style: { ...inp, colorScheme: "dark" }
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: "pointer" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                type: "checkbox",
-                checked: agreedToTerms,
-                onChange: (e) => setAgreedToTerms(e.target.checked),
-                style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0 }
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 18 years or older" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginBottom: 14, lineHeight: 1.5 }, children: [
-            "By signing up you agree to our",
-            " ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842" }, children: "Terms" }),
-            " &",
-            " ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
-            "."
-          ] })
-        ] }),
-        error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12, textAlign: "center" }, children: error }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitForm, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Please wait…" : mode === "signup" ? "Create Account" : "Log In" }),
-        mode === "login" && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          setStep("forgot");
-          setError("");
-        }, style: backBtn, children: "Forgot password?" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: backBtn, children: "Cancel" })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { marginTop: 16, background: "none", border: "none", color: "#555", fontSize: 13, cursor: "pointer" }, children: "Maybe later" })
       ] }),
-      step === "country" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "🌍" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Where are you from?" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "We'll add your flag and city to your posts" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "select",
-          {
-            value: country,
-            onChange: (e) => setCountry(e.target.value),
-            style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "2px solid rgba(245,200,66,0.4)", borderRadius: 14, padding: "16px", color: country ? "#fff" : "#888", fontSize: 16, outline: "none", marginBottom: 16, cursor: "pointer" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "Select your country" }),
-              COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.07)", border: "1px solid rgba(245,200,66,0.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, marginBottom: 6 }, children: "📍 Enable precise location?" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginBottom: 12, lineHeight: 1.5 }, children: [
-            "Show your city on every post — like ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "📍 New York, US" }),
-            ". You can change this anytime."
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => {
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                      localStorage.setItem("sachi_location_granted", "true");
-                      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then((r2) => r2.json()).then((data) => {
-                        const addr = data.address || {};
-                        const detectedCountry = addr.country || "";
-                        const region = addr.state || addr.city || addr.county || "";
-                        if (detectedCountry && !country) setCountry(detectedCountry);
-                        localStorage.setItem("sachi_region", region);
-                        if (addr.country_code) localStorage.setItem("sachi_country_code", addr.country_code.toUpperCase());
-                      }).catch(() => {
-                      });
-                    },
-                    () => {
-                    },
-                    { timeout: 8e3 }
-                  );
-                }
-              },
-              style: { width: "100%", padding: "11px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 11, color: "#0B0C1A", fontWeight: 800, fontSize: 14, cursor: "pointer" },
-              children: "📍 Yes, show my location on posts"
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => {
-              if (country) localStorage.setItem("sachi_country", country);
-              setStep("otp");
-            },
-            style: { display: "block", width: "100%", padding: "14px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 10 },
-            children: country ? "Continue →" : "Skip for now"
-          }
-        )
-      ] }),
-      step === "location_prompt" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 44 }, children: "📍" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, margin: "8px 0 4px" }, children: "Where are you posting from?" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 14 }, children: "We'll add your flag to your posts. You can skip this." })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "select",
-          {
-            value: country,
-            onChange: (e) => setCountry(e.target.value),
-            style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "2px solid rgba(245,200,66,0.4)", borderRadius: 14, padding: "16px", color: country ? "#fff" : "#888", fontSize: 16, outline: "none", marginBottom: 16, cursor: "pointer" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
-              COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.07)", border: "1px solid rgba(245,200,66,0.25)", borderRadius: 14, padding: "14px 16px", marginBottom: 16 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, marginBottom: 6 }, children: "📍 Or use my precise location" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginBottom: 10, lineHeight: 1.5 }, children: [
-            "Auto-detects your city — shows as ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "📍 New York, US" }),
-            " on posts."
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then((r2) => r2.json()).then((data) => {
-                    const addr = data.address || {};
-                    const code = addr.country_code ? addr.country_code.toUpperCase() : null;
-                    const region = addr.state || addr.city || addr.county || null;
-                    if (code) {
-                      localStorage.setItem("sachi_country_code", code);
-                      setCountry(addr.country || code);
-                    }
-                    if (region) localStorage.setItem("sachi_region", region);
-                    const u2 = window._sachiPendingUser;
-                    delete window._sachiPendingUser;
-                    onSuccess(u2);
-                  }).catch(() => {
-                    const u2 = window._sachiPendingUser;
-                    delete window._sachiPendingUser;
-                    onSuccess(u2);
-                  });
-                },
-                () => {
-                },
-                { timeout: 8e3 }
-              );
-            }
-          }, style: { width: "100%", padding: "11px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 11, color: "#0B0C1A", fontWeight: 800, fontSize: 14, cursor: "pointer" }, children: "📍 Use My Location" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          if (country) localStorage.setItem("sachi_country", country);
-          const u2 = window._sachiPendingUser;
-          delete window._sachiPendingUser;
-          onSuccess(u2);
-        }, style: { display: "block", width: "100%", padding: "14px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 10 }, children: country ? "Save & Continue →" : "Skip for now" })
-      ] }),
-      step === "otp" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40 }, children: "📧" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, margin: "8px 0 4px" }, children: "Check your email" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#777", fontSize: 13 }, children: [
-            "We sent a verification code to",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#F5C842" }, children: email })
-          ] })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            value: otp,
-            onChange: (e) => setOtp(e.target.value),
-            placeholder: "Enter verification code",
-            style: inp,
-            onKeyDown: (e) => e.key === "Enter" && submitOtp()
-          }
-        ),
-        error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12, textAlign: "center" }, children: error }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitOtp, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Verifying…" : "Verify & Join" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => auth.resendOtp(email).catch(() => {
-        }), style: backBtn, children: "Resend code" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          setStep("form");
-          setError("");
-        }, style: backBtn, children: "← Back" })
-      ] }),
-      step === "forgot" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36 }, children: "🔑" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, margin: "8px 0 4px" }, children: "Reset Password" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 13 }, children: "Enter your email and we'll send a reset code" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            value: email,
-            onChange: (e) => setEmail(e.target.value),
-            placeholder: "Your email",
-            type: "email",
-            style: inp,
-            onKeyDown: (e) => e.key === "Enter" && submitForgot()
-          }
-        ),
-        error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12, textAlign: "center" }, children: error }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitForgot, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Sending…" : "Send Reset Code" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          setStep("form");
-          setError("");
-        }, style: backBtn, children: "← Back to Login" })
-      ] }),
-      step === "reset" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 20 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36 }, children: "🔐" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, margin: "8px 0 4px" }, children: "Set New Password" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 13 }, children: "Enter the code from your email" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: resetToken, onChange: (e) => setResetToken(e.target.value), placeholder: "Reset code", style: inp }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "input",
-          {
-            value: newPassword,
-            onChange: (e) => setNewPassword(e.target.value),
-            placeholder: "New password",
-            type: "password",
-            style: inp,
-            onKeyDown: (e) => e.key === "Enter" && submitReset()
-          }
-        ),
-        error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12, textAlign: "center" }, children: error }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submitReset, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Resetting…" : "Reset Password" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          setStep("form");
-          setError("");
-        }, style: backBtn, children: "← Back" })
-      ] })
+      step === "finish" && googlePayload && /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, onSuccess })
     ] })
   ] });
 }
