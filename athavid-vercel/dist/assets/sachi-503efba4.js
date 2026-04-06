@@ -7759,8 +7759,7 @@ const auth = {
 };
 const videos = {
   async list() {
-    const cb2 = Date.now();
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb2}`);
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=200`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
@@ -7841,7 +7840,7 @@ const follows = {
   },
   async getFollowingVideos(userIds) {
     userIds.join(",");
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=200`);
   }
 };
 const interests = {
@@ -12155,7 +12154,8 @@ function App() {
     try {
       const data = await videos.list();
       console.log("loadVideos data type:", typeof data, Array.isArray(data), (data == null ? void 0 : data.length) || (data == null ? void 0 : data.count));
-      const raw = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
+      const rawAll = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
+      const raw = rawAll.filter((v2) => !v2.is_archived);
       console.log("loadVideos raw count:", raw.length);
       if (!raw.length) {
         setVideoList([]);

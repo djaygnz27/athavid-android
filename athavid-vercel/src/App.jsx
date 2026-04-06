@@ -2854,7 +2854,9 @@ function App() {
     try {
       const data = await videos.list();
       console.log('loadVideos data type:', typeof data, Array.isArray(data), data?.length || data?.count);
-      const raw = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      // Filter archived posts client-side (server boolean filter is unreliable)
+      const raw = rawAll.filter(v => !v.is_archived);
       console.log('loadVideos raw count:', raw.length);
       if (!raw.length) { setVideoList([]); setLoading(false); return; }
       // Always sort newest-first first

@@ -59,10 +59,8 @@ export const auth = {
 
 export const videos = {
   async list() {
-    // Cache-bust so Home refresh always gets the very latest posts
-    const cb = Date.now();
-    // Direct entity API works for both guests and authenticated users (CORS allows *)
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb}`);
+    // Use cache: 'no-store' fetch option to bypass browser cache without breaking API query params
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=200`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
@@ -143,7 +141,7 @@ export const follows = {
   async getFollowingVideos(userIds) {
     // fetch videos from followed users
     const ids = userIds.join(",");
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=200`);
   }
 };
 
