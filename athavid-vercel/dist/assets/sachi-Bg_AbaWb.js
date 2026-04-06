@@ -9049,6 +9049,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const fileRef = reactExports.useRef();
   const [notAiConfirmed, setNotAiConfirmed] = reactExports.useState(false);
   const [aiBlocked, setAiBlocked] = reactExports.useState(false);
+  const [isAiGenerated, setIsAiGenerated] = reactExports.useState(false);
   const checkForExplicitContent = (f2, cap) => {
     const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
     const name = f2.name.toLowerCase();
@@ -9250,7 +9251,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         shares_count: 0,
         is_approved: true,
         is_archived: false,
-        is_ai_detected: false,
+        is_ai_detected: isAiGenerated,
         is_mature: isMature,
         mature_reason: isMature ? matureReason : null,
         ...photoGeo
@@ -9279,7 +9280,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       alert("🚫 This video appears to be AI-generated and cannot be posted on Sachi.");
       return;
     }
-    if (!notAiConfirmed) {
+    if (!notAiConfirmed && !isAiGenerated) {
       alert("⚠️ Please confirm your video is NOT AI-generated before posting.");
       return;
     }
@@ -9332,7 +9333,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         shares_count: 0,
         is_approved: true,
         is_archived: false,
-        is_ai_detected: false,
+        is_ai_detected: isAiGenerated,
         is_mature: isMature,
         mature_reason: isMature ? matureReason : null,
         ...videoGeo
@@ -9674,7 +9675,49 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             }
           )
         ] }),
-        !aiBlocked && !explicitBlocked && file && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        !aiBlocked && !explicitBlocked && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: () => setIsAiGenerated((p2) => !p2),
+              style: {
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+                cursor: "pointer",
+                padding: "10px 14px",
+                background: isAiGenerated ? "rgba(255,149,0,0.08)" : "rgba(255,255,255,0.04)",
+                borderRadius: 10,
+                border: `1px solid ${isAiGenerated ? "rgba(255,149,0,0.5)" : "rgba(255,255,255,0.1)"}`
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+                  width: 20,
+                  height: 20,
+                  borderRadius: 5,
+                  border: `2px solid ${isAiGenerated ? "#FF9500" : "#555"}`,
+                  background: isAiGenerated ? "#FF9500" : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  transition: "all 0.2s"
+                }, children: isAiGenerated && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontSize: 13, fontWeight: 900 }, children: "✓" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: isAiGenerated ? "#FF9500" : "#888", fontSize: 13, lineHeight: 1.4 }, children: [
+                  "🤖 This content was ",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "AI generated" }),
+                  " — let your viewers know"
+                ] })
+              ]
+            }
+          ),
+          isAiGenerated && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 8, padding: "10px 14px", background: "rgba(255,149,0,0.07)", borderRadius: 10, border: "1px solid rgba(255,149,0,0.2)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#FF9500", fontSize: 12, lineHeight: 1.5 }, children: [
+            "✅ Your post will display an ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "🤖 AI Generated" }),
+            " badge so viewers know this content was created by AI. Sachi values truth and transparency."
+          ] }) })
+        ] }),
+        !aiBlocked && !explicitBlocked && !isAiGenerated && file && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
             onClick: () => setNotAiConfirmed((p2) => !p2),
@@ -9706,8 +9749,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           "button",
           {
             onClick: upload,
-            disabled: !file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed,
-            style: { width: "100%", padding: 14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 800, fontSize: 16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? 1 : 0.5 },
+            disabled: !file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed && !isAiGenerated,
+            style: { width: "100%", padding: 14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 800, fontSize: 16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? 1 : 0.5 },
             children: uploading ? step : "🚀 Post Video"
           }
         )
