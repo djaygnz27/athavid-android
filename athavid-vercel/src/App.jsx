@@ -1088,16 +1088,45 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     }
   };
 
-  const MUSIC_API_URL = "https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks";
+  const JAMENDO_CLIENT_ID = "c9f4d87f";
+  const GENRE_TAG_MAP = {
+    "All":"","Lo-Fi":"lounge","Hip-Hop":"hiphop","Electronic":"electronic",
+    "R&B":"rnb","Pop":"pop","Chill":"relaxation","Afrobeats":"afrobeats",
+    "Jazz":"jazz","Rock":"rock","Acoustic":"acoustic","Classical":"classical"
+  };
+  const GENRE_EMOJI = {
+    "lounge":"🌆","hiphop":"🔥","electronic":"⚡","rnb":"❤️","pop":"🌈",
+    "relaxation":"🌊","afrobeats":"🌍","jazz":"🎷","rock":"🎸","acoustic":"🎸","classical":"🎻"
+  };
 
   const fetchMusicTracks = async (genre = "All", search = "") => {
     setMusicLoading(true);
     try {
-      const params = new URLSearchParams({ genre, limit: "30" });
-      if (search) params.set("search", search);
-      const resp = await fetch(`${MUSIC_API_URL}?${params.toString()}`);
+      const tag = GENRE_TAG_MAP[genre] || "";
+      const params = new URLSearchParams({
+        client_id: JAMENDO_CLIENT_ID,
+        format: "json",
+        limit: "30",
+        order: "popularity_week",
+        include: "musicinfo",
+        audioformat: "mp31",
+        imagesize: "100",
+      });
+      if (tag)    params.set("tags", tag);
+      if (search) params.set("namesearch", search);
+      const resp = await fetch(`https://api.jamendo.com/v3.0/tracks/?${params.toString()}`);
       const data = await resp.json();
-      setMusicTracks(data.tracks || []);
+      const tracks = (data.results || []).map(t => ({
+        id:       `j_${t.id}`,
+        title:    t.name,
+        artist:   t.artist_name,
+        url:      t.audio,
+        genre:    genre === "All" ? (t.musicinfo?.tags?.genres?.[0] || "Music") : genre,
+        emoji:    GENRE_EMOJI[tag] || "🎵",
+        duration: t.duration,
+        image:    t.image,
+      })).filter(t => t.url);
+      setMusicTracks(tracks);
     } catch(e) {
       console.error("Music fetch error:", e);
       setMusicTracks([]);
