@@ -281,7 +281,7 @@ export default function AuthModal({ onClose, onSuccess }) {
 
   const submitForm = async () => {
     if (!email || !password) return setError("Please fill in all fields.");
-    if (mode === "signup" && !agreedToTerms) return setError("You must agree to the Terms of Service and Privacy Policy.");
+    if (mode === "signup" && !agreedToTerms) return setError("Please confirm you are 18 years or older.");
     if (mode === "signup" && !dob) return setError("Please enter your date of birth.");
     if (mode === "signup") {
       const birthDate = new Date(dob);
@@ -374,28 +374,28 @@ export default function AuthModal({ onClose, onSuccess }) {
             </div>
 
             {mode==="signup" && (
-              <>
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inp} />
-                <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>Date of Birth <span style={{color:"#ff6b6b"}}>*</span></div>
-                <input value={dob} onChange={e => setDob(e.target.value)} type="date"
-                  max={new Date().toISOString().slice(0,10)} style={{ ...inp, colorScheme:"dark" }} />
-              </>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" style={inp} />
             )}
             <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" style={inp}
               onKeyDown={e => e.key==="Enter" && submitForm()} />
-            <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" style={inp}
+            <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password (min 6 chars)" type="password" style={inp}
               onKeyDown={e => e.key==="Enter" && submitForm()} />
-
             {mode==="signup" && (
-              <label style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:16, cursor:"pointer" }}>
-                <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ marginTop:3, accentColor:"#F5C842" }} />
-                <span style={{ color:"#888", fontSize:12, lineHeight:1.5 }}>
-                  I agree to Sachi's{" "}
-                  <a href="/terms" target="_blank" style={{ color:"#F5C842" }}>Terms of Service</a> and{" "}
+              <>
+                <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>Birthday <span style={{color:"#ff6b6b"}}>*</span></div>
+                <input value={dob} onChange={e => setDob(e.target.value)} type="date"
+                  max={new Date().toISOString().slice(0,10)} style={{ ...inp, colorScheme:"dark" }} />
+                <label style={{ display:"flex", gap:10, alignItems:"center", marginBottom:12, cursor:"pointer" }}>
+                  <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)}
+                    style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0 }} />
+                  <span style={{ color:"#ccc", fontSize:14, fontWeight:600 }}>I confirm I am 18 years or older</span>
+                </label>
+                <div style={{ color:"#555", fontSize:11, marginBottom:14, lineHeight:1.5 }}>
+                  By signing up you agree to our{" "}
+                  <a href="/terms" target="_blank" style={{ color:"#F5C842" }}>Terms</a> &amp;{" "}
                   <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
-                  By signing up, I acknowledge that Sachi and AthaVid are not liable for user-generated content.
-                </span>
-              </label>
+                </div>
+              </>
             )}
 
             {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}

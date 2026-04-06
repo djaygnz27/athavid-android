@@ -7608,7 +7608,7 @@ function AuthModal({ onClose, onSuccess }) {
   };
   const submitForm = async () => {
     if (!email || !password) return setError("Please fill in all fields.");
-    if (mode === "signup" && !agreedToTerms) return setError("You must agree to the Terms of Service and Privacy Policy.");
+    if (mode === "signup" && !agreedToTerms) return setError("Please confirm you are 18 years or older.");
     if (mode === "signup" && !dob) return setError("Please enter your date of birth.");
     if (mode === "signup") {
       const birthDate = new Date(dob);
@@ -7726,23 +7726,7 @@ function AuthModal({ onClose, onSuccess }) {
           },
           m2
         )) }),
-        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Your name", style: inp }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4, color: "#888", fontSize: 12 }, children: [
-            "Date of Birth ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "input",
-            {
-              value: dob,
-              onChange: (e) => setDob(e.target.value),
-              type: "date",
-              max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
-              style: { ...inp, colorScheme: "dark" }
-            }
-          )
-        ] }),
+        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: name, onChange: (e) => setName(e.target.value), placeholder: "Your name", style: inp }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "input",
           {
@@ -7759,22 +7743,47 @@ function AuthModal({ onClose, onSuccess }) {
           {
             value: password,
             onChange: (e) => setPassword(e.target.value),
-            placeholder: "Password",
+            placeholder: "Password (min 6 chars)",
             type: "password",
             style: inp,
             onKeyDown: (e) => e.key === "Enter" && submitForm()
           }
         ),
-        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "checkbox", checked: agreedToTerms, onChange: (e) => setAgreedToTerms(e.target.checked), style: { marginTop: 3, accentColor: "#F5C842" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#888", fontSize: 12, lineHeight: 1.5 }, children: [
-            "I agree to Sachi's",
+        mode === "signup" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4, color: "#888", fontSize: 12 }, children: [
+            "Birthday ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              value: dob,
+              onChange: (e) => setDob(e.target.value),
+              type: "date",
+              max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+              style: { ...inp, colorScheme: "dark" }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 12, cursor: "pointer" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                type: "checkbox",
+                checked: agreedToTerms,
+                onChange: (e) => setAgreedToTerms(e.target.checked),
+                style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0 }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 18 years or older" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginBottom: 14, lineHeight: 1.5 }, children: [
+            "By signing up you agree to our",
             " ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842" }, children: "Terms of Service" }),
-            " and",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842" }, children: "Terms" }),
+            " &",
             " ",
             /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
-            ". By signing up, I acknowledge that Sachi and AthaVid are not liable for user-generated content."
+            "."
           ] })
         ] }),
         error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12, textAlign: "center" }, children: error }),
