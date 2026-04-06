@@ -12425,25 +12425,26 @@ function App() {
   const handleLike = React.useCallback((videoId, delta) => {
     const feedEl = feedContainerRef.current;
     const savedScroll = feedEl ? feedEl.scrollTop : 0;
-    setVideoList((vs) => vs.map((v2) => v2.id === videoId ? { ...v2, likes_count: Math.max(0, (v2.likes_count || 0) + delta) } : v2));
+    setVideoList((vs) => {
+      const updated = vs.map((v2) => {
+        var _a2;
+        if (v2.id !== videoId) return v2;
+        const newCount = Math.max(0, (v2.likes_count || 0) + delta);
+        videos.update(videoId, { likes_count: newCount }).catch(() => {
+        });
+        if (currentUser && ((_a2 = v2.hashtags) == null ? void 0 : _a2.length)) {
+          interests.signal(currentUser.id, v2.hashtags, delta > 0 ? 3 : -1).catch(() => {
+          });
+        }
+        return { ...v2, likes_count: newCount };
+      });
+      return updated;
+    });
     if (feedEl) {
       requestAnimationFrame(() => {
         feedEl.scrollTop = savedScroll;
       });
     }
-    setVideoList((current) => {
-      var _a2;
-      const vid = current.find((v2) => v2.id === videoId);
-      if (vid) {
-        videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count || 0) + delta) }).catch(() => {
-        });
-        if (currentUser && ((_a2 = vid.hashtags) == null ? void 0 : _a2.length)) {
-          interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(() => {
-          });
-        }
-      }
-      return current;
-    });
   }, [currentUser, feedContainerRef]);
   const handleView = (videoId) => {
     var _a2;
