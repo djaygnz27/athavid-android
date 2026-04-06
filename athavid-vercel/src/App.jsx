@@ -887,12 +887,18 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_photo: true,
         caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: true, is_archived: false, is_ai_detected: isAiGenerated,
+        is_approved: !isAiGenerated, is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         ...photoGeo,
       });
-      setProgress(100); setStep("Posted! 🎉");
-      setTimeout(() => { onUploaded(); onClose(); }, 1000);
+      setProgress(100);
+      if (isAiGenerated) {
+        setStep("🤖 Bruh, AI has been flagged! Sent to MOD for review.");
+        setTimeout(() => { onClose(); }, 2500);
+      } else {
+        setStep("Posted! 🎉");
+        setTimeout(() => { onUploaded(); onClose(); }, 1000);
+      }
     } catch(e) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false); setProgress(0); setStep("");
@@ -943,12 +949,18 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url, thumbnail_url, caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: true, is_archived: false, is_ai_detected: isAiGenerated,
+        is_approved: !isAiGenerated, is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         ...videoGeo,
       });
-      setProgress(100); setStep("Posted! 🎉");
-      setTimeout(() => { onUploaded(); onClose(); }, 1000);
+      setProgress(100);
+      if (isAiGenerated) {
+        setStep("🤖 Bruh, AI has been flagged! Sent to MOD for review.");
+        setTimeout(() => { onClose(); }, 2500);
+      } else {
+        setStep("Posted! 🎉");
+        setTimeout(() => { onUploaded(); onClose(); }, 1000);
+      }
     } catch(e) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false); setProgress(0); setStep("");
@@ -1191,7 +1203,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             {isAiGenerated && (
               <div style={{ marginTop:8, padding:"10px 14px", background:"rgba(255,149,0,0.07)", borderRadius:10, border:"1px solid rgba(255,149,0,0.2)" }}>
                 <div style={{ color:"#FF9500", fontSize:12, lineHeight:1.5 }}>
-                  ✅ Your post will display an <strong>🤖 AI Generated</strong> badge so viewers know this content was created by AI. Sachi values truth and transparency.
+                  ⚠️ Your post will be <strong>held for MOD review</strong> before going live. If approved, it will show an <strong>🤖 AI Generated</strong> badge. Sachi values truth — thanks for being honest.
                 </div>
               </div>
             )}
@@ -3279,8 +3291,9 @@ function AdminPanel({ currentUser }) {
         <div style={{ padding:"16px" }}>
           <div style={{ display:"flex", gap:12, marginBottom:16 }}>
             {[
-              ["🤖 AI Flagged", allVideos.filter(v=>v.is_ai_detected).length, "#FF9500"],
-              ["✅ Verified Real", allVideos.filter(v=>!v.is_ai_detected && v.is_approved).length, "#6BFFB8"],
+              ["⏳ Pending Review", allVideos.filter(v=>v.is_ai_detected && !v.is_approved).length, "#FF9500"],
+              ["🤖 Live AI Posts", allVideos.filter(v=>v.is_ai_detected && v.is_approved).length, "#ffcc44"],
+              ["✅ Clean Posts", allVideos.filter(v=>!v.is_ai_detected && v.is_approved).length, "#6BFFB8"],
             ].map(([label,count,color]) => (
               <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:"10px 0", textAlign:"center", border:`1px solid ${color}22` }}>
                 <div style={{ color, fontWeight:900, fontSize:20 }}>{count}</div>
@@ -3288,15 +3301,62 @@ function AdminPanel({ currentUser }) {
               </div>
             ))}
           </div>
-          {allVideos.filter(v => v.is_ai_detected).length === 0 ? (
-            <div style={{ textAlign:"center", color:"#555", padding:40 }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
-              <div style={{ fontSize:14, fontWeight:600, color:"#6BFFB8" }}>No AI-flagged posts!</div>
-              <div style={{ fontSize:12, color:"#444", marginTop:6 }}>All content looks clean.</div>
+
+          {/* PENDING AI REVIEW SECTION */}
+          {allVideos.filter(v => v.is_ai_detected && !v.is_approved).length > 0 && (
+            <div style={{ marginBottom:20 }}>
+              <div style={{ color:"#FF9500", fontWeight:800, fontSize:13, marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
+                ⏳ Pending Your Review
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {allVideos.filter(v => v.is_ai_detected && !v.is_approved).map(video => (
+                  <div key={video.id} style={{ background:"rgba(255,149,0,0.08)", borderRadius:16, border:"2px solid rgba(255,149,0,0.5)", overflow:"hidden" }}>
+                    <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
+                      <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
+                        {video.thumbnail_url
+                          ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                          <span style={{ fontSize:11, background:"rgba(255,149,0,0.3)", color:"#FF9500", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>⏳ Awaiting MOD</span>
+                        </div>
+                        <div style={{ color:"#aaa", fontSize:11, marginBottom:3 }}>@{video.username || "unknown"}</div>
+                        <div style={{ color:"#fff", fontSize:13, fontWeight:600, marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {video.caption || "(no caption)"}
+                        </div>
+                        <div style={{ fontSize:11, color:"#FF9500" }}>Creator self-disclosed as AI</div>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:0, borderTop:"1px solid rgba(255,255,255,0.05)" }}>
+                      <button onClick={async () => { setSaving(video.id); await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true }); setAllVideos(p => p.map(v => v.id===video.id ? {...v, is_approved:true} : v)); setSaving(null); }}
+                        disabled={saving===video.id}
+                        style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                          borderRight:"1px solid rgba(255,255,255,0.05)",
+                          background:"rgba(107,255,154,0.1)", color:"#6bff9a" }}>
+                        {saving===video.id ? "Saving…" : "✅ Approve & Post with AI Badge"}
+                      </button>
+                      <button onClick={() => deleteVideo(video)} disabled={saving===video.id}
+                        style={{ width:56, padding:"10px 0", border:"none", cursor:"pointer", fontSize:16,
+                          background:"rgba(255,0,0,0.08)", color:"#ff4444" }}>
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* LIVE AI POSTS SECTION */}
+          <div style={{ color:"#ffcc44", fontWeight:800, fontSize:13, marginBottom:10 }}>🤖 Live AI-Badged Posts</div>
+          {allVideos.filter(v => v.is_ai_detected && v.is_approved).length === 0 ? (
+            <div style={{ textAlign:"center", color:"#555", padding:24 }}>
+              <div style={{ fontSize:12, color:"#444" }}>No approved AI posts yet.</div>
             </div>
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-              {allVideos.filter(v => v.is_ai_detected).map(video => (
+              {allVideos.filter(v => v.is_ai_detected && v.is_approved).map(video => (
                 <div key={video.id} style={{ background:"rgba(255,149,0,0.06)", borderRadius:16, border:"1px solid rgba(255,149,0,0.3)", overflow:"hidden" }}>
                   <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
                     <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
