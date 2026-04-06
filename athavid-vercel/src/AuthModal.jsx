@@ -327,6 +327,15 @@ export default function AuthModal({ onClose, onSuccess }) {
       if (mode === "login") {
         const loginData = await auth.signIn(email, password);
         const user = loginData.user || auth.getUser();
+        // If returning user has no location saved, prompt them
+        const hasLocation = localStorage.getItem("sachi_country_code") || localStorage.getItem("sachi_country");
+        if (!hasLocation) {
+          setStep("location_prompt");
+          setLoading(false);
+          // store user so we can call onSuccess after
+          window._sachiPendingUser = user;
+          return;
+        }
         onSuccess(user);
       } else {
         await auth.signUp(email, password, name || email.split("@")[0], { date_of_birth: dob });
@@ -494,6 +503,62 @@ export default function AuthModal({ onClose, onSuccess }) {
             <button onClick={() => { if (country) localStorage.setItem("sachi_country", country); setStep("otp"); }}
               style={{ display:"block", width:"100%", padding:"14px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16, cursor:"pointer", marginBottom:10 }}>
               {country ? "Continue →" : "Skip for now"}
+            </button>
+          </>
+        )}
+
+        {/* ── Location Prompt (shown after login if no location saved) ── */}
+        {step === "location_prompt" && (
+          <>
+            <div style={{ textAlign:"center", marginBottom:24 }}>
+              <div style={{ fontSize:44 }}>📍</div>
+              <div style={{ color:"#fff", fontWeight:900, fontSize:22, margin:"8px 0 4px" }}>Where are you posting from?</div>
+              <div style={{ color:"#777", fontSize:14 }}>We'll add your flag to your posts. You can skip this.</div>
+            </div>
+
+            <select
+              value={country}
+              onChange={e => setCountry(e.target.value)}
+              style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"2px solid rgba(245,200,66,0.4)", borderRadius:14, padding:"16px", color: country ? "#fff" : "#888", fontSize:16, outline:"none", marginBottom:16, cursor:"pointer" }}
+            >
+              <option value="" style={{background:"#1a1b2e", color:"#888"}}>🌍 Select your country</option>
+              {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}
+            </select>
+
+            <div style={{ background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.25)", borderRadius:14, padding:"14px 16px", marginBottom:16 }}>
+              <div style={{ color:"#F5C842", fontWeight:800, fontSize:14, marginBottom:6 }}>📍 Or use my precise location</div>
+              <div style={{ color:"#888", fontSize:12, marginBottom:10, lineHeight:1.5 }}>Auto-detects your city — shows as <strong style={{color:"#fff"}}>📍 New York, US</strong> on posts.</div>
+              <button onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+                        .then(r => r.json())
+                        .then(data => {
+                          const addr = data.address || {};
+                          const code = addr.country_code ? addr.country_code.toUpperCase() : null;
+                          const region = addr.state || addr.city || addr.county || null;
+                          if (code) { localStorage.setItem("sachi_country_code", code); setCountry(addr.country || code); }
+                          if (region) localStorage.setItem("sachi_region", region);
+                          const u = window._sachiPendingUser; delete window._sachiPendingUser;
+                          onSuccess(u);
+                        }).catch(() => { const u = window._sachiPendingUser; delete window._sachiPendingUser; onSuccess(u); });
+                    },
+                    () => {},
+                    { timeout: 8000 }
+                  );
+                }
+              }} style={{ width:"100%", padding:"11px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:11, color:"#0B0C1A", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                📍 Use My Location
+              </button>
+            </div>
+
+            <button onClick={() => {
+              if (country) localStorage.setItem("sachi_country", country);
+              const u = window._sachiPendingUser; delete window._sachiPendingUser;
+              onSuccess(u);
+            }} style={{ display:"block", width:"100%", padding:"14px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16, cursor:"pointer", marginBottom:10 }}>
+              {country ? "Save & Continue →" : "Skip for now"}
             </button>
           </>
         )}

@@ -1692,13 +1692,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <span style={{ fontSize:12 }}>📅</span>
             <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
               {formatDate(video.created_date)}
-              {video.post_country ? (
+              {video.post_country && (
                 <span style={{ marginLeft:6, opacity:0.9 }}>
                   {countryFlag(video.post_country)}
                   {video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`}
                 </span>
-              ) : (
-                <span style={{ marginLeft:6, color:"rgba(255,255,255,0.3)", fontSize:11 }}>📍 Location not shared</span>
               )}
             </span>
           </div>
