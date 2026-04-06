@@ -884,6 +884,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [textPostContent, setTextPostContent] = useState("");
   const [textPostTemplate, setTextPostTemplate] = useState(0);
 
+  // Post details step
+  const [showPostDetails, setShowPostDetails] = useState(false);
+  const [postTitle, setPostTitle] = useState("");
+  const [postVisibility, setPostVisibility] = useState("everyone"); // everyone | followers | only_me
+  const [postLocation, setPostLocation] = useState(null); // { name, city }
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [showVisibilityPicker, setShowVisibilityPicker] = useState(false);
+
   const checkForExplicitContent = (f, cap) => {
     const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
     const name = f.name.toLowerCase();
@@ -986,10 +994,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         thumbnail_url: urls[0],
         photo_urls: JSON.stringify(urls),
         is_photo: true,
-        caption: caption.trim(), hashtags: tags,
+        caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
+        hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: !isAiGenerated, is_archived: false, is_ai_detected: isAiGenerated,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        post_visibility: postVisibility,
+        post_location_name: postLocation?.name || null,
         ...photoGeo,
       });
       setProgress(100);
@@ -1048,10 +1060,15 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-        video_url, thumbnail_url, caption: caption.trim(), hashtags: tags,
+        video_url, thumbnail_url,
+        caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
+        hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: !isAiGenerated, is_archived: false, is_ai_detected: isAiGenerated,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        post_visibility: postVisibility,
+        post_location_name: postLocation?.name || null,
         ...videoGeo,
       });
       setProgress(100);
@@ -1066,6 +1083,29 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false); setProgress(0); setStep("");
     }
+  };
+
+  const detectLocation = async () => {
+    setDetectingLocation(true);
+    try {
+      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout:8000 }));
+      const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+      const data = await resp.json();
+      const addr = data.address || {};
+      const city = addr.city || addr.town || addr.county || addr.state || "";
+      const suburb = addr.suburb || addr.neighbourhood || addr.district || "";
+      setPostLocation({ name: suburb || city, city });
+    } catch { setPostLocation(null); }
+    setDetectingLocation(false);
+  };
+
+  // Intercept post buttons — go to details step first
+  const goToPostDetails = () => {
+    // Auto-detect location quietly
+    if (!postLocation && navigator.geolocation) {
+      detectLocation();
+    }
+    setShowPostDetails(true);
   };
 
   const uploadTextPost = async () => {
@@ -1174,11 +1214,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url, thumbnail_url: img_url,
         photo_urls: JSON.stringify([img_url]), is_photo: true,
-        caption: textPostContent.trim(),
+        caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
         likes_count:0, comments_count:0, views_count:0, shares_count:0,
-        is_approved: true, is_archived: false, is_ai_detected: false, is_mature: false,
-        sound_title: "Text Post", sound_artist: "sachi", ...textGeo,
+        is_approved: postVisibility !== "only_me", is_archived: false, is_ai_detected: false, is_mature: false,
+        sound_title: "Text Post", sound_artist: "sachi",
+        post_visibility: postVisibility,
+        post_location_name: postLocation?.name || null,
+        ...textGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -1205,6 +1248,173 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         onSkip={() => { setEditedFile(null); setShowEditor(false); }}
       />
     )}
+    {/* ── POST DETAILS STEP ── */}
+    {showPostDetails && (
+      <div style={{ position:"fixed", inset:0, zIndex:3500, background:"#0B0C1A", display:"flex", flexDirection:"column" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+          <button onClick={() => setShowPostDetails(false)}
+            style={{ background:"none", border:"none", color:"#fff", fontSize:22, cursor:"pointer", lineHeight:1 }}>‹</button>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:17 }}>Post details</div>
+          <div style={{ width:32 }} />
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 20px 40px" }}>
+
+          {/* Title field */}
+          <div style={{ marginBottom:20 }}>
+            <input
+              value={postTitle}
+              onChange={e => setPostTitle(e.target.value)}
+              placeholder="Add a catchy title..."
+              style={{ width:"100%", background:"transparent", border:"none", borderBottom:"1.5px solid rgba(255,255,255,0.15)",
+                padding:"10px 0", color:"#fff", fontSize:18, fontWeight:700, outline:"none",
+                boxSizing:"border-box" }}
+            />
+            <div style={{ color:"#555", fontSize:12, marginTop:6 }}>Writing a title helps get 3× more views on average</div>
+          </div>
+
+          {/* Caption */}
+          <div style={{ marginBottom:20 }}>
+            <textarea
+              value={uploadTab === "text" ? textPostContent : caption}
+              onChange={e => uploadTab === "text" ? setTextPostContent(e.target.value) : setCaption(e.target.value)}
+              placeholder="Write a caption... #hashtags"
+              rows={3}
+              style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)",
+                borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, resize:"none", outline:"none",
+                boxSizing:"border-box" }}
+            />
+          </div>
+
+          {/* Divider */}
+          <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:20 }} />
+
+          {/* Location row */}
+          <div style={{ marginBottom:4 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", cursor:"pointer" }}
+              onClick={detectLocation}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ fontSize:20 }}>📍</span>
+                <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Location</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                {detectingLocation && <span style={{ color:"#888", fontSize:12 }}>Detecting...</span>}
+                {postLocation && !detectingLocation && <span style={{ color:"#aaa", fontSize:13 }}>{postLocation.name || postLocation.city}</span>}
+                {!postLocation && !detectingLocation && <span style={{ color:"#555", fontSize:13 }}>Tap to add</span>}
+                <span style={{ color:"#555", fontSize:18 }}>›</span>
+              </div>
+            </div>
+            {postLocation && (
+              <div style={{ display:"flex", gap:8, paddingBottom:12, flexWrap:"wrap" }}>
+                <div style={{ background:"rgba(255,255,255,0.07)", borderRadius:20, padding:"5px 12px", fontSize:13, color:"#ccc", display:"flex", alignItems:"center", gap:6 }}>
+                  📍 {postLocation.name || postLocation.city}
+                  <span onClick={() => setPostLocation(null)} style={{ cursor:"pointer", color:"#888", fontSize:14, marginLeft:4 }}>✕</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:4 }} />
+
+          {/* Who can view row */}
+          <div style={{ padding:"14px 0", cursor:"pointer" }} onClick={() => setShowVisibilityPicker(v => !v)}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ fontSize:20 }}>🌐</span>
+                <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Who can view</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ color:"#aaa", fontSize:13 }}>
+                  {postVisibility === "everyone" ? "Everyone" : postVisibility === "followers" ? "Followers only" : "Only me"}
+                </span>
+                <span style={{ color:"#555", fontSize:18 }}>{showVisibilityPicker ? "▾" : "›"}</span>
+              </div>
+            </div>
+            {showVisibilityPicker && (
+              <div style={{ marginTop:12, background:"rgba(255,255,255,0.04)", borderRadius:14, overflow:"hidden" }}>
+                {[
+                  { val:"everyone", icon:"🌐", label:"Everyone", sub:"Anyone on Sachi can see this" },
+                  { val:"followers", icon:"👥", label:"Followers only", sub:"Only people who follow you" },
+                  { val:"only_me", icon:"🔒", label:"Only me", sub:"Saved privately, not shown in feed" },
+                ].map(v => (
+                  <div key={v.val}
+                    onClick={e => { e.stopPropagation(); setPostVisibility(v.val); setShowVisibilityPicker(false); }}
+                    style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px",
+                      borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer",
+                      background: postVisibility===v.val ? "rgba(245,200,66,0.07)" : "transparent" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <span style={{ fontSize:20 }}>{v.icon}</span>
+                      <div>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{v.label}</div>
+                        <div style={{ color:"#666", fontSize:11 }}>{v.sub}</div>
+                      </div>
+                    </div>
+                    {postVisibility===v.val && <span style={{ color:"#F5C842", fontSize:18 }}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:24 }} />
+
+          {/* Mature content toggle */}
+          {uploadTab !== "text" && (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 0", marginBottom:20 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ fontSize:20 }}>🔞</span>
+                <div>
+                  <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Mature content</div>
+                  <div style={{ color:"#555", fontSize:11 }}>18+ viewers only</div>
+                </div>
+              </div>
+              <div onClick={() => setIsMature(m => !m)}
+                style={{ width:48, height:26, borderRadius:13,
+                  background: isMature ? "#ff6b6b" : "rgba(255,255,255,0.12)",
+                  position:"relative", cursor:"pointer", transition:"background 0.2s" }}>
+                <div style={{ position:"absolute", top:3, left: isMature ? 25 : 3, width:20, height:20,
+                  borderRadius:"50%", background:"#fff", transition:"left 0.2s",
+                  boxShadow:"0 1px 4px rgba(0,0,0,0.3)" }} />
+              </div>
+            </div>
+          )}
+
+          {/* Upload progress */}
+          {uploading && (
+            <div style={{ marginBottom:20 }}>
+              <div style={{ color:"#aaa", fontSize:13, marginBottom:8 }}>{step}</div>
+              <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:99, height:6, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${progress}%`, background:"linear-gradient(90deg,#ff6b6b,#ff8e53)", borderRadius:99, transition:"width 0.4s ease" }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom buttons */}
+        <div style={{ padding:"12px 20px 40px", display:"flex", gap:12, borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+          <button onClick={() => setShowPostDetails(false)} disabled={uploading}
+            style={{ flex:1, padding:"14px 0", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)",
+              borderRadius:14, color:"#aaa", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+            ← Back
+          </button>
+          <button
+            onClick={() => {
+              if (uploadTab === "text") uploadTextPost();
+              else if (uploadTab === "photo") uploadPhotos();
+              else upload();
+            }}
+            disabled={uploading}
+            style={{ flex:2.5, padding:"14px 0", background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border:"none", borderRadius:14, color:"#fff", fontWeight:900, fontSize:16, cursor: uploading ? "default" : "pointer",
+              boxShadow:"0 4px 20px rgba(255,107,107,0.35)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            {uploading ? step : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
+          </button>
+        </div>
+      </div>
+    )}
+
     <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)" }} />
       <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:2001 }}>
@@ -1695,19 +1905,22 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
         {uploadTab === "text" ? (
-          <button onClick={uploadTextPost} disabled={!textPostContent.trim() || uploading}
+          <button onClick={() => textPostContent.trim() && !uploading && goToPostDetails()}
+            disabled={!textPostContent.trim() || uploading}
             style={{ width:"100%", padding:14, background: textPostContent.trim() && !uploading ? "linear-gradient(135deg,#7C3AED,#A855F7)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: textPostContent.trim() && !uploading ? "pointer" : "not-allowed", opacity: textPostContent.trim() && !uploading ? 1 : 0.5 }}>
-            {uploading ? step : "✏️ Post Text"}
+            {uploading ? step : "Next →"}
           </button>
         ) : uploadTab === "photo" ? (
-          <button onClick={uploadPhotos} disabled={!photos.length || uploading}
+          <button onClick={() => photos.length && !uploading && goToPostDetails()}
+            disabled={!photos.length || uploading}
             style={{ width:"100%", padding:14, background: photos.length && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: photos.length && !uploading ? "pointer" : "not-allowed", opacity: photos.length && !uploading ? 1 : 0.5 }}>
-            {uploading ? step : `🖼️ Post ${photos.length > 0 ? photos.length : ""} Photo${photos.length !== 1 ? "s" : ""}`}
+            {uploading ? step : "Next →"}
           </button>
         ) : (
-          <button onClick={upload} disabled={!file || uploading || aiBlocked || explicitBlocked || (!notAiConfirmed && !isAiGenerated)}
+          <button onClick={() => file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) && goToPostDetails()}
+            disabled={!file || uploading || aiBlocked || explicitBlocked || (!notAiConfirmed && !isAiGenerated)}
             style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? 1 : 0.5 }}>
-            {uploading ? step : "🚀 Post Video"}
+            {uploading ? step : "Next →"}
           </button>
         )}
       </div>

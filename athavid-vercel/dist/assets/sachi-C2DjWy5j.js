@@ -9292,6 +9292,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [isAiGenerated, setIsAiGenerated] = reactExports.useState(false);
   const [textPostContent, setTextPostContent] = reactExports.useState("");
   const [textPostTemplate, setTextPostTemplate] = reactExports.useState(0);
+  const [showPostDetails, setShowPostDetails] = reactExports.useState(false);
+  const [postTitle, setPostTitle] = reactExports.useState("");
+  const [postVisibility, setPostVisibility] = reactExports.useState("everyone");
+  const [postLocation, setPostLocation] = reactExports.useState(null);
+  const [detectingLocation, setDetectingLocation] = reactExports.useState(false);
+  const [showVisibilityPicker, setShowVisibilityPicker] = reactExports.useState(false);
   const checkForExplicitContent = (f2, cap) => {
     const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
     const name = f2.name.toLowerCase();
@@ -9485,17 +9491,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         thumbnail_url: urls[0],
         photo_urls: JSON.stringify(urls),
         is_photo: true,
-        caption: caption.trim(),
+        caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0,
         comments_count: 0,
         views_count: 0,
         shares_count: 0,
-        is_approved: !isAiGenerated,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
         is_archived: false,
         is_ai_detected: isAiGenerated,
         is_mature: isMature,
         mature_reason: isMature ? matureReason : null,
+        post_visibility: postVisibility,
+        post_location_name: (postLocation == null ? void 0 : postLocation.name) || null,
         ...photoGeo
       });
       setProgress(100);
@@ -9574,17 +9582,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url,
         thumbnail_url,
-        caption: caption.trim(),
+        caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0,
         comments_count: 0,
         views_count: 0,
         shares_count: 0,
-        is_approved: !isAiGenerated,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
         is_archived: false,
         is_ai_detected: isAiGenerated,
         is_mature: isMature,
         mature_reason: isMature ? matureReason : null,
+        post_visibility: postVisibility,
+        post_location_name: (postLocation == null ? void 0 : postLocation.name) || null,
         ...videoGeo
       });
       setProgress(100);
@@ -9606,6 +9616,27 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setProgress(0);
       setStep("");
     }
+  };
+  const detectLocation = async () => {
+    setDetectingLocation(true);
+    try {
+      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8e3 }));
+      const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+      const data = await resp.json();
+      const addr = data.address || {};
+      const city = addr.city || addr.town || addr.county || addr.state || "";
+      const suburb = addr.suburb || addr.neighbourhood || addr.district || "";
+      setPostLocation({ name: suburb || city, city });
+    } catch {
+      setPostLocation(null);
+    }
+    setDetectingLocation(false);
+  };
+  const goToPostDetails = () => {
+    if (!postLocation && navigator.geolocation) {
+      detectLocation();
+    }
+    setShowPostDetails(true);
   };
   const uploadTextPost = async () => {
     var _a;
@@ -9713,18 +9744,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         thumbnail_url: img_url,
         photo_urls: JSON.stringify([img_url]),
         is_photo: true,
-        caption: textPostContent.trim(),
+        caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map((t2) => t2.toLowerCase()),
         likes_count: 0,
         comments_count: 0,
         views_count: 0,
         shares_count: 0,
-        is_approved: true,
+        is_approved: postVisibility !== "only_me",
         is_archived: false,
         is_ai_detected: false,
         is_mature: false,
         sound_title: "Text Post",
         sound_artist: "sachi",
+        post_visibility: postVisibility,
+        post_location_name: (postLocation == null ? void 0 : postLocation.name) || null,
         ...textGeo
       });
       setProgress(100);
@@ -9759,6 +9792,232 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }
       }
     ),
+    showPostDetails && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3500, background: "#0B0C1A", display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setShowPostDetails(false),
+            style: { background: "none", border: "none", color: "#fff", fontSize: 22, cursor: "pointer", lineHeight: 1 },
+            children: "‹"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 17 }, children: "Post details" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 32 } })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "20px 20px 40px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              value: postTitle,
+              onChange: (e) => setPostTitle(e.target.value),
+              placeholder: "Add a catchy title...",
+              style: {
+                width: "100%",
+                background: "transparent",
+                border: "none",
+                borderBottom: "1.5px solid rgba(255,255,255,0.15)",
+                padding: "10px 0",
+                color: "#fff",
+                fontSize: 18,
+                fontWeight: 700,
+                outline: "none",
+                boxSizing: "border-box"
+              }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 12, marginTop: 6 }, children: "Writing a title helps get 3× more views on average" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "textarea",
+          {
+            value: uploadTab === "text" ? textPostContent : caption,
+            onChange: (e) => uploadTab === "text" ? setTextPostContent(e.target.value) : setCaption(e.target.value),
+            placeholder: "Write a caption... #hashtags",
+            rows: 3,
+            style: {
+              width: "100%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              padding: "12px 14px",
+              color: "#fff",
+              fontSize: 14,
+              resize: "none",
+              outline: "none",
+              boxSizing: "border-box"
+            }
+          }
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 20 } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", cursor: "pointer" },
+              onClick: detectLocation,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "📍" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 15 }, children: "Location" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+                  detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 12 }, children: "Detecting..." }),
+                  postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#aaa", fontSize: 13 }, children: postLocation.name || postLocation.city }),
+                  !postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 13 }, children: "Tap to add" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 18 }, children: "›" })
+                ] })
+              ]
+            }
+          ),
+          postLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, paddingBottom: 12, flexWrap: "wrap" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "5px 12px", fontSize: 13, color: "#ccc", display: "flex", alignItems: "center", gap: 6 }, children: [
+            "📍 ",
+            postLocation.name || postLocation.city,
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { onClick: () => setPostLocation(null), style: { cursor: "pointer", color: "#888", fontSize: 14, marginLeft: 4 }, children: "✕" })
+          ] }) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 4 } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 0", cursor: "pointer" }, onClick: () => setShowVisibilityPicker((v2) => !v2), children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "🌐" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 15 }, children: "Who can view" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#aaa", fontSize: 13 }, children: postVisibility === "everyone" ? "Everyone" : postVisibility === "followers" ? "Followers only" : "Only me" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 18 }, children: showVisibilityPicker ? "▾" : "›" })
+            ] })
+          ] }),
+          showVisibilityPicker && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 12, background: "rgba(255,255,255,0.04)", borderRadius: 14, overflow: "hidden" }, children: [
+            { val: "everyone", icon: "🌐", label: "Everyone", sub: "Anyone on Sachi can see this" },
+            { val: "followers", icon: "👥", label: "Followers only", sub: "Only people who follow you" },
+            { val: "only_me", icon: "🔒", label: "Only me", sub: "Saved privately, not shown in feed" }
+          ].map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: (e) => {
+                e.stopPropagation();
+                setPostVisibility(v2.val);
+                setShowVisibilityPicker(false);
+              },
+              style: {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 16px",
+                borderBottom: "1px solid rgba(255,255,255,0.05)",
+                cursor: "pointer",
+                background: postVisibility === v2.val ? "rgba(245,200,66,0.07)" : "transparent"
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: v2.icon }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: v2.label }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: v2.sub })
+                  ] })
+                ] }),
+                postVisibility === v2.val && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontSize: 18 }, children: "✓" })
+              ]
+            },
+            v2.val
+          )) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 24 } }),
+        uploadTab !== "text" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0", marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "🔞" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15 }, children: "Mature content" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 11 }, children: "18+ viewers only" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              onClick: () => setIsMature((m2) => !m2),
+              style: {
+                width: 48,
+                height: 26,
+                borderRadius: 13,
+                background: isMature ? "#ff6b6b" : "rgba(255,255,255,0.12)",
+                position: "relative",
+                cursor: "pointer",
+                transition: "background 0.2s"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+                position: "absolute",
+                top: 3,
+                left: isMature ? 25 : 3,
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: "#fff",
+                transition: "left 0.2s",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.3)"
+              } })
+            }
+          )
+        ] }),
+        uploading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 8 }, children: step }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(255,255,255,0.08)", borderRadius: 99, height: 6, overflow: "hidden" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "100%", width: `${progress}%`, background: "linear-gradient(90deg,#ff6b6b,#ff8e53)", borderRadius: 99, transition: "width 0.4s ease" } }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "12px 20px 40px", display: "flex", gap: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setShowPostDetails(false),
+            disabled: uploading,
+            style: {
+              flex: 1,
+              padding: "14px 0",
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 14,
+              color: "#aaa",
+              fontWeight: 700,
+              fontSize: 15,
+              cursor: "pointer"
+            },
+            children: "← Back"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              if (uploadTab === "text") uploadTextPost();
+              else if (uploadTab === "photo") uploadPhotos();
+              else upload();
+            },
+            disabled: uploading,
+            style: {
+              flex: 2.5,
+              padding: "14px 0",
+              background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border: "none",
+              borderRadius: 14,
+              color: "#fff",
+              fontWeight: 900,
+              fontSize: 16,
+              cursor: uploading ? "default" : "pointer",
+              boxShadow: "0 4px 20px rgba(255,107,107,0.35)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8
+            },
+            children: uploading ? step : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: "⬆" }),
+              " Post"
+            ] })
+          }
+        )
+      ] })
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 2e3, display: "flex", alignItems: "flex-end" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.85)" } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: "100%", maxWidth: 480, margin: "0 auto", background: "#0f0f1a", borderRadius: "24px 24px 0 0", padding: "24px 24px 48px", zIndex: 2001 }, children: [
@@ -10367,26 +10626,26 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         uploadTab === "text" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: uploadTextPost,
+            onClick: () => textPostContent.trim() && !uploading && goToPostDetails(),
             disabled: !textPostContent.trim() || uploading,
             style: { width: "100%", padding: 14, background: textPostContent.trim() && !uploading ? "linear-gradient(135deg,#7C3AED,#A855F7)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 800, fontSize: 16, cursor: textPostContent.trim() && !uploading ? "pointer" : "not-allowed", opacity: textPostContent.trim() && !uploading ? 1 : 0.5 },
-            children: uploading ? step : "✏️ Post Text"
+            children: uploading ? step : "Next →"
           }
         ) : uploadTab === "photo" ? /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: uploadPhotos,
+            onClick: () => photos.length && !uploading && goToPostDetails(),
             disabled: !photos.length || uploading,
             style: { width: "100%", padding: 14, background: photos.length && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 800, fontSize: 16, cursor: photos.length && !uploading ? "pointer" : "not-allowed", opacity: photos.length && !uploading ? 1 : 0.5 },
-            children: uploading ? step : `🖼️ Post ${photos.length > 0 ? photos.length : ""} Photo${photos.length !== 1 ? "s" : ""}`
+            children: uploading ? step : "Next →"
           }
         ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: upload,
+            onClick: () => file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) && goToPostDetails(),
             disabled: !file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed && !isAiGenerated,
             style: { width: "100%", padding: 14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 800, fontSize: 16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? 1 : 0.5 },
-            children: uploading ? step : "🚀 Post Video"
+            children: uploading ? step : "Next →"
           }
         )
       ] })
