@@ -10371,7 +10371,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )
       ] });
     })(),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI ? 1 : 0, visibility: showUI ? "visible" : "hidden" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
     !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -10401,7 +10401,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       cursor: "pointer",
       fontSize: 26
     }, children: "▶" }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 148, left: 16, right: 16, zIndex: 250, transition: "opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 148, left: 16, right: 16, zIndex: 250, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "div",
         {
@@ -10518,7 +10518,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 90, left: 16, right: 16, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 10, zIndex: 260, transition: "opacity 0.4s ease, transform 0.4s ease", opacity: showUI ? 1 : 0, transform: showUI ? "translateY(0)" : "translateY(10px)", pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 90, left: 16, right: 16, display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 10, zIndex: 260, transition: "opacity 0.4s ease, transform 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, transform: showUI || !!photoUrls ? "translateY(0)" : "translateY(10px)", pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {

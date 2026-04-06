@@ -1512,7 +1512,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       })()}
 
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, visibility: showUI ? "visible" : "hidden" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
       {/* Tap hint removed — content-first UI */}
 
@@ -1542,7 +1542,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:250, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:250, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
         <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
@@ -1633,7 +1633,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── BOTTOM ACTION BAR — fades with UI — Sachi style ── */}
-      <div style={{ position:"absolute", bottom:90, left:16, right:16, display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"flex-end", gap:10, zIndex:260, transition:"opacity 0.4s ease, transform 0.4s ease", opacity: showUI ? 1 : 0, transform: showUI ? "translateY(0)" : "translateY(10px)", pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", bottom:90, left:16, right:16, display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"flex-end", gap:10, zIndex:260, transition:"opacity 0.4s ease, transform 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, transform: (showUI || !!photoUrls) ? "translateY(0)" : "translateY(10px)", pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
