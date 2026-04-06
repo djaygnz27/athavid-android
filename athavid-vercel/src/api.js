@@ -61,22 +61,8 @@ export const videos = {
   async list() {
     // Cache-bust so Home refresh always gets the very latest posts
     const cb = Date.now();
-    const token = getToken();
-    if (token) {
-      // Authenticated: use direct entity API
-      return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb}`);
-    } else {
-      // Guest: use service-role public feed function
-      try {
-        const res = await fetch(`https://sachi-c7f0261c.base44.app/functions/getPublicFeed?_cb=${cb}`);
-        if (!res.ok) throw new Error("public feed failed");
-        const data = await res.json();
-        return Array.isArray(data) ? data : (data?.items || data?.records || []);
-      } catch {
-        // Last resort: try unauthenticated entity call
-        return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb}`);
-      }
-    }
+    // Direct entity API works for both guests and authenticated users (CORS allows *)
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb}`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
