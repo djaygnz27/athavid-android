@@ -781,6 +781,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   const [notAiConfirmed, setNotAiConfirmed] = useState(false);
   const [aiBlocked, setAiBlocked] = useState(false);
+  const [isAiGenerated, setIsAiGenerated] = useState(false);
 
   const checkForExplicitContent = (f, cap) => {
     const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
@@ -886,7 +887,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_photo: true,
         caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: true, is_archived: false, is_ai_detected: false,
+        is_approved: true, is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         ...photoGeo,
       });
@@ -905,7 +906,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       alert("🚫 This video appears to be AI-generated and cannot be posted on Sachi.");
       return;
     }
-    if (!notAiConfirmed) {
+    if (!notAiConfirmed && !isAiGenerated) {
       alert("⚠️ Please confirm your video is NOT AI-generated before posting.");
       return;
     }
@@ -942,7 +943,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url, thumbnail_url, caption: caption.trim(), hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: true, is_archived: false, is_ai_detected: false,
+        is_approved: true, is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         ...videoGeo,
       });
@@ -1169,8 +1170,35 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
+        {/* AI Generated Disclosure Toggle */}
+        {!aiBlocked && !explicitBlocked && (
+          <div style={{ marginBottom:14 }}>
+            <div onClick={() => setIsAiGenerated(p => !p)}
+              style={{ display:"flex", gap:10, alignItems:"center", cursor:"pointer", padding:"10px 14px",
+                background: isAiGenerated ? "rgba(255,149,0,0.08)" : "rgba(255,255,255,0.04)",
+                borderRadius:10, border:`1px solid ${isAiGenerated ? "rgba(255,149,0,0.5)" : "rgba(255,255,255,0.1)"}` }}>
+              <div style={{ width:20, height:20, borderRadius:5,
+                border:`2px solid ${isAiGenerated ? "#FF9500" : "#555"}`,
+                background: isAiGenerated ? "#FF9500" : "transparent",
+                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                {isAiGenerated && <span style={{ color:"#fff", fontSize:13, fontWeight:900 }}>✓</span>}
+              </div>
+              <div style={{ color: isAiGenerated ? "#FF9500" : "#888", fontSize:13, lineHeight:1.4 }}>
+                🤖 This content was <strong>AI generated</strong> — let your viewers know
+              </div>
+            </div>
+            {isAiGenerated && (
+              <div style={{ marginTop:8, padding:"10px 14px", background:"rgba(255,149,0,0.07)", borderRadius:10, border:"1px solid rgba(255,149,0,0.2)" }}>
+                <div style={{ color:"#FF9500", fontSize:12, lineHeight:1.5 }}>
+                  ✅ Your post will display an <strong>🤖 AI Generated</strong> badge so viewers know this content was created by AI. Sachi values truth and transparency.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Not AI Confirmation Checkbox */}
-        {!aiBlocked && !explicitBlocked && file && (
+        {!aiBlocked && !explicitBlocked && !isAiGenerated && file && (
           <div onClick={() => setNotAiConfirmed(p => !p)}
             style={{ display:"flex", gap:10, alignItems:"center", marginBottom:14, cursor:"pointer", padding:"10px 14px", background:"rgba(255,255,255,0.04)", borderRadius:10, border:`1px solid ${notAiConfirmed ? "rgba(107,255,154,0.4)" : "rgba(255,255,255,0.1)"}` }}>
             <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${notAiConfirmed ? "#6bff9a" : "#555"}`, background: notAiConfirmed ? "#6bff9a" : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
@@ -1196,8 +1224,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             {uploading ? step : `🖼️ Post ${photos.length > 0 ? photos.length : ""} Photo${photos.length !== 1 ? "s" : ""}`}
           </button>
         ) : (
-          <button onClick={upload} disabled={!file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed}
-            style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? 1 : 0.5 }}>
+          <button onClick={upload} disabled={!file || uploading || aiBlocked || explicitBlocked || (!notAiConfirmed && !isAiGenerated)}
+            style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? 1 : 0.5 }}>
             {uploading ? step : "🚀 Post Video"}
           </button>
         )}
