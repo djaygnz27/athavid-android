@@ -10034,7 +10034,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [liked, setLiked] = reactExports.useState(false);
   const [muted, setMuted] = reactExports.useState(true);
   const [photoIdx, setPhotoIdx] = reactExports.useState(0);
-  const photoCarouselRef = reactExports.useRef(null);
+  reactExports.useRef(null);
   const [followRecord, setFollowRecord] = reactExports.useState(null);
   const [followLoading, setFollowLoading] = reactExports.useState(false);
   const [reportTarget, setReportTarget] = reactExports.useState(null);
@@ -10232,130 +10232,121 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: photoCarouselRef, style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", background: "#000" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "img",
-        {
-          src: resolveMediaUrl(photoUrls[photoIdx]),
-          style: { width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none", WebkitUserSelect: "none" }
-        }
-      ),
-      photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          onTouchEnd: (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            setPhotoIdx((p2) => p2 - 1);
-          },
-          onClick: (e) => {
-            e.stopPropagation();
-            setPhotoIdx((p2) => p2 - 1);
-          },
-          style: {
-            position: "absolute",
-            left: 0,
-            top: "15%",
-            width: "40%",
-            height: "65%",
-            zIndex: 150,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            paddingLeft: 10
-          },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            background: "rgba(0,0,0,0.65)",
-            borderRadius: "50%",
-            width: 48,
-            height: 48,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 26,
-            color: "#fff",
-            fontWeight: 900,
-            lineHeight: 1,
-            boxShadow: "0 2px 16px rgba(0,0,0,0.6)"
-          }, children: "‹" })
-        }
-      ),
-      photoIdx < photoUrls.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          onTouchEnd: (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            setPhotoIdx((p2) => p2 + 1);
-          },
-          onClick: (e) => {
-            e.stopPropagation();
-            setPhotoIdx((p2) => p2 + 1);
-          },
-          style: {
-            position: "absolute",
-            left: "50%",
-            top: "15%",
-            width: "35%",
-            height: "65%",
-            zIndex: 150,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            paddingLeft: 10
-          },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            background: "rgba(0,0,0,0.65)",
-            borderRadius: "50%",
-            width: 48,
-            height: 48,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 26,
-            color: "#fff",
-            fontWeight: 900,
-            lineHeight: 1,
-            boxShadow: "0 2px 16px rgba(0,0,0,0.6)"
-          }, children: "›" })
-        }
-      ),
-      photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        position: "absolute",
-        bottom: 110,
-        left: "50%",
-        transform: "translateX(-50%)",
-        display: "flex",
-        gap: 6,
-        zIndex: 200,
-        pointerEvents: "none"
-      }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        width: i === photoIdx ? 22 : 7,
-        height: 7,
-        borderRadius: 99,
-        background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
-        transition: "all 0.25s ease",
-        boxShadow: i === photoIdx ? "0 0 8px rgba(245,200,66,0.7)" : "none"
-      } }, i)) }),
+    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", background: "#000", display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            src: resolveMediaUrl(photoUrls[photoIdx]),
+            style: { width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none", WebkitUserSelect: "none" }
+          }
+        ),
+        photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          position: "absolute",
+          top: 12,
+          left: 12,
+          background: "rgba(0,0,0,0.7)",
+          borderRadius: 20,
+          padding: "4px 12px",
+          fontSize: 13,
+          fontWeight: 700,
+          color: "#fff",
+          zIndex: 50,
+          pointerEvents: "none",
+          letterSpacing: 0.5
+        }, children: [
+          photoIdx + 1,
+          " / ",
+          photoUrls.length
+        ] })
+      ] }),
       photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         position: "absolute",
-        top: 60,
-        left: 16,
-        background: "rgba(0,0,0,0.7)",
-        borderRadius: 20,
-        padding: "4px 14px",
-        fontSize: 13,
-        fontWeight: 700,
-        color: "#fff",
-        zIndex: 200,
-        pointerEvents: "none",
-        letterSpacing: 0.5
+        bottom: 75,
+        left: 0,
+        right: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "8px 16px",
+        zIndex: 300
       }, children: [
-        photoIdx + 1,
-        " / ",
-        photoUrls.length
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onTouchEnd: (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setPhotoIdx((p2) => Math.max(p2 - 1, 0));
+            },
+            onClick: (e) => {
+              e.stopPropagation();
+              setPhotoIdx((p2) => Math.max(p2 - 1, 0));
+            },
+            disabled: photoIdx === 0,
+            style: {
+              background: photoIdx === 0 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
+              border: photoIdx === 0 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
+              borderRadius: 14,
+              width: 56,
+              height: 48,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 28,
+              color: photoIdx === 0 ? "rgba(255,255,255,0.2)" : "#fff",
+              fontWeight: 900,
+              cursor: photoIdx === 0 ? "default" : "pointer",
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              backdropFilter: "blur(8px)",
+              transition: "all 0.2s"
+            },
+            children: "‹"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 7, alignItems: "center" }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: i === photoIdx ? 22 : 8,
+          height: 8,
+          borderRadius: 99,
+          background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
+          transition: "all 0.25s ease",
+          boxShadow: i === photoIdx ? "0 0 8px rgba(245,200,66,0.8)" : "none"
+        } }, i)) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onTouchEnd: (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls.length - 1));
+            },
+            onClick: (e) => {
+              e.stopPropagation();
+              setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls.length - 1));
+            },
+            disabled: photoIdx === photoUrls.length - 1,
+            style: {
+              background: photoIdx === photoUrls.length - 1 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
+              border: photoIdx === photoUrls.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
+              borderRadius: 14,
+              width: 56,
+              height: 48,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 28,
+              color: photoIdx === photoUrls.length - 1 ? "rgba(255,255,255,0.2)" : "#fff",
+              fontWeight: 900,
+              cursor: photoIdx === photoUrls.length - 1 ? "default" : "pointer",
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              backdropFilter: "blur(8px)",
+              transition: "all 0.2s"
+            },
+            children: "›"
+          }
+        )
       ] })
     ] }) : (() => {
       const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
