@@ -11986,6 +11986,12 @@ function AdminPanel({ currentUser }) {
       const totalViews = videos2.reduce((s, v2) => s + (v2.views_count || 0), 0);
       const totalLikes = videos2.reduce((s, v2) => s + (v2.likes_count || 0), 0);
       const matureCount = videos2.filter((v2) => v2.is_mature).length;
+      const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      const weekAgo = /* @__PURE__ */ new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const newToday = users.filter((u2) => (u2.created_date || "").slice(0, 10) === todayStr).length;
+      const newThisWeek = users.filter((u2) => new Date(u2.created_date) >= weekAgo).length;
+      const recentUsers = [...users].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 20);
       setAnalyticsData({
         totalVideos: videos2.length,
         totalUsers: users.length,
@@ -11993,10 +11999,13 @@ function AdminPanel({ currentUser }) {
         totalViews,
         totalLikes,
         matureCount,
+        newToday,
+        newThisWeek,
         dailyVideos: byDay(videos2, "created_date"),
         dailyUsers: byDay(users, "created_date"),
         topCreators,
-        topVideos
+        topVideos,
+        recentUsers
       });
     } catch (e) {
       console.error("analytics error", e);
@@ -12121,6 +12130,32 @@ function AdminPanel({ currentUser }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 18, lineHeight: 1 }, children: val.toLocaleString() }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 3 }, children: label })
       ] }, label)) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(107,138,255,0.07)", borderRadius: 16, padding: "14px 16px", marginBottom: 14, border: "1px solid rgba(107,138,255,0.2)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#6B8AFF", fontWeight: 900, fontSize: 15, marginBottom: 12 }, children: "👥 User Registrations" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 14 }, children: [
+          ["Today", analyticsData.newToday, "#6BFFB8"],
+          ["This Week", analyticsData.newThisWeek, "#F5C842"],
+          ["All Time", analyticsData.totalUsers, "#6B8AFF"]
+        ].map(([label, val, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 6px", textAlign: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 22, lineHeight: 1 }, children: val }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 4 }, children: label })
+        ] }, label)) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontWeight: 700, fontSize: 11, marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }, children: "Recent Sign-ups" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6 }, children: (analyticsData.recentUsers || []).map((u2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "8px 10px" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: u2.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.username || u2.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
+              style: { width: 28, height: 28, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: u2.display_name || u2.username || "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: u2.email || "@" + (u2.username || "") })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontSize: 10, flexShrink: 0 }, children: u2.created_date ? new Date(u2.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "" })
+        ] }, i)) })
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: "14px 16px", marginBottom: 14, border: "1px solid rgba(245,200,66,0.1)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, marginBottom: 12 }, children: "📈 Daily Videos (14 days)" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", alignItems: "flex-end", gap: 4, height: 60 }, children: analyticsData.dailyVideos.map(({ date, count }, i) => {
