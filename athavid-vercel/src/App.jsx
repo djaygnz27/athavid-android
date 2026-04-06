@@ -2853,26 +2853,28 @@ function App() {
     try {
       const data = await videos.list();
       const raw = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const activeUser = user || currentUser;
+      // Always sort newest-first first
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
+      const activeUser = user || currentUser;
+      // Only apply interest ranking if user exists; otherwise pure chronological (newest on top)
       const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
       setVideoList(ranked);
+      // Scroll to top after new list is set
+      requestAnimationFrame(() => {
+        const el = feedContainerRef.current || window.__sachiEl;
+        if (el) el.scrollTo({ top: 0, behavior: 'instant' });
+      });
     } catch { setVideoList([]); }
     setLoading(false);
   };
 
   const goHome = () => {
     setActiveTab("feed");
-    setVideoList([]);
-    setFeedKey(k => k + 1);
-    setTimeout(() => {
-      loadVideos();
-      // Force scroll to top after videos load
-      setTimeout(() => {
-        const el = feedContainerRef.current || window.__sachiEl;
-        if (el) { el.scrollTop = 0; el.scrollTo({ top: 0, behavior: 'instant' }); }
-      }, 200);
-    }, 80);
+    // Scroll to top immediately (keep existing videos visible while refreshing)
+    const el = feedContainerRef.current || window.__sachiEl;
+    if (el) { el.scrollTo({ top: 0, behavior: 'instant' }); }
+    // Then reload fresh data
+    loadVideos();
   };
 
   useEffect(() => {
