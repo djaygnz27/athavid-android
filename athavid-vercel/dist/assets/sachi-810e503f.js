@@ -7924,11 +7924,76 @@ const interests = {
     return scored;
   }
 };
+const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
 function GoogleOneTap({ onSuccess }) {
   reactExports.useEffect(() => {
-    return;
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          try {
+            const payload = JSON.parse(atob(response.credential.split(".")[1]));
+            const { email, name, picture, sub } = payload;
+            try {
+              const loginData = await auth.signIn(email, `google_${sub}`);
+              const user = loginData.user || auth.getUser();
+              onSuccess(user);
+            } catch {
+              try {
+                await auth.signUp(email, `google_${sub}`, name || email.split("@")[0]);
+                try {
+                  await auth.verifyOtp(email, "google_verified");
+                } catch {
+                }
+                const loginData = await auth.signIn(email, `google_${sub}`);
+                const user = loginData.user || auth.getUser();
+                if (picture && user) {
+                  try {
+                    await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${user.id}`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.getToken()}` },
+                      body: JSON.stringify({ avatar_url: picture })
+                    });
+                  } catch {
+                  }
+                }
+                onSuccess(user);
+              } catch (e) {
+                console.error("Google signup failed:", e);
+              }
+            }
+          } catch (e) {
+            console.error("Google One Tap error:", e);
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: false
+      });
+      window.google.accounts.id.renderButton(
+        document.getElementById("google-signin-btn"),
+        {
+          theme: "filled_black",
+          size: "large",
+          width: 320,
+          text: "continue_with",
+          shape: "pill",
+          logo_alignment: "left"
+        }
+      );
+    };
+    document.head.appendChild(script);
+    return () => {
+      try {
+        document.head.removeChild(script);
+      } catch {
+      }
+    };
   }, []);
-  return null;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", display: "flex", justifyContent: "center", marginBottom: 16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "google-signin-btn" }) });
 }
 function AuthModal({ onClose, onSuccess }) {
   const [mode, setMode] = reactExports.useState("signup");

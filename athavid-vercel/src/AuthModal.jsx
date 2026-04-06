@@ -4,7 +4,7 @@ import { auth } from "./api.js";
 // ─── Google One Tap ────────────────────────────────────────────────────────────
 // Replace this placeholder with your real Google OAuth Client ID from:
 // console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID
-const GOOGLE_CLIENT_ID = "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID";
+const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
 
 function GoogleOneTap({ onSuccess }) {
   useEffect(() => {
