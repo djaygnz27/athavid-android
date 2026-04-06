@@ -1104,30 +1104,53 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setMusicTracks([]);
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
-      // Build URL manually to avoid encoding issues
-      let apiUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
-      if (tag)    apiUrl += `&tags=${encodeURIComponent(tag)}`;
-      if (search) apiUrl += `&namesearch=${encodeURIComponent(search)}`;
-      console.log("[Sachi Music] Fetching:", apiUrl);
-      const resp = await fetch(apiUrl);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      console.log("[Sachi Music] Results:", data?.headers?.results_count, "genre:", genre, "tag:", tag);
-      const tracks = (data.results || []).map(t => ({
-        id:       `j_${t.id}`,
-        title:    t.name,
-        artist:   t.artist_name,
-        url:      t.audio || t.audiodownload,
-        genre:    genre === "All" ? (t.musicinfo?.tags?.genres?.[0] || "Music") : genre,
-        emoji:    GENRE_EMOJI[tag] || "🎵",
-        duration: t.duration,
-        image:    t.image,
-      })).filter(t => t.url);
-      console.log("[Sachi Music] Tracks after filter:", tracks.length);
-      setMusicTracks(tracks);
+      // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
+      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
+      if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
+      console.log("[Sachi Music] Fetching via proxy:", apiUrl);
+      let tracks = [];
+      try {
+        const resp = await fetch(apiUrl);
+        if (resp.ok) {
+          const data = await resp.json();
+          tracks = data.tracks || [];
+          console.log("[Sachi Music] Proxy results:", tracks.length);
+        }
+      } catch(proxyErr) {
+        console.warn("[Sachi Music] Proxy failed, trying direct:", proxyErr);
+      }
+      // If proxy failed or returned nothing, try direct Jamendo
+      if (tracks.length === 0) {
+        let directUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
+        if (tag)    directUrl += `&tags=${encodeURIComponent(tag)}`;
+        if (search) directUrl += `&namesearch=${encodeURIComponent(search)}`;
+        console.log("[Sachi Music] Trying direct:", directUrl);
+        const resp2 = await fetch(directUrl);
+        if (resp2.ok) {
+          const data2 = await resp2.json();
+          tracks = (data2.results || []).map(t => ({
+            id:       `j_${t.id}`,
+            title:    t.name,
+            artist:   t.artist_name,
+            url:      t.audio || t.audiodownload,
+            genre:    genre === "All" ? (t.musicinfo?.tags?.genres?.[0] || "Music") : genre,
+            emoji:    GENRE_EMOJI[tag] || "🎵",
+            duration: t.duration,
+            image:    t.image,
+          })).filter(t => t.url);
+          console.log("[Sachi Music] Direct results:", tracks.length);
+        }
+      }
+      if (tracks.length > 0) {
+        setMusicTracks(tracks);
+      } else {
+        throw new Error("No tracks from any source");
+      }
     } catch(e) {
-      console.error("[Sachi Music] Fetch error:", e);
-      setMusicTracks([]);
+      console.error("[Sachi Music] All sources failed:", e);
+      // Final fallback: curated local tracks
+      const fallback = MUSIC_TRACKS.filter(t => genre === "All" || t.genre === genre);
+      setMusicTracks(fallback.length > 0 ? fallback : MUSIC_TRACKS);
     }
     setMusicLoading(false);
   };
