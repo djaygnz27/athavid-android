@@ -10779,44 +10779,131 @@ if (!document.getElementById("spin-style")) {
   spinStyle.id = "spin-style";
   document.head.appendChild(spinStyle);
 }
-const AVATAR_COLORS = [
-  ["e94560", "fff"],
-  ["f5a623", "000"],
-  ["22c55e", "fff"],
-  ["6c63ff", "fff"],
-  ["0ea5e9", "fff"],
-  ["ec4899", "fff"],
-  ["f97316", "fff"],
-  ["14b8a6", "fff"],
-  ["8b5cf6", "fff"],
-  ["ef4444", "fff"],
-  ["10b981", "fff"],
-  ["3b82f6", "fff"],
-  ["a855f7", "fff"],
-  ["f59e0b", "000"],
-  ["06b6d4", "fff"],
-  ["84cc16", "000"],
-  ["fb7185", "fff"],
-  ["34d399", "000"],
-  ["60a5fa", "fff"],
-  ["c084fc", "fff"]
-];
-const AVATAR_NAMES = ["Nova", "Zara", "Kai", "Milo", "Aria", "Finn", "Luna", "Rex", "Sage", "Cleo", "Axel", "Nadia", "Blake", "Iris", "Cruz", "Ember", "Jax", "Lyra", "Orion", "Veda"];
 const AVATAR_STYLES = [
   { label: "Cartoon", style: "avataaars", seeds: ["Felix", "Aneka", "Mia", "Zara", "Leo", "Nova", "Kira", "Blaze", "Pixel", "Storm", "Echo", "Sage", "Raya", "Kofi", "Priya", "Omar", "Mei", "Ava", "Jake", "Luna", "Diego", "Aisha", "Nate", "Yuki"] },
   { label: "Portraits", style: "lorelei", seeds: ["Alex", "Sam", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Riley", "Quinn", "Avery", "Blake", "Cameron", "Dana", "Ellis", "Fynn", "Gwen", "Harley", "Indie", "Jules", "Kai"] },
   { label: "Fun", style: "bottts", seeds: ["R2D2", "BB8", "Wall-E", "Robo", "Zap", "Bolt", "Chip", "Digi", "Glitch", "Mega", "Nano", "Pixel", "Spark", "Vibe", "Wave", "Flux", "Glow", "Nova", "Atom", "Echo"] },
   { label: "Minimal", style: "thumbs", seeds: ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho", "Sigma", "Tau", "Upsilon"] }
 ];
+function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
+  const canvasRef = reactExports.useRef();
+  const [scale, setScale] = reactExports.useState(1);
+  const [offset, setOffset] = reactExports.useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = reactExports.useState(false);
+  const dragStart = reactExports.useRef(null);
+  const imgRef = reactExports.useRef(new window.Image());
+  const SIZE = 300;
+  reactExports.useEffect(() => {
+    const img = imgRef.current;
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const fit = Math.max(SIZE / img.width, SIZE / img.height);
+      setScale(fit);
+      setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+      draw(fit, { x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+  const draw = (s = scale, o = offset) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.drawImage(imgRef.current, o.x, o.y, imgRef.current.width * s, imgRef.current.height * s);
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.beginPath();
+    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  };
+  reactExports.useEffect(() => {
+    draw();
+  }, [scale, offset]);
+  const onMouseDown = (e) => {
+    setDragging(true);
+    dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+  };
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    const newOffset = { x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y };
+    setOffset(newOffset);
+  };
+  const onMouseUp = () => setDragging(false);
+  const onTouchStart = (e) => {
+    e.preventDefault();
+    setDragging(true);
+    dragStart.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
+  };
+  const onTouchMove = (e) => {
+    e.preventDefault();
+    if (!dragging) return;
+    setOffset({ x: e.touches[0].clientX - dragStart.current.x, y: e.touches[0].clientY - dragStart.current.y });
+  };
+  const onTouchEnd = () => setDragging(false);
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      onSave(blob);
+    }, "image/png", 0.95);
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 18, marginBottom: 8 }, children: "✂️ Crop your avatar" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 20 }, children: "Drag to reposition • Zoom with slider" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { borderRadius: "50%", overflow: "hidden", border: "3px solid #F5C842", boxShadow: "0 0 30px rgba(245,200,66,0.3)", marginBottom: 20, cursor: dragging ? "grabbing" : "grab" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "canvas",
+      {
+        ref: canvasRef,
+        width: SIZE,
+        height: SIZE,
+        onMouseDown,
+        onMouseMove,
+        onMouseUp,
+        onMouseLeave: onMouseUp,
+        onTouchStart,
+        onTouchMove,
+        onTouchEnd,
+        style: { display: "block", touchAction: "none" }
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 280, marginBottom: 24 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 12, textAlign: "center", marginBottom: 8 }, children: "🔍 Zoom" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          type: "range",
+          min: 0.5,
+          max: 4,
+          step: 0.01,
+          value: scale,
+          onChange: (e) => setScale(parseFloat(e.target.value)),
+          style: { width: "100%", accentColor: "#F5C842" }
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, width: "100%", maxWidth: 280 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onCancel, style: { flex: 1, padding: "13px 0", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#aaa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Cancel" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleSave, style: { flex: 2, padding: "13px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 900, fontSize: 15, cursor: "pointer" }, children: "✓ Use this photo" })
+    ] })
+  ] });
+}
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = reactExports.useState(false);
   const [activeStyle, setActiveStyle] = reactExports.useState(0);
+  const [cropImageUrl, setCropImageUrl] = reactExports.useState(null);
   const fileRef = reactExports.useRef();
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const url = URL.createObjectURL(file);
+    setCropImageUrl(url);
+  };
+  const handleCropSave = async (blob) => {
+    setCropImageUrl(null);
     setUploading(true);
     try {
+      const file = new File([blob], "avatar.png", { type: "image/png" });
       const url = await uploadFile(file);
       onSelect(url);
     } catch {
@@ -10825,81 +10912,87 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
       setUploading(false);
     }
   };
-  AVATAR_NAMES.map((name, i) => {
-    const [bg2, fg2] = AVATAR_COLORS[i % AVATAR_COLORS.length];
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg2}&color=${fg2}&size=128&bold=true&format=png`;
-  });
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 2e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)" } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "20px 20px 36px", zIndex: 2001 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#444", borderRadius: 99, margin: "0 auto 16px" } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "🎨 Choose your avatar" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer" }, children: "✕" })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 14 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: fileRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: handleFileUpload }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    cropImageUrl && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      AvatarCropEditor,
+      {
+        imageUrl: cropImageUrl,
+        onSave: handleCropSave,
+        onCancel: () => setCropImageUrl(null)
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 2e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "20px 20px 36px", zIndex: 2001 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#444", borderRadius: 99, margin: "0 auto 16px" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "🎨 Choose your avatar" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer" }, children: "✕" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: fileRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: handleFileUpload }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                var _a;
+                return (_a = fileRef.current) == null ? void 0 : _a.click();
+              },
+              disabled: uploading,
+              style: { width: "100%", padding: "13px", background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(255,149,0,0.1))", border: "2px dashed rgba(245,200,66,0.5)", borderRadius: 14, color: "#F5C842", fontWeight: 800, fontSize: 15, cursor: "pointer" },
+              children: uploading ? "⏳ Uploading..." : "📷 Upload & crop your photo"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: 12, overflowX: "auto", scrollbarWidth: "none" }, children: AVATAR_STYLES.map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => {
-              var _a;
-              return (_a = fileRef.current) == null ? void 0 : _a.click();
-            },
-            disabled: uploading,
-            style: { width: "100%", padding: "11px", background: "rgba(108,99,255,0.2)", border: "2px dashed rgba(108,99,255,0.5)", borderRadius: 12, color: "#6c63ff", fontWeight: 700, fontSize: 14, cursor: "pointer" },
-            children: uploading ? "Uploading..." : "📷 Upload your own photo"
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: 12, overflowX: "auto", scrollbarWidth: "none" }, children: AVATAR_STYLES.map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => setActiveStyle(i),
-          style: {
-            flexShrink: 0,
-            padding: "6px 14px",
-            borderRadius: 20,
-            border: "none",
-            cursor: "pointer",
-            fontSize: 12,
-            fontWeight: 700,
-            background: activeStyle === i ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
-            color: activeStyle === i ? "#fff" : "#aaa"
-          },
-          children: s.label
-        },
-        i
-      )) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxHeight: 260, overflowY: "auto", paddingBottom: 4 }, children: AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
-        const style = AVATAR_STYLES[activeStyle].style;
-        const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
-        return /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => onSelect(url),
+            onClick: () => setActiveStyle(i),
             style: {
-              background: currentAvatar === url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
-              border: currentAvatar === url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
-              borderRadius: 16,
-              width: 64,
-              height: 64,
-              margin: "0 auto",
-              padding: 4,
+              flexShrink: 0,
+              padding: "6px 14px",
+              borderRadius: 20,
+              border: "none",
               cursor: "pointer",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "border 0.2s, transform 0.15s, box-shadow 0.2s",
-              boxShadow: currentAvatar === url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
-              transform: currentAvatar === url ? "scale(1.12)" : "scale(1)"
+              fontSize: 12,
+              fontWeight: 700,
+              background: activeStyle === i ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
+              color: activeStyle === i ? "#fff" : "#aaa"
             },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", pointerEvents: "none", display: "block", borderRadius: 10, background: "rgba(255,255,255,0.05)" }, loading: "lazy" })
+            children: s.label
           },
           i
-        );
-      }) })
+        )) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxHeight: 260, overflowY: "auto", paddingBottom: 4 }, children: AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
+          const style = AVATAR_STYLES[activeStyle].style;
+          const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
+          return /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => onSelect(url),
+              style: {
+                background: currentAvatar === url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
+                border: currentAvatar === url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
+                borderRadius: 16,
+                width: 64,
+                height: 64,
+                margin: "0 auto",
+                padding: 4,
+                cursor: "pointer",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "border 0.2s, transform 0.15s, box-shadow 0.2s",
+                boxShadow: currentAvatar === url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
+                transform: currentAvatar === url ? "scale(1.12)" : "scale(1)"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", pointerEvents: "none", display: "block", borderRadius: 10, background: "rgba(255,255,255,0.05)" }, loading: "lazy" })
+            },
+            i
+          );
+        }) })
+      ] })
     ] })
   ] });
 }
