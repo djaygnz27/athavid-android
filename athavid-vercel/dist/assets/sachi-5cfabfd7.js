@@ -10507,7 +10507,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             e.stopPropagation();
             onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name);
           },
-          style: { width: 42, height: 42, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(245,200,66,0.7)", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 12px rgba(0,0,0,0.5)" },
+          style: { width: 22, height: 22, borderRadius: "50%", overflow: "hidden", border: "1.5px solid rgba(245,200,66,0.7)", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.5)" },
           children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             "img",
             {
