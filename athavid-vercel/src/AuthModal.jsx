@@ -36,11 +36,11 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
   const inp = {
     display:"block", width:"100%", boxSizing:"border-box",
     background:"rgba(255,255,255,0.08)", border:"1px solid rgba(245,200,66,0.15)",
-    borderRadius:12, padding:"14px 16px", color:"#fff", fontSize:15,
-    outline:"none", marginBottom:12,
+    borderRadius:12, padding:"11px 14px", color:"#fff", fontSize:14,
+    outline:"none", marginBottom:10,
   };
   const btn = {
-    display:"block", width:"100%", padding:"14px 0",
+    display:"block", width:"100%", padding:"12px 0",
     background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none",
     borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16,
     cursor:"pointer", marginBottom:10,
@@ -368,7 +368,7 @@ export default function AuthModal({ onClose, onSuccess }) {
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.88)" }} />
       <div style={{
         position:"relative", zIndex:3001, background:"#12132A", borderRadius:24, border:"1px solid rgba(245,200,66,0.1)",
-        padding:"28px 24px 32px", width:"100%", maxWidth:400, maxHeight:"90vh", overflowY:"auto",
+        padding:"20px 20px 24px", width:"100%", maxWidth:400, maxHeight:"92vh", overflowY:"auto",
       }}>
 
         {/* ── Google Finish Step ── */}
@@ -393,7 +393,7 @@ export default function AuthModal({ onClose, onSuccess }) {
               <div style={{ flex:1, height:1, background:"rgba(255,255,255,0.1)" }} />
             </div>
 
-            <div style={{ display:"flex", background:"rgba(255,255,255,0.06)", borderRadius:12, padding:4, marginBottom:18 }}>
+            <div style={{ display:"flex", background:"rgba(255,255,255,0.06)", borderRadius:12, padding:4, marginBottom:12 }}>
               {["signup","login"].map(m => (
                 <button key={m} onClick={() => { setMode(m); setError(""); }}
                   style={{ flex:1, padding:"10px 0", border:"none", borderRadius:10, cursor:"pointer",

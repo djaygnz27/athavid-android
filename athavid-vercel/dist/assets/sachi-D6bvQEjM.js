@@ -7457,16 +7457,16 @@ function GoogleFinishStep({ googlePayload, onSuccess }) {
     background: "rgba(255,255,255,0.08)",
     border: "1px solid rgba(245,200,66,0.15)",
     borderRadius: 12,
-    padding: "14px 16px",
+    padding: "11px 14px",
     color: "#fff",
-    fontSize: 15,
+    fontSize: 14,
     outline: "none",
-    marginBottom: 12
+    marginBottom: 10
   };
   const btn = {
     display: "block",
     width: "100%",
-    padding: "14px 0",
+    padding: "12px 0",
     background: "linear-gradient(135deg,#F5C842,#FF9500)",
     border: "none",
     borderRadius: 14,
@@ -7815,10 +7815,10 @@ function AuthModal({ onClose, onSuccess }) {
       background: "#12132A",
       borderRadius: 24,
       border: "1px solid rgba(245,200,66,0.1)",
-      padding: "28px 24px 32px",
+      padding: "20px 20px 24px",
       width: "100%",
       maxWidth: 400,
-      maxHeight: "90vh",
+      maxHeight: "92vh",
       overflowY: "auto"
     }, children: [
       step === "google_finish" && googlePayload && /* @__PURE__ */ jsxRuntimeExports.jsx(GoogleFinishStep, { googlePayload, onSuccess }),
@@ -7834,7 +7834,7 @@ function AuthModal({ onClose, onSuccess }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 12 }, children: "or continue with email" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: 4, marginBottom: 18 }, children: ["signup", "login"].map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: 4, marginBottom: 12 }, children: ["signup", "login"].map((m2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
             onClick: () => {
