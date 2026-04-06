@@ -1789,14 +1789,27 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   </div>
                   <button onClick={e => {
                     e.stopPropagation();
+                    e.preventDefault();
                     if (previewTrack === track.id) {
-                      previewAudioRef.current?.pause();
+                      if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.currentTime = 0; }
                       setPreviewTrack(null);
                     } else {
-                      if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.src = track.url; previewAudioRef.current.play(); }
                       setPreviewTrack(track.id);
+                      // Small delay to ensure state is set before play
+                      setTimeout(() => {
+                        if (previewAudioRef.current) {
+                          previewAudioRef.current.pause();
+                          previewAudioRef.current.src = track.url;
+                          previewAudioRef.current.load();
+                          previewAudioRef.current.play().catch(err => console.log("Audio play error:", err));
+                        }
+                      }, 50);
                     }
-                  }} style={{ background:"rgba(255,107,107,0.2)", border:"none", borderRadius:"50%", width:30, height:30, color:"#ff6b6b", cursor:"pointer", fontSize:14, flexShrink:0 }}>
+                  }} style={{ background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
+                    border:"2px solid rgba(255,107,107,0.4)", borderRadius:"50%",
+                    width:38, height:38, color:"#ff6b6b", cursor:"pointer", fontSize:16,
+                    flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                    WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
                     {previewTrack === track.id ? "⏹" : "▶"}
                   </button>
                 </div>
@@ -1804,8 +1817,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             </div>
           </div>
         )}
-        <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
-
         {/* Explicit Content Block Warning */}
         {explicitBlocked && (
           <div style={{ background:"rgba(255,50,50,0.12)", border:"1px solid rgba(255,50,50,0.4)", borderRadius:12, padding:"14px 16px", marginBottom:12, display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -1925,6 +1936,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
       </div>
     </div>
+    {/* Audio preview player - always mounted */}
+    <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
     </>
   );
 }
