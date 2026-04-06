@@ -9579,7 +9579,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
   const photoUrls = video.is_photo && video.photo_urls ? Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls) : null;
-  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || currentUser.username && currentUser.username === video.username || currentUser.email && currentUser.email === video.email);
+  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || currentUser.username && currentUser.username === video.username);
   const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
   const userAge = getUserAge();
   const isUnder18 = userAge !== null && userAge < 18;

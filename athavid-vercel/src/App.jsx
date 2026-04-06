@@ -1237,7 +1237,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
 
 
-  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username) || (currentUser.email && currentUser.email === video.email));
+  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || (currentUser.username && currentUser.username === video.username));
   const [ageGateUnlocked, setAgeGateUnlocked] = useState(false);
   const userAge = getUserAge();
   const isUnder18 = userAge !== null && userAge < 18;
