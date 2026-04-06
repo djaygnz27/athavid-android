@@ -1596,7 +1596,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       <div style={{ position:"absolute", top:72, left:14, display:"flex", flexDirection:"row", alignItems:"center", gap:10, zIndex:999 }}>
         {/* Avatar */}
         <div onClick={(e) => { e.stopPropagation(); onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name); }}
-          style={{ width:42, height:42, borderRadius:"50%", overflow:"hidden", border:"2px solid rgba(245,200,66,0.7)", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 12px rgba(0,0,0,0.5)" }}>
+          style={{ width:22, height:22, borderRadius:"50%", overflow:"hidden", border:"1.5px solid rgba(245,200,66,0.7)", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
           <img src={video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`}
             style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
         </div>
