@@ -10260,15 +10260,32 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           photoUrls.length
         ] })
       ] }),
+      photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        position: "absolute",
+        bottom: 16,
+        left: "50%",
+        transform: "translateX(-50%)",
+        display: "flex",
+        gap: 7,
+        alignItems: "center",
+        zIndex: 300,
+        pointerEvents: "none"
+      }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        width: i === photoIdx ? 22 : 8,
+        height: 8,
+        borderRadius: 99,
+        background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
+        transition: "all 0.25s ease",
+        boxShadow: i === photoIdx ? "0 0 8px rgba(245,200,66,0.8)" : "none"
+      } }, i)) }),
       photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         position: "absolute",
-        bottom: 75,
-        left: 0,
-        right: 0,
+        bottom: 10,
+        left: "50%",
+        transform: "translateX(-50%)",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        padding: "8px 16px",
+        gap: 8,
         zIndex: 300
       }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -10285,34 +10302,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             },
             disabled: photoIdx === 0,
             style: {
-              background: photoIdx === 0 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
-              border: photoIdx === 0 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
-              borderRadius: 14,
-              width: 56,
-              height: 48,
+              background: photoIdx === 0 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
+              border: "none",
+              borderRadius: 8,
+              width: 32,
+              height: 28,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 28,
+              fontSize: 18,
               color: photoIdx === 0 ? "rgba(255,255,255,0.2)" : "#fff",
               fontWeight: 900,
               cursor: photoIdx === 0 ? "default" : "pointer",
               WebkitTapHighlightColor: "transparent",
-              touchAction: "manipulation",
-              backdropFilter: "blur(8px)",
-              transition: "all 0.2s"
+              touchAction: "manipulation"
             },
             children: "‹"
           }
         ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 7, alignItems: "center" }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: i === photoIdx ? 22 : 8,
-          height: 8,
-          borderRadius: 99,
-          background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
-          transition: "all 0.25s ease",
-          boxShadow: i === photoIdx ? "0 0 8px rgba(245,200,66,0.8)" : "none"
-        } }, i)) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
@@ -10327,22 +10334,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             },
             disabled: photoIdx === photoUrls.length - 1,
             style: {
-              background: photoIdx === photoUrls.length - 1 ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.7)",
-              border: photoIdx === photoUrls.length - 1 ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,255,255,0.4)",
-              borderRadius: 14,
-              width: 56,
-              height: 48,
+              background: photoIdx === photoUrls.length - 1 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
+              border: "none",
+              borderRadius: 8,
+              width: 32,
+              height: 28,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 28,
+              fontSize: 18,
               color: photoIdx === photoUrls.length - 1 ? "rgba(255,255,255,0.2)" : "#fff",
               fontWeight: 900,
               cursor: photoIdx === photoUrls.length - 1 ? "default" : "pointer",
               WebkitTapHighlightColor: "transparent",
-              touchAction: "manipulation",
-              backdropFilter: "blur(8px)",
-              transition: "all 0.2s"
+              touchAction: "manipulation"
             },
             children: "›"
           }
