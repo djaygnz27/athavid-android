@@ -3459,21 +3459,24 @@ function App() {
     // Save scroll position before state update to prevent snap-to-top
     const feedEl = feedContainerRef.current;
     const savedScroll = feedEl ? feedEl.scrollTop : 0;
-    setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, likes_count: Math.max(0, (v.likes_count||0)+delta) } : v));
+    // Single setVideoList call — update count AND fire side effects in one pass
+    setVideoList(vs => {
+      const updated = vs.map(v => {
+        if (v.id !== videoId) return v;
+        const newCount = Math.max(0, (v.likes_count || 0) + delta);
+        // Side effects (DB + interests) inside the updater so we read fresh state
+        videos.update(videoId, { likes_count: newCount }).catch(() => {});
+        if (currentUser && v.hashtags?.length) {
+          interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
+        }
+        return { ...v, likes_count: newCount };
+      });
+      return updated;
+    });
     // Restore scroll position after React re-render
     if (feedEl) {
       requestAnimationFrame(() => { feedEl.scrollTop = savedScroll; });
     }
-    setVideoList(current => {
-      const vid = current.find(v => v.id === videoId);
-      if (vid) {
-        videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count||0)+delta) }).catch(()=>{});
-        if (currentUser && vid.hashtags?.length) {
-          interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(()=>{});
-        }
-      }
-      return current;
-    });
   }, [currentUser, feedContainerRef]);
 
   const handleView = (videoId) => {
