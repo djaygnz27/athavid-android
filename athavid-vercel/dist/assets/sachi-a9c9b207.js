@@ -7907,11 +7907,18 @@ const interests = {
       }
       return { ...v2, _relevance: relevance };
     });
+    const times = scored.map((v2) => new Date(v2.created_date || 0).getTime());
+    const minT = Math.min(...times);
+    const maxT = Math.max(...times);
+    const timeRange = maxT - minT || 1;
+    const maxRel = Math.max(...scored.map((v2) => v2._relevance), 1);
     scored.sort((a, b) => {
-      const recencyA = new Date(a.created_date || 0).getTime() / 1e12;
-      const recencyB = new Date(b.created_date || 0).getTime() / 1e12;
-      const scoreA = a._relevance * 0.5 + recencyA * 0.5;
-      const scoreB = b._relevance * 0.5 + recencyB * 0.5;
+      const recencyA = (new Date(a.created_date || 0).getTime() - minT) / timeRange;
+      const recencyB = (new Date(b.created_date || 0).getTime() - minT) / timeRange;
+      const relA = a._relevance / maxRel;
+      const relB = b._relevance / maxRel;
+      const scoreA = relA * 0.3 + recencyA * 0.7;
+      const scoreB = relB * 0.3 + recencyB * 0.7;
       return scoreB - scoreA;
     });
     return scored;

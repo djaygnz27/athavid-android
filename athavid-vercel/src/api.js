@@ -212,12 +212,22 @@ export const interests = {
       return { ...v, _relevance: relevance };
     });
 
-    // Blend: 50% recency + 50% relevance — recency always has strong weight
+    // Blend: 70% recency + 30% relevance
+    // Normalize timestamps to 0-1 range based on oldest/newest in the batch
+    const times = scored.map(v => new Date(v.created_date || 0).getTime());
+    const minT = Math.min(...times);
+    const maxT = Math.max(...times);
+    const timeRange = maxT - minT || 1;
+
+    const maxRel = Math.max(...scored.map(v => v._relevance), 1);
+
     scored.sort((a, b) => {
-      const recencyA = new Date(a.created_date || 0).getTime() / 1e12;
-      const recencyB = new Date(b.created_date || 0).getTime() / 1e12;
-      const scoreA = (a._relevance * 0.5) + (recencyA * 0.5);
-      const scoreB = (b._relevance * 0.5) + (recencyB * 0.5);
+      const recencyA = (new Date(a.created_date || 0).getTime() - minT) / timeRange; // 0 to 1
+      const recencyB = (new Date(b.created_date || 0).getTime() - minT) / timeRange;
+      const relA = a._relevance / maxRel; // 0 to 1
+      const relB = b._relevance / maxRel;
+      const scoreA = (relA * 0.3) + (recencyA * 0.7);
+      const scoreB = (relB * 0.3) + (recencyB * 0.7);
       return scoreB - scoreA;
     });
 
