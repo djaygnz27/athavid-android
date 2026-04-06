@@ -1185,7 +1185,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 {isAiGenerated && <span style={{ color:"#fff", fontSize:13, fontWeight:900 }}>✓</span>}
               </div>
               <div style={{ color: isAiGenerated ? "#FF9500" : "#888", fontSize:13, lineHeight:1.4 }}>
-                🤖 This content was <strong>AI generated</strong> — let your viewers know
+                🤖 <strong>Flag as AI</strong> — let your viewers know this content was AI generated
               </div>
             </div>
             {isAiGenerated && (
