@@ -1237,7 +1237,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
 
 
-  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
+  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username) || (currentUser.email && currentUser.email === video.email));
   const [ageGateUnlocked, setAgeGateUnlocked] = useState(false);
   const userAge = getUserAge();
   const isUnder18 = userAge !== null && userAge < 18;
@@ -1289,14 +1289,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => obs.disconnect();
   }, []);
 
-  // Load follow state
-  useEffect(() => {
-    if (!currentUser || isOwnVideo) return;
-    follows.getFollowing(currentUser.id).then(res => {
-      const rec = (res.items || res || []).find(r => r.following_id === video.user_id);
-      if (rec) setFollowRecord(rec);
-    }).catch(() => {});
-  }, [currentUser, video.user_id]);
+  // Follow state is driven by the shared followedUserIds prop — no per-card API call needed
 
   const doMute = () => {
     const el = videoRef.current;
@@ -1350,8 +1343,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (isOwnVideo) return;
     setFollowLoading(true);
     try {
-      if (followRecord || isFollowing) {
-        if (followRecord) await follows.unfollow(followRecord.id);
+      if (isFollowing) {
+        // Need to find the record to delete it
+        try {
+          const res = await follows.getFollowing(currentUser.id);
+          const rec = (res.items || res || []).find(r => r.following_id === (video.user_id || video.created_by));
+          if (rec) await follows.unfollow(rec.id);
+        } catch(e) {}
         setFollowRecord(null);
         if (onFollowChange) onFollowChange(video.user_id || video.created_by, false);
       } else {
