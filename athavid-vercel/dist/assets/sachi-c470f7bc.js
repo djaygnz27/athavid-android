@@ -7760,7 +7760,20 @@ const auth = {
 const videos = {
   async list() {
     const cb2 = Date.now();
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb2}`);
+    const token = getToken();
+    if (token) {
+      return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb2}`);
+    } else {
+      try {
+        const res = await fetch(`https://sachi-c7f0261c.base44.app/functions/getPublicFeed?_cb=${cb2}`);
+        if (!res.ok)
+          throw new Error("public feed failed");
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
+      } catch {
+        return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date&limit=200&_cb=${cb2}`);
+      }
+    }
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
@@ -12164,7 +12177,8 @@ function App() {
         if (el2)
           el2.scrollTo({ top: 0, behavior: "instant" });
       });
-    } catch {
+    } catch (err) {
+      console.error("loadVideos error:", err);
       setVideoList([]);
     }
     setLoading(false);
