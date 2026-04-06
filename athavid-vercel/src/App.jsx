@@ -3694,6 +3694,36 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     <div style={{ color:"#e53935", fontWeight:700, fontSize:13 }}>🔴 You are currently LIVE</div>
                     <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, marginTop:4 }}>{selectedPodcast.listener_count||0} listeners tuned in</div>
                   </div>
+                  {/* Stream URL editor — available even while live */}
+                  <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:14, marginBottom:14 }}>
+                    <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, marginBottom:6 }}>🔗 Stream URL</div>
+                    {editingStream ? (
+                      <div style={{ display:"flex", gap:8 }}>
+                        <input value={newStreamUrl} onChange={e => setNewStreamUrl(e.target.value)}
+                          placeholder="https://youtube.com/watch?v=..."
+                          style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }} />
+                        <button onClick={async () => {
+                          try {
+                            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                            setSelectedPodcast(p => ({...p, live_stream_url: newStreamUrl}));
+                            setEditingStream(false);
+                            showToast("✅ Stream URL saved!", "success");
+                          } catch(e) { showToast("Failed to save URL", "error"); }
+                        }} style={{ background:"#6c3cf7", border:"none", borderRadius:10, padding:"8px 14px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}>Save</button>
+                        <button onClick={() => setEditingStream(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:10, padding:"8px 14px", color:"#fff", fontSize:13, cursor:"pointer" }}>✕</button>
+                      </div>
+                    ) : (
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <div style={{ color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:"75%" }}>
+                          {selectedPodcast.live_stream_url || "No stream URL set yet"}
+                        </div>
+                        <button onClick={() => { setNewStreamUrl(selectedPodcast.live_stream_url||""); setEditingStream(true); }}
+                          style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:8, padding:"5px 12px", color:"#a78bfa", fontSize:12, cursor:"pointer", fontWeight:600, flexShrink:0 }}>
+                          {selectedPodcast.live_stream_url ? "Edit" : "Add URL"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button onClick={async () => {
                     if (endingLive) return;
                     setEndingLive(true);
