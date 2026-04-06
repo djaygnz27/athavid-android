@@ -9562,7 +9562,7 @@ function getUserAge() {
   if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
   return age;
 }
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
   var _a;
   const videoRef = reactExports.useRef(null);
   const viewedRef = reactExports.useRef(false);
@@ -9572,6 +9572,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [photoIdx, setPhotoIdx] = reactExports.useState(0);
   reactExports.useRef(null);
   const [followRecord, setFollowRecord] = reactExports.useState(null);
+  const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
   const [followLoading, setFollowLoading] = reactExports.useState(false);
   const [reportTarget, setReportTarget] = reactExports.useState(null);
   const [showUI, setShowUI] = reactExports.useState(false);
@@ -9678,9 +9679,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (isOwnVideo) return;
     setFollowLoading(true);
     try {
-      if (followRecord) {
-        await follows.unfollow(followRecord.id);
+      if (followRecord || isFollowing) {
+        if (followRecord) await follows.unfollow(followRecord.id);
         setFollowRecord(null);
+        if (onFollowChange) onFollowChange(video.user_id || video.created_by, false);
       } else {
         const rec = await follows.follow(
           currentUser.id,
@@ -9689,6 +9691,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           video.username
         );
         setFollowRecord(rec);
+        if (onFollowChange) onFollowChange(video.user_id || video.created_by, true);
       }
     } catch (err) {
       console.error(err);
@@ -10069,10 +10072,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           style: {
             height: 28,
             borderRadius: 20,
-            border: followRecord ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
-            background: followRecord ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
+            border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
+            background: isFollowing ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
             backdropFilter: "blur(8px)",
-            color: followRecord ? "#F5C842" : "#fff",
+            color: isFollowing ? "#F5C842" : "#fff",
             fontWeight: 700,
             fontSize: 12,
             letterSpacing: 0.3,
@@ -10082,12 +10085,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             alignItems: "center",
             justifyContent: "center",
             gap: 4,
-            boxShadow: followRecord ? "0 0 10px rgba(245,200,66,0.3)" : "none",
+            boxShadow: isFollowing ? "0 0 10px rgba(245,200,66,0.3)" : "none",
             transition: "all 0.25s",
             WebkitTapHighlightColor: "transparent",
             touchAction: "manipulation"
           },
-          children: followLoading ? "·" : followRecord ? "✓ Following" : "+ Follow"
+          children: followLoading ? "·" : isFollowing ? "✓ Following" : "+ Follow"
         }
       )
     ] }),
@@ -11871,6 +11874,25 @@ function App() {
   const [searchQuery, setSearchQuery] = reactExports.useState("");
   const [feedTab, setFeedTab] = reactExports.useState("forYou");
   const [followingVideos, setFollowingVideos] = reactExports.useState([]);
+  const [followedUserIds, setFollowedUserIds] = reactExports.useState(/* @__PURE__ */ new Set());
+  React.useEffect(() => {
+    if (!currentUser) {
+      setFollowedUserIds(/* @__PURE__ */ new Set());
+      return;
+    }
+    follows.list().then((recs) => {
+      setFollowedUserIds(new Set((recs.items || recs || []).map((r2) => r2.following_id)));
+    }).catch(() => {
+    });
+  }, [currentUser]);
+  const handleFollowChange = (userId, isNowFollowing) => {
+    setFollowedUserIds((prev) => {
+      const next = new Set(prev);
+      if (isNowFollowing) next.add(userId);
+      else next.delete(userId);
+      return next;
+    });
+  };
   const [followingIds, setFollowingIds] = reactExports.useState([]);
   const [commentVideo, setCommentVideo] = reactExports.useState(null);
   const [showUpload, setShowUpload] = reactExports.useState(false);
@@ -12196,7 +12218,9 @@ function App() {
           onView: handleView,
           onNeedAuth: () => setShowAuth(true),
           onDelete: (id2) => setVideoList((prev) => prev.filter((v22) => v22.id !== id2)),
-          onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname })
+          onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname }),
+          followedUserIds,
+          onFollowChange: handleFollowChange
         },
         v2.id
       ))

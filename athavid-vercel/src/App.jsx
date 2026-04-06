@@ -1213,7 +1213,7 @@ function getUserAge() {
   return age;
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
   const videoRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
@@ -1222,6 +1222,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [photoIdx, setPhotoIdx] = useState(0);
   const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
+  const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [showUI, setShowUI] = useState(false);
@@ -1349,9 +1350,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (isOwnVideo) return;
     setFollowLoading(true);
     try {
-      if (followRecord) {
-        await follows.unfollow(followRecord.id);
+      if (followRecord || isFollowing) {
+        if (followRecord) await follows.unfollow(followRecord.id);
         setFollowRecord(null);
+        if (onFollowChange) onFollowChange(video.user_id || video.created_by, false);
       } else {
         const rec = await follows.follow(
           currentUser.id,
@@ -1360,6 +1362,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           video.username
         );
         setFollowRecord(rec);
+        if (onFollowChange) onFollowChange(video.user_id || video.created_by, true);
       }
     } catch(err) { console.error(err); }
     setFollowLoading(false);
@@ -1609,22 +1612,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             style={{
               height: 28,
               borderRadius: 20,
-              border: followRecord ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
-              background: followRecord ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
+              border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
+              background: isFollowing ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
               backdropFilter: "blur(8px)",
-              color: followRecord ? "#F5C842" : "#fff",
+              color: isFollowing ? "#F5C842" : "#fff",
               fontWeight: 700,
               fontSize: 12,
               letterSpacing: 0.3,
               padding: "0 12px",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-              boxShadow: followRecord ? "0 0 10px rgba(245,200,66,0.3)" : "none",
+              boxShadow: isFollowing ? "0 0 10px rgba(245,200,66,0.3)" : "none",
               transition: "all 0.25s",
               WebkitTapHighlightColor: "transparent",
               touchAction: "manipulation",
             }}>
-            {followLoading ? "·" : followRecord ? "✓ Following" : "+ Follow"}
+            {followLoading ? "·" : isFollowing ? "✓ Following" : "+ Follow"}
           </button>
         )}
       </div>
@@ -3041,6 +3044,24 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
   const [followingVideos, setFollowingVideos] = useState([]);
+  const [followedUserIds, setFollowedUserIds] = useState(new Set());
+
+  // Load all followed user IDs once on login
+  React.useEffect(() => {
+    if (!currentUser) { setFollowedUserIds(new Set()); return; }
+    follows.list().then(recs => {
+      setFollowedUserIds(new Set((recs.items || recs || []).map(r => r.following_id)));
+    }).catch(() => {});
+  }, [currentUser]);
+
+  const handleFollowChange = (userId, isNowFollowing) => {
+    setFollowedUserIds(prev => {
+      const next = new Set(prev);
+      if (isNowFollowing) next.add(userId);
+      else next.delete(userId);
+      return next;
+    });
+  };
   const [followingIds, setFollowingIds] = useState([]);
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
@@ -3318,7 +3339,9 @@ function App() {
               onView={handleView}
               onNeedAuth={() => setShowAuth(true)}
               onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
-              onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })} />
+              onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
+              followedUserIds={followedUserIds}
+              onFollowChange={handleFollowChange} />
           ))}
         </div>
       )}
