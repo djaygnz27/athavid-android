@@ -7438,7 +7438,7 @@ const COUNTRIES = [
   "Yemen",
   "Zimbabwe"
 ];
-const GOOGLE_CLIENT_ID = "124061688969-3pr4l40sh93l836rq8d2bb9jsp9pia26.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 function GoogleFinishStep({ googlePayload, onSuccess }) {
@@ -10978,11 +10978,11 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1, padding: 2 }, children: userVideos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🎬" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No videos yet" })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2 }, children: userVideos.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }, children: userVideos.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
             {
               onClick: () => setPlayerIndex(i),
-              style: { position: "relative", aspectRatio: "9/16", background: "#111", overflow: "hidden", cursor: "pointer" },
+              style: { position: "relative", aspectRatio: "1/1", background: "#111", overflow: "hidden", cursor: "pointer" },
               children: [
                 v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: v2.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: v2.video_url, style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, opacity: 0.8 }, children: "▶" }) }),
@@ -12278,30 +12278,17 @@ function App() {
         )
       ] }),
       activeTab !== "feed" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16, fontWeight: 800, color: "#fff", letterSpacing: 0.2 }, children: activeTab === "profile" ? "Profile" : activeTab === "explore" ? "Explore" : activeTab === "podcast" ? "Podcasts" : "" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "button",
-          {
-            onClick: () => requireAuth(() => setShowGoLive(true)),
-            style: { background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 20, padding: "4px 10px", color: "#F5C842", fontSize: 11, fontWeight: 700, cursor: "pointer", letterSpacing: 0.3, WebkitTapHighlightColor: "transparent", display: "flex", alignItems: "center", gap: 4 },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 6, height: 6, borderRadius: "50%", background: "#F5C842", display: "inline-block", animation: "heartbeat 1.4s ease-in-out infinite" } }),
-              "Live"
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setShowSearch(true),
-            style: { background: "none", border: "none", cursor: "pointer", padding: 4, WebkitTapHighlightColor: "transparent" },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.7)", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "11", cy: "11", r: "7" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" })
-            ] })
-          }
-        )
-      ] })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => requireAuth(() => setShowGoLive(true)),
+          style: { background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 20, padding: "4px 10px", color: "#F5C842", fontSize: 11, fontWeight: 700, cursor: "pointer", letterSpacing: 0.3, WebkitTapHighlightColor: "transparent", display: "flex", alignItems: "center", gap: 4 },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 6, height: 6, borderRadius: "50%", background: "#F5C842", display: "inline-block", animation: "heartbeat 1.4s ease-in-out infinite" } }),
+            "Live"
+          ]
+        }
+      ) })
     ] }) }),
     activeTab === "feed" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: (el2) => {
       feedContainerRef.current = el2;
