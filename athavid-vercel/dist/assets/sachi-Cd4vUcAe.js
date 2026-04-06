@@ -12493,6 +12493,44 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 " listeners tuned in"
               ] })
             ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 6 }, children: "🔗 Stream URL" }),
+              editingStream ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    value: newStreamUrl,
+                    onChange: (e) => setNewStreamUrl(e.target.value),
+                    placeholder: "https://youtube.com/watch?v=...",
+                    style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none" }
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+                  try {
+                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
+                    setEditingStream(false);
+                    showToast("✅ Stream URL saved!", "success");
+                  } catch (e) {
+                    showToast("Failed to save URL", "error");
+                  }
+                }, style: { background: "#6c3cf7", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }, children: "Save" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingStream(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontSize: 13, cursor: "pointer" }, children: "✕" })
+              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }, children: selectedPodcast.live_stream_url || "No stream URL set yet" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: () => {
+                      setNewStreamUrl(selectedPodcast.live_stream_url || "");
+                      setEditingStream(true);
+                    },
+                    style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 8, padding: "5px 12px", color: "#a78bfa", fontSize: 12, cursor: "pointer", fontWeight: 600, flexShrink: 0 },
+                    children: selectedPodcast.live_stream_url ? "Edit" : "Add URL"
+                  }
+                )
+              ] })
+            ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               "button",
               {
