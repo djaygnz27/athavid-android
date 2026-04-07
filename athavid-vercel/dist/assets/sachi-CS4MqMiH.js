@@ -18975,6 +18975,21 @@ function AdminPanel({ currentUser }) {
 	(0, import_react.useEffect)(() => {
 		if (modTab === "analytics") loadAnalytics();
 	}, [modTab]);
+	(0, import_react.useEffect)(() => {
+		if (modTab === "users") loadRegisteredUsers();
+	}, [modTab]);
+	const [registeredUsers, setRegisteredUsers] = (0, import_react.useState)([]);
+	const [usersLoading, setUsersLoading] = (0, import_react.useState)(false);
+	const loadRegisteredUsers = async () => {
+		setUsersLoading(true);
+		try {
+			const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date");
+			setRegisteredUsers(res.items || res || []);
+		} catch (e) {
+			console.error(e);
+		}
+		setUsersLoading(false);
+	};
 	const toggleMature = async (video, reason) => {
 		setSaving(video.id);
 		try {
@@ -19087,6 +19102,7 @@ function AdminPanel({ currentUser }) {
 						children: [
 							["videos", "🎬 Videos"],
 							["ai", "🤖 AI Flagged"],
+							["users", "👥 Users"],
 							["analytics", "📊 Analytics"]
 						].map(([val, label]) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							onClick: () => setModTab(val),
@@ -19667,6 +19683,208 @@ function AdminPanel({ currentUser }) {
 						}, i))]
 					})
 				] })
+			}),
+			modTab === "users" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				style: { padding: "16px 16px 20px" },
+				children: usersLoading ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					style: {
+						textAlign: "center",
+						color: "#555",
+						padding: 60,
+						fontSize: 14
+					},
+					children: "Loading users…"
+				}) : (() => {
+					const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+					const weekAgo = /* @__PURE__ */ new Date();
+					weekAgo.setDate(weekAgo.getDate() - 7);
+					const newToday = registeredUsers.filter((u) => (u.created_date || "").slice(0, 10) === todayStr).length;
+					const newThisWeek = registeredUsers.filter((u) => new Date(u.created_date) >= weekAgo).length;
+					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						style: {
+							display: "grid",
+							gridTemplateColumns: "1fr 1fr 1fr",
+							gap: 10,
+							marginBottom: 20
+						},
+						children: [
+							[
+								"👥",
+								"Total",
+								registeredUsers.length,
+								"#6B8AFF"
+							],
+							[
+								"🌅",
+								"Today",
+								newToday,
+								"#6BFFB8"
+							],
+							[
+								"📅",
+								"This Week",
+								newThisWeek,
+								"#F5C842"
+							]
+						].map(([icon, label, val, color]) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							style: {
+								background: "rgba(255,255,255,0.04)",
+								borderRadius: 14,
+								padding: "14px 10px",
+								textAlign: "center",
+								border: `1px solid ${color}33`
+							},
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									style: {
+										fontSize: 20,
+										marginBottom: 4
+									},
+									children: icon
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									style: {
+										color,
+										fontWeight: 900,
+										fontSize: 26,
+										lineHeight: 1
+									},
+									children: val
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									style: {
+										color: "#555",
+										fontSize: 11,
+										marginTop: 4
+									},
+									children: label
+								})
+							]
+						}, label))
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						style: {
+							background: "rgba(107,138,255,0.06)",
+							borderRadius: 16,
+							border: "1px solid rgba(107,138,255,0.15)",
+							overflow: "hidden"
+						},
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							style: {
+								padding: "12px 16px",
+								borderBottom: "1px solid rgba(255,255,255,0.06)",
+								display: "flex",
+								justifyContent: "space-between",
+								alignItems: "center"
+							},
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								style: {
+									color: "#6B8AFF",
+									fontWeight: 800,
+									fontSize: 14
+								},
+								children: "All Registered Users"
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								style: {
+									color: "#444",
+									fontSize: 12
+								},
+								children: [registeredUsers.length, " total"]
+							})]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							style: {
+								maxHeight: 500,
+								overflowY: "auto"
+							},
+							children: [registeredUsers.map((u, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								style: {
+									display: "flex",
+									alignItems: "center",
+									gap: 12,
+									padding: "10px 16px",
+									borderBottom: "1px solid rgba(255,255,255,0.04)",
+									background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)"
+								},
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+										src: u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username || u.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
+										style: {
+											width: 36,
+											height: 36,
+											borderRadius: "50%",
+											flexShrink: 0,
+											objectFit: "cover",
+											border: "2px solid rgba(107,138,255,0.3)"
+										}
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										style: {
+											flex: 1,
+											minWidth: 0
+										},
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+											style: {
+												color: "#fff",
+												fontWeight: 700,
+												fontSize: 14,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: u.display_name || u.username || "—"
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											style: {
+												color: "#555",
+												fontSize: 11,
+												overflow: "hidden",
+												textOverflow: "ellipsis",
+												whiteSpace: "nowrap"
+											},
+											children: [
+												"@",
+												u.username || "?",
+												" · ",
+												u.email || "no email"
+											]
+										})]
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										style: {
+											flexShrink: 0,
+											textAlign: "right"
+										},
+										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+											style: {
+												color: "#444",
+												fontSize: 11
+											},
+											children: u.created_date ? new Date(u.created_date).toLocaleDateString("en-US", {
+												month: "short",
+												day: "numeric",
+												year: "2-digit"
+											}) : ""
+										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+											style: {
+												color: u.status === "active" ? "#6BFFB8" : "#FF6B6B",
+												fontSize: 10,
+												fontWeight: 700,
+												marginTop: 2
+											},
+											children: u.status || "active"
+										})]
+									})
+								]
+							}, u.id || i)), registeredUsers.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								style: {
+									textAlign: "center",
+									color: "#444",
+									padding: 40,
+									fontSize: 13
+								},
+								children: "No users yet."
+							})]
+						})]
+					})] });
+				})()
 			}),
 			modTab === "ai" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				style: { padding: "16px" },
