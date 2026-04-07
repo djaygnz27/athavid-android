@@ -4139,10 +4139,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`);
-                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-                    const filtered = items.filter(ep => ep.podcast_id === p.id && ep.status === "published");
-                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    const token = localStorage.getItem("token");
+                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const json = await res.json();
+                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id);
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
                     setPodcastEpisodes(sorted);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
@@ -4189,10 +4192,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`);
-                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-                    const filtered = items.filter(ep => ep.podcast_id === p.id && ep.status === "published");
-                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    const token = localStorage.getItem("token");
+                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const json = await res.json();
+                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id);
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
                     setPodcastEpisodes(sorted);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
@@ -4235,10 +4241,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`);
-                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-                    const filtered = items.filter(ep => ep.podcast_id === p.id && ep.status === "published");
-                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    const token = localStorage.getItem("token");
+                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const json = await res.json();
+                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id);
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
                     setPodcastEpisodes(sorted);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
