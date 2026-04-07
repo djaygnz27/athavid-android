@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "video_id": {
+      "type": "string"
+    },
+    "reporter_id": {
+      "type": "string"
+    },
+    "reporter_username": {
+      "type": "string"
+    },
+    "video_caption": {
+      "type": "string"
+    },
+    "video_username": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "dismissed",
+        "actioned"
+      ],
+      "default": "pending"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiReport"
+}

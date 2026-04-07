@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "blocker_id": {
+      "type": "string"
+    },
+    "blocker_username": {
+      "type": "string"
+    },
+    "blocked_id": {
+      "type": "string"
+    },
+    "blocked_username": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiBlock"
+}
