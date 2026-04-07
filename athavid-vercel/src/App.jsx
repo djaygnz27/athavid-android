@@ -3515,6 +3515,82 @@ function Toast({ msg, type="success" }) {
   );
 }
 
+// ── RECENT EPISODES COMPONENT ──
+function RecentEpisodes({ podcastId }) {
+  const [episodes, setEpisodes] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!podcastId) return;
+    setLoading(true);
+    fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode/filter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ podcast_id: podcastId, status: "published" })
+    })
+      .then(r => r.json())
+      .then(data => {
+        const items = Array.isArray(data) ? data : (data?.records || data?.items || []);
+        // Sort by episode_number descending, take last 2
+        const sorted = items.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0)).slice(0, 2);
+        setEpisodes(sorted);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [podcastId]);
+
+  if (loading) return (
+    <div style={{ marginTop:24, marginBottom:8 }}>
+      <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:1.2, marginBottom:12 }}>Recent Episodes</div>
+      <div style={{ color:"rgba(255,255,255,0.2)", fontSize:13, padding:"12px 0" }}>Loading...</div>
+    </div>
+  );
+
+  if (!episodes.length) return null;
+
+  const fmtDuration = (sec) => {
+    if (!sec) return "";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
+  return (
+    <div style={{ marginTop:24, marginBottom:8 }}>
+      <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:1.2, marginBottom:12 }}>Recent Episodes</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {episodes.map((ep, i) => (
+          <div key={ep.id || i} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:14 }}>
+            {/* Episode number bubble */}
+            <div style={{ width:40, height:40, borderRadius:10, background:"linear-gradient(135deg,#6c3cf7,#4527a0)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontWeight:800, color:"#fff", fontSize:14 }}>
+              {ep.episode_number || i + 1}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ color:"#fff", fontWeight:700, fontSize:14, lineHeight:1.4, marginBottom:4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+                {ep.title}
+              </div>
+              {ep.description && (
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, lineHeight:1.5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", marginBottom:6 }}>
+                  {ep.description}
+                </div>
+              )}
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                {ep.duration_seconds > 0 && (
+                  <span style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>⏱ {fmtDuration(ep.duration_seconds)}</span>
+                )}
+                {ep.listener_count > 0 && (
+                  <span style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>🎧 {ep.listener_count}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const PODCAST_COVER_COLORS = [
   { bg:"linear-gradient(135deg,#6c3cf7,#4527a0)", emoji:"🎙️" },
   { bg:"linear-gradient(135deg,#e53935,#b71c1c)", emoji:"🔥" },
@@ -3933,7 +4009,10 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             </div>
           )}
 
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+          {/* RECENT EPISODES */}
+          <RecentEpisodes podcastId={selectedPodcast.id} />
+
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:16 }}>
             <div style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:20, padding:"4px 14px", color:"#a78bfa", fontSize:12, fontWeight:600 }}>{selectedPodcast.category}</div>
           </div>
         </div>
