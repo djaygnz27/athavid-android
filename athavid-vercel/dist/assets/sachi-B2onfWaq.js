@@ -7783,10 +7783,15 @@ function formatCount(n2) {
   if (n2 >= 1e3) return (n2 / 1e3).toFixed(1) + "K";
   return String(n2);
 }
-const resolveMediaUrl = (url) => {
+const resolveMediaUrl = (url, isVideo) => {
   if (!url) return url;
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
-  if (match) return `https://media.base44.com/images/public/${match[1]}/${match[2]}`;
+  if (match) {
+    const filename = match[2];
+    const isVideoFile = /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
+    const bucket = isVideoFile ? "videos" : "images";
+    return `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
+  }
   return url;
 };
 async function getPostLocation() {
