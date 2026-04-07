@@ -3694,8 +3694,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       if (!url) return null;
       if (url.includes("youtube.com/watch")) return url.replace("watch?v=","embed/").split("&")[0]+"?autoplay=1";
       if (url.includes("youtu.be/")) return "https://www.youtube.com/embed/"+url.split("youtu.be/")[1].split("?")[0]+"?autoplay=1";
-      if (url.includes("rumble.com/embed")) return url+"?pub=4";
-      if (url.includes("rumble.com")) return url;
+      if (url.includes("rumble.com/embed")) return url.includes("?") ? url : url+"?pub=4";
+      if (url.includes("rumble.com")) {
+        // Convert regular rumble page URL to embed: rumble.com/vXXXX-title.html -> rumble.com/embed/vXXXX/
+        const rmMatch = url.match(/rumble\.com\/(v[\w]+)-/);
+        if (rmMatch) return `https://rumble.com/embed/${rmMatch[1]}/?pub=4`;
+        return url; // fallback
+      }
       if (url.includes("spotify.com/show/") || url.includes("spotify.com/episode/")) {
         const id = url.split("/").pop().split("?")[0];
         return url.includes("/episode/") ? `https://open.spotify.com/embed/episode/${id}` : `https://open.spotify.com/embed/show/${id}`;
@@ -3715,11 +3720,11 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         </div>
         {/* Player */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
-          {embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed")) ? (
+          {embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed") || embedUrl.includes("rumble.com/embed")) ? (
             <iframe
               src={embedUrl}
-              style={{ width:"100%", maxWidth:700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight:400, borderRadius:16, border:"none" }}
-              allow="autoplay; encrypted-media"
+              style={{ width:"100%", maxWidth:700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight:500, borderRadius:16, border:"none" }}
+              allow="autoplay; encrypted-media; fullscreen"
               allowFullScreen
             />
           ) : (
