@@ -12333,7 +12333,7 @@ function Toast({ msg, type = "success" }) {
   const bg2 = type === "error" ? "linear-gradient(135deg,#c62828,#b71c1c)" : type === "live" ? "linear-gradient(135deg,#e53935,#b71c1c)" : "linear-gradient(135deg,#2e7d32,#1b5e20)";
   return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", zIndex: 9999, background: bg2, color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 24px", borderRadius: 30, boxShadow: "0 6px 28px rgba(0,0,0,0.5)", whiteSpace: "nowrap", pointerEvents: "none" }, children: msg });
 }
-function RecentEpisodes({ episodes = [], loading = false }) {
+function RecentEpisodes({ episodes = [], loading = false, onEpisodeClick }) {
   if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 13, padding: "12px 0" }, children: "Loading..." })
@@ -12348,7 +12348,7 @@ function RecentEpisodes({ episodes = [], loading = false }) {
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: episodes.map((ep, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 14 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: episodes.map((ep, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => onEpisodeClick && onEpisodeClick(ep), style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 14, cursor: "pointer", transition: "background 0.2s" }, onMouseEnter: (e) => e.currentTarget.style.background = "rgba(108,60,247,0.15)", onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.04)", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#6c3cf7,#4527a0)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 800, color: "#fff", fontSize: 14 }, children: ep.episode_number || i + 1 }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, lineHeight: 1.4, marginBottom: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: ep.title }),
@@ -12395,6 +12395,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [goingLive, setGoingLive] = reactExports.useState(false);
   const [endingLive, setEndingLive] = reactExports.useState(false);
   const [editingStream, setEditingStream] = reactExports.useState(false);
+  const [selectedEpisode, setSelectedEpisode] = reactExports.useState(null);
   const [newStreamUrl, setNewStreamUrl] = reactExports.useState("");
   const showToast = (msg, type = "success", ms = 3e3) => {
     setToast({ msg, type });
@@ -12482,6 +12483,60 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     }
     setRegistering(false);
   };
+  if (selectedEpisode) {
+    const epUrl = selectedEpisode.live_stream_url || selectedEpisode.audio_url || selectedEpisode.video_url || "";
+    const getEpEmbed = (url) => {
+      if (!url) return null;
+      if (url.includes("youtube.com/watch")) return url.replace("watch?v=", "embed/").split("&")[0] + "?autoplay=1";
+      if (url.includes("youtu.be/")) return "https://www.youtube.com/embed/" + url.split("youtu.be/")[1].split("?")[0] + "?autoplay=1";
+      if (url.includes("rumble.com/embed")) return url + "?pub=4";
+      if (url.includes("rumble.com")) return url;
+      if (url.includes("spotify.com/show/") || url.includes("spotify.com/episode/")) {
+        const id2 = url.split("/").pop().split("?")[0];
+        return url.includes("/episode/") ? `https://open.spotify.com/embed/episode/${id2}` : `https://open.spotify.com/embed/show/${id2}`;
+      }
+      return url;
+    };
+    const embedUrl = getEpEmbed(epUrl);
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 200, display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setSelectedEpisode(null), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 18 }, children: "←" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: selectedEpisode.title }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12 }, children: [
+            "Episode ",
+            selectedEpisode.episode_number
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
+        embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed")) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "iframe",
+          {
+            src: embedUrl,
+            style: { width: "100%", maxWidth: 700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight: 400, borderRadius: 16, border: "none" },
+            allow: "autoplay; encrypted-media",
+            allowFullScreen: true
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 500, background: "rgba(255,255,255,0.05)", borderRadius: 20, padding: 32, textAlign: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64, marginBottom: 16 }, children: "🎙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }, children: selectedEpisode.title }),
+          selectedEpisode.description && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 24, lineHeight: 1.6 }, children: selectedEpisode.description }),
+          epUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "a",
+            {
+              href: epUrl,
+              target: "_blank",
+              rel: "noopener noreferrer",
+              style: { display: "inline-block", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", color: "#fff", padding: "14px 28px", borderRadius: 50, fontWeight: 700, fontSize: 15, textDecoration: "none" },
+              children: "🎧 Listen Now"
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 14 }, children: "No stream URL available yet" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 24, width: "100%", maxWidth: 500 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.7 }, children: selectedEpisode.description }) })
+      ] })
+    ] });
+  }
   if (selectedPodcast) {
     const isHost = currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === selectedPodcast.created_by || currentUser.full_name && currentUser.full_name === selectedPodcast.host_username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) === selectedPodcast.host_username || currentUser.email === "jaygnz27@gmail.com" || currentUser.email === "lasanjaya@gmail.com");
     const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
@@ -12775,7 +12830,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", marginTop: 12, padding: "13px 0", background: "rgba(108,60,247,0.15)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 14, color: "#a78bfa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Sign in to Follow this Podcast" })
           ] }) : null;
         })() : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 16 }, children: "Sign in to Follow" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(RecentEpisodes, { episodes: podcastEpisodes, loading: episodesLoading }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(RecentEpisodes, { episodes: podcastEpisodes, loading: episodesLoading, onEpisodeClick: setSelectedEpisode }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
       ] })
     ] });

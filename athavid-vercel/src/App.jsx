@@ -3516,7 +3516,7 @@ function Toast({ msg, type="success" }) {
 }
 
 // ── RECENT EPISODES COMPONENT ──
-function RecentEpisodes({ episodes = [], loading = false }) {
+function RecentEpisodes({ episodes = [], loading = false, onEpisodeClick }) {
 
   if (loading) return (
     <div style={{ marginTop:24, marginBottom:8 }}>
@@ -3540,7 +3540,7 @@ function RecentEpisodes({ episodes = [], loading = false }) {
       <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:1.2, marginBottom:12 }}>Recent Episodes</div>
       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
         {episodes.map((ep, i) => (
-          <div key={ep.id || i} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:14 }}>
+          <div key={ep.id || i} onClick={() => onEpisodeClick && onEpisodeClick(ep)} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:14, cursor:"pointer", transition:"background 0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(108,60,247,0.15)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.04)"}>
             {/* Episode number bubble */}
             <div style={{ width:40, height:40, borderRadius:10, background:"linear-gradient(135deg,#6c3cf7,#4527a0)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontWeight:800, color:"#fff", fontSize:14 }}>
               {ep.episode_number || i + 1}
@@ -3598,6 +3598,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [goingLive, setGoingLive] = useState(false);
   const [endingLive, setEndingLive] = useState(false);
   const [editingStream, setEditingStream] = useState(false);
+  const [selectedEpisode, setSelectedEpisode] = useState(null);
   const [newStreamUrl, setNewStreamUrl] = useState("");
 
   const showToast = (msg, type="success", ms=3000) => {
@@ -3686,6 +3687,65 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   };
 
   // ── PODCAST DETAIL ──
+  // Episode Player Overlay
+  if (selectedEpisode) {
+    const epUrl = selectedEpisode.live_stream_url || selectedEpisode.audio_url || selectedEpisode.video_url || "";
+    const getEpEmbed = (url) => {
+      if (!url) return null;
+      if (url.includes("youtube.com/watch")) return url.replace("watch?v=","embed/").split("&")[0]+"?autoplay=1";
+      if (url.includes("youtu.be/")) return "https://www.youtube.com/embed/"+url.split("youtu.be/")[1].split("?")[0]+"?autoplay=1";
+      if (url.includes("rumble.com/embed")) return url+"?pub=4";
+      if (url.includes("rumble.com")) return url;
+      if (url.includes("spotify.com/show/") || url.includes("spotify.com/episode/")) {
+        const id = url.split("/").pop().split("?")[0];
+        return url.includes("/episode/") ? `https://open.spotify.com/embed/episode/${id}` : `https://open.spotify.com/embed/show/${id}`;
+      }
+      return url;
+    };
+    const embedUrl = getEpEmbed(epUrl);
+    return (
+      <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:200, display:"flex", flexDirection:"column" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", gap:12, padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0 }}>
+          <button onClick={() => setSelectedEpisode(null)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#fff", fontSize:18 }}>←</button>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{selectedEpisode.title}</div>
+            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>Episode {selectedEpisode.episode_number}</div>
+          </div>
+        </div>
+        {/* Player */}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
+          {embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed")) ? (
+            <iframe
+              src={embedUrl}
+              style={{ width:"100%", maxWidth:700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight:400, borderRadius:16, border:"none" }}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          ) : (
+            <div style={{ width:"100%", maxWidth:500, background:"rgba(255,255,255,0.05)", borderRadius:20, padding:32, textAlign:"center" }}>
+              <div style={{ fontSize:64, marginBottom:16 }}>🎙️</div>
+              <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:8 }}>{selectedEpisode.title}</div>
+              {selectedEpisode.description && <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, marginBottom:24, lineHeight:1.6 }}>{selectedEpisode.description}</div>}
+              {epUrl ? (
+                <a href={epUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ display:"inline-block", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", color:"#fff", padding:"14px 28px", borderRadius:50, fontWeight:700, fontSize:15, textDecoration:"none" }}>
+                  🎧 Listen Now
+                </a>
+              ) : (
+                <div style={{ color:"rgba(255,255,255,0.3)", fontSize:14 }}>No stream URL available yet</div>
+              )}
+            </div>
+          )}
+          {/* Episode info */}
+          <div style={{ marginTop:24, width:"100%", maxWidth:500 }}>
+            <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, lineHeight:1.7 }}>{selectedEpisode.description}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (selectedPodcast) {
     const isHost = currentUser && (
       currentUser.id === selectedPodcast.host_user_id ||
@@ -3991,7 +4051,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           )}
 
           {/* RECENT EPISODES */}
-          <RecentEpisodes episodes={podcastEpisodes} loading={episodesLoading} />
+          <RecentEpisodes episodes={podcastEpisodes} loading={episodesLoading} onEpisodeClick={setSelectedEpisode} />
 
           <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:16 }}>
             <div style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:20, padding:"4px 14px", color:"#a78bfa", fontSize:12, fontWeight:600 }}>{selectedPodcast.category}</div>
