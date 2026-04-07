@@ -12496,6 +12496,17 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [editingStream, setEditingStream] = reactExports.useState(false);
   const [selectedEpisode, setSelectedEpisode] = reactExports.useState(null);
   const [newStreamUrl, setNewStreamUrl] = reactExports.useState("");
+  const [liveNewsChannel, setLiveNewsChannel] = reactExports.useState(null);
+  const LIVE_NEWS_CHANNELS = [
+    { id: "ctv", name: "CTV News", emoji: "🍁", desc: "Canada's #1 news network", color: "linear-gradient(135deg,#c62828,#b71c1c)", url: "https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1" },
+    { id: "abc", name: "ABC News", emoji: "🇺🇸", desc: "Live U.S. news coverage", color: "linear-gradient(135deg,#1565c0,#0d47a1)", url: "https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1" },
+    { id: "bbc", name: "BBC News", emoji: "🇬🇧", desc: "Global news from London", color: "linear-gradient(135deg,#b71c1c,#880e4f)", url: "https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA&autoplay=1" },
+    { id: "aljaz", name: "Al Jazeera", emoji: "🌍", desc: "Breaking news worldwide", color: "linear-gradient(135deg,#1b5e20,#004d40)", url: "https://www.youtube.com/embed/live_stream?channel=UCNye-wNBqNL5ZzHSJj3l8Bg&autoplay=1" },
+    { id: "cnn", name: "CNN", emoji: "📡", desc: "24/7 breaking news", color: "linear-gradient(135deg,#c62828,#4a148c)", url: "https://www.youtube.com/embed/live_stream?channel=UCupvZG-5ko_eiXAupbDfxWw&autoplay=1" },
+    { id: "sky", name: "Sky News", emoji: "🌐", desc: "Live from the UK", color: "linear-gradient(135deg,#0277bd,#01579b)", url: "https://www.youtube.com/embed/live_stream?channel=UCiU6U_f2KO7P6LFID9eQ4bA&autoplay=1" },
+    { id: "dw", name: "DW News", emoji: "🇩🇪", desc: "International news in English", color: "linear-gradient(135deg,#37474f,#263238)", url: "https://www.youtube.com/embed/live_stream?channel=UCknLrEdhRCp1aegoMqRaCZg&autoplay=1" },
+    { id: "france", name: "France 24", emoji: "🇫🇷", desc: "Global news in English", color: "linear-gradient(135deg,#1565c0,#e53935)", url: "https://www.youtube.com/embed/live_stream?channel=UCQfwfsi5VrQ8yKZ-UWmAoBw&autoplay=1" }
+  ];
   const showToast = (msg, type = "success", ms = 3e3) => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), ms);
@@ -13159,6 +13170,31 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           p2.id
         );
       }) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 4px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live News" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12 }, children: "• tap to watch" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 12, paddingBottom: 16, scrollbarWidth: "none" }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          onClick: () => setLiveNewsChannel(ch2),
+          style: { flexShrink: 0, width: 140, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative" },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 80, background: ch2.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }, children: ch2.emoji }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "none", borderRadius: "0 0 16px 16px", padding: "8px 10px" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#e53935", flexShrink: 0 } }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: ch2.name })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, lineHeight: 1.3 }, children: ch2.desc })
+            ] })
+          ]
+        },
+        ch2.id
+      )) })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
       "button",
