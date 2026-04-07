@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
-import AuthModal from "./AuthModal.jsx";
+import AuthModal, { initGoogleOneTap } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
 
@@ -4961,6 +4961,17 @@ function App() {
 
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
+
+  // ── Google One Tap: auto-prompt on every page load for logged-out users ──
+  useEffect(() => {
+    if (!auth.getUser()) {
+      initGoogleOneTap((user) => {
+        setCurrentUser(user);
+        setFeedKey(k => k + 1);
+      });
+    }
+  }, []);
+
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
