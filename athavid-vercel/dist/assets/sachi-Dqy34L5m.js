@@ -7171,8 +7171,8 @@ const auth = {
   }
 };
 const videos = {
-  async list() {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiVideo?sort=-created_date&limit=200`);
+  async list(limit = 30, skip = 0) {
+    return request("GET", `/apps/${APP_ID$1}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID$1}/entities/SachiVideo`, data);
@@ -7203,10 +7203,16 @@ const videos = {
 };
 const comments = {
   async list(videoId) {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiComment?video_id=${videoId}`);
+    return request("GET", `/apps/${APP_ID$1}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID$1}/entities/SachiComment`, data);
+  },
+  async update(id2, data) {
+    return request("PUT", `/apps/${APP_ID$1}/entities/SachiComment/${id2}`, data);
+  },
+  async delete(id2) {
+    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file) {
@@ -7242,18 +7248,46 @@ const follows = {
     return request("DELETE", `/apps/${APP_ID$1}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request("GET", `/apps/${APP_ID$1}/entities/Follow?follower_id=${follower_id}`);
+    return request("GET", `/apps/${APP_ID$1}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request("GET", `/apps/${APP_ID$1}/entities/Follow?following_id=${following_id}`);
+    return request("GET", `/apps/${APP_ID$1}/entities/Follow?following_id=${following_id}&limit=500`);
+  }
+};
+const reports = {
+  async create(data) {
+    return request("POST", `/apps/${APP_ID$1}/entities/SachiReport`, data);
   },
-  async getFollowingVideos(userIds) {
-    userIds.join(",");
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiVideo?sort=-created_date&limit=200`);
+  async list() {
+    return request("GET", `/apps/${APP_ID$1}/entities/SachiReport?sort=-created_date&limit=200`);
+  },
+  async update(id2, data) {
+    return request("PUT", `/apps/${APP_ID$1}/entities/SachiReport/${id2}`, data);
+  }
+};
+const bookmarks = {
+  async add(user_id, username, video_id) {
+    return request("POST", `/apps/${APP_ID$1}/entities/SachiBookmark`, { user_id, username, video_id });
+  },
+  async remove(id2) {
+    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiBookmark/${id2}`);
+  },
+  async getByUser(user_id) {
+    return request("GET", `/apps/${APP_ID$1}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+  }
+};
+const blocks = {
+  async block(blocker_id, blocker_username, blocked_id, blocked_username) {
+    return request("POST", `/apps/${APP_ID$1}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+  },
+  async unblock(id2) {
+    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiBlock/${id2}`);
+  },
+  async getBlockedByUser(blocker_id) {
+    return request("GET", `/apps/${APP_ID$1}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
-  // Fetch a user's interest scores
   async get(userId) {
     try {
       const res = await request("GET", `/apps/${APP_ID$1}/entities/UserInterest?user_id=${userId}&limit=100`);
@@ -7262,7 +7296,6 @@ const interests = {
       return [];
     }
   },
-  // Record a signal: like=3pts, watch(50%+)=1pt, follow=5pts
   async signal(userId, hashtags, points) {
     if (!userId || !(hashtags == null ? void 0 : hashtags.length)) return;
     const existing = await this.get(userId);
@@ -7289,7 +7322,6 @@ const interests = {
       }
     }
   },
-  // Score a list of videos against user's interests and return sorted list
   async rankFeed(userId, videoList) {
     const byDate = [...videoList].sort(
       (a, b) => new Date(b.created_date || 0).getTime() - new Date(a.created_date || 0).getTime()
@@ -7306,9 +7338,7 @@ const interests = {
     const scored = byDate.map((v2) => {
       const tags = (v2.hashtags || []).map((t2) => t2.replace(/^#/, "").toLowerCase());
       let relevance = 0;
-      for (const tag of tags) {
-        relevance += scoreMap[tag] || 0;
-      }
+      for (const tag of tags) relevance += scoreMap[tag] || 0;
       return { ...v2, _relevance: relevance };
     });
     const times = scored.map((v2) => new Date(v2.created_date || 0).getTime());
@@ -9813,7 +9843,16 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 10 }, children: "🎬" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 6 }, children: "Tap to select video" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 13 }, children: "MP4, MOV, WebM · Max 500MB" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: fileRef, type: "file", accept: "video/*", style: { display: "none" }, onChange: (e) => e.target.files[0] && setFile(e.target.files[0]) })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: fileRef, type: "file", accept: "video/*", style: { display: "none" }, onChange: (e) => {
+                  const f2 = e.target.files[0];
+                  if (!f2) return;
+                  if (f2.size > 150 * 1024 * 1024) {
+                    alert("Video must be under 150MB. Please trim or compress your video before uploading.");
+                    e.target.value = "";
+                    return;
+                  }
+                  setFile(f2);
+                } })
               ]
             }
           ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 12, padding: 14, marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }, children: [
@@ -9827,16 +9866,22 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setFile(null), style: { background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: 18 }, children: "✕" })
           ] }) }),
-          uploadTab !== "text" && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "textarea",
-            {
-              value: caption,
-              onChange: (e) => setCaption(e.target.value),
-              placeholder: "Write a caption... #hashtags",
-              rows: 3,
-              style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 12, color: "#fff", fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box", marginBottom: 16 }
-            }
-          ),
+          uploadTab !== "text" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", marginBottom: 16 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "textarea",
+              {
+                value: caption,
+                onChange: (e) => setCaption(e.target.value.slice(0, 500)),
+                placeholder: "Write a caption... #hashtags",
+                rows: 3,
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${caption.length > 480 ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: 12, color: "#fff", fontSize: 14, resize: "none", outline: "none", boxSizing: "border-box", paddingBottom: 28 }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 8, right: 12, fontSize: 11, color: caption.length > 480 ? "#ff6b6b" : "#555" }, children: [
+              caption.length,
+              "/500"
+            ] })
+          ] }),
           !localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.07)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 13, marginBottom: 4 }, children: "📍 Add your location to this post?" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 11, marginBottom: 10 }, children: "Posts with location get more reach. Enable once, applies to all future posts." }),
@@ -10411,7 +10456,7 @@ function getUserAge() {
   if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
   return age;
 }
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
   var _a;
   const videoRef = reactExports.useRef(null);
   const soundRef = reactExports.useRef(null);
@@ -11249,13 +11294,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
-          onClick: tap(() => {
+          onClick: tap(async () => {
             var _a2;
+            const shareUrl = `${window.location.origin}?v=${video.id}`;
             if (navigator.share) {
-              navigator.share({ title: video.caption || "Check this out", url: window.location.href });
+              navigator.share({ title: video.caption || "Check this out on Sachi", url: shareUrl });
             } else {
-              (_a2 = navigator.clipboard) == null ? void 0 : _a2.writeText(window.location.href);
+              (_a2 = navigator.clipboard) == null ? void 0 : _a2.writeText(shareUrl);
               alert("Link copied!");
+            }
+            try {
+              const newCount = (video.shares_count || 0) + 1;
+              onShareCount && onShareCount(video.id, newCount);
+              await videos.update(video.id, { shares_count: newCount });
+            } catch (e) {
             }
           }),
           style: {
@@ -11281,6 +11333,37 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           ]
         }
       ),
+      currentUser && (() => {
+        var _a2;
+        const isBookmarked = (_a2 = onBookmark == null ? void 0 : onBookmark.isBookmarked) == null ? void 0 : _a2.call(onBookmark, video.id);
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: tap(async () => {
+              if (!currentUser) {
+                onNeedAuth && onNeedAuth();
+                return;
+              }
+              (onBookmark == null ? void 0 : onBookmark.handle) && onBookmark.handle(video.id, !isBookmarked);
+            }),
+            style: {
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation"
+            },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: isBookmarked ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: `1px solid ${isBookmarked ? "rgba(245,200,66,0.5)" : "rgba(255,255,255,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: isBookmarked ? "#F5C842" : "none", stroke: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" }) }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: "Save" })
+            ]
+          }
+        );
+      })(),
       isOwnVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
@@ -11305,7 +11388,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    reportTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(ReportModal, { video: reportTarget, onClose: () => setReportTarget(null) }),
+    reportTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(ReportModal, { video: reportTarget, currentUser, onClose: () => setReportTarget(null) }),
     showDeleteConfirm && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -11346,16 +11429,25 @@ const REPORT_REASONS = [
   { id: "violence", icon: "⚠️", label: "Violence / Harmful Content", desc: "Contains graphic violence or harmful acts" },
   { id: "other", icon: "💬", label: "Other", desc: "Something else not listed above" }
 ];
-function ReportModal({ video, onClose }) {
+function ReportModal({ video, currentUser, onClose }) {
   const [selected, setSelected] = reactExports.useState(null);
   const [submitted, setSubmitted] = reactExports.useState(false);
-  const submit = () => {
+  const submit = async () => {
     if (!selected) return;
-    const key = `reports_${video.id}`;
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
-    existing.push({ reason: selected, time: (/* @__PURE__ */ new Date()).toISOString() });
-    localStorage.setItem(key, JSON.stringify(existing));
     setSubmitted(true);
+    try {
+      await reports.create({
+        video_id: video.id,
+        reporter_id: (currentUser == null ? void 0 : currentUser.id) || "guest",
+        reporter_username: (currentUser == null ? void 0 : currentUser.username) || (currentUser == null ? void 0 : currentUser.email) || "guest",
+        video_caption: video.caption || "",
+        video_username: video.username || video.display_name || "",
+        reason: selected,
+        status: "pending"
+      });
+    } catch (e) {
+      console.error("Report failed:", e);
+    }
     setTimeout(() => onClose(), 1800);
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
@@ -13748,6 +13840,12 @@ function App() {
     });
   };
   const [followingIds, setFollowingIds] = reactExports.useState([]);
+  const [bookmarkedIds, setBookmarkedIds] = reactExports.useState(/* @__PURE__ */ new Set());
+  const [bookmarkRecords, setBookmarkRecords] = reactExports.useState({});
+  const [blockedIds, setBlockedIds] = reactExports.useState(/* @__PURE__ */ new Set());
+  const [feedPage, setFeedPage] = reactExports.useState(1);
+  const [feedHasMore, setFeedHasMore] = reactExports.useState(true);
+  const FEED_PAGE_SIZE = 30;
   const [commentVideo, setCommentVideo] = reactExports.useState(null);
   const [showUpload, setShowUpload] = reactExports.useState(false);
   const [uploadToast, setUploadToast] = reactExports.useState(false);
@@ -13833,15 +13931,15 @@ function App() {
       console.error(e);
     }
   };
-  const loadVideos = async (user) => {
-    setLoading(true);
+  const loadVideos = async (user, append = false, page = 1) => {
+    if (!append) setLoading(true);
     try {
-      const data = await videos.list();
-      console.log("loadVideos data type:", typeof data, Array.isArray(data), (data == null ? void 0 : data.length) || (data == null ? void 0 : data.count));
+      const skip = (page - 1) * FEED_PAGE_SIZE;
+      const data = await videos.list(FEED_PAGE_SIZE, skip);
       const rawAll = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
       const raw = rawAll.filter((v2) => !v2.is_archived);
-      console.log("loadVideos raw count:", raw.length);
-      if (!raw.length) {
+      setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
+      if (!raw.length && !append) {
         setVideoList([]);
         setLoading(false);
         return;
@@ -13849,25 +13947,92 @@ function App() {
       const sorted = [...raw].sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
       const activeUser = user || currentUser;
       let ranked = sorted;
-      if (activeUser) {
+      if (activeUser && !append) {
         try {
           ranked = await interests.rankFeed(activeUser.id, sorted);
         } catch (re2) {
-          console.error("rankFeed error:", re2);
           ranked = sorted;
         }
       }
-      console.log("loadVideos setting", ranked.length, "videos");
-      setVideoList(ranked);
-      requestAnimationFrame(() => {
-        const el2 = feedContainerRef.current || window.__sachiEl;
-        if (el2) el2.scrollTo({ top: 0, behavior: "instant" });
-      });
+      if (append) {
+        setVideoList((prev) => {
+          const existing = new Set(prev.map((v2) => v2.id));
+          return [...prev, ...ranked.filter((v2) => !existing.has(v2.id))];
+        });
+      } else {
+        setVideoList(ranked);
+        requestAnimationFrame(() => {
+          const el2 = feedContainerRef.current || window.__sachiEl;
+          if (el2) el2.scrollTo({ top: 0, behavior: "instant" });
+        });
+      }
     } catch (err) {
       console.error("loadVideos error:", err);
-      setVideoList([]);
+      if (!append) setVideoList([]);
     }
     setLoading(false);
+  };
+  const loadMoreVideos = () => {
+    if (!feedHasMore || loading) return;
+    const nextPage = feedPage + 1;
+    setFeedPage(nextPage);
+    loadVideos(currentUser, true, nextPage);
+  };
+  reactExports.useEffect(() => {
+    if (!currentUser) {
+      setBookmarkedIds(/* @__PURE__ */ new Set());
+      setBookmarkRecords({});
+      setBlockedIds(/* @__PURE__ */ new Set());
+      return;
+    }
+    bookmarks.getByUser(currentUser.id).then((res) => {
+      const items = res.items || res || [];
+      const ids = new Set(items.map((b) => b.video_id));
+      const recs = {};
+      items.forEach((b) => {
+        recs[b.video_id] = b.id;
+      });
+      setBookmarkedIds(ids);
+      setBookmarkRecords(recs);
+    }).catch(() => {
+    });
+    blocks.getBlockedByUser(currentUser.id).then((res) => {
+      const items = res.items || res || [];
+      setBlockedIds(new Set(items.map((b) => b.blocked_id)));
+    }).catch(() => {
+    });
+  }, [currentUser]);
+  const handleBookmark = async (videoId, shouldBookmark) => {
+    if (!currentUser) {
+      setShowAuth(true);
+      return;
+    }
+    if (shouldBookmark) {
+      try {
+        const rec = await bookmarks.add(currentUser.id, currentUser.username || currentUser.email, videoId);
+        setBookmarkedIds((prev) => /* @__PURE__ */ new Set([...prev, videoId]));
+        setBookmarkRecords((prev) => ({ ...prev, [videoId]: rec.id }));
+      } catch (e) {
+      }
+    } else {
+      const recId = bookmarkRecords[videoId];
+      if (recId) {
+        try {
+          await bookmarks.remove(recId);
+          setBookmarkedIds((prev) => {
+            const n2 = new Set(prev);
+            n2.delete(videoId);
+            return n2;
+          });
+          setBookmarkRecords((prev) => {
+            const n2 = { ...prev };
+            delete n2[videoId];
+            return n2;
+          });
+        } catch (e) {
+        }
+      }
+    }
   };
   const goHome = () => {
     setActiveTab("feed");
@@ -13941,9 +14106,12 @@ function App() {
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0B0C1A", minHeight: "100svh", maxWidth: 480, margin: "0 auto", position: "relative", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, paddingTop: "env(safe-area-inset-top,0px)", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 1 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12, fontWeight: 700, color: "#F5C842", lineHeight: 1, marginBottom: 2 }, children: "™" })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", alt: "Sachi", style: { width: 30, height: 30, borderRadius: 8, filter: "drop-shadow(0 0 6px rgba(245,200,66,0.5))" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 1 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12, fontWeight: 700, color: "#F5C842", lineHeight: 1, marginBottom: 2 }, children: "™" })
+        ] })
       ] }),
       activeTab === "feed" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", background: "rgba(255,255,255,0.07)", borderRadius: 24, padding: 3, gap: 2 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -14062,7 +14230,7 @@ function App() {
           }
         )
       ] }),
-      (feedTab === "forYou" ? videoList : followingVideos).map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      (feedTab === "forYou" ? videoList : followingVideos).filter((v2) => !blockedIds.has(v2.user_id)).map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         VideoCard,
         {
           video: v2,
@@ -14074,10 +14242,19 @@ function App() {
           onDelete: (id2) => setVideoList((prev) => prev.filter((v22) => v22.id !== id2)),
           onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname }),
           followedUserIds,
-          onFollowChange: handleFollowChange
+          onFollowChange: handleFollowChange,
+          onShareCount: (videoId, newCount) => setVideoList((prev) => prev.map((v22) => v22.id === videoId ? { ...v22, shares_count: newCount } : v22)),
+          onBookmark: { isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark },
+          blockedIds
         },
         v2.id
-      ))
+      )),
+      feedTab === "forYou" && feedHasMore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: "24px 0 40px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: loadMoreVideos, style: { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 20, padding: "10px 28px", color: "#fff", fontSize: 14, cursor: "pointer", fontWeight: 600 }, children: "Load more" }) }),
+      feedTab === "following" && followingVideos.length === 0 && !loading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 24px", color: "rgba(255,255,255,0.3)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 16 }, children: "👀" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 8 }, children: "Nothing here yet" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13 }, children: "Follow creators to see their posts here" })
+      ] })
     ] }, feedKey),
     activeTab === "profile" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: !currentUser ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 60 }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
