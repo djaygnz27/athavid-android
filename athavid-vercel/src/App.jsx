@@ -4539,6 +4539,19 @@ function AdminPanel({ currentUser }) {
 
   useEffect(() => { loadVideos(); }, []);
   useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
+  useEffect(() => { if (modTab === "users") loadRegisteredUsers(); }, [modTab]);
+
+  const [registeredUsers, setRegisteredUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  const loadRegisteredUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date");
+      setRegisteredUsers(res.items || res || []);
+    } catch(e) { console.error(e); }
+    setUsersLoading(false);
+  };
 
   const toggleMature = async (video, reason) => {
     setSaving(video.id);
@@ -4595,7 +4608,7 @@ function AdminPanel({ currentUser }) {
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["analytics","📊 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["analytics","📊 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
@@ -4759,6 +4772,77 @@ function AdminPanel({ currentUser }) {
 
       {/* ── VIDEOS TAB ── */}
       {/* ── AI FLAGGED TAB ── */}
+      {/* ── USERS TAB ── */}
+      {modTab === "users" && (
+        <div style={{ padding:"16px 16px 20px" }}>
+          {usersLoading ? (
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>Loading users…</div>
+          ) : (
+            (() => {
+              const todayStr = new Date().toISOString().slice(0,10);
+              const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+              const newToday = registeredUsers.filter(u => (u.created_date||"").slice(0,10) === todayStr).length;
+              const newThisWeek = registeredUsers.filter(u => new Date(u.created_date) >= weekAgo).length;
+              return (
+                <>
+                  {/* Summary cards */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+                    {[
+                      ["👥","Total",registeredUsers.length,"#6B8AFF"],
+                      ["🌅","Today",newToday,"#6BFFB8"],
+                      ["📅","This Week",newThisWeek,"#F5C842"],
+                    ].map(([icon,label,val,color]) => (
+                      <div key={label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"14px 10px", textAlign:"center", border:`1px solid ${color}33` }}>
+                        <div style={{ fontSize:20, marginBottom:4 }}>{icon}</div>
+                        <div style={{ color, fontWeight:900, fontSize:26, lineHeight:1 }}>{val}</div>
+                        <div style={{ color:"#555", fontSize:11, marginTop:4 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* User list */}
+                  <div style={{ background:"rgba(107,138,255,0.06)", borderRadius:16, border:"1px solid rgba(107,138,255,0.15)", overflow:"hidden" }}>
+                    <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div style={{ color:"#6B8AFF", fontWeight:800, fontSize:14 }}>All Registered Users</div>
+                      <div style={{ color:"#444", fontSize:12 }}>{registeredUsers.length} total</div>
+                    </div>
+                    <div style={{ maxHeight:500, overflowY:"auto" }}>
+                      {registeredUsers.map((u, i) => (
+                        <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                          <img
+                            src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                            style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, objectFit:"cover", border:"2px solid rgba(107,138,255,0.3)" }}
+                          />
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ color:"#fff", fontWeight:700, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              {u.display_name || u.username || "—"}
+                            </div>
+                            <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              @{u.username || "?"} · {u.email || "no email"}
+                            </div>
+                          </div>
+                          <div style={{ flexShrink:0, textAlign:"right" }}>
+                            <div style={{ color:"#444", fontSize:11 }}>
+                              {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}) : ""}
+                            </div>
+                            <div style={{ color: u.status==="active" ? "#6BFFB8" : "#FF6B6B", fontSize:10, fontWeight:700, marginTop:2 }}>
+                              {u.status || "active"}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {registeredUsers.length === 0 && (
+                        <div style={{ textAlign:"center", color:"#444", padding:40, fontSize:13 }}>No users yet.</div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()
+          )}
+        </div>
+      )}
+
       {modTab === "ai" && (
         <div style={{ padding:"16px" }}>
           <div style={{ display:"flex", gap:12, marginBottom:16 }}>
