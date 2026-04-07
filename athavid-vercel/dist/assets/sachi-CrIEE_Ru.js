@@ -12489,8 +12489,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       if (!url) return null;
       if (url.includes("youtube.com/watch")) return url.replace("watch?v=", "embed/").split("&")[0] + "?autoplay=1";
       if (url.includes("youtu.be/")) return "https://www.youtube.com/embed/" + url.split("youtu.be/")[1].split("?")[0] + "?autoplay=1";
-      if (url.includes("rumble.com/embed")) return url + "?pub=4";
-      if (url.includes("rumble.com")) return url;
+      if (url.includes("rumble.com/embed")) return url.includes("?") ? url : url + "?pub=4";
+      if (url.includes("rumble.com")) {
+        const rmMatch = url.match(/rumble\.com\/(v[\w]+)-/);
+        if (rmMatch) return `https://rumble.com/embed/${rmMatch[1]}/?pub=4`;
+        return url;
+      }
       if (url.includes("spotify.com/show/") || url.includes("spotify.com/episode/")) {
         const id2 = url.split("/").pop().split("?")[0];
         return url.includes("/episode/") ? `https://open.spotify.com/embed/episode/${id2}` : `https://open.spotify.com/embed/show/${id2}`;
@@ -12510,12 +12514,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
-        embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed")) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+        embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed") || embedUrl.includes("rumble.com/embed")) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
           "iframe",
           {
             src: embedUrl,
-            style: { width: "100%", maxWidth: 700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight: 400, borderRadius: 16, border: "none" },
-            allow: "autoplay; encrypted-media",
+            style: { width: "100%", maxWidth: 700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight: 500, borderRadius: 16, border: "none" },
+            allow: "autoplay; encrypted-media; fullscreen",
             allowFullScreen: true
           }
         ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 500, background: "rgba(255,255,255,0.05)", borderRadius: 20, padding: 32, textAlign: "center" }, children: [
