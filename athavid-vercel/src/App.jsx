@@ -4139,9 +4139,10 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?podcast_id=${p.id}&status=published&limit=10`);
+                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`);
                     const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-                    const sorted = items.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id && ep.status === "published");
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
                     setPodcastEpisodes(sorted);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
@@ -4188,9 +4189,10 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?podcast_id=${p.id}&status=published&limit=10`);
+                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`);
                     const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-                    const sorted = items.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id && ep.status === "published");
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
                     setPodcastEpisodes(sorted);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
@@ -4233,9 +4235,10 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?podcast_id=${p.id}&status=published&limit=10`);
+                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`);
                     const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-                    const sorted = items.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id && ep.status === "published");
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
                     setPodcastEpisodes(sorted);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
