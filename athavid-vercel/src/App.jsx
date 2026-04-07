@@ -1,7 +1,7 @@
 // Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request, interests } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
 import AuthModal from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
@@ -1586,7 +1586,16 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             <div style={{ fontSize:48, marginBottom:10 }}>🎬</div>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:6 }}>Tap to select video</div>
             <div style={{ color:"#666", fontSize:13 }}>MP4, MOV, WebM · Max 500MB</div>
-            <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e => e.target.files[0] && setFile(e.target.files[0])} />
+            <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e => {
+              const f = e.target.files[0];
+              if (!f) return;
+              if (f.size > 150 * 1024 * 1024) {
+                alert("Video must be under 150MB. Please trim or compress your video before uploading.");
+                e.target.value = "";
+                return;
+              }
+              setFile(f);
+            }} />
           </div>
         ) : (
           <div style={{ background:"rgba(255,107,107,0.08)", border:"1px solid rgba(255,107,107,0.2)", borderRadius:12, padding:14, marginBottom:16, display:"flex", alignItems:"center", gap:10 }}>
@@ -1600,8 +1609,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
         </>
         )}
-        {uploadTab !== "text" && <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write a caption... #hashtags" rows={3}
-          style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:16 }} />}
+        {uploadTab !== "text" && (
+          <div style={{ position:"relative", marginBottom:16 }}>
+            <textarea value={caption} onChange={e => setCaption(e.target.value.slice(0,500))} placeholder="Write a caption... #hashtags" rows={3}
+              style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`1px solid ${caption.length > 480 ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.1)"}`, borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", paddingBottom:28 }} />
+            <div style={{ position:"absolute", bottom:8, right:12, fontSize:11, color: caption.length > 480 ? "#ff6b6b" : "#555" }}>{caption.length}/500</div>
+          </div>
+        )}
 
         {/* Location permission prompt — only show if not yet granted */}
         {!localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && (
@@ -2079,7 +2093,7 @@ function getUserAge() {
   return age;
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
@@ -2658,9 +2672,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </button>
 
         {/* Share */}
-        <button onClick={tap(() => {
-            if(navigator.share){ navigator.share({ title: video.caption||"Check this out", url: window.location.href }); }
-            else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); }
+        <button onClick={tap(async () => {
+            const shareUrl = `${window.location.origin}?v=${video.id}`;
+            if(navigator.share){ navigator.share({ title: video.caption||"Check this out on Sachi", url: shareUrl }); }
+            else { navigator.clipboard?.writeText(shareUrl); alert("Link copied!"); }
+            // Increment share count in DB
+            try {
+              const newCount = (video.shares_count || 0) + 1;
+              onShareCount && onShareCount(video.id, newCount);
+              await videos.update(video.id, { shares_count: newCount });
+            } catch(e) {}
           })}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
@@ -2672,6 +2693,26 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
           <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.shares_count||0)}</div>
         </button>
+
+        {/* Bookmark */}
+        {currentUser && (() => {
+          const isBookmarked = onBookmark?.isBookmarked?.(video.id);
+          return (
+            <button onClick={tap(async () => {
+                if(!currentUser){ onNeedAuth && onNeedAuth(); return; }
+                onBookmark?.handle && onBookmark.handle(video.id, !isBookmarked);
+              })}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+              <div style={{ width:28, height:28, borderRadius:8, background: isBookmarked ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:`1px solid ${isBookmarked ? "rgba(245,200,66,0.5)" : "rgba(255,255,255,0.1)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill={isBookmarked ? "#F5C842" : "none"} stroke={isBookmarked ? "#F5C842" : "rgba(255,255,255,0.9)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div style={{ color: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>Save</div>
+            </button>
+          );
+        })()}
 
         {/* Delete — only for own videos */}
         {isOwnVideo && (
@@ -2693,7 +2734,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       </div>
 
-      {reportTarget && <ReportModal video={reportTarget} onClose={() => setReportTarget(null)} />}
+      {reportTarget && <ReportModal video={reportTarget} currentUser={currentUser} onClose={() => setReportTarget(null)} />}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (
@@ -2731,18 +2772,24 @@ const REPORT_REASONS = [
   { id:"other",    icon:"💬", label:"Other",                      desc:"Something else not listed above" },
 ];
 
-function ReportModal({ video, onClose }) {
+function ReportModal({ video, currentUser, onClose }) {
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if (!selected) return;
-    // Store report in localStorage for now
-    const key = `reports_${video.id}`;
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
-    existing.push({ reason: selected, time: new Date().toISOString() });
-    localStorage.setItem(key, JSON.stringify(existing));
     setSubmitted(true);
+    try {
+      await reports.create({
+        video_id: video.id,
+        reporter_id: currentUser?.id || "guest",
+        reporter_username: currentUser?.username || currentUser?.email || "guest",
+        video_caption: video.caption || "",
+        video_username: video.username || video.display_name || "",
+        reason: selected,
+        status: "pending",
+      });
+    } catch(e) { console.error("Report failed:", e); }
     setTimeout(() => onClose(), 1800);
   };
 
@@ -4908,6 +4955,12 @@ function App() {
     });
   };
   const [followingIds, setFollowingIds] = useState([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set()); // video_id -> bookmark record id
+  const [bookmarkRecords, setBookmarkRecords] = useState({}); // video_id -> bookmark record id
+  const [blockedIds, setBlockedIds] = useState(new Set()); // blocked user ids
+  const [feedPage, setFeedPage] = useState(1);
+  const [feedHasMore, setFeedHasMore] = useState(true);
+  const FEED_PAGE_SIZE = 30;
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
@@ -4994,34 +5047,80 @@ function App() {
     } catch(e) { console.error(e); }
   };
 
-  const loadVideos = async (user) => {
-    setLoading(true);
+  const loadVideos = async (user, append = false, page = 1) => {
+    if (!append) setLoading(true);
     try {
-      const data = await videos.list();
-      console.log('loadVideos data type:', typeof data, Array.isArray(data), data?.length || data?.count);
+      const skip = (page - 1) * FEED_PAGE_SIZE;
+      const data = await videos.list(FEED_PAGE_SIZE, skip);
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      // Filter archived posts client-side (server boolean filter is unreliable)
       const raw = rawAll.filter(v => !v.is_archived);
-      console.log('loadVideos raw count:', raw.length);
-      if (!raw.length) { setVideoList([]); setLoading(false); return; }
-      // Always sort newest-first first
+      setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
+      if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
       const activeUser = user || currentUser;
-      // Only apply interest ranking if user exists; otherwise pure chronological (newest on top)
       let ranked = sorted;
-      if (activeUser) {
+      if (activeUser && !append) {
         try { ranked = await interests.rankFeed(activeUser.id, sorted); }
-        catch(re) { console.error('rankFeed error:', re); ranked = sorted; }
+        catch(re) { ranked = sorted; }
       }
-      console.log('loadVideos setting', ranked.length, 'videos');
-      setVideoList(ranked);
-      // Scroll to top after new list is set
-      requestAnimationFrame(() => {
-        const el = feedContainerRef.current || window.__sachiEl;
-        if (el) el.scrollTo({ top: 0, behavior: 'instant' });
-      });
-    } catch(err) { console.error('loadVideos error:', err); setVideoList([]); }
+      if (append) {
+        setVideoList(prev => {
+          const existing = new Set(prev.map(v => v.id));
+          return [...prev, ...ranked.filter(v => !existing.has(v.id))];
+        });
+      } else {
+        setVideoList(ranked);
+        requestAnimationFrame(() => {
+          const el = feedContainerRef.current || window.__sachiEl;
+          if (el) el.scrollTo({ top: 0, behavior: 'instant' });
+        });
+      }
+    } catch(err) { console.error('loadVideos error:', err); if (!append) setVideoList([]); }
     setLoading(false);
+  };
+
+  const loadMoreVideos = () => {
+    if (!feedHasMore || loading) return;
+    const nextPage = feedPage + 1;
+    setFeedPage(nextPage);
+    loadVideos(currentUser, true, nextPage);
+  };
+
+  // Load bookmarks and blocks when user logs in
+  useEffect(() => {
+    if (!currentUser) { setBookmarkedIds(new Set()); setBookmarkRecords({}); setBlockedIds(new Set()); return; }
+    bookmarks.getByUser(currentUser.id).then(res => {
+      const items = res.items || res || [];
+      const ids = new Set(items.map(b => b.video_id));
+      const recs = {};
+      items.forEach(b => { recs[b.video_id] = b.id; });
+      setBookmarkedIds(ids);
+      setBookmarkRecords(recs);
+    }).catch(() => {});
+    blocks.getBlockedByUser(currentUser.id).then(res => {
+      const items = res.items || res || [];
+      setBlockedIds(new Set(items.map(b => b.blocked_id)));
+    }).catch(() => {});
+  }, [currentUser]);
+
+  const handleBookmark = async (videoId, shouldBookmark) => {
+    if (!currentUser) { setShowAuth(true); return; }
+    if (shouldBookmark) {
+      try {
+        const rec = await bookmarks.add(currentUser.id, currentUser.username || currentUser.email, videoId);
+        setBookmarkedIds(prev => new Set([...prev, videoId]));
+        setBookmarkRecords(prev => ({ ...prev, [videoId]: rec.id }));
+      } catch(e) {}
+    } else {
+      const recId = bookmarkRecords[videoId];
+      if (recId) {
+        try {
+          await bookmarks.remove(recId);
+          setBookmarkedIds(prev => { const n = new Set(prev); n.delete(videoId); return n; });
+          setBookmarkRecords(prev => { const n = {...prev}; delete n[videoId]; return n; });
+        } catch(e) {}
+      }
+    }
   };
 
   const goHome = () => {
@@ -5191,7 +5290,9 @@ function App() {
               </button>
             </div>
           )}
-          {(feedTab === "forYou" ? videoList : followingVideos).map(v => (
+          {(feedTab === "forYou" ? videoList : followingVideos)
+            .filter(v => !blockedIds.has(v.user_id))
+            .map(v => (
             <VideoCard key={v.id} video={v} currentUser={currentUser}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
@@ -5201,8 +5302,25 @@ function App() {
               onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
               followedUserIds={followedUserIds}
               onFollowChange={handleFollowChange}
+              onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
+              onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
+              blockedIds={blockedIds}
               />
           ))}
+          {feedTab === "forYou" && feedHasMore && (
+            <div style={{ textAlign:"center", padding:"24px 0 40px" }}>
+              <button onClick={loadMoreVideos} style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:20, padding:"10px 28px", color:"#fff", fontSize:14, cursor:"pointer", fontWeight:600 }}>
+                Load more
+              </button>
+            </div>
+          )}
+          {feedTab === "following" && followingVideos.length === 0 && !loading && (
+            <div style={{ textAlign:"center", padding:"60px 24px", color:"rgba(255,255,255,0.3)" }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>👀</div>
+              <div style={{ fontSize:16, fontWeight:600, marginBottom:8 }}>Nothing here yet</div>
+              <div style={{ fontSize:13 }}>Follow creators to see their posts here</div>
+            </div>
+          )}
         </div>
       )}
 
