@@ -2416,14 +2416,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           )}
         </div>
       ) : (() => {
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+        const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
-          <img src={video.video_url}
+          <img src={resolvedVideoUrl}
             style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
         );
         return (
           <>
-            <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
+            <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
               loop playsInline
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
@@ -2462,7 +2463,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* ── TAP: toggle UI visibility on images/photos, toggle play/pause on videos ── */}
       {!photoUrls && (
         <div onClick={tap(() => {
-          const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+          const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
           if (isImg || !(video.video_url)) {
             setShowUI(v => !v);
             if (!showUI) setShowFullCaption(true);
@@ -3093,7 +3095,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
       {/* Video */}
-      <video ref={videoRef} key={v.id} src={v.video_url} autoPlay playsInline loop muted={muted}
+      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.video_url)} autoPlay playsInline loop muted={muted}
         onClick={() => { if(videoRef.current.paused) videoRef.current.play(); else videoRef.current.pause(); }}
         style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
 
@@ -3309,9 +3311,9 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                       <div key={v.id} onClick={() => setPlayerIndex(i)}
                         style={{ position:"relative", aspectRatio:"1/1", background:"#111", overflow:"hidden", cursor:"pointer" }}>
                         {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         ) : (
-                          <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         )}
                         {/* Play icon overlay */}
                         <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -3386,7 +3388,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
           <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
             onClick={() => setMenuVideo(v)}>
             {v.thumbnail_url
-              ? <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
             {/* Three-dot indicator */}
             <div style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
@@ -4650,7 +4652,7 @@ function AdminPanel({ currentUser }) {
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
                     <div style={{ width:36, height:44, borderRadius:8, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
-                      {v.thumbnail_url ? <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ color:"#333", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", height:"100%" }}>🎬</div>}
+                      {v.thumbnail_url ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ color:"#333", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", height:"100%" }}>🎬</div>}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ color:"#fff", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.caption||"(no caption)"}</div>
@@ -5297,7 +5299,7 @@ function App() {
                   {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
                     <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                      <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                         <div>@{v.username}</div>
                         {v.views_count > 0 && <div style={{ color:"#aaa" }}>👁 {v.views_count}</div>}
@@ -5327,7 +5329,7 @@ function App() {
                     ).map(v => (
                       <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                         onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                        <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                       </div>
                     ))}
@@ -5448,7 +5450,7 @@ function App() {
                   ).map(v => (
                     <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setShowSearch(false); setSearchQuery(""); }}>
-                      <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                     </div>
                   ))}

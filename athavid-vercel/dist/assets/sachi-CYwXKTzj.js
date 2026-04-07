@@ -10858,11 +10858,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )
       ] })
     ] }) : (() => {
-      const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+      const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+      const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
       if (isImg) return /* @__PURE__ */ jsxRuntimeExports.jsx(
         "img",
         {
-          src: video.video_url,
+          src: resolvedVideoUrl,
           style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" }
         }
       );
@@ -10871,8 +10872,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           "video",
           {
             ref: videoRef,
-            src: video.video_url,
-            poster: video.thumbnail_url,
+            src: resolvedVideoUrl,
+            poster: resolveMediaUrl(video.thumbnail_url),
             loop: true,
             playsInline: true,
             onPlay: () => {
@@ -10971,7 +10972,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       "div",
       {
         onClick: tap(() => {
-          const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+          const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+          const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
           if (isImg || !video.video_url) {
             setShowUI((v2) => !v2);
             if (!showUI) setShowFullCaption(true);
@@ -11695,7 +11697,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
           "video",
           {
             ref: videoRef,
-            src: v2.video_url,
+            src: resolveMediaUrl(v2.video_url),
             autoPlay: true,
             playsInline: true,
             loop: true,
@@ -12014,7 +12016,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
               onClick: () => setPlayerIndex(i),
               style: { position: "relative", aspectRatio: "1/1", background: "#111", overflow: "hidden", cursor: "pointer" },
               children: [
-                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: v2.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: v2.video_url, style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
+                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: resolveMediaUrl(v2.video_url), style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, opacity: 0.8 }, children: "▶" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" } }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 4, left: 6, color: "#fff", fontSize: 11, fontWeight: 700 }, children: [
@@ -12081,7 +12083,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
         style: { position: "relative", aspectRatio: "9/16", background: "#111", overflow: "hidden", cursor: "pointer" },
         onClick: () => setMenuVideo(v2),
         children: [
-          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: v2.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
+          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
             position: "absolute",
             top: 6,
@@ -13470,7 +13472,7 @@ function AdminPanel({ currentUser }) {
             "#",
             i + 1
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 36, height: 44, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#1a1a2e" }, children: v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: v2.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#333", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }, children: "🎬" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 36, height: 44, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "#1a1a2e" }, children: v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#333", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }, children: "🎬" }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: v2.caption || "(no caption)" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11 }, children: [
@@ -14260,7 +14262,7 @@ function App() {
               setActiveTab("feed");
             },
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: v2.video_url, style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: resolveMediaUrl(v2.video_url), style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "4px 6px", background: "linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize: 10, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
                   "@",
@@ -14295,7 +14297,7 @@ function App() {
               setActiveTab("feed");
             },
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: v2.video_url, style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: resolveMediaUrl(v2.video_url), style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "4px 6px", background: "linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize: 10, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
                 "@",
                 v2.username
@@ -14435,7 +14437,7 @@ function App() {
             setSearchQuery("");
           },
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: v2.video_url, style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: resolveMediaUrl(v2.video_url), style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "4px 6px", background: "linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize: 10, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
               "@",
               v2.username
