@@ -3515,7 +3515,7 @@ function Toast({ msg, type="success" }) {
   );
 }
 
-// ── RECENT EPISODES COMPONENT ──
+// ── RECENT EPISODES COMPONENT v2 ──
 function RecentEpisodes({ episodes = [], loading = false, onEpisodeClick }) {
 
   if (loading) return (
