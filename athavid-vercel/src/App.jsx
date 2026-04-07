@@ -3808,8 +3808,18 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 // Convert any YouTube URL to embed format
                 const getEmbedUrl = (url) => {
                   if (!url) return null;
-                  // Already embed format
-                  if (url.includes("youtube.com/embed/")) return url + "?autoplay=1&rel=0";
+                  // Rumble channel live feed
+                  if (url.includes("rumble.com/c/")) {
+                    const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+                    return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`;
+                  }
+                  // Rumble video page e.g. rumble.com/vXXXXX-title.html
+                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+                  if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+                  // Rumble embed already
+                  if (url.includes("rumble.com/embed/")) return url;
+                  // YouTube embed already
+                  if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
                   // youtube.com/watch?v=ID
                   const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
                   if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
@@ -3819,31 +3829,43 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   // youtube.com/live/ID
                   const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
                   if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-                  return null;
+                  return url; // fallback: try direct
                 };
                 const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
-                return embedUrl ? (
+                const [showPlayer, setShowPlayer] = React.useState(false);
+                return (
                   <div style={{ marginBottom:16 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
                       <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
                       <span style={{ color:"#e53935", fontWeight:800, fontSize:13, letterSpacing:1 }}>LIVE NOW</span>
                       <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>· {selectedPodcast.listener_count||0} watching</span>
                     </div>
-                    <div style={{ position:"relative", width:"100%", paddingBottom:"56.25%", borderRadius:14, overflow:"hidden", background:"#000", boxShadow:"0 4px 24px rgba(229,57,53,0.25)" }}>
-                      <iframe
-                        src={embedUrl}
-                        style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        title={selectedPodcast.title}
-                      />
-                    </div>
+                    <button onClick={() => setShowPlayer(true)}
+                      style={{ display:"flex", width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12, boxShadow:"0 4px 20px rgba(229,57,53,0.35)" }}>
+                      🎧 Watch Live Now
+                    </button>
+                    {showPlayer && (
+                      <div style={{ position:"fixed", top:0, left:0, width:"100vw", height:"100vh", background:"#000", zIndex:9999, display:"flex", flexDirection:"column" }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:"rgba(0,0,0,0.85)", flexShrink:0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                            <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
+                            <span style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{selectedPodcast.title}</span>
+                          </div>
+                          <button onClick={() => setShowPlayer(false)} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:34, height:34, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                        </div>
+                        <iframe
+                          src={embedUrl}
+                          style={{ flex:1, width:"100%", border:"none" }}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                          allowFullScreen
+                          title={selectedPodcast.title}
+                        />
+                        <div style={{ padding:"10px 16px", background:"rgba(0,0,0,0.85)", textAlign:"center", flexShrink:0 }}>
+                          <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Streaming via Sachi · sachistream.com</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <a href={selectedPodcast.live_stream_url} target="_blank" rel="noopener noreferrer"
-                    style={{ display:"flex", width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", alignItems:"center", justifyContent:"center", gap:10, textDecoration:"none", marginBottom:12 }}>
-                    🎧 Tune In Now
-                  </a>
                 );
               })() : !selectedPodcast.is_live ? (
                 <button onClick={() => showToast("🔔 You will be notified when " + selectedPodcast.title + " goes live!", "success")}
@@ -3859,14 +3881,28 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               {selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
                 const getEmbedUrl = (url) => {
                   if (!url) return null;
+                  // Rumble channel live feed
+                  if (url.includes("rumble.com/c/")) {
+                    const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+                    return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`;
+                  }
+                  // Rumble video page e.g. rumble.com/vXXXXX-title.html
+                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+                  if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+                  // Rumble embed already
+                  if (url.includes("rumble.com/embed/")) return url;
+                  // YouTube embed already
                   if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
+                  // youtube.com/watch?v=ID
                   const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
                   if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+                  // youtu.be/ID
                   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
                   if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+                  // youtube.com/live/ID
                   const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
                   if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-                  return null;
+                  return url; // fallback: try direct
                 };
                 const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
                 return embedUrl ? (
