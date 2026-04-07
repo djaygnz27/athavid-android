@@ -3516,28 +3516,7 @@ function Toast({ msg, type="success" }) {
 }
 
 // ── RECENT EPISODES COMPONENT ──
-function RecentEpisodes({ podcastId }) {
-  const [episodes, setEpisodes] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    if (!podcastId) return;
-    setLoading(true);
-    fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode/filter`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ podcast_id: podcastId, status: "published" })
-    })
-      .then(r => r.json())
-      .then(data => {
-        const items = Array.isArray(data) ? data : (data?.records || data?.items || []);
-        // Sort by episode_number descending, take last 2
-        const sorted = items.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0)).slice(0, 2);
-        setEpisodes(sorted);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [podcastId]);
+function RecentEpisodes({ episodes = [], loading = false }) {
 
   if (loading) return (
     <div style={{ marginTop:24, marginBottom:8 }}>
@@ -3546,7 +3525,7 @@ function RecentEpisodes({ podcastId }) {
     </div>
   );
 
-  if (!episodes.length) return null;
+  if (!episodes || !episodes.length) return null;
 
   const fmtDuration = (sec) => {
     if (!sec) return "";
@@ -3609,6 +3588,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [loadingPodcasts, setLoadingPodcasts] = useState(true);
   const [selectedCat, setSelectedCat] = useState("All");
   const [selectedPodcast, setSelectedPodcast] = useState(null);
+  const [podcastEpisodes, setPodcastEpisodes] = useState([]);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [registerForm, setRegisterForm] = useState({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 });
   const [registering, setRegistering] = useState(false);
@@ -4010,7 +3991,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           )}
 
           {/* RECENT EPISODES */}
-          <RecentEpisodes podcastId={selectedPodcast.id} />
+          <RecentEpisodes episodes={podcastEpisodes} loading={episodesLoading} />
 
           <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:16 }}>
             <div style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:20, padding:"4px 14px", color:"#a78bfa", fontSize:12, fontWeight:600 }}>{selectedPodcast.category}</div>
@@ -4153,7 +4134,18 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               const coverBg = p.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
               const coverEmoji = p.cover_emoji || "🎙️";
               return (
-                <div key={p.id} onClick={() => setSelectedPodcast(p)}
+                <div key={p.id} onClick={async () => {
+                  setSelectedPodcast(p);
+                  setEpisodesLoading(true);
+                  setPodcastEpisodes([]);
+                  try {
+                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?podcast_id=${p.id}&status=published&limit=10`);
+                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+                    const sorted = items.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    setPodcastEpisodes(sorted);
+                  } catch(e) { setPodcastEpisodes([]); }
+                  finally { setEpisodesLoading(false); }
+                }}
                   style={{ background:"rgba(245,200,66,0.05)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:16, padding:14, cursor:"pointer", display:"flex", gap:14, alignItems:"center" }}>
                   <div style={{ width:52, height:52, borderRadius:12, background:coverBg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{coverEmoji}</div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -4191,7 +4183,18 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           </div>
           <div style={{ display:"flex", gap:12, padding:"0 16px", overflowX:"auto", scrollbarWidth:"none" }}>
             {livePodcasts.map(p => (
-              <div key={p.id} onClick={() => setSelectedPodcast(p)}
+              <div key={p.id} onClick={async () => {
+                  setSelectedPodcast(p);
+                  setEpisodesLoading(true);
+                  setPodcastEpisodes([]);
+                  try {
+                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?podcast_id=${p.id}&status=published&limit=10`);
+                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+                    const sorted = items.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    setPodcastEpisodes(sorted);
+                  } catch(e) { setPodcastEpisodes([]); }
+                  finally { setEpisodesLoading(false); }
+                }}
                 style={{ flexShrink:0, width:200, background:"rgba(229,57,53,0.08)", border:"1.5px solid rgba(229,57,53,0.3)", borderRadius:16, padding:16, cursor:"pointer" }}>
                 <div style={{ background:"#e53935", display:"inline-flex", alignItems:"center", gap:5, borderRadius:20, padding:"3px 10px", marginBottom:10 }}>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:"#fff" }} />
@@ -4225,7 +4228,18 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         )}
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {regularPodcasts.map(p => (
-            <div key={p.id} onClick={() => setSelectedPodcast(p)}
+            <div key={p.id} onClick={async () => {
+                  setSelectedPodcast(p);
+                  setEpisodesLoading(true);
+                  setPodcastEpisodes([]);
+                  try {
+                    const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?podcast_id=${p.id}&status=published&limit=10`);
+                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+                    const sorted = items.sort((a,b) => (b.episode_number||0)-(a.episode_number||0)).slice(0,2);
+                    setPodcastEpisodes(sorted);
+                  } catch(e) { setPodcastEpisodes([]); }
+                  finally { setEpisodesLoading(false); }
+                }}
               style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:16, padding:16, cursor:"pointer", display:"flex", gap:14, alignItems:"center" }}>
               <div style={{ width:64, height:64, borderRadius:12, background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>🎙️</div>
               <div style={{ flex:1, minWidth:0 }}>
