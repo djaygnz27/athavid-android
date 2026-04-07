@@ -12636,17 +12636,25 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         !isHost && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
           const getEmbedUrl = (url) => {
             if (!url) return null;
-            if (url.includes("youtube.com/embed/")) return url + "?autoplay=1&rel=0";
+            if (url.includes("rumble.com/c/")) {
+              const ch2 = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+              return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch2}`;
+            }
+            const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+            if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+            if (url.includes("rumble.com/embed/")) return url;
+            if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
             const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
             if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
             const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
             if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
             const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
             if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-            return null;
+            return url;
           };
           const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
-          return embedUrl ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
+          const [showPlayer, setShowPlayer] = React.useState(false);
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935", fontWeight: 800, fontSize: 13, letterSpacing: 1 }, children: "LIVE NOW" }),
@@ -12656,26 +12664,35 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 " watching"
               ] })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: 14, overflow: "hidden", background: "#000", boxShadow: "0 4px 24px rgba(229,57,53,0.25)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "iframe",
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
               {
-                src: embedUrl,
-                style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" },
-                allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-                allowFullScreen: true,
-                title: selectedPodcast.title
+                onClick: () => setShowPlayer(true),
+                style: { display: "flex", width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12, boxShadow: "0 4px 20px rgba(229,57,53,0.35)" },
+                children: "🎧 Watch Live Now"
               }
-            ) })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "a",
-            {
-              href: selectedPodcast.live_stream_url,
-              target: "_blank",
-              rel: "noopener noreferrer",
-              style: { display: "flex", width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 10, textDecoration: "none", marginBottom: 12 },
-              children: "🎧 Tune In Now"
-            }
-          );
+            ),
+            showPlayer && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "#000", zIndex: 9999, display: "flex", flexDirection: "column" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "rgba(0,0,0,0.85)", flexShrink: 0 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: selectedPodcast.title })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowPlayer(false), style: { background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "50%", width: 34, height: 34, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }, children: "✕" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "iframe",
+                {
+                  src: embedUrl,
+                  style: { flex: 1, width: "100%", border: "none" },
+                  allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen",
+                  allowFullScreen: true,
+                  title: selectedPodcast.title
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px 16px", background: "rgba(0,0,0,0.85)", textAlign: "center", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: "Streaming via Sachi · sachistream.com" }) })
+            ] })
+          ] });
         })() : !selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
@@ -12687,6 +12704,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         !isHost && !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
           const getEmbedUrl = (url) => {
             if (!url) return null;
+            if (url.includes("rumble.com/c/")) {
+              const ch2 = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+              return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch2}`;
+            }
+            const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+            if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+            if (url.includes("rumble.com/embed/")) return url;
             if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
             const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
             if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
@@ -12694,7 +12718,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
             const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
             if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-            return null;
+            return url;
           };
           const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
           return embedUrl ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
