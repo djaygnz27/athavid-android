@@ -7471,6 +7471,77 @@ const COUNTRIES = [
 const GOOGLE_CLIENT_ID = "200749117149-l9litb11sb8aanco05im228chukbf0o6.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+async function lookupSachiUser(email) {
+  try {
+    const res = await fetch(
+      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      { headers: { "Content-Type": "application/json" } }
+    );
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || [];
+    return items.find((u2) => u2.email === email) || null;
+  } catch {
+    return null;
+  }
+}
+function buildSessionUser(found, payload) {
+  return {
+    id: found.id,
+    email: found.email,
+    full_name: found.display_name || (payload == null ? void 0 : payload.name) || found.email,
+    avatar_url: found.avatar_url || (payload == null ? void 0 : payload.picture) || "",
+    username: found.username || found.email.split("@")[0],
+    _google: true,
+    _sachiProfileId: found.id
+  };
+}
+function initGoogleOneTap(onSuccess) {
+  var _a, _b;
+  const load = () => {
+    var _a2, _b2;
+    if (!((_b2 = (_a2 = window.google) == null ? void 0 : _a2.accounts) == null ? void 0 : _b2.id)) return;
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        try {
+          const payload = JSON.parse(atob(response.credential.split(".")[1]));
+          const found = await lookupSachiUser(payload.email);
+          if (found) {
+            const sessionUser = buildSessionUser(found, payload);
+            localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+            localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+            onSuccess(sessionUser);
+          }
+          localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+        } catch (e) {
+          console.error("One Tap auto callback error:", e);
+        }
+      },
+      auto_select: true,
+      // ← silently signs in returning users
+      cancel_on_tap_outside: false,
+      itp_support: true
+      // ← ITP support for Safari
+    });
+    window.google.accounts.id.prompt((notification) => {
+    });
+  };
+  if ((_b = (_a = window.google) == null ? void 0 : _a.accounts) == null ? void 0 : _b.id) {
+    load();
+  } else {
+    const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (!existing) {
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.async = true;
+      s.defer = true;
+      s.onload = load;
+      document.head.appendChild(s);
+    } else {
+      existing.addEventListener("load", load);
+    }
+  }
+}
 function FinishStep({ googlePayload, onSuccess }) {
   const { email, name, picture } = googlePayload;
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
@@ -7540,11 +7611,13 @@ function FinishStep({ googlePayload, onSuccess }) {
       ).then((r2) => r2.json());
       localStorage.setItem("sachi_dob", dob);
       if (country) localStorage.setItem("sachi_country", country);
+      localStorage.removeItem("sachi_pending_google");
       const sessionUser = {
         id: created.id,
         email,
         full_name: name || username.trim(),
         avatar_url: picture || "",
+        username: username.trim().toLowerCase(),
         _google: true,
         _sachiProfileId: created.id
       };
@@ -7633,64 +7706,56 @@ function FinishStep({ googlePayload, onSuccess }) {
 }
 function GoogleSignInButton({ onVerified }) {
   const [error, setError] = reactExports.useState("");
-  reactExports.useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: false
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById("google-signin-btn"),
-        { theme: "filled_black", size: "large", width: 320, text: "continue_with", shape: "pill", logo_alignment: "left" }
-      );
-    };
-    document.head.appendChild(script);
-    return () => {
-      try {
-        document.head.removeChild(script);
-      } catch {
-      }
-    };
-  }, []);
-  const handleCredential = async (response) => {
+  const handleCredential = reactExports.useCallback(async (response) => {
     setError("");
     try {
       const payload = JSON.parse(atob(response.credential.split(".")[1]));
+      const found = await lookupSachiUser(payload.email);
       let existingUser = null;
-      try {
-        const res = await fetch(
-          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(payload.email)}&limit=5`,
-          { headers: { "Content-Type": "application/json" } }
-        );
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || [];
-        const found = items.find((u2) => u2.email === payload.email);
-        if (found) {
-          existingUser = {
-            id: found.id,
-            email: found.email,
-            full_name: found.display_name || payload.name,
-            avatar_url: found.avatar_url || payload.picture,
-            _google: true,
-            _sachiProfileId: found.id
-          };
-          localStorage.setItem("sachi_google_user", JSON.stringify(existingUser));
-          localStorage.setItem("sachi_user", JSON.stringify(existingUser));
-        }
-      } catch {
+      if (found) {
+        existingUser = buildSessionUser(found, payload);
+        localStorage.setItem("sachi_google_user", JSON.stringify(existingUser));
+        localStorage.setItem("sachi_user", JSON.stringify(existingUser));
       }
+      localStorage.removeItem("sachi_pending_google");
       onVerified({ payload, existingUser });
     } catch (e) {
       console.error(e);
       setError("Sign-in failed. Please try again.");
     }
-  };
+  }, [onVerified]);
+  reactExports.useEffect(() => {
+    var _a, _b;
+    const init = () => {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: false,
+        itp_support: true
+      });
+      window.google.accounts.id.renderButton(
+        document.getElementById("google-signin-btn"),
+        { theme: "filled_black", size: "large", width: 320, text: "continue_with", shape: "pill", logo_alignment: "left" }
+      );
+      window.google.accounts.id.prompt();
+    };
+    if ((_b = (_a = window.google) == null ? void 0 : _a.accounts) == null ? void 0 : _b.id) {
+      init();
+    } else {
+      const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+      if (!existing) {
+        const s = document.createElement("script");
+        s.src = "https://accounts.google.com/gsi/client";
+        s.async = true;
+        s.defer = true;
+        s.onload = init;
+        document.head.appendChild(s);
+      } else {
+        existing.addEventListener("load", init);
+      }
+    }
+  }, [handleCredential]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "google-signin-btn", style: { minHeight: 44 } }),
     error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13 }, children: error })
@@ -7699,6 +7764,17 @@ function GoogleSignInButton({ onVerified }) {
 function AuthModal({ onClose, onSuccess }) {
   const [step, setStep] = reactExports.useState("google");
   const [googlePayload, setGooglePayload] = reactExports.useState(null);
+  reactExports.useEffect(() => {
+    const pending = localStorage.getItem("sachi_pending_google");
+    if (pending) {
+      try {
+        const payload = JSON.parse(pending);
+        setGooglePayload(payload);
+        setStep("finish");
+      } catch {
+      }
+    }
+  }, []);
   const handleVerified = ({ payload, existingUser }) => {
     if (existingUser) {
       onSuccess(existingUser);
@@ -13842,6 +13918,14 @@ function App() {
   if (path === "/privacy") return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
   const [hasEntered, setHasEntered] = reactExports.useState(false);
   const [currentUser, setCurrentUser] = reactExports.useState(() => auth.getUser());
+  reactExports.useEffect(() => {
+    if (!auth.getUser()) {
+      initGoogleOneTap((user) => {
+        setCurrentUser(user);
+        setFeedKey((k2) => k2 + 1);
+      });
+    }
+  }, []);
   (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
   const feedContainerRef = reactExports.useRef(null);

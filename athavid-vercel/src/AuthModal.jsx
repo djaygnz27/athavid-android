@@ -15,11 +15,91 @@ const COUNTRIES = [
   "Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zimbabwe"
 ];
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-const GOOGLE_CLIENT_ID = "200749117149-l9litb11sb8aanco05im228chukbf0o6.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = "200749117149-l9litb11sb8aanco05im228chukbf0o6.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+
+// ─── Helper: lookup existing Sachi profile by email ──────────────────────────
+async function lookupSachiUser(email) {
+  try {
+    const res = await fetch(
+      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      { headers: { "Content-Type": "application/json" } }
+    );
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    return items.find(u => u.email === email) || null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Helper: build session user object ───────────────────────────────────────
+function buildSessionUser(found, payload) {
+  return {
+    id: found.id,
+    email: found.email,
+    full_name: found.display_name || payload?.name || found.email,
+    avatar_url: found.avatar_url || payload?.picture || "",
+    username: found.username || found.email.split("@")[0],
+    _google: true,
+    _sachiProfileId: found.id,
+  };
+}
+
+// ─── Global One Tap init (call from App root for auto-prompt) ─────────────────
+export function initGoogleOneTap(onSuccess) {
+  const load = () => {
+    if (!window.google?.accounts?.id) return;
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        try {
+          const payload = JSON.parse(atob(response.credential.split(".")[1]));
+          const found = await lookupSachiUser(payload.email);
+          if (found) {
+            const sessionUser = buildSessionUser(found, payload);
+            localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+            localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+            onSuccess(sessionUser);
+          }
+          // If not found → user needs to open modal to finish profile
+          // We store payload so modal can pick it up
+          localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+        } catch(e) {
+          console.error("One Tap auto callback error:", e);
+        }
+      },
+      auto_select: true,             // ← silently signs in returning users
+      cancel_on_tap_outside: false,
+      itp_support: true,             // ← ITP support for Safari
+    });
+    window.google.accounts.id.prompt((notification) => {
+      // notification.isNotDisplayed() → browser blocked it (incognito, dismissed too many times)
+      // notification.isSkippedMoment() → user cancelled
+      // We don't need to do anything special here
+    });
+  };
+
+  if (window.google?.accounts?.id) {
+    load();
+  } else {
+    // Script not yet loaded — wait for it
+    const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (!existing) {
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.async = true;
+      s.defer = true;
+      s.onload = load;
+      document.head.appendChild(s);
+    } else {
+      existing.addEventListener("load", load);
+    }
+  }
+}
 
 // ─── Finish Step: new Google users pick username, dob, country ────────────────
 function FinishStep({ googlePayload, onSuccess }) {
@@ -81,12 +161,14 @@ function FinishStep({ googlePayload, onSuccess }) {
 
       localStorage.setItem("sachi_dob", dob);
       if (country) localStorage.setItem("sachi_country", country);
+      localStorage.removeItem("sachi_pending_google");
 
       const sessionUser = {
         id: created.id,
         email,
         full_name: name || username.trim(),
         avatar_url: picture || "",
+        username: username.trim().toLowerCase(),
         _google: true,
         _sachiProfileId: created.id,
       };
@@ -170,66 +252,62 @@ function FinishStep({ googlePayload, onSuccess }) {
   );
 }
 
-// ─── Google Sign-In Button ────────────────────────────────────────────────────
+// ─── Google Sign-In Button (used inside modal) ────────────────────────────────
 function GoogleSignInButton({ onVerified }) {
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: false,
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById("google-signin-btn"),
-        { theme: "filled_black", size: "large", width: 320, text: "continue_with", shape: "pill", logo_alignment: "left" }
-      );
-    };
-    document.head.appendChild(script);
-    return () => { try { document.head.removeChild(script); } catch {} };
-  }, []);
-
-  const handleCredential = async (response) => {
+  const handleCredential = useCallback(async (response) => {
     setError("");
     try {
       const payload = JSON.parse(atob(response.credential.split(".")[1]));
-
-      // Check for existing Sachi profile
+      const found = await lookupSachiUser(payload.email);
       let existingUser = null;
-      try {
-        const res = await fetch(
-          `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(payload.email)}&limit=5`,
-          { headers: { "Content-Type": "application/json" } }
-        );
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : (data?.items || []);
-        const found = items.find(u => u.email === payload.email);
-        if (found) {
-          existingUser = {
-            id: found.id,
-            email: found.email,
-            full_name: found.display_name || payload.name,
-            avatar_url: found.avatar_url || payload.picture,
-            _google: true,
-            _sachiProfileId: found.id,
-          };
-          localStorage.setItem("sachi_google_user", JSON.stringify(existingUser));
-          localStorage.setItem("sachi_user", JSON.stringify(existingUser));
-        }
-      } catch {}
-
+      if (found) {
+        existingUser = buildSessionUser(found, payload);
+        localStorage.setItem("sachi_google_user", JSON.stringify(existingUser));
+        localStorage.setItem("sachi_user", JSON.stringify(existingUser));
+      }
+      localStorage.removeItem("sachi_pending_google");
       onVerified({ payload, existingUser });
     } catch(e) {
       console.error(e);
       setError("Sign-in failed. Please try again.");
     }
-  };
+  }, [onVerified]);
+
+  useEffect(() => {
+    const init = () => {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: false,
+        itp_support: true,
+      });
+      window.google.accounts.id.renderButton(
+        document.getElementById("google-signin-btn"),
+        { theme: "filled_black", size: "large", width: 320, text: "continue_with", shape: "pill", logo_alignment: "left" }
+      );
+      // ← THIS is the missing piece — fire the One Tap overlay
+      window.google.accounts.id.prompt();
+    };
+
+    if (window.google?.accounts?.id) {
+      init();
+    } else {
+      const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+      if (!existing) {
+        const s = document.createElement("script");
+        s.src = "https://accounts.google.com/gsi/client";
+        s.async = true;
+        s.defer = true;
+        s.onload = init;
+        document.head.appendChild(s);
+      } else {
+        existing.addEventListener("load", init);
+      }
+    }
+  }, [handleCredential]);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
@@ -243,6 +321,18 @@ function GoogleSignInButton({ onVerified }) {
 export default function AuthModal({ onClose, onSuccess }) {
   const [step, setStep] = useState("google"); // google | finish
   const [googlePayload, setGooglePayload] = useState(null);
+
+  // If One Tap auto-fired before modal opened, pick up pending payload
+  useEffect(() => {
+    const pending = localStorage.getItem("sachi_pending_google");
+    if (pending) {
+      try {
+        const payload = JSON.parse(pending);
+        setGooglePayload(payload);
+        setStep("finish");
+      } catch {}
+    }
+  }, []);
 
   const handleVerified = ({ payload, existingUser }) => {
     if (existingUser) {
