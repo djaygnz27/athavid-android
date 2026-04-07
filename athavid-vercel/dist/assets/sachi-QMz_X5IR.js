@@ -12333,6 +12333,56 @@ function Toast({ msg, type = "success" }) {
   const bg2 = type === "error" ? "linear-gradient(135deg,#c62828,#b71c1c)" : type === "live" ? "linear-gradient(135deg,#e53935,#b71c1c)" : "linear-gradient(135deg,#2e7d32,#1b5e20)";
   return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", zIndex: 9999, background: bg2, color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 24px", borderRadius: 30, boxShadow: "0 6px 28px rgba(0,0,0,0.5)", whiteSpace: "nowrap", pointerEvents: "none" }, children: msg });
 }
+function RecentEpisodes({ podcastId }) {
+  const [episodes, setEpisodes] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    if (!podcastId) return;
+    setLoading(true);
+    fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode/filter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ podcast_id: podcastId, status: "published" })
+    }).then((r2) => r2.json()).then((data) => {
+      const items = Array.isArray(data) ? data : (data == null ? void 0 : data.records) || (data == null ? void 0 : data.items) || [];
+      const sorted = items.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0)).slice(0, 2);
+      setEpisodes(sorted);
+    }).catch(() => {
+    }).finally(() => setLoading(false));
+  }, [podcastId]);
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 13, padding: "12px 0" }, children: "Loading..." })
+  ] });
+  if (!episodes.length) return null;
+  const fmtDuration = (sec) => {
+    if (!sec) return "";
+    const h = Math.floor(sec / 3600);
+    const m2 = Math.floor(sec % 3600 / 60);
+    if (h > 0) return `${h}h ${m2}m`;
+    return `${m2}m`;
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: episodes.map((ep, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 14 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#6c3cf7,#4527a0)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 800, color: "#fff", fontSize: 14 }, children: ep.episode_number || i + 1 }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, lineHeight: 1.4, marginBottom: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: ep.title }),
+        ep.description && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", marginBottom: 6 }, children: ep.description }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          ep.duration_seconds > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: [
+            "⏱ ",
+            fmtDuration(ep.duration_seconds)
+          ] }),
+          ep.listener_count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: [
+            "🎧 ",
+            ep.listener_count
+          ] })
+        ] })
+      ] })
+    ] }, ep.id || i)) })
+  ] });
+}
 const PODCAST_COVER_COLORS = [
   { bg: "linear-gradient(135deg,#6c3cf7,#4527a0)", emoji: "🎙️" },
   { bg: "linear-gradient(135deg,#e53935,#b71c1c)", emoji: "🔥" },
@@ -12739,7 +12789,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", marginTop: 12, padding: "13px 0", background: "rgba(108,60,247,0.15)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 14, color: "#a78bfa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Sign in to Follow this Podcast" })
           ] }) : null;
         })() : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 16 }, children: "Sign in to Follow" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(RecentEpisodes, { podcastId: selectedPodcast.id }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
       ] })
     ] });
   }
