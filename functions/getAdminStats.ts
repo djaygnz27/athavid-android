@@ -54,8 +54,7 @@ Deno.serve(async (req) => {
       .sort((a: any, b: any) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 5);
 
     const recentUsers = [...allUsers]
-      .sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
-      .slice(0, 20);
+      .sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime());
 
     // Location breakdown
     const locationMap: Record<string, number> = {};
