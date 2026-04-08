@@ -24,21 +24,43 @@ export default async function handler(req: Request): Promise<Response> {
     "account registration",
     "developer registration",
     "play store",
+    "sachi",
   ];
 
   for (const messageId of messageIds) {
-    const res = await fetch(
+    // Use metadata format first — much cheaper, avoids downloading full body for non-matches
+    const metaRes = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
+      { headers: authHeader }
+    );
+    if (!metaRes.ok) continue;
+
+    const meta = await metaRes.json();
+    const headers = meta.payload?.headers ?? [];
+
+    const subject = headers.find((h: any) => h.name === "Subject")?.value ?? "";
+    const from    = headers.find((h: any) => h.name === "From")?.value ?? "";
+    const date    = headers.find((h: any) => h.name === "Date")?.value ?? "";
+
+    const metaCombined = `${subject} ${from}`.toLowerCase();
+
+    const isFromGoogle = from.toLowerCase().includes("google") ||
+                         from.toLowerCase().includes("play") ||
+                         from.toLowerCase().includes("noreply@") && from.toLowerCase().includes("google");
+
+    const hasKeywordInMeta = GOOGLE_PLAY_KEYWORDS.some(kw => metaCombined.includes(kw));
+
+    // Early exit — don't fetch body if subject/from clearly not relevant
+    if (!isFromGoogle && !hasKeywordInMeta) continue;
+
+    // Now fetch full body only for potentially relevant emails
+    const fullRes = await fetch(
       `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,
       { headers: authHeader }
     );
-    if (!res.ok) continue;
+    if (!fullRes.ok) continue;
 
-    const message = await res.json();
-    const headers = message.payload?.headers ?? [];
-
-    const subject = headers.find((h: any) => h.name === "Subject")?.value ?? "";
-    const from = headers.find((h: any) => h.name === "From")?.value ?? "";
-    const date = headers.find((h: any) => h.name === "Date")?.value ?? "";
+    const message = await fullRes.json();
 
     // Get body text
     let bodyText = "";
@@ -63,31 +85,29 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     const combined = `${subject} ${from} ${bodyText}`.toLowerCase();
-
-    // Check if this is a Google Play related email
     const isGooglePlayEmail = GOOGLE_PLAY_KEYWORDS.some(kw => combined.includes(kw));
-    const isFromGoogle = from.toLowerCase().includes("google") || from.toLowerCase().includes("play");
 
-    if (isGooglePlayEmail || isFromGoogle) {
-      // Determine status
-      let status = "📬 New Google Play Email Detected";
-      let emoji = "📬";
+    if (!isGooglePlayEmail && !isFromGoogle) continue;
 
-      if (combined.includes("approved") || combined.includes("verified") || combined.includes("congratulations")) {
-        status = "✅ ACCOUNT APPROVED!";
-        emoji = "🎉";
-      } else if (combined.includes("pending") || combined.includes("under review") || combined.includes("processing")) {
-        status = "⏳ Verification Still Pending";
-        emoji = "⏳";
-      } else if (combined.includes("rejected") || combined.includes("denied") || combined.includes("not approved")) {
-        status = "❌ Verification Issue - Action Required";
-        emoji = "🚨";
-      } else if (combined.includes("additional information") || combined.includes("more information") || combined.includes("action required")) {
-        status = "⚠️ Action Required - More Info Needed";
-        emoji = "⚠️";
-      }
+    // Determine status
+    let status = "📬 New Google Play Email Detected";
+    let emoji = "📬";
 
-      const notification = `${emoji} GOOGLE PLAY ALERT for lasanjaya@gmail.com
+    if (combined.includes("approved") || combined.includes("verified") || combined.includes("congratulations")) {
+      status = "✅ ACCOUNT APPROVED!";
+      emoji = "🎉";
+    } else if (combined.includes("pending") || combined.includes("under review") || combined.includes("processing")) {
+      status = "⏳ Verification Still Pending";
+      emoji = "⏳";
+    } else if (combined.includes("rejected") || combined.includes("denied") || combined.includes("not approved")) {
+      status = "❌ Verification Issue - Action Required";
+      emoji = "🚨";
+    } else if (combined.includes("additional information") || combined.includes("more information") || combined.includes("action required")) {
+      status = "⚠️ Action Required - More Info Needed";
+      emoji = "⚠️";
+    }
+
+    const notification = `${emoji} GOOGLE PLAY ALERT — lasanjaya@gmail.com
 
 Status: ${status}
 From: ${from}
@@ -96,10 +116,8 @@ Date: ${date}
 
 ${bodyText.slice(0, 500)}${bodyText.length > 500 ? "..." : ""}`;
 
-      await base44.asServiceRole.messaging.sendMessage(notification);
-
-      console.log(`Google Play email detected: ${subject} | Status: ${status}`);
-    }
+    await base44.asServiceRole.messaging.sendMessage(notification);
+    console.log(`Google Play email detected: ${subject} | Status: ${status}`);
   }
 
   return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
