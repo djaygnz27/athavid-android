@@ -1,15 +1,15 @@
 // Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request, interests } from "./api.js";
-import AuthModal from "./AuthModal.jsx";
+import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
+import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
 
 function formatDate(d) {
   if (!d) return "";
   const dt = new Date(d);
-  return dt.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  return dt.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric", timeZone:"America/New_York" });
 }
 
 function formatCount(n) {
@@ -18,6 +18,60 @@ function formatCount(n) {
   if (n >= 1000) return (n / 1000).toFixed(1) + "K";
   return String(n);
 }
+
+const resolveMediaUrl = (url, isVideo) => {
+  if (!url) return url;
+  const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
+  if (match) {
+    const filename = match[2];
+    const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
+    const bucket = isVideoFile ? 'videos' : 'images';
+    return `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
+  }
+  return url;
+};
+// Get user's location for post geo-tagging
+async function getPostLocation() {
+  const savedCountry = localStorage.getItem("sachi_country");
+  const savedRegion = localStorage.getItem("sachi_region");
+  const savedCode = localStorage.getItem("sachi_country_code");
+  // Use precise GPS-derived data if available
+  if (savedCode) {
+    return { post_country: savedCode, post_region: savedRegion || null };
+  }
+  if (savedCountry) {
+    return { post_country: savedCountry, post_region: savedRegion || null };
+  }
+  // Fallback: try GPS reverse geocode
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+    );
+    const { latitude, longitude } = pos.coords;
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+    );
+    const data = await res.json();
+    const addr = data.address || {};
+    const country = addr.country_code ? addr.country_code.toUpperCase() : null;
+    const region = addr.state || addr.city || addr.county || null;
+    if (country) localStorage.setItem("sachi_country_code", country);
+    if (region) localStorage.setItem("sachi_region", region);
+    return { post_country: country, post_region: region };
+  } catch {
+    return {};
+  }
+}
+
+// Country code -> emoji flag
+function countryFlag(code) {
+  if (!code || code.length !== 2) return "";
+  return code.toUpperCase().replace(/./g, c =>
+    String.fromCodePoint(127397 + c.charCodeAt(0))
+  );
+}
+
+
 
 async function captureThumbnail(file) {
   return new Promise((resolve) => {
@@ -205,45 +259,51 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 
 // ── Music Library ─────────────────────────────────────────────────────────────
 const MUSIC_LIBRARY = [
-  // ── Pop ──────────────────────────────────────────────────────────────────
-  { id:"pop1", genre:"Pop", title:"Summer Vibes",         artist:"Free Beats",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",  emoji:"🌊" },
-  { id:"pop2", genre:"Pop", title:"Happy Days",           artist:"Feel Good Music", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",  emoji:"☀️" },
-  { id:"pop3", genre:"Pop", title:"Good Energy",          artist:"Pop Studio",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",  emoji:"✨" },
-  { id:"pop4", genre:"Pop", title:"Dance All Night",      artist:"Pop Studio",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", emoji:"💃" },
-  { id:"pop5", genre:"Pop", title:"Neon Lights",          artist:"Synth Pop",       url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3", emoji:"🌈" },
-  // ── Jazz ─────────────────────────────────────────────────────────────────
-  { id:"jz1", genre:"Jazz", title:"Smooth Jazz Cafe",     artist:"Jazz Collective",  url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",  emoji:"🎷" },
-  { id:"jz2", genre:"Jazz", title:"Late Night Jazz",      artist:"Blue Note Studio", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",  emoji:"🌙" },
-  { id:"jz3", genre:"Jazz", title:"Uptown Swing",         artist:"Jazz Collective",  url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",  emoji:"🎺" },
-  { id:"jz4", genre:"Jazz", title:"Bossa Nova Breeze",    artist:"Cafe Jazz",        url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", emoji:"🌴" },
-  { id:"jz5", genre:"Jazz", title:"Midnight Sax",         artist:"Blue Note Studio", url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3", emoji:"🎶" },
-  // ── Classic Rock ─────────────────────────────────────────────────────────
-  { id:"cr1", genre:"Classic Rock", title:"Guitar Highway",    artist:"Rock Legends",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",  emoji:"🎸" },
-  { id:"cr2", genre:"Classic Rock", title:"Power Chord",       artist:"Rock Legends",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",  emoji:"🤘" },
-  { id:"cr3", genre:"Classic Rock", title:"Road Trip Anthem",  artist:"Fuzz & Roll",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",  emoji:"🛣️" },
-  { id:"cr4", genre:"Classic Rock", title:"Stadium Rock",      artist:"Fuzz & Roll",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3", emoji:"🏟️" },
-  { id:"cr5", genre:"Classic Rock", title:"Blues Driver",      artist:"Rock Legends",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", emoji:"🔥" },
-  // ── Contemporary ─────────────────────────────────────────────────────────
-  { id:"co1", genre:"Contemporary", title:"Midnight Drive",    artist:"Lo-Fi Studio",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3", emoji:"🚗" },
-  { id:"co2", genre:"Contemporary", title:"Urban Groove",      artist:"Street Beats",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3", emoji:"🏙️" },
-  { id:"co3", genre:"Contemporary", title:"Chill Wave",        artist:"Ambient Lab",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-18.mp3", emoji:"🌊" },
-  { id:"co4", genre:"Contemporary", title:"Deep Focus",        artist:"Study Sounds",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-19.mp3", emoji:"🧠" },
-  { id:"co5", genre:"Contemporary", title:"Indie Morning",     artist:"Indie Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-20.mp3", emoji:"☕" },
-  // ── Lo-Fi / Chill ────────────────────────────────────────────────────────
-  { id:"lo1", genre:"Lo-Fi", title:"Rainy Day Study",    artist:"Lo-Fi Beats",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-21.mp3", emoji:"🌧️" },
-  { id:"lo2", genre:"Lo-Fi", title:"Coffee Shop Vibes",  artist:"Lo-Fi Cafe",     url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-22.mp3", emoji:"☕" },
-  { id:"lo3", genre:"Lo-Fi", title:"Evening Chill",      artist:"Chill Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-23.mp3", emoji:"🌅" },
-  // ── Hip-Hop / R&B ────────────────────────────────────────────────────────
-  { id:"hh1", genre:"Hip-Hop", title:"Energy Boost",      artist:"Epic Sounds",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-24.mp3", emoji:"⚡" },
-  { id:"hh2", genre:"Hip-Hop", title:"Street Heat",       artist:"Street Beats",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-25.mp3", emoji:"🔥" },
-  { id:"hh3", genre:"Hip-Hop", title:"Trap Sunrise",      artist:"Beat Factory",   url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-26.mp3", emoji:"🌄" },
-  // ── Electronic ───────────────────────────────────────────────────────────
-  { id:"el1", genre:"Electronic", title:"Neon Rush",      artist:"Synth Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-27.mp3", emoji:"🤖" },
-  { id:"el2", genre:"Electronic", title:"Bass Drop",      artist:"EDM Factory",    url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-28.mp3", emoji:"🎛️" },
-  { id:"el3", genre:"Electronic", title:"Future Wave",    artist:"Synth Lab",      url:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-29.mp3", emoji:"🚀" },
+  // Lo-Fi Hip-Hop
+  { id:"lo1", genre:"Lo-Fi", title:"City Lights",          artist:"Lukrembo",        url:"https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3",  emoji:"🌃" },
+  { id:"lo2", genre:"Lo-Fi", title:"Sunset Boulevard",     artist:"Lukrembo",        url:"https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3",  emoji:"🌅" },
+  { id:"lo3", genre:"Lo-Fi", title:"Chill Lounge",         artist:"Chill Music Lab", url:"https://cdn.pixabay.com/audio/2022/03/15/audio_8cb749ef8e.mp3",  emoji:"☕" },
+  { id:"lo4", genre:"Lo-Fi", title:"Late Night Drive",     artist:"Mubert",          url:"https://cdn.pixabay.com/audio/2022/10/25/audio_fc4e2ab87f.mp3",  emoji:"🚗" },
+  { id:"lo5", genre:"Lo-Fi", title:"Rainy Window",         artist:"Lo-Fi Cafe",      url:"https://cdn.pixabay.com/audio/2023/01/25/audio_27788ce40e.mp3",  emoji:"🌧️" },
+
+  // Hip-Hop / Trap
+  { id:"hh1", genre:"Hip-Hop", title:"Dark Trap",          artist:"SoundGuy",        url:"https://cdn.pixabay.com/audio/2022/09/07/audio_51e01a5b75.mp3",  emoji:"🔥" },
+  { id:"hh2", genre:"Hip-Hop", title:"Street Anthem",      artist:"Beat Factory",    url:"https://cdn.pixabay.com/audio/2022/11/22/audio_febc508520.mp3",  emoji:"🏙️" },
+  { id:"hh3", genre:"Hip-Hop", title:"Hustle Hard",        artist:"Rap Beats Lab",   url:"https://cdn.pixabay.com/audio/2022/06/08/audio_c8e134dc61.mp3",  emoji:"💪" },
+  { id:"hh4", genre:"Hip-Hop", title:"Midnight Flex",      artist:"Urban Beats",     url:"https://cdn.pixabay.com/audio/2023/02/08/audio_d1718ab358.mp3",  emoji:"🌙" },
+
+  // Electronic / EDM
+  { id:"el1", genre:"Electronic", title:"Bass Rush",       artist:"EDM Factory",     url:"https://cdn.pixabay.com/audio/2022/07/25/audio_124bbbcb24.mp3",  emoji:"⚡" },
+  { id:"el2", genre:"Electronic", title:"Neon Club",       artist:"Synth Lab",       url:"https://cdn.pixabay.com/audio/2022/08/23/audio_d16737dc28.mp3",  emoji:"🎛️" },
+  { id:"el3", genre:"Electronic", title:"Future Drop",     artist:"Synth Lab",       url:"https://cdn.pixabay.com/audio/2021/11/13/audio_cb31b3a2ee.mp3",  emoji:"🚀" },
+  { id:"el4", genre:"Electronic", title:"Cyber Pulse",     artist:"Digital Wave",    url:"https://cdn.pixabay.com/audio/2022/10/16/audio_99e31cb11f.mp3",  emoji:"🤖" },
+
+  // R&B / Soul
+  { id:"rb1", genre:"R&B", title:"Smooth Feelings",        artist:"Soul Kitchen",    url:"https://cdn.pixabay.com/audio/2022/05/16/audio_8c7760a56c.mp3",  emoji:"❤️" },
+  { id:"rb2", genre:"R&B", title:"Late Night Feels",       artist:"Velvet Groove",   url:"https://cdn.pixabay.com/audio/2023/03/09/audio_c8690f4a79.mp3",  emoji:"🌙" },
+  { id:"rb3", genre:"R&B", title:"Golden Hour",            artist:"Soul Kitchen",    url:"https://cdn.pixabay.com/audio/2022/11/09/audio_b9f8252784.mp3",  emoji:"✨" },
+
+  // Pop
+  { id:"pp1", genre:"Pop", title:"Good Vibes Only",        artist:"Pop Studio",      url:"https://cdn.pixabay.com/audio/2022/08/04/audio_2dde668d05.mp3",  emoji:"🌈" },
+  { id:"pp2", genre:"Pop", title:"Summer Heat",            artist:"Pop Studio",      url:"https://cdn.pixabay.com/audio/2023/02/28/audio_7b006e5e1b.mp3",  emoji:"☀️" },
+  { id:"pp3", genre:"Pop", title:"Dance Floor",            artist:"Feel Good Music", url:"https://cdn.pixabay.com/audio/2022/10/10/audio_4a7ad08048.mp3",  emoji:"💃" },
+
+  // Chill / Ambient
+  { id:"ch1", genre:"Chill", title:"Deep Breathe",         artist:"Ambient Lab",     url:"https://cdn.pixabay.com/audio/2022/03/10/audio_2da3e03e6c.mp3",  emoji:"🌊" },
+  { id:"ch2", genre:"Chill", title:"Floating",             artist:"Ambient Lab",     url:"https://cdn.pixabay.com/audio/2021/10/19/audio_b0d94b61c8.mp3",  emoji:"☁️" },
+  { id:"ch3", genre:"Chill", title:"Mountain Air",         artist:"Nature Sounds",   url:"https://cdn.pixabay.com/audio/2022/01/18/audio_d0c6ff1bab.mp3",  emoji:"🏔️" },
+
+  // Afrobeats
+  { id:"af1", genre:"Afrobeats", title:"Lagos Nights",     artist:"Afro Vibes",      url:"https://cdn.pixabay.com/audio/2022/12/06/audio_a2dc6bff25.mp3",  emoji:"🌍" },
+  { id:"af2", genre:"Afrobeats", title:"Move Your Body",   artist:"Afro Vibes",      url:"https://cdn.pixabay.com/audio/2023/01/11/audio_9b03e2b205.mp3",  emoji:"🥁" },
+
+  // Jazz
+  { id:"jz1", genre:"Jazz", title:"Smooth Jazz Cafe",      artist:"Jazz Collective",  url:"https://cdn.pixabay.com/audio/2022/09/22/audio_d64adfa5d2.mp3",  emoji:"🎷" },
+  { id:"jz2", genre:"Jazz", title:"Late Night Jazz",       artist:"Blue Note Studio", url:"https://cdn.pixabay.com/audio/2021/09/06/audio_6ef08cb620.mp3",  emoji:"🎺" },
+  { id:"jz3", genre:"Jazz", title:"Midnight Sax",          artist:"Blue Note Studio", url:"https://cdn.pixabay.com/audio/2022/04/27/audio_12b0e6e3fb.mp3",  emoji:"🎶" },
 ];
 
-const MUSIC_GENRES = ["All", "Pop", "Jazz", "Classic Rock", "Contemporary", "Lo-Fi", "Hip-Hop", "Electronic"];
+const MUSIC_GENRES = ["All", "Lo-Fi", "Hip-Hop", "Electronic", "R&B", "Pop", "Chill", "Afrobeats", "Jazz"];
 
 
 // ── Upload Modal ──────────────────────────────────────────────────────────────
@@ -330,6 +390,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
       } catch(_) {}
 
       // Save to DB
+      const liveGeo = await getPostLocation();
       await videos.create({
         user_id: currentUser.id,
         username: currentUser.username || currentUser.email?.split("@")[0] || "user",
@@ -342,6 +403,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: true, is_archived: false, is_ai_detected: false,
         duration_seconds: elapsed,
+        ...liveGeo,
       });
 
       setPhase("done");
@@ -486,232 +548,317 @@ function VideoEditor({ file, onDone, onSkip }) {
   const [trimEnd, setTrimEnd] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [trimming, setTrimming] = useState(false);
-  const [cropMode, setCropMode] = useState("original"); // original | square | portrait
+  const [activeMode, setActiveMode] = useState(null); // null | "text" | "trim"
+  const [textOverlays, setTextOverlays] = useState([]);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [textInputVal, setTextInputVal] = useState("");
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [textBg, setTextBg] = useState("none"); // none | dark | colored
+  const [textSize, setTextSize] = useState(22);
+  const [isPlaying, setIsPlaying] = useState(true);
   const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
 
-  useEffect(() => {
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [previewUrl]);
+  useEffect(() => { return () => URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   const onMeta = () => {
     const dur = videoRef.current?.duration || 0;
     setDuration(dur);
     setTrimEnd(dur);
   };
-
   const onTimeUpdate = () => setCurrentTime(videoRef.current?.currentTime || 0);
+  const fmtTime = (s) => `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,"0")}`;
 
-  const seekTo = (t) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = t;
-    }
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) { videoRef.current.play(); setIsPlaying(true); }
+    else { videoRef.current.pause(); setIsPlaying(false); }
   };
 
-  const fmtTime = (s) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, "0")}`;
+  const addTextOverlay = () => {
+    if (!textInputVal.trim()) return;
+    setTextOverlays(prev => [...prev, {
+      id: Date.now(), text: textInputVal.trim(),
+      color: textColor, bg: textBg, size: textSize,
+      x: 50, y: 50
+    }]);
+    setTextInputVal("");
+    setShowTextInput(false);
+    setActiveMode(null);
   };
 
-  const doTrim = async () => {
-    // If no real trim or crop needed, just pass through original
-    if (trimStart <= 0.5 && trimEnd >= duration - 0.5 && cropMode === "original") {
-      onDone(file);
+  const removeOverlay = (id) => setTextOverlays(prev => prev.filter(o => o.id !== id));
+
+  const doPost = async () => {
+    setTrimming(true);
+    // If no trim needed, pass original file through
+    if (trimStart <= 0.5 && trimEnd >= duration - 0.5) {
+      onDone(file, textOverlays);
       return;
     }
-
-    setTrimming(true);
     try {
-      // Use MediaRecorder to trim the video in-browser
       const video = document.createElement("video");
       video.src = previewUrl;
       video.muted = true;
       await new Promise(r => { video.onloadedmetadata = r; video.load(); });
-
       const canvas = document.createElement("canvas");
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-
-      // Set canvas dimensions based on crop mode
-      if (cropMode === "square") {
-        const size = Math.min(vw, vh);
-        canvas.width = size; canvas.height = size;
-      } else if (cropMode === "portrait") {
-        const targetH = Math.round(vw * (16/9));
-        canvas.width = vw; canvas.height = Math.min(targetH, vh);
-      } else {
-        canvas.width = vw; canvas.height = vh;
-      }
-
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       const stream = canvas.captureStream(30);
-
-      // Add audio
-      let audioStream = null;
-      try {
-        const audioCtx = new AudioContext();
-        const source = audioCtx.createMediaElementSource(video);
-        const dest = audioCtx.createMediaStreamDestination();
-        source.connect(dest);
-        audioStream = dest.stream;
-      } catch {}
-
-      const combinedStream = audioStream
-        ? new MediaStream([...stream.getTracks(), ...audioStream.getTracks()])
-        : stream;
-
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
-        ? "video/webm;codecs=vp9,opus"
-        : "video/webm";
-
-      const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 4000000 });
+      const mimeType = "video/webm";
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4000000 });
       const chunks = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-
-      let animFrame;
-      const drawFrame = () => {
-        if (video.paused || video.ended) return;
-        const sx = cropMode === "square" ? (vw - Math.min(vw,vh)) / 2 : 0;
-        const sy = cropMode === "square" ? (vh - Math.min(vw,vh)) / 2 : 0;
-        const sw = cropMode === "square" ? Math.min(vw,vh) : vw;
-        const sh = cropMode === "square" ? Math.min(vw,vh) : (cropMode === "portrait" ? canvas.height : vh);
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-        animFrame = requestAnimationFrame(drawFrame);
-      };
-
       const blob = await new Promise((resolve) => {
         recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
         video.currentTime = trimStart;
         video.oncanplay = async () => {
           video.oncanplay = null;
           recorder.start(100);
-          drawFrame();
+          const draw = () => {
+            if (!video.paused && !video.ended) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              requestAnimationFrame(draw);
+            }
+          };
+          draw();
           await video.play();
-          const remaining = (trimEnd - trimStart) * 1000;
-          setTimeout(() => {
-            cancelAnimationFrame(animFrame);
-            video.pause();
-            recorder.stop();
-          }, remaining);
+          setTimeout(() => { video.pause(); recorder.stop(); }, (trimEnd - trimStart) * 1000);
         };
       });
-
-      const ext = mimeType.includes("mp4") ? "mp4" : "webm";
-      const trimmedFile = new File([blob], `trimmed_${Date.now()}.${ext}`, { type: mimeType });
-      onDone(trimmedFile);
-    } catch(err) {
-      console.error("Trim failed", err);
-      // Fallback — use original
-      onDone(file);
-    }
+      onDone(new File([blob], `trimmed.webm`, { type: mimeType }), textOverlays);
+    } catch { onDone(file, textOverlays); }
     setTrimming(false);
   };
 
-  const cropLabel = { original: "Original", square: "1:1 Square", portrait: "9:16 Portrait" };
-  const trimDuration = Math.max(0, trimEnd - trimStart);
+  const TEXT_COLORS = ["#ffffff","#000000","#FF6B6B","#F5C842","#00E5FF","#FF69B4","#7CFC00","#FF8C00"];
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:3000, background:"#000", display:"flex", flexDirection:"column" }}>
-      {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", borderBottom:"1px solid #222" }}>
-        <button onClick={onSkip} style={{ background:"none", border:"none", color:"#aaa", fontSize:15, cursor:"pointer" }}>Skip</button>
-        <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>✂️ Edit Video</div>
-        <button onClick={doTrim} disabled={trimming}
-          style={{ background:"linear-gradient(135deg,#ff6b6b,#ff8e53)", border:"none", borderRadius:20, padding:"8px 18px", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
-          {trimming ? "Processing..." : "Done"}
+    <div style={{ position:"fixed", inset:0, zIndex:3000, background:"#000", display:"flex", flexDirection:"column", userSelect:"none" }}>
+
+      {/* ── Top bar ── */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, zIndex:10, display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 18px" }}>
+        <button onClick={onSkip}
+          style={{ width:36, height:36, borderRadius:"50%", background:"rgba(0,0,0,0.5)", border:"1.5px solid rgba(255,255,255,0.25)", color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          ✕
         </button>
-      </div>
-
-      {/* Video Preview */}
-      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:"#111", overflow:"hidden" }}>
-        <video ref={videoRef} src={previewUrl}
-          onLoadedMetadata={onMeta} onTimeUpdate={onTimeUpdate}
-          onClick={() => videoRef.current?.paused ? videoRef.current.play() : videoRef.current.pause()}
-          style={{
-            maxWidth:"100%", maxHeight:"100%",
-            aspectRatio: cropMode === "square" ? "1/1" : cropMode === "portrait" ? "9/16" : "auto",
-            objectFit: cropMode === "original" ? "contain" : "cover",
-            cursor:"pointer"
-          }}
-          playsInline loop muted={false}
-        />
-      </div>
-
-      {/* Controls */}
-      <div style={{ background:"#0f0f1a", padding:"20px 20px 40px" }}>
-
-        {/* Crop Mode */}
-        <div style={{ marginBottom:20 }}>
-          <div style={{ color:"#aaa", fontSize:12, fontWeight:600, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Crop</div>
-          <div style={{ display:"flex", gap:8 }}>
-            {["original","square","portrait"].map(m => (
-              <button key={m} onClick={() => setCropMode(m)}
-                style={{ flex:1, padding:"10px 0", borderRadius:12, border: cropMode===m ? "2px solid #ff6b6b" : "2px solid #333",
-                  background: cropMode===m ? "rgba(255,107,107,0.15)" : "#1a1a2e",
-                  color: cropMode===m ? "#ff6b6b" : "#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
-                {m === "original" ? "📐 Original" : m === "square" ? "⬜ Square" : "📱 Portrait"}
-              </button>
-            ))}
+        <div style={{ display:"flex", gap:8 }}>
+          {/* Add Sound pill */}
+          <div style={{ background:"rgba(0,0,0,0.55)", border:"1.5px solid rgba(255,255,255,0.25)", borderRadius:20, padding:"7px 14px", color:"#fff", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:6, backdropFilter:"blur(8px)" }}>
+            🎵 Add sound
           </div>
         </div>
+        <div style={{ width:36 }} />
+      </div>
 
-        {/* Trim */}
-        {duration > 0 && (
-          <div>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <div style={{ color:"#aaa", fontSize:12, fontWeight:600, textTransform:"uppercase", letterSpacing:1 }}>Trim</div>
-              <div style={{ color:"#ff6b6b", fontSize:13, fontWeight:700 }}>{fmtTime(trimStart)} – {fmtTime(trimEnd)} ({fmtTime(trimDuration)})</div>
-            </div>
+      {/* ── Video/Image Preview (full screen) ── */}
+      <div style={{ flex:1, position:"relative", overflow:"hidden" }} onClick={activeMode ? undefined : togglePlay}>
+        <video ref={videoRef} src={previewUrl}
+          onLoadedMetadata={onMeta} onTimeUpdate={onTimeUpdate}
+          style={{ width:"100%", height:"100%", objectFit:"cover" }}
+          autoPlay loop playsInline
+        />
 
-            {/* Trim bar */}
-            <div style={{ position:"relative", height:44, background:"#1a1a2e", borderRadius:12, overflow:"hidden", marginBottom:8 }}>
-              {/* Selected range highlight */}
-              <div style={{
-                position:"absolute", top:0, bottom:0,
-                left: `${(trimStart/duration)*100}%`,
-                width: `${((trimEnd-trimStart)/duration)*100}%`,
-                background:"rgba(255,107,107,0.25)", border:"2px solid #ff6b6b", borderRadius:8
-              }} />
-              {/* Playhead */}
-              <div style={{
-                position:"absolute", top:0, bottom:0, width:2, background:"#fff",
-                left: `${(currentTime/duration)*100}%`
-              }} />
-              {/* Start thumb */}
-              <input type="range" min={0} max={duration} step={0.1} value={trimStart}
-                onChange={e => { const v = Math.min(parseFloat(e.target.value), trimEnd-1); setTrimStart(v); seekTo(v); }}
-                style={{ position:"absolute", inset:0, width:"100%", opacity:0, cursor:"ew-resize", zIndex:2 }} />
-            </div>
+        {/* Text overlays on preview */}
+        {textOverlays.map(ov => (
+          <div key={ov.id}
+            style={{
+              position:"absolute",
+              top: `${ov.y}%`, left: `${ov.x}%`,
+              transform:"translate(-50%,-50%)",
+              color: ov.color,
+              fontSize: ov.size,
+              fontWeight: 900,
+              letterSpacing: 0.5,
+              background: ov.bg === "dark" ? "rgba(0,0,0,0.55)" : ov.bg === "colored" ? ov.color.replace(")",",0.2)").replace("rgb","rgba") : "transparent",
+              padding: ov.bg !== "none" ? "4px 10px" : 0,
+              borderRadius: 8,
+              textShadow: "0 1px 6px rgba(0,0,0,0.8)",
+              whiteSpace:"nowrap",
+              cursor:"pointer",
+              zIndex:5,
+              maxWidth:"85vw",
+              wordBreak:"break-word",
+              textAlign:"center",
+            }}
+            onClick={e => { e.stopPropagation(); removeOverlay(ov.id); }}
+          >
+            {ov.text}
+          </div>
+        ))}
 
-            {/* Start / End sliders */}
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              <div>
-                <div style={{ color:"#888", fontSize:11, marginBottom:4 }}>Start: {fmtTime(trimStart)}</div>
-                <input type="range" min={0} max={duration} step={0.1} value={trimStart}
-                  onChange={e => { const v = Math.min(parseFloat(e.target.value), trimEnd-1); setTrimStart(v); seekTo(v); }}
-                  style={{ width:"100%", accentColor:"#ff6b6b" }} />
-              </div>
-              <div>
-                <div style={{ color:"#888", fontSize:11, marginBottom:4 }}>End: {fmtTime(trimEnd)}</div>
-                <input type="range" min={0} max={duration} step={0.1} value={trimEnd}
-                  onChange={e => { const v = Math.max(parseFloat(e.target.value), trimStart+1); setTrimEnd(v); seekTo(v); }}
-                  style={{ width:"100%", accentColor:"#ff6b6b" }} />
-              </div>
-            </div>
+        {/* Play/pause overlay */}
+        {!isPlaying && (
+          <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
+            <div style={{ width:70, height:70, borderRadius:"50%", background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:30 }}>▶</div>
           </div>
         )}
       </div>
 
+      {/* ── Right side tool icons (TikTok style) ── */}
+      <div style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", display:"flex", flexDirection:"column", gap:20, zIndex:10 }}>
+        {[
+          { icon:"T", label:"Text", mode:"text" },
+          { icon:"✂️", label:"Trim", mode:"trim" },
+        ].map(tool => (
+          <div key={tool.mode} onClick={() => { setActiveMode(m => m===tool.mode ? null : tool.mode); }}
+            style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, cursor:"pointer" }}>
+            <div style={{
+              width:44, height:44, borderRadius:"50%",
+              background: activeMode===tool.mode ? "rgba(245,200,66,0.9)" : "rgba(0,0,0,0.55)",
+              border: activeMode===tool.mode ? "2px solid #F5C842" : "1.5px solid rgba(255,255,255,0.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize: tool.icon==="T" ? 20 : 18, fontWeight:900,
+              color: activeMode===tool.mode ? "#000" : "#fff",
+              backdropFilter:"blur(8px)",
+              boxShadow: activeMode===tool.mode ? "0 0 14px rgba(245,200,66,0.5)" : "none",
+            }}>
+              {tool.icon}
+            </div>
+            <div style={{ color:"#fff", fontSize:10, fontWeight:700, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>{tool.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Bottom bar ── */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, zIndex:10, padding:"0 20px 40px" }}>
+
+        {/* Mode selector row — 10m / 60s / 15s / PHOTO / TEXT */}
+        <div style={{ display:"flex", justifyContent:"center", gap:18, marginBottom:20 }}>
+          {[
+            { label:"10m" }, { label:"60s" }, { label:"15s" },
+            { label:"PHOTO", active:false },
+            { label:"TEXT", action:"text" },
+          ].map((m, i) => (
+            <div key={i}
+              onClick={() => m.action === "text" ? (setActiveMode("text"), setShowTextInput(true)) : null}
+              style={{
+                color: m.action === "text" && activeMode === "text" ? "#F5C842" : "#fff",
+                fontWeight: m.action === "text" ? 900 : 600,
+                fontSize: m.action === "text" ? 16 : 14,
+                opacity: m.action === "text" ? 1 : 0.7,
+                cursor: m.action ? "pointer" : "default",
+                padding: m.action === "text" ? "4px 10px" : "4px 0",
+                borderBottom: m.action === "text" && activeMode === "text" ? "2px solid #F5C842" : "none",
+                textShadow:"0 1px 6px rgba(0,0,0,0.9)",
+              }}
+            >
+              {m.label}
+            </div>
+          ))}
+        </div>
+
+        {/* Post button */}
+        <button onClick={doPost} disabled={trimming}
+          style={{
+            width:"100%", padding:"16px 0",
+            background: trimming ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+            border:"none", borderRadius:16, color:"#fff",
+            fontWeight:900, fontSize:17, cursor: trimming ? "default" : "pointer",
+            letterSpacing:0.5, boxShadow:"0 4px 20px rgba(255,107,107,0.4)"
+          }}>
+          {trimming ? "Processing..." : "Next →"}
+        </button>
+      </div>
+
+      {/* ── Trim panel (slides up) ── */}
+      {activeMode === "trim" && duration > 0 && (
+        <div style={{ position:"absolute", bottom:140, left:0, right:0, zIndex:15, background:"rgba(15,15,26,0.95)", borderRadius:"20px 20px 0 0", padding:"20px 20px 10px", backdropFilter:"blur(16px)" }}>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:15, marginBottom:14, textAlign:"center" }}>
+            ✂️ Trim — {fmtTime(trimStart)} to {fmtTime(trimEnd)}
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <div style={{ color:"#aaa", fontSize:11, marginBottom:4 }}>Start: {fmtTime(trimStart)}</div>
+            <input type="range" min={0} max={duration} step={0.1} value={trimStart}
+              onChange={e => { const v = Math.min(parseFloat(e.target.value), trimEnd-1); setTrimStart(v); if(videoRef.current) videoRef.current.currentTime=v; }}
+              style={{ width:"100%", accentColor:"#ff6b6b" }} />
+          </div>
+          <div>
+            <div style={{ color:"#aaa", fontSize:11, marginBottom:4 }}>End: {fmtTime(trimEnd)}</div>
+            <input type="range" min={0} max={duration} step={0.1} value={trimEnd}
+              onChange={e => { const v = Math.max(parseFloat(e.target.value), trimStart+1); setTrimEnd(v); if(videoRef.current) videoRef.current.currentTime=v; }}
+              style={{ width:"100%", accentColor:"#ff6b6b" }} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Text input panel ── */}
+      {(activeMode === "text" || showTextInput) && (
+        <div style={{ position:"absolute", inset:0, zIndex:20, background:"rgba(0,0,0,0.75)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
+          {/* Text preview */}
+          <div style={{ color: textColor, fontSize: textSize, fontWeight:900, marginBottom:20,
+            background: textBg==="dark" ? "rgba(0,0,0,0.55)" : "transparent",
+            padding: textBg!=="none" ? "6px 16px" : 0, borderRadius:10,
+            textShadow:"0 1px 8px rgba(0,0,0,0.9)", minHeight:40, textAlign:"center",
+            maxWidth:"85vw", wordBreak:"break-word" }}>
+            {textInputVal || <span style={{ opacity:0.3 }}>Start typing...</span>}
+          </div>
+
+          {/* Text input */}
+          <input
+            autoFocus
+            value={textInputVal}
+            onChange={e => setTextInputVal(e.target.value)}
+            placeholder="Type something..."
+            style={{ width:"100%", maxWidth:400, background:"rgba(255,255,255,0.12)", border:"2px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"14px 16px", color:"#fff", fontSize:16, outline:"none", marginBottom:16, textAlign:"center" }}
+            onKeyDown={e => e.key==="Enter" && addTextOverlay()}
+          />
+
+          {/* Color swatches */}
+          <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+            {TEXT_COLORS.map(c => (
+              <div key={c} onClick={() => setTextColor(c)}
+                style={{ width:28, height:28, borderRadius:"50%", background:c,
+                  border: textColor===c ? "3px solid #F5C842" : "2px solid rgba(255,255,255,0.2)",
+                  cursor:"pointer", boxShadow: textColor===c ? "0 0 10px rgba(245,200,66,0.6)" : "none",
+                  flexShrink:0 }} />
+            ))}
+          </div>
+
+          {/* Size slider */}
+          <div style={{ width:"100%", maxWidth:400, marginBottom:14 }}>
+            <div style={{ color:"#aaa", fontSize:11, marginBottom:6, textAlign:"center" }}>Size: {textSize}px</div>
+            <input type="range" min={14} max={48} step={1} value={textSize}
+              onChange={e => setTextSize(parseInt(e.target.value))}
+              style={{ width:"100%", accentColor:"#F5C842" }} />
+          </div>
+
+          {/* Background style */}
+          <div style={{ display:"flex", gap:10, marginBottom:20 }}>
+            {[{v:"none",l:"No BG"},{v:"dark",l:"Dark BG"},{v:"colored",l:"Color BG"}].map(b => (
+              <button key={b.v} onClick={() => setTextBg(b.v)}
+                style={{ padding:"8px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                  background: textBg===b.v ? "#F5C842" : "rgba(255,255,255,0.12)",
+                  color: textBg===b.v ? "#000" : "#fff" }}>
+                {b.l}
+              </button>
+            ))}
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display:"flex", gap:12, width:"100%", maxWidth:400 }}>
+            <button onClick={() => { setShowTextInput(false); setActiveMode(null); setTextInputVal(""); }}
+              style={{ flex:1, padding:"13px 0", background:"rgba(255,255,255,0.1)", border:"none", borderRadius:14, color:"#aaa", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+              Cancel
+            </button>
+            <button onClick={addTextOverlay}
+              style={{ flex:2, padding:"13px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, color:"#000", fontWeight:900, fontSize:15, cursor:"pointer" }}>
+              ✓ Add Text
+            </button>
+          </div>
+          <div style={{ color:"#666", fontSize:11, marginTop:12 }}>Tap a text overlay on video to remove it</div>
+        </div>
+      )}
+
       {trimming && (
-        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", zIndex:10 }}>
-          <div style={{ fontSize:40, marginBottom:16 }}>✂️</div>
-          <div style={{ color:"#fff", fontSize:18, fontWeight:700 }}>Processing video...</div>
-          <div style={{ color:"#aaa", fontSize:14, marginTop:8 }}>This may take a moment</div>
+        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", zIndex:30 }}>
+          <div style={{ fontSize:40, marginBottom:16 }}>⚙️</div>
+          <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>Processing video...</div>
         </div>
       )}
     </div>
   );
 }
+
 
 function UploadModal({ currentUser, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
@@ -729,6 +876,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [musicGenreFilter, setMusicGenreFilter] = useState("All");
   const [previewTrack, setPreviewTrack] = useState(null);
   const previewAudioRef = useRef(null);
+  const [musicTracks, setMusicTracks] = useState([]);
+  const [musicLoading, setMusicLoading] = useState(false);
+  const [musicSearch, setMusicSearch] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState("");
@@ -736,6 +886,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   const [notAiConfirmed, setNotAiConfirmed] = useState(false);
   const [aiBlocked, setAiBlocked] = useState(false);
+  const [isAiGenerated, setIsAiGenerated] = useState(false);
+
+  // Text post states
+  const [textPostContent, setTextPostContent] = useState("");
+  const [textPostTemplate, setTextPostTemplate] = useState(0);
+
+  // Post details step
+  const [showPostDetails, setShowPostDetails] = useState(false);
+  const [postTitle, setPostTitle] = useState("");
+  const [postVisibility, setPostVisibility] = useState("everyone"); // everyone | followers | only_me
+  const [postLocation, setPostLocation] = useState(null); // { name, city }
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [showVisibilityPicker, setShowVisibilityPicker] = useState(false);
 
   const checkForExplicitContent = (f, cap) => {
     const explicit = ["nude", "naked", "nsfw", "xxx", "porn", "sex", "explicit", "adult only", "18+", "onlyfans", "erotic"];
@@ -801,8 +964,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setExplicitBlocked(false);
     if (checkForAiSignatures(f, caption)) { setAiBlocked(true); return; }
     if (checkForExplicitContent(f, caption)) { setExplicitBlocked(true); return; }
-    // Show editor for video files
-    if (f.type.startsWith("video/")) setShowEditor(true);
+    // Show editor for video AND image files
+    if (f.type.startsWith("video/") || f.type.startsWith("image/")) setShowEditor(true);
   };
 
   const handlePhotoSelect = (e) => {
@@ -828,6 +991,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setProgress(10 + Math.round(((i+1)/photos.length)*70));
       }
       setProgress(85); setStep("Saving to feed...");
+      const photoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
       await videos.create({
@@ -838,13 +1002,24 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         thumbnail_url: urls[0],
         photo_urls: JSON.stringify(urls),
         is_photo: true,
-        caption: caption.trim(), hashtags: tags,
+        caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
+        hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: true, is_archived: false, is_ai_detected: false,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        post_visibility: postVisibility,
+        post_location_name: postLocation?.name || null,
+        ...photoGeo,
       });
-      setProgress(100); setStep("Posted! 🎉");
-      setTimeout(() => { onUploaded(); onClose(); }, 1000);
+      setProgress(100);
+      if (isAiGenerated) {
+        setStep("🤖 Bruh, AI has been flagged! Sent to MOD for review.");
+        setTimeout(() => { onClose(); }, 2500);
+      } else {
+        setStep("Posted! 🎉");
+        setTimeout(() => { onUploaded(); onClose(); }, 1000);
+      }
     } catch(e) {
       alert("Upload failed: " + (e.message || JSON.stringify(e)));
       setUploading(false); setProgress(0); setStep("");
@@ -858,7 +1033,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       alert("🚫 This video appears to be AI-generated and cannot be posted on Sachi.");
       return;
     }
-    if (!notAiConfirmed) {
+    if (!notAiConfirmed && !isAiGenerated) {
       alert("⚠️ Please confirm your video is NOT AI-generated before posting.");
       return;
     }
@@ -886,16 +1061,245 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
       setProgress(80);
       setStep("Saving to feed...");
+      const videoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
       await videos.create({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-        video_url, thumbnail_url, caption: caption.trim(), hashtags: tags,
+        video_url, thumbnail_url,
+        caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
+        hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: true, is_archived: false, is_ai_detected: false,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
+        post_visibility: postVisibility,
+        post_location_name: postLocation?.name || null,
+        sound_title: selectedTrack?.title || null,
+        sound_artist: selectedTrack?.artist || null,
+        sound_url: selectedTrack?.url || null,
+        ...videoGeo,
+      });
+      setProgress(100);
+      if (isAiGenerated) {
+        setStep("🤖 Bruh, AI has been flagged! Sent to MOD for review.");
+        setTimeout(() => { onClose(); }, 2500);
+      } else {
+        setStep("Posted! 🎉");
+        setTimeout(() => { onUploaded(); onClose(); }, 1000);
+      }
+    } catch(e) {
+      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      setUploading(false); setProgress(0); setStep("");
+    }
+  };
+
+  const JAMENDO_CLIENT_ID = "c9f4d87f";
+  const GENRE_TAG_MAP = {
+    "All":"","Lo-Fi":"lounge","Hip-Hop":"hiphop","Electronic":"electronic",
+    "R&B":"rnb","Pop":"pop","Chill":"relaxation","Afrobeats":"afrobeats",
+    "Jazz":"jazz","Rock":"rock","Acoustic":"acoustic","Classical":"classical"
+  };
+  const GENRE_EMOJI = {
+    "lounge":"🌆","hiphop":"🔥","electronic":"⚡","rnb":"❤️","pop":"🌈",
+    "relaxation":"🌊","afrobeats":"🌍","jazz":"🎷","rock":"🎸","acoustic":"🎸","classical":"🎻"
+  };
+
+  const fetchMusicTracks = async (genre = "All", search = "") => {
+    setMusicLoading(true);
+    setMusicTracks([]);
+    try {
+      const tag = GENRE_TAG_MAP[genre] || "";
+      // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
+      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
+      if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
+      console.log("[Sachi Music] Fetching via proxy:", apiUrl);
+      let tracks = [];
+      try {
+        const resp = await fetch(apiUrl);
+        if (resp.ok) {
+          const data = await resp.json();
+          tracks = data.tracks || [];
+          console.log("[Sachi Music] Proxy results:", tracks.length);
+        }
+      } catch(proxyErr) {
+        console.warn("[Sachi Music] Proxy failed, trying direct:", proxyErr);
+      }
+      // If proxy failed or returned nothing, try direct Jamendo
+      if (tracks.length === 0) {
+        let directUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
+        if (tag)    directUrl += `&tags=${encodeURIComponent(tag)}`;
+        if (search) directUrl += `&namesearch=${encodeURIComponent(search)}`;
+        console.log("[Sachi Music] Trying direct:", directUrl);
+        const resp2 = await fetch(directUrl);
+        if (resp2.ok) {
+          const data2 = await resp2.json();
+          tracks = (data2.results || []).map(t => ({
+            id:       `j_${t.id}`,
+            title:    t.name,
+            artist:   t.artist_name,
+            url:      t.audio || t.audiodownload,
+            genre:    genre === "All" ? (t.musicinfo?.tags?.genres?.[0] || "Music") : genre,
+            emoji:    GENRE_EMOJI[tag] || "🎵",
+            duration: t.duration,
+            image:    t.image,
+          })).filter(t => t.url);
+          console.log("[Sachi Music] Direct results:", tracks.length);
+        }
+      }
+      if (tracks.length > 0) {
+        setMusicTracks(tracks);
+      } else {
+        throw new Error("No tracks from any source");
+      }
+    } catch(e) {
+      console.error("[Sachi Music] All sources failed:", e);
+      // Final fallback: curated local tracks
+      const fallback = MUSIC_TRACKS.filter(t => genre === "All" || t.genre === genre);
+      setMusicTracks(fallback.length > 0 ? fallback : MUSIC_TRACKS);
+    }
+    setMusicLoading(false);
+  };
+
+  const detectLocation = async () => {
+    setDetectingLocation(true);
+    try {
+      const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout:8000 }));
+      const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+      const data = await resp.json();
+      const addr = data.address || {};
+      const city = addr.city || addr.town || addr.county || addr.state || "";
+      const suburb = addr.suburb || addr.neighbourhood || addr.district || "";
+      setPostLocation({ name: suburb || city, city });
+    } catch { setPostLocation(null); }
+    setDetectingLocation(false);
+  };
+
+  // Intercept post buttons — go to details step first
+  const goToPostDetails = () => {
+    // Auto-detect location quietly
+    if (!postLocation && navigator.geolocation) {
+      detectLocation();
+    }
+    setShowPostDetails(true);
+  };
+
+  const uploadTextPost = async () => {
+    if (!textPostContent.trim()) { alert("Please write something first!"); return; }
+    setUploading(true); setProgress(10);
+    try {
+      setStep("Creating text post...");
+      // Canvas render — matches each template style
+      const UPLOAD_TPLS = [
+        { bg:["#f8b4cb","#f8b4cb"], style:"highlight", hlColor:"#e91e8c", textColor:"#111", emoji:"😊", emojiTop:true },
+        { bg:["#b8d4f0","#d6e8ff"], style:"highlight", hlColor:"#F5C842", textColor:"#222", emoji:"", emojiTop:false },
+        { bg:["#0B0C1A","#1a1040"], style:"plain", textColor:"#F5C842", emoji:"🌸", emojiTop:true },
+        { bg:["#d8e8f5","#eaf2ff"], style:"plain", textColor:"#4a6fa5", emoji:"", emojiTop:false },
+        { bg:["#111111","#111111"], style:"plain", textColor:"#ffffff", emoji:"🌙", emojiTop:true },
+        { bg:["#FF416C","#FF9500"], style:"plain", textColor:"#ffffff", emoji:"🌅", emojiTop:true },
+        { bg:["#0F2027","#2C5364"], style:"plain", textColor:"#00E5FF", emoji:"🌊", emojiTop:true },
+        { bg:["#1a1a1a","#2d1a00"], style:"plain", textColor:"#F5C842", emoji:"✨", emojiTop:true },
+      ];
+      const tpl = UPLOAD_TPLS[textPostTemplate] || UPLOAD_TPLS[0];
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 540; canvas.height = 960;
+      const ctx = canvas.getContext("2d");
+
+      // Background
+      const grad = ctx.createLinearGradient(0, 0, 540, 960);
+      grad.addColorStop(0, tpl.bg[0]); grad.addColorStop(1, tpl.bg[1]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 540, 960);
+
+      const fontSize = 58;
+      const lineH = fontSize * 1.45;
+      const maxW = 460;
+      ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
+      ctx.textBaseline = "top";
+
+      // Word-wrap into lines
+      const allWords = textPostContent.trim().split(" ");
+      const lines = []; let curLine = "";
+      for (const w of allWords) {
+        const test = curLine ? curLine + " " + w : w;
+        if (ctx.measureText(test).width > maxW && curLine) { lines.push(curLine); curLine = w; }
+        else curLine = test;
+      }
+      if (curLine) lines.push(curLine);
+
+      const totalTextH = lines.length * lineH;
+      const emojiH = tpl.emoji ? 90 : 0;
+      const emojiGap = tpl.emoji ? 24 : 0;
+      const blockH = emojiH + emojiGap + totalTextH;
+      let startY = (960 - blockH) / 2;
+
+      // Emoji
+      if (tpl.emoji) {
+        ctx.font = "80px Arial"; ctx.textAlign = "left"; ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+        ctx.fillText(tpl.emoji, 40, startY);
+        startY += emojiH + emojiGap;
+      }
+
+      ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
+
+      if (tpl.style === "highlight") {
+        // Draw highlight block behind each line (left aligned)
+        const padX = 14, padY = 8;
+        lines.forEach((l, i) => {
+          const tw = ctx.measureText(l).width;
+          const rx = 36, ry = startY + i * lineH - padY;
+          // rounded rect fill
+          ctx.fillStyle = tpl.hlColor;
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(rx, ry, tw + padX*2, fontSize + padY*2, 6) :
+            ctx.rect(rx, ry, tw + padX*2, fontSize + padY*2);
+          ctx.fill();
+          ctx.fillStyle = tpl.textColor;
+          ctx.textAlign = "left";
+          ctx.fillText(l, rx + padX, startY + i * lineH);
+        });
+      } else {
+        // Plain centered text
+        ctx.textAlign = "center";
+        ctx.shadowColor = tpl.bg[0] === "#ffffff" ? "transparent" : "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 10;
+        lines.forEach((l, i) => {
+          ctx.fillStyle = tpl.textColor;
+          ctx.fillText(l, 270, startY + i * lineH);
+        });
+      }
+
+      // Watermark
+      ctx.font = "700 18px Arial"; ctx.fillStyle = "rgba(0,0,0,0.15)";
+      ctx.textAlign = "right"; ctx.shadowColor = "transparent"; ctx.shadowBlur = 0;
+      ctx.fillText("sachi™", 520, 930);
+
+      setProgress(30);
+      const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.92));
+      const imgFile = new File([blob], `textpost_${Date.now()}.jpg`, { type:"image/jpeg" });
+      setStep("Uploading...");
+      const img_url = await uploadFile(imgFile);
+      setProgress(75); setStep("Posting...");
+      const textGeo = await getPostLocation();
+      const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
+      await videos.create({
+        user_id: currentUser.id, username,
+        display_name: currentUser.full_name || username,
+        avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+        video_url: img_url, thumbnail_url: img_url,
+        photo_urls: JSON.stringify([img_url]), is_photo: true,
+        caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
+        hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
+        likes_count:0, comments_count:0, views_count:0, shares_count:0,
+        is_approved: postVisibility !== "only_me", is_archived: false, is_ai_detected: false, is_mature: false,
+        sound_title: "Text Post", sound_artist: "sachi",
+        post_visibility: postVisibility,
+        post_location_name: postLocation?.name || null,
+        ...textGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
@@ -910,30 +1314,210 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     {showEditor && (
       <VideoEditor
         file={file}
-        onDone={(processed) => { setEditedFile(processed); setShowEditor(false); }}
+        onDone={(processed, overlays) => {
+          setEditedFile(processed);
+          // Append text overlays to caption
+          if (overlays && overlays.length > 0) {
+            const overlayText = overlays.map(o => o.text).join(" · ");
+            setCaption(prev => prev ? prev + "\n" + overlayText : overlayText);
+          }
+          setShowEditor(false);
+        }}
         onSkip={() => { setEditedFile(null); setShowEditor(false); }}
       />
     )}
-    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end" }}>
+    {/* ── POST DETAILS STEP ── */}
+    {showPostDetails && (
+      <div style={{ position:"fixed", inset:0, zIndex:3500, background:"#0B0C1A", display:"flex", flexDirection:"column" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+          <button onClick={() => setShowPostDetails(false)}
+            style={{ background:"none", border:"none", color:"#fff", fontSize:22, cursor:"pointer", lineHeight:1 }}>‹</button>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:17 }}>Post details</div>
+          <div style={{ width:32 }} />
+        </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 20px 40px" }}>
+
+          {/* Title field */}
+          <div style={{ marginBottom:20 }}>
+            <input
+              value={postTitle}
+              onChange={e => setPostTitle(e.target.value)}
+              placeholder="Add a catchy title..."
+              style={{ width:"100%", background:"transparent", border:"none", borderBottom:"1.5px solid rgba(255,255,255,0.15)",
+                padding:"10px 0", color:"#fff", fontSize:18, fontWeight:700, outline:"none",
+                boxSizing:"border-box" }}
+            />
+            <div style={{ color:"#555", fontSize:12, marginTop:6 }}>Writing a title helps get 3× more views on average</div>
+          </div>
+
+          {/* Caption */}
+          <div style={{ marginBottom:20 }}>
+            <textarea
+              value={uploadTab === "text" ? textPostContent : caption}
+              onChange={e => uploadTab === "text" ? setTextPostContent(e.target.value) : setCaption(e.target.value)}
+              placeholder="Write a caption... #hashtags"
+              rows={3}
+              style={{ width:"100%", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)",
+                borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, resize:"none", outline:"none",
+                boxSizing:"border-box" }}
+            />
+          </div>
+
+          {/* Divider */}
+          <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:20 }} />
+
+          {/* Location row */}
+          <div style={{ marginBottom:4 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", cursor:"pointer" }}
+              onClick={detectLocation}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ fontSize:20 }}>📍</span>
+                <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Location</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                {detectingLocation && <span style={{ color:"#888", fontSize:12 }}>Detecting...</span>}
+                {postLocation && !detectingLocation && <span style={{ color:"#aaa", fontSize:13 }}>{postLocation.name || postLocation.city}</span>}
+                {!postLocation && !detectingLocation && <span style={{ color:"#555", fontSize:13 }}>Tap to add</span>}
+                <span style={{ color:"#555", fontSize:18 }}>›</span>
+              </div>
+            </div>
+            {postLocation && (
+              <div style={{ display:"flex", gap:8, paddingBottom:12, flexWrap:"wrap" }}>
+                <div style={{ background:"rgba(255,255,255,0.07)", borderRadius:20, padding:"5px 12px", fontSize:13, color:"#ccc", display:"flex", alignItems:"center", gap:6 }}>
+                  📍 {postLocation.name || postLocation.city}
+                  <span onClick={() => setPostLocation(null)} style={{ cursor:"pointer", color:"#888", fontSize:14, marginLeft:4 }}>✕</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:4 }} />
+
+          {/* Who can view row */}
+          <div style={{ padding:"14px 0", cursor:"pointer" }} onClick={() => setShowVisibilityPicker(v => !v)}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ fontSize:20 }}>🌐</span>
+                <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Who can view</span>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ color:"#aaa", fontSize:13 }}>
+                  {postVisibility === "everyone" ? "Everyone" : postVisibility === "followers" ? "Followers only" : "Only me"}
+                </span>
+                <span style={{ color:"#555", fontSize:18 }}>{showVisibilityPicker ? "▾" : "›"}</span>
+              </div>
+            </div>
+            {showVisibilityPicker && (
+              <div style={{ marginTop:12, background:"rgba(255,255,255,0.04)", borderRadius:14, overflow:"hidden" }}>
+                {[
+                  { val:"everyone", icon:"🌐", label:"Everyone", sub:"Anyone on Sachi can see this" },
+                  { val:"followers", icon:"👥", label:"Followers only", sub:"Only people who follow you" },
+                  { val:"only_me", icon:"🔒", label:"Only me", sub:"Saved privately, not shown in feed" },
+                ].map(v => (
+                  <div key={v.val}
+                    onClick={e => { e.stopPropagation(); setPostVisibility(v.val); setShowVisibilityPicker(false); }}
+                    style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px",
+                      borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer",
+                      background: postVisibility===v.val ? "rgba(245,200,66,0.07)" : "transparent" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <span style={{ fontSize:20 }}>{v.icon}</span>
+                      <div>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{v.label}</div>
+                        <div style={{ color:"#666", fontSize:11 }}>{v.sub}</div>
+                      </div>
+                    </div>
+                    {postVisibility===v.val && <span style={{ color:"#F5C842", fontSize:18 }}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:24 }} />
+
+          {/* Mature content toggle */}
+          {uploadTab !== "text" && (
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"4px 0", marginBottom:20 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <span style={{ fontSize:20 }}>🔞</span>
+                <div>
+                  <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Mature content</div>
+                  <div style={{ color:"#555", fontSize:11 }}>18+ viewers only</div>
+                </div>
+              </div>
+              <div onClick={() => setIsMature(m => !m)}
+                style={{ width:48, height:26, borderRadius:13,
+                  background: isMature ? "#ff6b6b" : "rgba(255,255,255,0.12)",
+                  position:"relative", cursor:"pointer", transition:"background 0.2s" }}>
+                <div style={{ position:"absolute", top:3, left: isMature ? 25 : 3, width:20, height:20,
+                  borderRadius:"50%", background:"#fff", transition:"left 0.2s",
+                  boxShadow:"0 1px 4px rgba(0,0,0,0.3)" }} />
+              </div>
+            </div>
+          )}
+
+          {/* Upload progress */}
+          {uploading && (
+            <div style={{ marginBottom:20 }}>
+              <div style={{ color:"#aaa", fontSize:13, marginBottom:8 }}>{step}</div>
+              <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:99, height:6, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${progress}%`, background:"linear-gradient(90deg,#ff6b6b,#ff8e53)", borderRadius:99, transition:"width 0.4s ease" }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom buttons */}
+        <div style={{ padding:"12px 20px 40px", display:"flex", gap:12, borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+          <button onClick={() => setShowPostDetails(false)} disabled={uploading}
+            style={{ flex:1, padding:"14px 0", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)",
+              borderRadius:14, color:"#aaa", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+            ← Back
+          </button>
+          <button
+            onClick={() => {
+              if (uploadTab === "text") uploadTextPost();
+              else if (uploadTab === "photo") uploadPhotos();
+              else upload();
+            }}
+            disabled={uploading}
+            style={{ flex:2.5, padding:"14px 0", background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border:"none", borderRadius:14, color:"#fff", fontWeight:900, fontSize:16, cursor: uploading ? "default" : "pointer",
+              boxShadow:"0 4px 20px rgba(255,107,107,0.35)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            {uploading ? step : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
+          </button>
+        </div>
+      </div>
+    )}
+
+    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.85)" }} />
-      <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", padding:"24px 24px 48px", zIndex:2001 }}>
+      <div style={{ position:"relative", width:"100%", maxWidth:480, margin:"0 auto", background:"#0f0f1a", borderRadius:"24px 24px 0 0", zIndex:2001,
+        maxHeight:"92vh", display:"flex", flexDirection:"column",
+        paddingBottom:"env(safe-area-inset-bottom, 24px)" }}>
+        {/* Scrollable inner content */}
+        <div style={{ overflowY:"auto", flex:1, padding:"24px 24px 32px", WebkitOverflowScrolling:"touch" }}>
         <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 20px" }} />
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{uploadTab==="video" ? "📹 Post a Video" : "🖼️ Post Photos"}</div>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{uploadTab==="video" ? "📹 Post a Video" : uploadTab==="photo" ? "🖼️ Post Photos" : "✏️ Text Post"}</div>
           <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:32, height:32, color:"#fff", cursor:"pointer" }}>✕</button>
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:8, marginBottom:18, background:"rgba(255,255,255,0.05)", borderRadius:14, padding:4 }}>
-          {[{id:"video",label:"🎬 Video"},{id:"photo",label:"🖼️ Photos"}].map(t => (
+          {[{id:"video",label:"🎬 Video"},{id:"photo",label:"🖼️ Photos"},{id:"text",label:"✏️ Text"}].map(t => (
             <button key={t.id} onClick={() => { setUploadTab(t.id); setFile(null); setPhotos([]); }}
               style={{ flex:1, padding:"10px 0", borderRadius:11, border:"none",
-                background: uploadTab===t.id ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "transparent",
-                color: uploadTab===t.id ? "#fff" : "#888", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                background: uploadTab===t.id ? (t.id==="text" ? "linear-gradient(135deg,#7C3AED,#A855F7)" : "linear-gradient(135deg,#ff6b6b,#ff8e53)") : "transparent",
+                color: uploadTab===t.id ? "#fff" : "#888", fontWeight:800, fontSize:13, cursor:"pointer" }}>
               {t.label}
             </button>
           ))}
         </div>
 
+        {uploadTab !== "text" && (<>
         {/* Duration Selector */}
         <div style={{ marginBottom:16 }}>
           <div style={{ color:"#aaa", fontSize:12, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:1 }}>Video Length</div>
@@ -1002,7 +1586,16 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             <div style={{ fontSize:48, marginBottom:10 }}>🎬</div>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:6 }}>Tap to select video</div>
             <div style={{ color:"#666", fontSize:13 }}>MP4, MOV, WebM · Max 500MB</div>
-            <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e => e.target.files[0] && setFile(e.target.files[0])} />
+            <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e => {
+              const f = e.target.files[0];
+              if (!f) return;
+              if (f.size > 150 * 1024 * 1024) {
+                alert("Video must be under 150MB. Please trim or compress your video before uploading.");
+                e.target.value = "";
+                return;
+              }
+              setFile(f);
+            }} />
           </div>
         ) : (
           <div style={{ background:"rgba(255,107,107,0.08)", border:"1px solid rgba(255,107,107,0.2)", borderRadius:12, padding:14, marginBottom:16, display:"flex", alignItems:"center", gap:10 }}>
@@ -1016,10 +1609,246 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         )}
         </>
         )}
-        <textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write a caption... #hashtags" rows={3}
-          style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", marginBottom:16 }} />
+        {uploadTab !== "text" && (
+          <div style={{ position:"relative", marginBottom:16 }}>
+            <textarea value={caption} onChange={e => setCaption(e.target.value.slice(0,500))} placeholder="Write a caption... #hashtags" rows={3}
+              style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:`1px solid ${caption.length > 480 ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.1)"}`, borderRadius:12, padding:12, color:"#fff", fontSize:14, resize:"none", outline:"none", boxSizing:"border-box", paddingBottom:28 }} />
+            <div style={{ position:"absolute", bottom:8, right:12, fontSize:11, color: caption.length > 480 ? "#ff6b6b" : "#555" }}>{caption.length}/500</div>
+          </div>
+        )}
+
+        {/* Location permission prompt — only show if not yet granted */}
+        {!localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && (
+          <div style={{ background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
+            <div style={{ color:"#F5C842", fontWeight:800, fontSize:13, marginBottom:4 }}>📍 Add your location to this post?</div>
+            <div style={{ color:"#777", fontSize:11, marginBottom:10 }}>Posts with location get more reach. Enable once, applies to all future posts.</div>
+            <button onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+                      .then(r => r.json())
+                      .then(data => {
+                        const addr = data.address || {};
+                        const code = addr.country_code ? addr.country_code.toUpperCase() : null;
+                        const region = addr.state || addr.city || addr.county || null;
+                        if (code) { localStorage.setItem("sachi_country_code", code); }
+                        if (region) { localStorage.setItem("sachi_region", region); }
+                      }).catch(()=>{});
+                  },
+                  () => {},
+                  { timeout: 8000 }
+                );
+              }
+            }} style={{ width:"100%", padding:"10px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:10, color:"#0B0C1A", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+              📍 Enable Location
+            </button>
+          </div>
+        )}
+
+        </>)}
+
+        {/* ── TEXT POST MODE ── */}
+        {uploadTab === "text" && (() => {
+          // Template definitions — each has a render function for the preview
+          const TEXT_TEMPLATES = [
+            {
+              name:"Blush", id:0,
+              // Pink bg, black text, pink HIGHLIGHT block behind each line, emoji top-left
+              bgStyle:"#f8b4cb",
+              render:(text, mini) => {
+                const lines = text ? text.split(" ").reduce((acc,w) => {
+                  const last = acc[acc.length-1];
+                  if (last && (last + " " + w).length <= 12) { acc[acc.length-1] = last + " " + w; }
+                  else acc.push(w);
+                  return acc;
+                }, []) : ["Hey","happy","Monday"];
+                const fs = mini ? 11 : 38;
+                const pad = mini ? "2px 5px" : "6px 14px";
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap: mini?3:8, padding: mini?"8px":"20px", width:"100%" }}>
+                    {!mini && <div style={{ fontSize:36, marginBottom:4 }}>😊</div>}
+                    {mini && <div style={{ fontSize:14, marginBottom:2 }}>😊</div>}
+                    {lines.map((l,i) => (
+                      <div key={i} style={{ background:"#e91e8c", display:"inline-block", padding:pad, borderRadius:4 }}>
+                        <span style={{ fontSize:fs, fontWeight:900, color:"#111", fontFamily:"'Arial Black',sans-serif", lineHeight:1.1 }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Note", id:1,
+              bgStyle:"linear-gradient(160deg,#b8d4f0,#d6e8ff)",
+              render:(text, mini) => {
+                const lines = text ? text.split(" ").reduce((acc,w) => {
+                  const last = acc[acc.length-1];
+                  if (last && (last + " " + w).length <= 12) { acc[acc.length-1] = last + " " + w; }
+                  else acc.push(w);
+                  return acc;
+                }, []) : ["Hey","happy","Monday"];
+                const fs = mini ? 10 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?2:6, padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {lines.map((l,i) => (
+                      <div key={i} style={{ background:"#F5C842", display:"inline-block", padding:mini?"1px 5px":"4px 12px", borderRadius:3, transform:`rotate(${i%2===0?-1:1}deg)` }}>
+                        <span style={{ fontSize:fs, fontWeight:900, color:"#222", fontFamily:"'Arial Black',sans-serif", lineHeight:1.1 }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Sakura", id:2,
+              bgStyle:"linear-gradient(135deg,#0B0C1A,#1a1040)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?3:10, padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:4 }}>🌸</div>}
+                    {mini && <div style={{ fontSize:12 }}>🌸</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#F5C842", fontFamily:"Georgia,serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Misty", id:3,
+              bgStyle:"linear-gradient(160deg,#d8e8f5,#eaf2ff)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 30;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    <span style={{ fontSize:fs, fontWeight:700, color:"#4a6fa5", fontFamily:"Georgia,serif", textAlign:"center", lineHeight:1.4, wordBreak:"break-word", opacity:0.85 }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Midnight", id:4,
+              bgStyle:"#111111",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {mini && <div style={{ fontSize:12 }}>🌙</div>}
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌙</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#fff", fontFamily:"'Arial Black',sans-serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Sunset", id:5,
+              bgStyle:"linear-gradient(135deg,#FF416C,#FF9500)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌅</div>}
+                    {mini && <div style={{ fontSize:12 }}>🌅</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#fff", fontFamily:"'Arial Black',sans-serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word", textShadow:"0 2px 8px rgba(0,0,0,0.3)" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Ocean", id:6,
+              bgStyle:"linear-gradient(160deg,#0F2027,#2C5364)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 32;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌊</div>}
+                    {mini && <div style={{ fontSize:12 }}>🌊</div>}
+                    <span style={{ fontSize:fs, fontWeight:800, color:"#00E5FF", fontFamily:"Arial,sans-serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+            {
+              name:"Gold", id:7,
+              bgStyle:"linear-gradient(135deg,#1a1a1a,#2d1a00)",
+              render:(text, mini) => {
+                const words = text || "Hey happy Monday";
+                const fs = mini ? 9 : 34;
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
+                    {!mini && <div style={{ fontSize:32, marginBottom:8 }}>✨</div>}
+                    {mini && <div style={{ fontSize:12 }}>✨</div>}
+                    <span style={{ fontSize:fs, fontWeight:900, color:"#F5C842", fontFamily:"Georgia,serif", textAlign:"center", lineHeight:1.3, wordBreak:"break-word", textShadow:"0 0 20px rgba(245,200,66,0.4)" }}>{words}</span>
+                  </div>
+                );
+              }
+            },
+          ];
+
+          const tpl = TEXT_TEMPLATES[textPostTemplate] || TEXT_TEMPLATES[0];
+          const displayText = textPostContent || "";
+
+          return (
+            <div style={{ marginBottom:16 }}>
+              {/* ── Big preview card ── */}
+              <div style={{
+                borderRadius:20, overflow:"hidden", marginBottom:14,
+                aspectRatio:"4/5", maxHeight:420,
+                display:"flex", flexDirection:"column", alignItems:"stretch",
+                position:"relative",
+                background: tpl.bgStyle,
+                boxShadow:"0 8px 40px rgba(0,0,0,0.5)",
+              }}>
+                {tpl.render(displayText, false)}
+                <div style={{ position:"absolute", bottom:10, right:14,
+                  color:"rgba(0,0,0,0.18)", fontSize:10, fontWeight:700, letterSpacing:1 }}>sachi™</div>
+              </div>
+
+              {/* ── Text input ── */}
+              <textarea
+                autoFocus
+                value={textPostContent}
+                onChange={e => setTextPostContent(e.target.value)}
+                placeholder="What's on your mind?"
+                rows={2}
+                style={{ width:"100%", background:"rgba(255,255,255,0.07)", border:"2px solid rgba(255,255,255,0.12)",
+                  borderRadius:14, padding:"12px 14px", color:"#fff", fontSize:16, resize:"none", outline:"none",
+                  boxSizing:"border-box", marginBottom:14, fontWeight:600, lineHeight:1.5 }}
+              />
+
+              {/* ── "Select a style" label ── */}
+              <div style={{ color:"#aaa", fontSize:13, fontWeight:600, marginBottom:10 }}>Select a style</div>
+
+              {/* ── Template thumbnail strip ── */}
+              <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:8, scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+                {TEXT_TEMPLATES.map((t, i) => (
+                  <div key={i} onClick={() => setTextPostTemplate(i)}
+                    style={{
+                      flexShrink:0, width:76, height:104, borderRadius:12,
+                      background: t.bgStyle,
+                      border: textPostTemplate===i ? "3px solid #F5C842" : "2px solid rgba(255,255,255,0.08)",
+                      display:"flex", alignItems:"stretch",
+                      cursor:"pointer", overflow:"hidden", position:"relative",
+                      boxShadow: textPostTemplate===i ? "0 0 16px rgba(245,200,66,0.5)" : "0 2px 8px rgba(0,0,0,0.4)",
+                      transition:"all 0.15s",
+                      transform: textPostTemplate===i ? "scale(1.06)" : "scale(1)",
+                    }}>
+                    {t.render(displayText || "Hey happy Monday", true)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {uploadTab !== "text" && <>
         {/* Music Picker Button */}
-        <div onClick={() => setShowMusicPicker(s => !s)}
+        <div onClick={() => { const next = !showMusicPicker; setShowMusicPicker(next); if(next && musicTracks.length === 0) fetchMusicTracks("All", ""); }}
           style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", marginBottom:12, cursor:"pointer" }}>
           <div style={{ fontSize:22 }}>🎵</div>
           <div style={{ flex:1 }}>
@@ -1030,49 +1859,101 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           <div style={{ color:"#888", fontSize:18 }}>{showMusicPicker ? "▲" : "▼"}</div>
         </div>
 
-        {/* Music Library */}
+        {/* Music Library — fixed slide-up overlay so it doesn't push content */}
         {showMusicPicker && (
-          <div style={{ background:"rgba(0,0,0,0.5)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, marginBottom:14 }}>
-            {/* Genre filter tabs */}
-            <div style={{ display:"flex", gap:6, padding:"10px 10px 6px", overflowX:"auto", scrollbarWidth:"none" }}>
-              {MUSIC_GENRES.map(g => (
-                <button key={g} onClick={() => setMusicGenreFilter(g)}
-                  style={{ flexShrink:0, padding:"5px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:700,
-                    background: musicGenreFilter === g ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
-                    color: musicGenreFilter === g ? "#fff" : "#aaa" }}>
-                  {g}
-                </button>
-              ))}
-            </div>
-            {/* Track list */}
-            <div style={{ maxHeight:200, overflowY:"auto" }}>
-              {MUSIC_LIBRARY.filter(t => musicGenreFilter === "All" || t.genre === musicGenreFilter).map(track => (
-                <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
-                  style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
-                  <div style={{ fontSize:20 }}>{track.emoji}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ color:"#fff", fontWeight:600, fontSize:13 }}>{track.title}</div>
-                    <div style={{ color:"#888", fontSize:11 }}>{track.artist} · <span style={{ color:"rgba(255,107,107,0.7)" }}>{track.genre}</span></div>
-                  </div>
-                  <button onClick={e => {
-                    e.stopPropagation();
-                    if (previewTrack === track.id) {
-                      previewAudioRef.current?.pause();
-                      setPreviewTrack(null);
-                    } else {
-                      if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.src = track.url; previewAudioRef.current.play(); }
-                      setPreviewTrack(track.id);
-                    }
-                  }} style={{ background:"rgba(255,107,107,0.2)", border:"none", borderRadius:"50%", width:30, height:30, color:"#ff6b6b", cursor:"pointer", fontSize:14, flexShrink:0 }}>
-                    {previewTrack === track.id ? "⏹" : "▶"}
-                  </button>
+          <div style={{ position:"fixed", inset:0, zIndex:3500, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}
+            onClick={e => { if(e.target === e.currentTarget) setShowMusicPicker(false); }}>
+            <div style={{ background:"#0f0f1a", borderRadius:"20px 20px 0 0", maxHeight:"70vh", display:"flex", flexDirection:"column",
+              boxShadow:"0 -8px 40px rgba(0,0,0,0.8)", border:"1px solid rgba(255,255,255,0.08)" }}>
+              {/* Header */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px 8px" }}>
+                <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>🎵 Add Sound</div>
+                <button onClick={() => setShowMusicPicker(false)}
+                  style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer", fontSize:16 }}>✕</button>
+              </div>
+              {/* Search bar */}
+              <div style={{ padding:"0 12px 8px" }}>
+                <div style={{ display:"flex", alignItems:"center", background:"rgba(255,255,255,0.07)", borderRadius:10, padding:"8px 12px", gap:8 }}>
+                  <span style={{ fontSize:14 }}>🔍</span>
+                  <input
+                    value={musicSearch}
+                    onChange={e => setMusicSearch(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && fetchMusicTracks(musicGenreFilter, musicSearch)}
+                    placeholder="Search songs, artists..."
+                    style={{ flex:1, background:"transparent", border:"none", outline:"none", color:"#fff", fontSize:13 }}
+                  />
+                  {musicSearch && (
+                    <button onClick={() => { setMusicSearch(""); fetchMusicTracks(musicGenreFilter, ""); }}
+                      style={{ background:"none", border:"none", color:"#888", cursor:"pointer", fontSize:14, padding:0 }}>✕</button>
+                  )}
+                  <button onClick={() => fetchMusicTracks(musicGenreFilter, musicSearch)}
+                    style={{ background:"rgba(255,107,107,0.25)", border:"none", borderRadius:8, padding:"4px 10px",
+                      color:"#ff6b6b", fontSize:11, fontWeight:700, cursor:"pointer" }}>Go</button>
                 </div>
-              ))}
+              </div>
+              {/* Genre filter tabs */}
+              <div style={{ display:"flex", gap:6, padding:"0 12px 8px", overflowX:"auto", scrollbarWidth:"none", flexShrink:0 }}>
+                {["All","Lo-Fi","Hip-Hop","Electronic","R&B","Pop","Chill","Afrobeats","Jazz","Rock","Acoustic","Classical"].map(g => (
+                  <button key={g} onClick={() => { setMusicGenreFilter(g); fetchMusicTracks(g, musicSearch); }}
+                    style={{ flexShrink:0, padding:"5px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:700,
+                      background: musicGenreFilter === g ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
+                      color: musicGenreFilter === g ? "#fff" : "#aaa" }}>
+                    {g}
+                  </button>
+                ))}
+              </div>
+              {/* Track list */}
+              <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
+                {musicLoading ? (
+                  <div style={{ padding:"20px", textAlign:"center", color:"#666", fontSize:13 }}>🎵 Loading tracks...</div>
+                ) : musicTracks.length === 0 ? (
+                  <div style={{ padding:"20px", textAlign:"center", color:"#666", fontSize:13 }}>No tracks found. Try another genre or search.</div>
+                ) : (
+                  musicTracks.map(track => (
+                    <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
+                      style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer",
+                        background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
+                      {track.image
+                        ? <img src={track.image} style={{ width:36, height:36, borderRadius:6, objectFit:"cover", flexShrink:0 }} />
+                        : <div style={{ fontSize:22, width:36, textAlign:"center" }}>{track.emoji || "🎵"}</div>
+                      }
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ color:"#fff", fontWeight:600, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{track.title}</div>
+                        <div style={{ color:"#888", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {track.artist}
+                          {track.duration ? <span style={{ color:"rgba(255,107,107,0.6)", marginLeft:6 }}>{Math.floor(track.duration/60)}:{String(track.duration%60).padStart(2,"0")}</span> : null}
+                        </div>
+                      </div>
+                      {selectedTrack?.id === track.id && <span style={{ color:"#ff6b6b", fontSize:14, marginRight:4 }}>✓</span>}
+                      <button onClick={e => {
+                        e.stopPropagation(); e.preventDefault();
+                        if (previewTrack === track.id) {
+                          if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.currentTime = 0; }
+                          setPreviewTrack(null);
+                        } else {
+                          setPreviewTrack(track.id);
+                          if (previewAudioRef.current) {
+                            previewAudioRef.current.pause();
+                            previewAudioRef.current.src = track.url;
+                            previewAudioRef.current.load();
+                            previewAudioRef.current.play().catch(err => console.warn("[Sachi Preview]", err));
+                          }
+                        }
+                      }} style={{ background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
+                        border:"2px solid rgba(255,107,107,0.4)", borderRadius:"50%",
+                        width:38, height:38, color:"#ff6b6b", cursor:"pointer", fontSize:16,
+                        flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                        WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                        {previewTrack === track.id ? "⏹" : "▶"}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div style={{ padding:"6px 14px 16px", color:"#444", fontSize:10, textAlign:"right" }}>Powered by Jamendo • Free music</div>
             </div>
           </div>
         )}
-        <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
-
         {/* Explicit Content Block Warning */}
         {explicitBlocked && (
           <div style={{ background:"rgba(255,50,50,0.12)", border:"1px solid rgba(255,50,50,0.4)", borderRadius:12, padding:"14px 16px", marginBottom:12, display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -1120,8 +2001,36 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
+        {/* AI Generated Disclosure Toggle */}
+        {!aiBlocked && !explicitBlocked && (
+          <div style={{ marginBottom:14 }}>
+            <div onClick={() => setIsAiGenerated(p => !p)}
+              style={{ display:"flex", gap:10, alignItems:"center", cursor:"pointer", padding:"10px 14px",
+                background: isAiGenerated ? "rgba(255,149,0,0.08)" : "rgba(255,255,255,0.04)",
+                borderRadius:10, border:`1px solid ${isAiGenerated ? "rgba(255,149,0,0.5)" : "rgba(255,255,255,0.1)"}` }}>
+              <div style={{ width:20, height:20, borderRadius:5,
+                border:`2px solid ${isAiGenerated ? "#FF9500" : "#555"}`,
+                background: isAiGenerated ? "#FF9500" : "transparent",
+                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s",
+                boxShadow: isAiGenerated ? "0 0 10px 3px rgba(255,149,0,0.7), 0 0 20px 6px rgba(255,149,0,0.3)" : "none" }}>
+                {isAiGenerated && <span style={{ color:"#fff", fontSize:13, fontWeight:900 }}>✓</span>}
+              </div>
+              <div style={{ color: isAiGenerated ? "#FF9500" : "#888", fontSize:13, lineHeight:1.4 }}>
+                🤖 <strong>Flag as AI</strong> — let your viewers know this content was AI generated
+              </div>
+            </div>
+            {isAiGenerated && (
+              <div style={{ marginTop:8, padding:"10px 14px", background:"rgba(255,149,0,0.07)", borderRadius:10, border:"1px solid rgba(255,149,0,0.2)" }}>
+                <div style={{ color:"#FF9500", fontSize:12, lineHeight:1.5 }}>
+                  ⚠️ Your post will be <strong>held for MOD review</strong> before going live. If approved, it will show an <strong>🤖 AI Generated</strong> badge. Sachi values truth — thanks for being honest.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Not AI Confirmation Checkbox */}
-        {!aiBlocked && !explicitBlocked && file && (
+        {!aiBlocked && !explicitBlocked && !isAiGenerated && file && (
           <div onClick={() => setNotAiConfirmed(p => !p)}
             style={{ display:"flex", gap:10, alignItems:"center", marginBottom:14, cursor:"pointer", padding:"10px 14px", background:"rgba(255,255,255,0.04)", borderRadius:10, border:`1px solid ${notAiConfirmed ? "rgba(107,255,154,0.4)" : "rgba(255,255,255,0.1)"}` }}>
             <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${notAiConfirmed ? "#6bff9a" : "#555"}`, background: notAiConfirmed ? "#6bff9a" : "transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
@@ -1133,6 +2042,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
+        </>}
+
         {uploading && (
           <div style={{ marginBottom:16 }}>
             <div style={{ color:"#aaa", fontSize:13, marginBottom:6 }}>{step}</div>
@@ -1141,19 +2052,30 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             </div>
           </div>
         )}
-        {uploadTab === "photo" ? (
-          <button onClick={uploadPhotos} disabled={!photos.length || uploading}
+        {uploadTab === "text" ? (
+          <button onClick={() => textPostContent.trim() && !uploading && goToPostDetails()}
+            disabled={!textPostContent.trim() || uploading}
+            style={{ width:"100%", padding:14, background: textPostContent.trim() && !uploading ? "linear-gradient(135deg,#7C3AED,#A855F7)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: textPostContent.trim() && !uploading ? "pointer" : "not-allowed", opacity: textPostContent.trim() && !uploading ? 1 : 0.5 }}>
+            {uploading ? step : "Next →"}
+          </button>
+        ) : uploadTab === "photo" ? (
+          <button onClick={() => photos.length && !uploading && goToPostDetails()}
+            disabled={!photos.length || uploading}
             style={{ width:"100%", padding:14, background: photos.length && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: photos.length && !uploading ? "pointer" : "not-allowed", opacity: photos.length && !uploading ? 1 : 0.5 }}>
-            {uploading ? step : `🖼️ Post ${photos.length > 0 ? photos.length : ""} Photo${photos.length !== 1 ? "s" : ""}`}
+            {uploading ? step : "Next →"}
           </button>
         ) : (
-          <button onClick={upload} disabled={!file || uploading || aiBlocked || explicitBlocked || !notAiConfirmed}
-            style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && notAiConfirmed ? 1 : 0.5 }}>
-            {uploading ? step : "🚀 Post Video"}
+          <button onClick={() => file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) && goToPostDetails()}
+            disabled={!file || uploading || aiBlocked || explicitBlocked || (!notAiConfirmed && !isAiGenerated)}
+            style={{ width:"100%", padding:14, background: file && !uploading ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#fff", fontWeight:800, fontSize:16, cursor: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? "pointer" : "not-allowed", opacity: file && !uploading && !aiBlocked && !explicitBlocked && (notAiConfirmed || isAiGenerated) ? 1 : 0.5 }}>
+            {uploading ? step : "Next →"}
           </button>
         )}
+        </div>{/* end scrollable inner */}
       </div>
     </div>
+    {/* Audio preview player - always mounted */}
+    <audio ref={previewAudioRef} onEnded={() => setPreviewTrack(null)} style={{ display:"none" }} />
     </>
   );
 }
@@ -1171,21 +2093,47 @@ function getUserAge() {
   return age;
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
   const videoRef = useRef(null);
+  const soundRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [muted, setMuted] = useState(true);
+  // Global mute stored on window — readable by stale closures, no prop-drilling
+  if (window.__sachiMuted === undefined) window.__sachiMuted = true;
+  const [muted, _setMutedLocal] = useState(() => window.__sachiMuted);
+  const setMuted = (val) => {
+    const newVal = typeof val === 'function' ? val(window.__sachiMuted) : val;
+    window.__sachiMuted = newVal;
+    _setMutedLocal(newVal);
+    // Broadcast to all other mounted VideoCards
+    window.dispatchEvent(new CustomEvent('sachi-mute-change', { detail: newVal }));
+  };
+  // Listen for mute changes from other cards
+  useEffect(() => {
+    const handler = (e) => { _setMutedLocal(e.detail); };
+    window.addEventListener('sachi-mute-change', handler);
+    return () => window.removeEventListener('sachi-mute-change', handler);
+  }, []);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
+  const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [showUI, setShowUI] = useState(false);
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
 
-  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.id === video.created_by || (currentUser.username && currentUser.username === video.username));
+  // Derived from video prop — must be declared before useEffect that references it
+  const photoUrls = video.is_photo && video.photo_urls
+    ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
+    : null;
+
+  // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
+
+
+  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || (currentUser.username && currentUser.username === video.username));
   const [ageGateUnlocked, setAgeGateUnlocked] = useState(false);
   const userAge = getUserAge();
   const isUnder18 = userAge !== null && userAge < 18;
@@ -1211,23 +2159,36 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => { if (uiTimerRef.current) clearTimeout(uiTimerRef.current); };
   }, []);
 
+  // Sync video element muted attribute whenever global mute state changes
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = muted;
+    if (soundRef.current) {
+      if (muted) { soundRef.current.pause(); }
+      else if (playing && video.sound_url) { soundRef.current.play().catch(() => {}); }
+    }
+  }, [muted]);
+
   // Auto-play via IntersectionObserver
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        el.muted = true;
-        setMuted(true);
+        const currentlyMuted = window.__sachiMuted !== undefined ? window.__sachiMuted : true;
+        el.muted = currentlyMuted;
         el.play().catch(() => {});
         setPlaying(true);
-        // Show UI briefly then hide
+        // Start sound track if unmuted and post has music
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
+          soundRef.current.play().catch(() => {});
+        }
         setShowUI(true);
         hideUIAfterDelay(1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
         setPlaying(false);
+        if (soundRef.current) soundRef.current.pause();
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
         setShowUI(false);
         setUserTapped(false);
@@ -1237,30 +2198,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => obs.disconnect();
   }, []);
 
-  // Load follow state
-  useEffect(() => {
-    if (!currentUser || isOwnVideo) return;
-    follows.getFollowing(currentUser.id).then(res => {
-      const rec = (res.items || res || []).find(r => r.following_id === video.user_id);
-      if (rec) setFollowRecord(rec);
-    }).catch(() => {});
-  }, [currentUser, video.user_id]);
+  // Follow state is driven by the shared followedUserIds prop — no per-card API call needed
 
   const doMute = () => {
     const el = videoRef.current;
     if (!el) return;
+    const wasPlaying = !el.paused;
     const nm = !muted;
-    setMuted(nm);
     el.muted = nm;
-    if (!nm) {
-      // Unmuting on mobile requires user gesture — we already have it here
-      const t = el.currentTime;
-      el.pause();
-      el.muted = false;
-      el.currentTime = t;
+    setMuted(nm);
+    // If video was already playing and we're unmuting, browser needs .play()
+    // at this exact user-gesture moment to allow audio — but only resume if
+    // it was already playing. If it was paused, do nothing extra.
+    if (!nm && wasPlaying) {
       el.play().catch(() => {});
-      // Auto-hide UI when video autoplays
-      hideUIAfterDelay(2000);
+      setPlaying(true);
+      hideUIAfterDelay(1500);
     }
   };
 
@@ -1288,10 +2241,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }
   };
 
+  const likeLockedRef = React.useRef(false);
   const doLike = () => {
     if (!currentUser) { onNeedAuth(); return; }
-    setLiked(l => !l);
-    onLike(video.id, liked ? -1 : 1);
+    if (likeLockedRef.current) return;
+    likeLockedRef.current = true;
+    setTimeout(() => { likeLockedRef.current = false; }, 500);
+    setLiked(prev => {
+      const newLiked = !prev;
+      onLike(video.id, newLiked ? 1 : -1);
+      return newLiked;
+    });
   };
 
   const doFollow = async () => {
@@ -1299,9 +2259,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (isOwnVideo) return;
     setFollowLoading(true);
     try {
-      if (followRecord) {
-        await follows.unfollow(followRecord.id);
+      if (isFollowing) {
+        // Need to find the record to delete it
+        try {
+          const res = await follows.getFollowing(currentUser.id);
+          const rec = (res.items || res || []).find(r => r.following_id === (video.user_id || video.created_by));
+          if (rec) await follows.unfollow(rec.id);
+        } catch(e) {}
         setFollowRecord(null);
+        if (onFollowChange) onFollowChange(video.user_id || video.created_by, false);
       } else {
         const rec = await follows.follow(
           currentUser.id,
@@ -1310,6 +2276,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           video.username
         );
         setFollowRecord(rec);
+        if (onFollowChange) onFollowChange(video.user_id || video.created_by, true);
       }
     } catch(err) { console.error(err); }
     setFollowLoading(false);
@@ -1331,10 +2298,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       onDelete && onDelete(video.id);
     } catch(err) { alert("Failed to delete. Try again."); }
   };
-
-  const photoUrls = video.is_photo && video.photo_urls
-    ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
-    : null;
 
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
@@ -1370,74 +2333,137 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden" }}
-          onTouchStart={e => {
-            const t = e.touches[0];
-            e.currentTarget._touchStartX = t.clientX;
-            e.currentTarget._touchStartY = t.clientY;
-          }}
-          onTouchEnd={e => {
-            const dx = e.changedTouches[0].clientX - (e.currentTarget._touchStartX || 0);
-            const dy = Math.abs(e.changedTouches[0].clientY - (e.currentTarget._touchStartY || 0));
-            if (Math.abs(dx) > 40 && Math.abs(dx) > dy) {
-              if (dx < 0) setPhotoIdx(p => Math.min(p+1, photoUrls.length-1));
-              else        setPhotoIdx(p => Math.max(p-1, 0));
-            }
-          }}
-        >
-          {/* Sliding strip — all photos in a row, translate by index */}
-          <div style={{
-            display:"flex", height:"100%",
-            transform: `translateX(${-photoIdx * 100}%)`,
-            transition: "transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94)",
-            willChange: "transform",
-          }}>
-            {photoUrls.map((url, i) => (
-              <div key={i} style={{ minWidth:"100%", height:"100%", flexShrink:0 }}>
-                <img src={url} style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
+        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
+          {/* Photo takes up most of the space */}
+          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
+            <img
+              src={resolveMediaUrl(photoUrls[photoIdx])}
+              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
+            />
+            {/* Counter badge top-left */}
+            {photoUrls.length > 1 && (
+              <div style={{ position:"absolute", top:12, left:12, background:"rgba(0,0,0,0.7)",
+                borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:700,
+                color:"#fff", zIndex:50, pointerEvents:"none", letterSpacing:0.5 }}>
+                {photoIdx+1} / {photoUrls.length}
               </div>
-            ))}
+            )}
           </div>
 
-          {/* Dot indicators */}
+          {/* ── CAROUSEL NAV: ‹ dots › all in one row ── */}
           {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", bottom:110, left:"50%", transform:"translateX(-50%)",
-              display:"flex", gap:5, zIndex:100, pointerEvents:"none" }}>
-              {photoUrls.map((_,i) => (
-                <div key={i} style={{
-                  width: i===photoIdx ? 22 : 7, height:7, borderRadius:99,
-                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.35)",
-                  transition:"all 0.25s ease",
-                  boxShadow: i===photoIdx ? "0 0 6px rgba(245,200,66,0.6)" : "none"
-                }} />
-              ))}
+            <div style={{
+              position:"absolute", bottom:70, left:"50%", transform:"translateX(-50%)",
+              display:"flex", alignItems:"center", gap:16, zIndex:400,
+              background:"rgba(0,0,0,0.6)", borderRadius:40, padding:"10px 20px",
+              backdropFilter:"blur(4px)"
+            }}>
+              {/* PREV */}
+              <button
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                disabled={photoIdx === 0}
+                style={{
+                  background: photoIdx===0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
+                  border:"none", borderRadius:"50%",
+                  width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, fontWeight:900, lineHeight:1,
+                  color: photoIdx===0 ? "rgba(255,255,255,0.25)" : "#fff",
+                  cursor: photoIdx===0 ? "default" : "pointer",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
+                  transition:"all 0.2s"
+                }}>‹</button>
+
+              {/* DOTS */}
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                {photoUrls.map((_,i) => (
+                  <div key={i} style={{
+                    width: i===photoIdx ? 28 : 10, height:10, borderRadius:99,
+                    background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
+                    transition:"all 0.25s ease",
+                    boxShadow: i===photoIdx ? "0 0 10px rgba(245,200,66,0.9)" : "none"
+                  }} />
+                ))}
+              </div>
+
+              {/* NEXT */}
+              <button
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                disabled={photoIdx === photoUrls.length-1}
+                style={{
+                  background: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
+                  border:"none", borderRadius:"50%",
+                  width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, fontWeight:900, lineHeight:1,
+                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.25)" : "#fff",
+                  cursor: photoIdx===photoUrls.length-1 ? "default" : "pointer",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
+                  transition:"all 0.2s"
+                }}>›</button>
             </div>
           )}
 
-          {/* Counter badge */}
-          {photoUrls.length > 1 && (
-            <div style={{ position:"absolute", top:60, right:16, background:"rgba(0,0,0,0.65)",
-              borderRadius:20, padding:"4px 12px", fontSize:13, fontWeight:700,
-              color:"#fff", zIndex:100, pointerEvents:"none" }}>
-              {photoIdx+1} / {photoUrls.length}
-            </div>
+          {/* ── SOUND for photo posts ── */}
+          {video.sound_url && (
+            <>
+              <audio ref={soundRef} src={video.sound_url} loop preload="auto"
+                style={{ display:"none" }}
+                onCanPlay={() => { if(!muted && soundRef.current) soundRef.current.play().catch(()=>{}); }} />
+              {muted ? (
+                <div
+                  onTouchStart={e => { e.stopPropagation(); setMuted(false); if(soundRef.current){ soundRef.current.play().catch(()=>{}); } }}
+                  onClick={e => { e.stopPropagation(); setMuted(false); if(soundRef.current){ soundRef.current.play().catch(()=>{}); } }}
+                  style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
+                    background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
+                    padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
+                    display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                  🔇 Tap to hear music
+                </div>
+              ) : (
+                <div
+                  onTouchStart={e => { e.stopPropagation(); setMuted(true); if(soundRef.current){ soundRef.current.pause(); } }}
+                  onClick={e => { e.stopPropagation(); setMuted(true); if(soundRef.current){ soundRef.current.pause(); } }}
+                  style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
+                    background:"rgba(245,200,66,0.2)", border:"1px solid rgba(245,200,66,0.5)", borderRadius:20,
+                    padding:"6px 16px", color:"#F5C842", fontSize:12, fontWeight:700, letterSpacing:1,
+                    display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                  🎵 {video.sound_title || "Playing music"}
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (() => {
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+        const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
-          <img src={video.video_url}
+          <img src={resolvedVideoUrl}
             style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
         );
         return (
           <>
-            <video ref={videoRef} src={video.video_url} poster={video.thumbnail_url}
+            <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
               loop playsInline
+              onPlay={() => {
+                setPlaying(true); hideUIAfterDelay(1500);
+                if (soundRef.current && video.sound_url && !muted) {
+                  soundRef.current.play().catch(() => {});
+                }
+              }}
+              onPause={() => {
+                setPlaying(false);
+                if (soundRef.current) soundRef.current.pause();
+              }}
               style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+            {video.sound_url && (
+              <audio ref={soundRef} src={video.sound_url} loop preload="none"
+                style={{ display:"none" }} />
+            )}
             {muted && (
-              <div onTouchStart={e=>{e.stopPropagation(); if(videoRef.current){videoRef.current.muted=false; setMuted(false);}}}
-                onClick={e=>{e.stopPropagation(); if(videoRef.current){videoRef.current.muted=false; setMuted(false);}}}
-                style={{ position:"absolute", bottom:140, left:"50%", transform:"translateX(-50%)", zIndex:200,
+              <div onTouchStart={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
+                onClick={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
+                style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
                   background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
                   padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
                   display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
@@ -1449,25 +2475,28 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       })()}
 
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, visibility: showUI ? "visible" : "hidden" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
       {/* Tap hint removed — content-first UI */}
 
-      {/* ── TAP: toggle UI visibility on images, toggle play/pause on videos ── */}
-      <div onClick={tap(() => {
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
-        if (isImg || !(video.video_url)) {
-          setShowUI(v => !v);
-          if (!showUI) setShowFullCaption(true);
-        } else {
-          // Always toggle play/pause on tap (TikTok-style)
-          doTogglePlay();
-        }
-      })}
-        style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+      {/* ── TAP: toggle UI visibility on images/photos, toggle play/pause on videos ── */}
+      {!photoUrls && (
+        <div onClick={tap(() => {
+          const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+          if (isImg || !(video.video_url)) {
+            setShowUI(v => !v);
+            if (!showUI) setShowFullCaption(true);
+          } else {
+            // Always toggle play/pause on tap (TikTok-style)
+            doTogglePlay();
+          }
+        })}
+          style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+      )}
 
-      {/* ── PLAY/PAUSE INDICATOR ── */}
-      {!playing && (
+      {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
+      {!playing && !photoUrls && (
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
           <div onClick={tap(doTogglePlay)} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:64, height:64,
             display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:26 }}>▶</div>
@@ -1477,7 +2506,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:250, transition:"opacity 0.4s ease", opacity: showUI ? 1 : 0, pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
         <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
@@ -1496,6 +2525,18 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         </div>
       )}
+      {/* Real / AI badge */}
+      <div style={{ display:"flex", gap:6, marginBottom:4, flexWrap:"wrap" }}>
+        {!video.is_ai_detected ? (
+          <span style={{ fontSize:10, background:"rgba(107,255,154,0.15)", color:"#6BFFB8", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(107,255,154,0.3)" }}>
+            ✓ Real
+          </span>
+        ) : (
+          <span style={{ fontSize:10, background:"rgba(255,149,0,0.15)", color:"#FF9500", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(255,149,0,0.3)" }}>
+            🤖 AI Generated
+          </span>
+        )}
+      </div>
       {video.caption && (
         <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>
           {showFullCaption || (video.caption || "").length <= 80
@@ -1518,7 +2559,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:8,
             background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px", width:"fit-content" }}>
             <span style={{ fontSize:12 }}>📅</span>
-            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>{formatDate(video.created_date)}</span>
+            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
+              {formatDate(video.created_date)}
+              {video.post_country && (
+                <span style={{ marginLeft:6, opacity:0.9 }}>
+                  {countryFlag(video.post_country)}
+                  {video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`}
+                </span>
+              )}
+            </span>
           </div>
         )}
       </div>
@@ -1527,7 +2576,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       <div style={{ position:"absolute", top:72, left:14, display:"flex", flexDirection:"row", alignItems:"center", gap:10, zIndex:999 }}>
         {/* Avatar */}
         <div onClick={(e) => { e.stopPropagation(); onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name); }}
-          style={{ width:42, height:42, borderRadius:"50%", overflow:"hidden", border:"2px solid rgba(245,200,66,0.7)", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 12px rgba(0,0,0,0.5)" }}>
+          style={{ width:22, height:22, borderRadius:"50%", overflow:"hidden", border:"1.5px solid rgba(245,200,66,0.7)", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
           <img src={video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`}
             style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
         </div>
@@ -1539,89 +2588,139 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             style={{
               height: 28,
               borderRadius: 20,
-              border: followRecord ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
-              background: followRecord ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
+              border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
+              background: isFollowing ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
               backdropFilter: "blur(8px)",
-              color: followRecord ? "#F5C842" : "#fff",
+              color: isFollowing ? "#F5C842" : "#fff",
               fontWeight: 700,
               fontSize: 12,
               letterSpacing: 0.3,
               padding: "0 12px",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-              boxShadow: followRecord ? "0 0 10px rgba(245,200,66,0.3)" : "none",
+              boxShadow: isFollowing ? "0 0 10px rgba(245,200,66,0.3)" : "none",
               transition: "all 0.25s",
               WebkitTapHighlightColor: "transparent",
               touchAction: "manipulation",
             }}>
-            {followLoading ? "·" : followRecord ? "✓ Following" : "+ Follow"}
+            {followLoading ? "·" : isFollowing ? "✓ Following" : "+ Follow"}
           </button>
         )}
       </div>
 
-      {/* ── BOTTOM ACTION BAR — fades with UI — Sachi style ── */}
-      <div style={{ position:"absolute", bottom:90, left:16, right:16, display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"flex-end", gap:10, zIndex:260, transition:"opacity 0.4s ease, transform 0.4s ease", opacity: showUI ? 1 : 0, transform: showUI ? "translateY(0)" : "translateY(10px)", pointerEvents: showUI ? "auto" : "none", visibility: showUI ? "visible" : "hidden" }}>
+      {/* ── RIGHT SIDE ACTION BAR — vertical stack, TikTok style ── */}
+      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex: 500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:44, height:44, borderRadius:14, background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: muted ? "1px solid rgba(245,200,66,0.35)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}>
+          <div style={{ width:28, height:28, borderRadius:8, background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: muted ? "1px solid rgba(245,200,66,0.35)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}>
             {muted
-              ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-              : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+              : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
             }
           </div>
+        </button>
+
+        {/* Flag AI */}
+        <button onClick={tap(async () => {
+          if (!currentUser) { onNeedAuth(); return; }
+          if (!window.confirm(video.is_ai_detected ? "Clear AI flag from this post?" : "Flag this post as AI-generated content?")) return;
+          try {
+            const newFlag = !video.is_ai_detected;
+            await videos.update(video.id, { is_ai_detected: newFlag });
+            onLike(video.id, 0); // trigger re-render via parent
+          } catch(e) {}
+        })}
+          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <div style={{ width:28, height:28, borderRadius:8,
+            background: video.is_ai_detected ? "rgba(0,255,120,0.12)" : "rgba(255,255,255,0.08)",
+            backdropFilter:"blur(12px)",
+            border: video.is_ai_detected ? "2px solid rgba(0,255,120,0.9)" : "1px solid rgba(255,255,255,0.1)",
+            boxShadow: video.is_ai_detected ? "0 0 10px 3px rgba(0,255,120,0.5), 0 0 20px 6px rgba(0,255,120,0.2)" : "none",
+            display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.3s" }}>
+            <span style={{ fontSize:13 }}>{video.is_ai_detected ? "🤖" : "🚩"}</span>
+          </div>
+          <div style={{ color: video.is_ai_detected ? "#00ff78" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>{video.is_ai_detected ? "AI" : "Flag"}</div>
         </button>
 
         {/* Like */}
         <button onClick={tap(doLike)}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:44, height:44, borderRadius:14, background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center",
+          <div style={{ width:28, height:28, borderRadius:8, background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center",
             animation: liked ? "heartpop 0.4s ease forwards" : "none", transformOrigin:"center", transition:"background 0.2s, border 0.2s" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke="#FF6B6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke="#FF6B6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </div>
-          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:11, fontWeight:600 }}>{formatCount((video.likes_count||0)+(liked?1:0))}</div>
+          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.likes_count||0)}</div>
         </button>
 
         {/* Comment */}
         <button onClick={tap(() => onCommentOpen(video))}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:11, fontWeight:600 }}>{formatCount(video.comments_count)}</div>
+          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.comments_count)}</div>
         </button>
 
         {/* Share */}
-        <button onClick={tap(() => {
-            if(navigator.share){ navigator.share({ title: video.caption||"Check this out", url: window.location.href }); }
-            else { navigator.clipboard?.writeText(window.location.href); alert("Link copied!"); }
+        <button onClick={tap(async () => {
+            const shareUrl = `${window.location.origin}?v=${video.id}`;
+            if(navigator.share){ navigator.share({ title: video.caption||"Check this out on Sachi", url: shareUrl }); }
+            else { navigator.clipboard?.writeText(shareUrl); alert("Link copied!"); }
+            // Increment share count in DB
+            try {
+              const newCount = (video.shares_count || 0) + 1;
+              onShareCount && onShareCount(video.id, newCount);
+              await videos.update(video.id, { shares_count: newCount });
+            } catch(e) {}
           })}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
             WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
             </svg>
           </div>
-          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:11, fontWeight:600 }}>{formatCount(video.shares_count||0)}</div>
+          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.shares_count||0)}</div>
         </button>
+
+        {/* Bookmark */}
+        {currentUser && (() => {
+          const isBookmarked = onBookmark?.isBookmarked?.(video.id);
+          return (
+            <button onClick={tap(async () => {
+                if(!currentUser){ onNeedAuth && onNeedAuth(); return; }
+                onBookmark?.handle && onBookmark.handle(video.id, !isBookmarked);
+              })}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+              <div style={{ width:28, height:28, borderRadius:8, background: isBookmarked ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:`1px solid ${isBookmarked ? "rgba(245,200,66,0.5)" : "rgba(255,255,255,0.1)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill={isBookmarked ? "#F5C842" : "none"} stroke={isBookmarked ? "#F5C842" : "rgba(255,255,255,0.9)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div style={{ color: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>Save</div>
+            </button>
+          );
+        })()}
 
         {/* Delete — only for own videos */}
         {isOwnVideo && (
           <button onClick={tap(doDelete)}
             style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
               WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-            <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,60,60,0.12)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,60,60,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff5555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,60,60,0.12)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,60,60,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff5555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
               </svg>
             </div>
@@ -1635,7 +2734,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       </div>
 
-      {reportTarget && <ReportModal video={reportTarget} onClose={() => setReportTarget(null)} />}
+      {reportTarget && <ReportModal video={reportTarget} currentUser={currentUser} onClose={() => setReportTarget(null)} />}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (
@@ -1673,18 +2772,24 @@ const REPORT_REASONS = [
   { id:"other",    icon:"💬", label:"Other",                      desc:"Something else not listed above" },
 ];
 
-function ReportModal({ video, onClose }) {
+function ReportModal({ video, currentUser, onClose }) {
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     if (!selected) return;
-    // Store report in localStorage for now
-    const key = `reports_${video.id}`;
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
-    existing.push({ reason: selected, time: new Date().toISOString() });
-    localStorage.setItem(key, JSON.stringify(existing));
     setSubmitted(true);
+    try {
+      await reports.create({
+        video_id: video.id,
+        reporter_id: currentUser?.id || "guest",
+        reporter_username: currentUser?.username || currentUser?.email || "guest",
+        video_caption: video.caption || "",
+        video_username: video.username || video.display_name || "",
+        reason: selected,
+        status: "pending",
+      });
+    } catch(e) { console.error("Report failed:", e); }
     setTimeout(() => onClose(), 1800);
   };
 
@@ -1771,76 +2876,237 @@ const AVATAR_STYLES = [
   { label: "Minimal", style: "thumbs", seeds: ["Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Eta","Theta","Iota","Kappa","Lambda","Mu","Nu","Xi","Omicron","Pi","Rho","Sigma","Tau","Upsilon"] },
 ];
 
+// ── Avatar Crop Editor ──────────────────────────────────────────────────────
+function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
+  const canvasRef = useRef();
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef(null);
+  const imgRef = useRef(new window.Image());
+  const SIZE = 300;
+
+  useEffect(() => {
+    const img = imgRef.current;
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const fit = Math.max(SIZE / img.width, SIZE / img.height);
+      setScale(fit);
+      setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+      draw(fit, { x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  const draw = (s = scale, o = offset) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    // White background so JPEG export works correctly
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    // Clip to circle before drawing image
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(imgRef.current, o.x, o.y, imgRef.current.width * s, imgRef.current.height * s);
+    ctx.restore();
+  };
+
+  useEffect(() => { draw(); }, [scale, offset]);
+
+  const onMouseDown = (e) => {
+    setDragging(true);
+    dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+  };
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    const newOffset = { x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y };
+    setOffset(newOffset);
+  };
+  const onMouseUp = () => setDragging(false);
+
+  const onTouchStart = (e) => {
+    e.preventDefault();
+    setDragging(true);
+    dragStart.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
+  };
+  const onTouchMove = (e) => {
+    e.preventDefault();
+    if (!dragging) return;
+    setOffset({ x: e.touches[0].clientX - dragStart.current.x, y: e.touches[0].clientY - dragStart.current.y });
+  };
+  const onTouchEnd = () => setDragging(false);
+
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    // Return base64 data URL directly — works for all auth types (Google, email)
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    onSave(dataUrl);
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:3000, background:"rgba(0,0,0,0.95)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ color:"#fff", fontWeight:900, fontSize:18, marginBottom:8 }}>✂️ Crop your avatar</div>
+      <div style={{ color:"#888", fontSize:13, marginBottom:20 }}>Drag to reposition • Zoom with slider</div>
+
+      {/* Canvas crop area */}
+      <div style={{ borderRadius:"50%", overflow:"hidden", border:"3px solid #F5C842", boxShadow:"0 0 30px rgba(245,200,66,0.3)", marginBottom:20, cursor: dragging ? "grabbing" : "grab" }}>
+        <canvas
+          ref={canvasRef}
+          width={SIZE}
+          height={SIZE}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          style={{ display:"block", touchAction:"none" }}
+        />
+      </div>
+
+      {/* Zoom slider */}
+      <div style={{ width:"100%", maxWidth:280, marginBottom:24 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+          <div style={{ color:"#aaa", fontSize:12 }}>🔍 Zoom</div>
+          <button onClick={() => {
+            const img = imgRef.current;
+            const fit = Math.min(SIZE / img.width, SIZE / img.height);
+            setScale(fit);
+            setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+          }} style={{ background:"rgba(245,200,66,0.15)", border:"1px solid rgba(245,200,66,0.4)", borderRadius:8, padding:"3px 10px", color:"#F5C842", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+            Fit whole image
+          </button>
+        </div>
+        <input
+          type="range"
+          min={0.05}
+          max={4}
+          step={0.01}
+          value={scale}
+          onChange={e => setScale(parseFloat(e.target.value))}
+          style={{ width:"100%", accentColor:"#F5C842" }}
+        />
+      </div>
+
+      <div style={{ display:"flex", gap:12, width:"100%", maxWidth:280 }}>
+        <button onClick={onCancel} style={{ flex:1, padding:"13px 0", background:"rgba(255,255,255,0.08)", border:"none", borderRadius:14, color:"#aaa", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+          Cancel
+        </button>
+        <button onClick={handleSave} style={{ flex:2, padding:"13px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:14, color:"#0B0C1A", fontWeight:900, fontSize:15, cursor:"pointer" }}>
+          ✓ Use this photo
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = useState(false);
-  // avatar picker uses color grid
+  const [activeStyle, setActiveStyle] = useState(0);
+  const [cropImageUrl, setCropImageUrl] = useState(null);
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    // Show crop editor first
+    const url = URL.createObjectURL(file);
+    setCropImageUrl(url);
+  };
+
+  const handleCropSave = async (dataUrl) => {
+    setCropImageUrl(null);
     setUploading(true);
     try {
-      const url = await uploadFile(file);
-      onSelect(url);
-    } catch { alert("Upload failed, try again."); }
+      // Try to upload to server first (works for email-login users with token)
+      const token = localStorage.getItem("sachi_token");
+      if (token) {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        try {
+          const url = await uploadFile(file);
+          onSelect(url);
+          return;
+        } catch(e) {
+          console.warn("Server upload failed, falling back to base64:", e);
+        }
+      }
+      // Fallback: use base64 dataURL directly (Google login users, or upload failure)
+      // Store compressed in localStorage and use as avatar
+      onSelect(dataUrl);
+    } catch(e) { alert("Could not save avatar. Try again."); }
     finally { setUploading(false); }
   };
 
-  const avatarUrls = AVATAR_NAMES.map((name, i) => {
-    const [bg, fg] = AVATAR_COLORS[i % AVATAR_COLORS.length];
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=${fg}&size=128&bold=true&format=png`;
-  });
-
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-      <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
-      <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, padding:"20px 20px 36px", zIndex:2001 }}>
-        <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 16px" }} />
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-          <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>🎨 Choose your avatar</div>
-          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
-        </div>
+    <>
+      {cropImageUrl && (
+        <AvatarCropEditor
+          imageUrl={cropImageUrl}
+          onSave={handleCropSave}
+          onCancel={() => setCropImageUrl(null)}
+        />
+      )}
 
-        {/* Upload own photo */}
-        <div style={{ marginBottom:14 }}>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFileUpload} />
-          <button onClick={() => fileRef.current?.click()} disabled={uploading}
-            style={{ width:"100%", padding:"11px", background:"rgba(108,99,255,0.2)", border:"2px dashed rgba(108,99,255,0.5)", borderRadius:12, color:"#6c63ff", fontWeight:700, fontSize:14, cursor:"pointer" }}>
-            {uploading ? "Uploading..." : "📷 Upload your own photo"}
-          </button>
-        </div>
+      <div style={{ position:"fixed", inset:0, zIndex:2000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+        <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
+        <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", maxWidth:480, padding:"20px 20px 36px", zIndex:2001 }}>
+          <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 16px" }} />
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>🎨 Choose your avatar</div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
+          </div>
 
-        {/* Style tabs */}
-        <div style={{ display:"flex", gap:6, marginBottom:12, overflowX:"auto", scrollbarWidth:"none" }}>
-          {AVATAR_STYLES.map((s, i) => (
-            <button key={i} onClick={() => setActiveStyle(i)}
-              style={{ flexShrink:0, padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
-                background: activeStyle === i ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
-                color: activeStyle === i ? "#fff" : "#aaa" }}>
-              {s.label}
+          {/* Upload own photo */}
+          <div style={{ marginBottom:14 }}>
+            <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFileUpload} />
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              style={{ width:"100%", padding:"13px", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(255,149,0,0.1))", border:"2px dashed rgba(245,200,66,0.5)", borderRadius:14, color:"#F5C842", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+              {uploading ? "⏳ Uploading..." : "📷 Upload & crop your photo"}
             </button>
-          ))}
-        </div>
+          </div>
 
-        {/* Avatar grid — scrollable */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, maxHeight:300, overflowY:"auto", paddingBottom:4 }}>
-          {avatarUrls.map((url, i) => (
-            <button key={i}
-              onClick={() => onSelect(url)}
-              style={{ background: currentAvatar===url ? "rgba(108,99,255,0.25)" : "rgba(255,255,255,0.06)",
-                border: currentAvatar===url ? "3px solid #6c63ff" : "3px solid rgba(255,255,255,0.08)",
-                borderRadius:16, width:64, height:64, margin:"0 auto", padding:4,
-                cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"border 0.2s, transform 0.15s, box-shadow 0.2s",
-                boxShadow: currentAvatar===url ? "0 0 12px rgba(108,99,255,0.5)" : "none",
-                transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
-              <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block", borderRadius:10 }} loading="lazy" />
-            </button>
-          ))}
+          {/* Style tabs */}
+          <div style={{ display:"flex", gap:6, marginBottom:12, overflowX:"auto", scrollbarWidth:"none" }}>
+            {AVATAR_STYLES.map((s, i) => (
+              <button key={i} onClick={() => setActiveStyle(i)}
+                style={{ flexShrink:0, padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                  background: activeStyle === i ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
+                  color: activeStyle === i ? "#fff" : "#aaa" }}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Avatar grid */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, maxHeight:260, overflowY:"auto", paddingBottom:4 }}>
+            {AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
+              const style = AVATAR_STYLES[activeStyle].style;
+              const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
+              return (
+                <button key={i}
+                  onClick={() => onSelect(url)}
+                  style={{ background: currentAvatar===url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
+                    border: currentAvatar===url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
+                    borderRadius:16, width:64, height:64, margin:"0 auto", padding:4,
+                    cursor:"pointer", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center",
+                    transition:"border 0.2s, transform 0.15s, box-shadow 0.2s",
+                    boxShadow: currentAvatar===url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
+                    transform: currentAvatar===url ? "scale(1.12)" : "scale(1)" }}>
+                  <img src={url} style={{ width:"100%", height:"100%", pointerEvents:"none", display:"block", borderRadius:10, background:"rgba(255,255,255,0.05)" }} loading="lazy" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -1881,7 +3147,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
       {/* Video */}
-      <video ref={videoRef} key={v.id} src={v.video_url} autoPlay playsInline loop muted={muted}
+      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.video_url)} autoPlay playsInline loop muted={muted}
         onClick={() => { if(videoRef.current.paused) videoRef.current.play(); else videoRef.current.pause(); }}
         style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
 
@@ -1963,11 +3229,17 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
     setLoading(true);
     Promise.all([
       request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
-      videos.byUser(userId).catch(() => [])
-    ]).then(([userRes, vids]) => {
+      videos.byUser(userId).catch(() => []),
+      // Live follower count: how many people follow this profile
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      // Live following count: how many people this profile follows
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
+    ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = userRes?.items || userRes || [];
       const u = allUsers.find(x => x.id === userId || x.created_by === userId) || null;
-      setProfile(u);
+      const liveFollowers = (followersRes?.items || followersRes || []).length;
+      const liveFollowing = (followingRes?.items || followingRes || []).length;
+      setProfile(u ? { ...u, followers_count: liveFollowers, following_count: liveFollowing } : { followers_count: liveFollowers, following_count: liveFollowing });
       const vidList = Array.isArray(vids) ? vids : (vids?.items || []);
       setUserVideos(vidList);
       setLoading(false);
@@ -1987,6 +3259,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       if (followRecord) {
         await follows.unfollow(followRecord.id);
         setFollowRecord(null);
+        setProfile(p => p ? { ...p, followers_count: Math.max(0, (p.followers_count || 1) - 1) } : p);
       } else {
         const rec = await follows.follow(
           currentUser.id,
@@ -1995,7 +3268,16 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
           username
         );
         setFollowRecord(rec);
+        setProfile(p => p ? { ...p, followers_count: (p.followers_count || 0) + 1 } : p);
       }
+      // Refresh live following count for the current user's Me tab too
+      try {
+        const myFollowingRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingCount = (myFollowingRes?.items || myFollowingRes || []).length;
+        setProfile(p => p ? { ...p } : p); // trigger re-render if needed
+        // store for Me tab
+        localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
+      } catch(e) {}
     } catch(e) { console.error(e); }
     setFollowLoading(false);
   };
@@ -2076,14 +3358,14 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                     <div>No videos yet</div>
                   </div>
                 ) : (
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:2 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:2 }}>
                     {userVideos.map((v, i) => (
                       <div key={v.id} onClick={() => setPlayerIndex(i)}
-                        style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}>
+                        style={{ position:"relative", aspectRatio:"1/1", background:"#111", overflow:"hidden", cursor:"pointer" }}>
                         {v.thumbnail_url ? (
-                          <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         ) : (
-                          <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         )}
                         {/* Play icon overlay */}
                         <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -2158,7 +3440,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
           <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
             onClick={() => setMenuVideo(v)}>
             {v.thumbnail_url
-              ? <img src={v.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
             {/* Three-dot indicator */}
             <div style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
@@ -2277,18 +3559,121 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
 // ─────────────────────────────────────────────
 // PODCAST PAGE
 // ─────────────────────────────────────────────
+function Toast({ msg, type="success" }) {
+  if (!msg) return null;
+  const bg = type==="error" ? "linear-gradient(135deg,#c62828,#b71c1c)" : type==="live" ? "linear-gradient(135deg,#e53935,#b71c1c)" : "linear-gradient(135deg,#2e7d32,#1b5e20)";
+  return (
+    <div style={{ position:"fixed", bottom:100, left:"50%", transform:"translateX(-50%)", zIndex:9999, background:bg, color:"#fff", fontWeight:700, fontSize:14, padding:"12px 24px", borderRadius:30, boxShadow:"0 6px 28px rgba(0,0,0,0.5)", whiteSpace:"nowrap", pointerEvents:"none" }}>
+      {msg}
+    </div>
+  );
+}
+
+// ── RECENT EPISODES COMPONENT v2 ──
+function RecentEpisodes({ episodes = [], loading = false, onEpisodeClick }) {
+
+  if (loading) return (
+    <div style={{ marginTop:24, marginBottom:8 }}>
+      <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:1.2, marginBottom:12 }}>Recent Episodes</div>
+      <div style={{ color:"rgba(255,255,255,0.2)", fontSize:13, padding:"12px 0" }}>Loading...</div>
+    </div>
+  );
+
+  if (!episodes || !episodes.length) return null;
+
+  const fmtDuration = (sec) => {
+    if (!sec) return "";
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
+  return (
+    <div style={{ marginTop:24, marginBottom:8 }}>
+      <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, textTransform:"uppercase", letterSpacing:1.2, marginBottom:12 }}>Recent Episodes</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+        {episodes.map((ep, i) => (
+          <div key={ep.id || i} onClick={() => onEpisodeClick && onEpisodeClick(ep)} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:14, cursor:"pointer", transition:"background 0.2s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(108,60,247,0.15)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.04)"}>
+            {/* Episode number bubble */}
+            <div style={{ width:40, height:40, borderRadius:10, background:"linear-gradient(135deg,#6c3cf7,#4527a0)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontWeight:800, color:"#fff", fontSize:14 }}>
+              {ep.episode_number || i + 1}
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ color:"#fff", fontWeight:700, fontSize:14, lineHeight:1.4, marginBottom:4, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+                {ep.title}
+              </div>
+              {ep.description && (
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, lineHeight:1.5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", marginBottom:6 }}>
+                  {ep.description}
+                </div>
+              )}
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                {ep.duration_seconds > 0 && (
+                  <span style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>⏱ {fmtDuration(ep.duration_seconds)}</span>
+                )}
+                {ep.listener_count > 0 && (
+                  <span style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>🎧 {ep.listener_count}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const PODCAST_COVER_COLORS = [
+  { bg:"linear-gradient(135deg,#6c3cf7,#4527a0)", emoji:"🎙️" },
+  { bg:"linear-gradient(135deg,#e53935,#b71c1c)", emoji:"🔥" },
+  { bg:"linear-gradient(135deg,#0288d1,#01579b)", emoji:"🌊" },
+  { bg:"linear-gradient(135deg,#2e7d32,#1b5e20)", emoji:"🌿" },
+  { bg:"linear-gradient(135deg,#f57c00,#e65100)", emoji:"⚡" },
+  { bg:"linear-gradient(135deg,#ad1457,#880e4f)", emoji:"💫" },
+  { bg:"linear-gradient(135deg,#00838f,#006064)", emoji:"🎵" },
+  { bg:"linear-gradient(135deg,#4e342e,#3e2723)", emoji:"☕" },
+];
+
 function PodcastPage({ currentUser, onNeedAuth }) {
   const CATEGORIES = ["All","News & Politics","Business","Entertainment","Comedy","Sports","Technology","Health & Wellness","True Crime","Education"];
   const [podcasts, setPodcasts] = useState([]);
+  const [myShows, setMyShows] = useState([]);
   const [loadingPodcasts, setLoadingPodcasts] = useState(true);
   const [selectedCat, setSelectedCat] = useState("All");
   const [selectedPodcast, setSelectedPodcast] = useState(null);
+  const [podcastEpisodes, setPodcastEpisodes] = useState([]);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const [registerForm, setRegisterForm] = useState({ title:"", host_name:"", description:"", category:"Business", cover_image_url:"" });
+  const [registerForm, setRegisterForm] = useState({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 });
   const [registering, setRegistering] = useState(false);
   const [registerDone, setRegisterDone] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [goingLive, setGoingLive] = useState(false);
+  const [endingLive, setEndingLive] = useState(false);
+  const [editingStream, setEditingStream] = useState(false);
+  const [selectedEpisode, setSelectedEpisode] = useState(null);
+  const [newStreamUrl, setNewStreamUrl] = useState("");
+  const [liveNewsChannel, setLiveNewsChannel] = useState(null);
+
+  const LIVE_NEWS_CHANNELS = [
+    { id:"ctv",   name:"CTV News",      emoji:"🍁", desc:"Canada's #1 news network",     color:"linear-gradient(135deg,#c62828,#b71c1c)", url:"https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1" },
+    { id:"abc",   name:"ABC News",      emoji:"🇺🇸", desc:"Live U.S. news coverage",      color:"linear-gradient(135deg,#1565c0,#0d47a1)", url:"https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1" },
+    { id:"bbc",   name:"BBC News",      emoji:"🇬🇧", desc:"Global news from London",      color:"linear-gradient(135deg,#b71c1c,#880e4f)", url:"https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA&autoplay=1" },
+    { id:"aljaz", name:"Al Jazeera",    emoji:"🌍", desc:"Breaking news worldwide",       color:"linear-gradient(135deg,#1b5e20,#004d40)", url:"https://www.youtube.com/embed/live_stream?channel=UCNye-wNBqNL5ZzHSJj3l8Bg&autoplay=1" },
+    { id:"cnn",   name:"CNN",           emoji:"📡", desc:"24/7 breaking news",            color:"linear-gradient(135deg,#c62828,#4a148c)", url:"https://www.youtube.com/embed/live_stream?channel=UCupvZG-5ko_eiXAupbDfxWw&autoplay=1" },
+    { id:"sky",   name:"Sky News",      emoji:"🌐", desc:"Live from the UK",              color:"linear-gradient(135deg,#0277bd,#01579b)", url:"https://www.youtube.com/embed/live_stream?channel=UCiU6U_f2KO7P6LFID9eQ4bA&autoplay=1" },
+    { id:"dw",    name:"DW News",       emoji:"🇩🇪", desc:"International news in English", color:"linear-gradient(135deg,#37474f,#263238)", url:"https://www.youtube.com/embed/live_stream?channel=UCknLrEdhRCp1aegoMqRaCZg&autoplay=1" },
+    { id:"france",name:"France 24",     emoji:"🇫🇷", desc:"Global news in English",       color:"linear-gradient(135deg,#1565c0,#e53935)", url:"https://www.youtube.com/embed/live_stream?channel=UCQfwfsi5VrQ8yKZ-UWmAoBw&autoplay=1" },
+  ];
+
+  const showToast = (msg, type="success", ms=3000) => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), ms);
+  };
 
   useEffect(() => { loadPodcasts(); }, []);
+  useEffect(() => { if (currentUser) loadMyShows(); }, [currentUser]);
 
   const loadPodcasts = async () => {
     setLoadingPodcasts(true);
@@ -2304,6 +3689,23 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     }
   };
 
+  const loadMyShows = async () => {
+    if (!currentUser) return;
+    try {
+      const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+      const data = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast`);
+      const all = Array.isArray(data) ? data : (data.records || data.items || []);
+      const mine = all.filter(p =>
+        p.host_user_id === currentUser.id ||
+        p.host_username === (currentUser.full_name || currentUser.email?.split("@")[0]) ||
+        p.created_by === currentUser.email ||
+        currentUser.email === "jaygnz27@gmail.com" ||
+        currentUser.email === "lasanjaya@gmail.com"
+      );
+      setMyShows(mine);
+    } catch(e) { console.error("loadMyShows failed:", e); }
+  };
+
   const filtered = selectedCat === "All" ? podcasts : podcasts.filter(p => p.category === selectedCat);
   const livePodcasts = filtered.filter(p => p.is_live);
   const regularPodcasts = filtered.filter(p => !p.is_live);
@@ -2312,92 +3714,417 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     if (!registerForm.title || !registerForm.host_name) return;
     setRegistering(true);
     try {
-      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, { ...registerForm, status:"Pending", is_live:false, listener_count:0, episode_count:0, follower_count:0,
-          host_user_id: currentUser?.id || "", host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "" });
-      setRegisterDone(true); setShowRegister(false);
-      setRegisterForm({ title:"", host_name:"", description:"", category:"Business", cover_image_url:"" });
-    } catch(e) { console.error(e); }
+      const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
+        title: registerForm.title,
+        host_name: registerForm.host_name,
+        description: registerForm.description,
+        category: registerForm.category,
+        live_stream_url: registerForm.live_stream_url || "",
+        cover_color: cover.bg,
+        cover_emoji: cover.emoji,
+        status: "Active",
+        is_live: false,
+        listener_count: 0,
+        episode_count: 0,
+        follower_count: 0,
+        host_user_id: currentUser?.id || "",
+        host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "",
+      });
+      setRegisterDone(true);
+      await loadPodcasts();
+      await loadMyShows();
+      // Send welcome email to host
+      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          host_email: currentUser?.email || "",
+          host_name: registerForm.host_name,
+          podcast_title: registerForm.title,
+          category: registerForm.category,
+        })
+      }).catch(() => {});
+      setRegisterForm({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 });
+    } catch(e) {
+      console.error(e);
+      showToast("Something went wrong. Please try again.", "error");
+    }
     setRegistering(false);
   };
 
   // ── PODCAST DETAIL ──
+  // Episode Player Overlay
+  if (selectedEpisode) {
+    const epUrl = selectedEpisode.live_stream_url || selectedEpisode.audio_url || selectedEpisode.video_url || "";
+    const getEpEmbed = (url) => {
+      if (!url) return null;
+      if (url.includes("youtube.com/watch")) return url.replace("watch?v=","embed/").split("&")[0]+"?autoplay=1";
+      if (url.includes("youtu.be/")) return "https://www.youtube.com/embed/"+url.split("youtu.be/")[1].split("?")[0]+"?autoplay=1";
+      if (url.includes("rumble.com/embed")) return url.includes("?") ? url : url+"?pub=4";
+      if (url.includes("rumble.com")) {
+        // Convert regular rumble page URL to embed: rumble.com/vXXXX-title.html -> rumble.com/embed/vXXXX/
+        const rmMatch = url.match(/rumble\.com\/(v[\w]+)-/);
+        if (rmMatch) return `https://rumble.com/embed/${rmMatch[1]}/?pub=4`;
+        return url; // fallback
+      }
+      if (url.includes("spotify.com/show/") || url.includes("spotify.com/episode/")) {
+        const id = url.split("/").pop().split("?")[0];
+        return url.includes("/episode/") ? `https://open.spotify.com/embed/episode/${id}` : `https://open.spotify.com/embed/show/${id}`;
+      }
+      return url;
+    };
+    const embedUrl = getEpEmbed(epUrl);
+    return (
+      <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:200, display:"flex", flexDirection:"column" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", gap:12, padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)", flexShrink:0 }}>
+          <button onClick={() => setSelectedEpisode(null)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", color:"#fff", fontSize:18 }}>←</button>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:15, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{selectedEpisode.title}</div>
+            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>Episode {selectedEpisode.episode_number}</div>
+          </div>
+        </div>
+        {/* Player */}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
+          {embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed") || embedUrl.includes("rumble.com/embed")) ? (
+            <iframe
+              src={embedUrl}
+              style={{ width:"100%", maxWidth:700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight:500, borderRadius:16, border:"none" }}
+              allow="autoplay; encrypted-media; fullscreen"
+              allowFullScreen
+            />
+          ) : (
+            <div style={{ width:"100%", maxWidth:500, background:"rgba(255,255,255,0.05)", borderRadius:20, padding:32, textAlign:"center" }}>
+              <div style={{ fontSize:64, marginBottom:16 }}>🎙️</div>
+              <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:8 }}>{selectedEpisode.title}</div>
+              {selectedEpisode.description && <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, marginBottom:24, lineHeight:1.6 }}>{selectedEpisode.description}</div>}
+              {epUrl ? (
+                <a href={epUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ display:"inline-block", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", color:"#fff", padding:"14px 28px", borderRadius:50, fontWeight:700, fontSize:15, textDecoration:"none" }}>
+                  🎧 Listen Now
+                </a>
+              ) : (
+                <div style={{ color:"rgba(255,255,255,0.3)", fontSize:14 }}>No stream URL available yet</div>
+              )}
+            </div>
+          )}
+          {/* Episode info */}
+          <div style={{ marginTop:24, width:"100%", maxWidth:500 }}>
+            <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, lineHeight:1.7 }}>{selectedEpisode.description}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (selectedPodcast) {
-    const isHost = currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === "jaygnz27@gmail.com");
+    const isHost = currentUser && (
+      currentUser.id === selectedPodcast.host_user_id ||
+      currentUser.email === selectedPodcast.created_by ||
+      (currentUser.full_name && currentUser.full_name === selectedPodcast.host_username) ||
+      ((currentUser.email?.split("@")[0]) === selectedPodcast.host_username) ||
+      currentUser.email === "jaygnz27@gmail.com" ||
+      currentUser.email === "lasanjaya@gmail.com"
+    );
+    const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
+    const coverEmoji = selectedPodcast.cover_emoji || "🎙️";
     return (
       <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
-        <div style={{ position:"relative", height:260, background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+        {toast && <Toast msg={toast.msg} type={toast.type} />}
+        {/* HERO */}
+        <div style={{ position:"relative", height:240, background:coverBg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
           <button onClick={() => setSelectedPodcast(null)}
-            style={{ position:"absolute", top:16, left:16, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
-          <div style={{ fontSize:56, marginBottom:12 }}>🎙️</div>
-          <div style={{ color:"#fff", fontWeight:800, fontSize:20, textAlign:"center", padding:"0 20px" }}>{selectedPodcast.title}</div>
-          <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, marginTop:4 }}>by {selectedPodcast.host_name}</div>
+            style={{ position:"absolute", top:16, left:16, background:"rgba(0,0,0,0.3)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
+          <div style={{ fontSize:60, marginBottom:10 }}>{coverEmoji}</div>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:20, textAlign:"center", padding:"0 60px", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>{selectedPodcast.title}</div>
+          <div style={{ color:"rgba(255,255,255,0.65)", fontSize:13, marginTop:4 }}>by {selectedPodcast.host_name}</div>
           {selectedPodcast.is_live && (
-            <div style={{ position:"absolute", top:16, right:16, background:"#e53935", borderRadius:20, padding:"4px 12px", display:"flex", alignItems:"center", gap:6 }}>
+            <div style={{ position:"absolute", top:16, right:16, background:"#e53935", borderRadius:20, padding:"5px 12px", display:"flex", alignItems:"center", gap:6, animation:"pulse 1.5s infinite" }}>
               <div style={{ width:7, height:7, borderRadius:"50%", background:"#fff" }} />
-              <span style={{ color:"#fff", fontWeight:700, fontSize:12 }}>LIVE</span>
+              <span style={{ color:"#fff", fontWeight:800, fontSize:12 }}>LIVE</span>
+            </div>
+          )}
+          {selectedPodcast.status === "Pending" && (
+            <div style={{ position:"absolute", top:16, right:16, background:"rgba(245,200,66,0.9)", borderRadius:20, padding:"5px 12px" }}>
+              <span style={{ color:"#000", fontWeight:800, fontSize:11 }}>⏳ PENDING REVIEW</span>
             </div>
           )}
         </div>
-        <div style={{ padding:"20px 20px 40px" }}>
-          <div style={{ display:"flex", gap:24, marginBottom:20 }}>
-            <div style={{ textAlign:"center" }}><div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{selectedPodcast.follower_count||0}</div><div style={{ color:"#666", fontSize:11 }}>Followers</div></div>
-            <div style={{ textAlign:"center" }}><div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{selectedPodcast.episode_count||0}</div><div style={{ color:"#666", fontSize:11 }}>Episodes</div></div>
-            {selectedPodcast.is_live && <div style={{ textAlign:"center" }}><div style={{ color:"#e53935", fontWeight:800, fontSize:18 }}>{selectedPodcast.listener_count||0}</div><div style={{ color:"#666", fontSize:11 }}>Listening</div></div>}
+        <div style={{ padding:"20px 20px 100px" }}>
+          {/* STATS */}
+          <div style={{ display:"flex", gap:0, marginBottom:20, background:"rgba(255,255,255,0.04)", borderRadius:16, overflow:"hidden" }}>
+            {[
+              { val: selectedPodcast.follower_count||0, label:"Followers" },
+              { val: selectedPodcast.episode_count||0, label:"Episodes" },
+              { val: selectedPodcast.is_live ? (selectedPodcast.listener_count||0) : "—", label:"Listening", red: selectedPodcast.is_live },
+            ].map((s,i) => (
+              <div key={i} style={{ flex:1, textAlign:"center", padding:"14px 0", borderLeft: i>0?"1px solid rgba(255,255,255,0.06)":"none" }}>
+                <div style={{ color: s.red?"#e53935":"#fff", fontWeight:800, fontSize:18 }}>{s.val}</div>
+                <div style={{ color:"rgba(255,255,255,0.35)", fontSize:11, marginTop:2 }}>{s.label}</div>
+              </div>
+            ))}
           </div>
-          <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:16, marginBottom:20 }}>
-            <div style={{ color:"rgba(255,255,255,0.7)", fontSize:14, lineHeight:1.6 }}>{selectedPodcast.description || "No description yet."}</div>
-          </div>
+
+          {/* DESCRIPTION */}
+          {selectedPodcast.description ? (
+            <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:16, marginBottom:20 }}>
+              <div style={{ color:"rgba(255,255,255,0.7)", fontSize:14, lineHeight:1.6 }}>{selectedPodcast.description}</div>
+            </div>
+          ) : null}
 
           {/* HOST CONTROLS */}
           {isHost && (
-            <div style={{ marginBottom:16 }}>
+            <div style={{ marginBottom:20 }}>
+              <div style={{ color:"#F5C842", fontWeight:700, fontSize:12, letterSpacing:1.2, textTransform:"uppercase", marginBottom:12 }}>🎙️ Host Controls</div>
               {selectedPodcast.is_live ? (
-                <button onClick={async () => {
-                  if (!confirm("End your live session?")) return;
-                  await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 });
-                  setSelectedPodcast(p => ({...p, is_live:false, listener_count:0}));
-                  alert("Live session ended.");
-                }}
-                  style={{ width:"100%", padding:"16px 0", background:"rgba(229,57,53,0.15)", border:"2px solid #e53935", borderRadius:16, color:"#e53935", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8 }}>
-                  ⏹️ End Live Session
-                </button>
+                <>
+                  <div style={{ background:"rgba(229,57,53,0.08)", border:"1px solid rgba(229,57,53,0.3)", borderRadius:14, padding:14, marginBottom:12, textAlign:"center" }}>
+                    <div style={{ color:"#e53935", fontWeight:700, fontSize:13 }}>🔴 You are currently LIVE</div>
+                    <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, marginTop:4 }}>{selectedPodcast.listener_count||0} listeners tuned in</div>
+                  </div>
+                  {/* Stream URL editor — available even while live */}
+                  <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:14, marginBottom:14 }}>
+                    <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, marginBottom:6 }}>🔗 Stream URL</div>
+                    {editingStream ? (
+                      <div style={{ display:"flex", gap:8 }}>
+                        <input value={newStreamUrl} onChange={e => setNewStreamUrl(e.target.value)}
+                          placeholder="https://youtube.com/watch?v=..."
+                          style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }} />
+                        <button onClick={async () => {
+                          try {
+                            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                            setSelectedPodcast(p => ({...p, live_stream_url: newStreamUrl}));
+                            setEditingStream(false);
+                            showToast("✅ Stream URL saved!", "success");
+                          } catch(e) { showToast("Failed to save URL", "error"); }
+                        }} style={{ background:"#6c3cf7", border:"none", borderRadius:10, padding:"8px 14px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}>Save</button>
+                        <button onClick={() => setEditingStream(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:10, padding:"8px 14px", color:"#fff", fontSize:13, cursor:"pointer" }}>✕</button>
+                      </div>
+                    ) : (
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <div style={{ color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:"75%" }}>
+                          {selectedPodcast.live_stream_url || "No stream URL set yet"}
+                        </div>
+                        <button onClick={() => { setNewStreamUrl(selectedPodcast.live_stream_url||""); setEditingStream(true); }}
+                          style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:8, padding:"5px 12px", color:"#a78bfa", fontSize:12, cursor:"pointer", fontWeight:600, flexShrink:0 }}>
+                          {selectedPodcast.live_stream_url ? "Edit" : "Add URL"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={async () => {
+                    if (endingLive) return;
+                    setEndingLive(true);
+                    try {
+                      await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                        method:"POST", headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
+                      }).catch(()=>{});
+                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 }); } catch {}
+                      setSelectedPodcast(p => ({...p, is_live:false, listener_count:0}));
+                      setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:false} : p));
+                      showToast("✅ Live session ended successfully", "success");
+                    } catch(e) { showToast("Failed to end session. Try again.", "error"); }
+                    setEndingLive(false);
+                  }}
+                    style={{ width:"100%", padding:"15px 0", background:endingLive?"rgba(229,57,53,0.3)":"rgba(229,57,53,0.12)", border:"2px solid #e53935", borderRadius:16, color:"#e53935", fontWeight:800, fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                    {endingLive ? "Ending..." : "⏹️ End Live Session"}
+                  </button>
+                </>
               ) : (
-                <button onClick={async () => {
-                  if (!confirm("Go live now? All Sachi users will be notified instantly!")) return;
-                  await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true });
-                  await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
-                    method:"POST", headers:{"Content-Type":"application/json"},
-                    body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"" })
-                  });
-                  setSelectedPodcast(p => ({...p, is_live:true}));
-                  alert("🔴 You are LIVE! Notifications sent to all Sachi users.");
-                }}
-                  style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8, boxShadow:"0 4px 20px rgba(229,57,53,0.4)" }}>
-                  🔴 Go Live Now
-                </button>
+                <>
+                  {/* Stream URL editor */}
+                  <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:14, marginBottom:14 }}>
+                    <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, marginBottom:6 }}>🔗 Stream URL <span style={{ color:"rgba(255,255,255,0.25)" }}>(YouTube Live, Twitch, etc.)</span></div>
+                    {editingStream ? (
+                      <div style={{ display:"flex", gap:8 }}>
+                        <input value={newStreamUrl} onChange={e => setNewStreamUrl(e.target.value)}
+                          placeholder="https://youtube.com/live/..."
+                          style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }} />
+                        <button onClick={async () => {
+                          try {
+                            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                            setSelectedPodcast(p => ({...p, live_stream_url: newStreamUrl}));
+                            setEditingStream(false);
+                            showToast("✅ Stream URL saved!", "success");
+                          } catch(e) { showToast("Failed to save URL", "error"); }
+                        }} style={{ background:"#6c3cf7", border:"none", borderRadius:10, padding:"8px 14px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer" }}>Save</button>
+                        <button onClick={() => setEditingStream(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:10, padding:"8px 14px", color:"#fff", fontSize:13, cursor:"pointer" }}>✕</button>
+                      </div>
+                    ) : (
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <div style={{ color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:"75%" }}>
+                          {selectedPodcast.live_stream_url || "No stream URL set yet"}
+                        </div>
+                        <button onClick={() => { setNewStreamUrl(selectedPodcast.live_stream_url||""); setEditingStream(true); }}
+                          style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:8, padding:"5px 12px", color:"#a78bfa", fontSize:12, cursor:"pointer", fontWeight:600, flexShrink:0 }}>
+                          {selectedPodcast.live_stream_url ? "Edit" : "Add URL"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={async () => {
+                    if (goingLive) return;
+                    setGoingLive(true);
+                    try {
+                      // Use podcastGoLiveNotify which handles the DB update via service role
+                      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                        method:"POST", headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
+                      });
+                      // Also try direct PATCH (works if user has token)
+                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true }); } catch {}
+                      setSelectedPodcast(p => ({...p, is_live:true}));
+                      setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:true} : p));
+                      showToast("🔴 You are LIVE! Users are being notified.", "live");
+                    } catch(e) { showToast("Could not go live. Try again.", "error"); }
+                    setGoingLive(false);
+                  }}
+                    style={{ width:"100%", padding:"16px 0", background:goingLive?"rgba(229,57,53,0.4)":"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, boxShadow:"0 4px 24px rgba(229,57,53,0.35)" }}>
+                    {goingLive ? "Going Live..." : "🔴 Go Live Now"}
+                  </button>
+                  <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center", marginTop:8 }}>Tapping Go Live notifies ALL Sachi users instantly via email</div>
+                </>
               )}
-              <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center" }}>
-                {selectedPodcast.is_live ? "You are currently live" : "Tapping Go Live notifies ALL Sachi users instantly"}
-              </div>
             </div>
           )}
 
           {/* LISTENER CONTROLS */}
-          {!isHost && (
-            selectedPodcast.is_live ? (
-              <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } alert("Tuning in! Live streaming player coming soon."); }}
-                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
-                <span style={{ fontSize:20 }}>🎧</span> Listen Live Now
-              </button>
-            ) : (
-              <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } alert("Following " + selectedPodcast.title + "! You will be notified when they go live."); }}
-                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
-                <span style={{ fontSize:20 }}>🔔</span> Follow & Get Notified
-              </button>
-            )
+          {!isHost && currentUser && (
+            <div style={{ marginBottom:16 }}>
+              {selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+                // Convert any YouTube URL to embed format
+                const getEmbedUrl = (url) => {
+                  if (!url) return null;
+                  // Rumble channel live feed
+                  if (url.includes("rumble.com/c/")) {
+                    const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+                    return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`;
+                  }
+                  // Rumble video page e.g. rumble.com/vXXXXX-title.html
+                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+                  if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+                  // Rumble embed already
+                  if (url.includes("rumble.com/embed/")) return url;
+                  // YouTube embed already
+                  if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
+                  // youtube.com/watch?v=ID
+                  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+                  if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+                  // youtu.be/ID
+                  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+                  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+                  // youtube.com/live/ID
+                  const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+                  if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+                  return url; // fallback: try direct
+                };
+                const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
+                const [showPlayer, setShowPlayer] = React.useState(false);
+                return (
+                  <div style={{ marginBottom:16 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                      <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
+                      <span style={{ color:"#e53935", fontWeight:800, fontSize:13, letterSpacing:1 }}>LIVE NOW</span>
+                      <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>· {selectedPodcast.listener_count||0} watching</span>
+                    </div>
+                    <button onClick={() => setShowPlayer(true)}
+                      style={{ display:"flex", width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12, boxShadow:"0 4px 20px rgba(229,57,53,0.35)" }}>
+                      🎧 Watch Live Now
+                    </button>
+                    {showPlayer && (
+                      <div style={{ position:"fixed", top:0, left:0, width:"100vw", height:"100vh", background:"#000", zIndex:9999, display:"flex", flexDirection:"column" }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:"rgba(0,0,0,0.85)", flexShrink:0 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                            <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
+                            <span style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{selectedPodcast.title}</span>
+                          </div>
+                          <button onClick={() => setShowPlayer(false)} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:34, height:34, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                        </div>
+                        <iframe
+                          src={embedUrl}
+                          style={{ flex:1, width:"100%", border:"none" }}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                          allowFullScreen
+                          title={selectedPodcast.title}
+                        />
+                        <div style={{ padding:"10px 16px", background:"rgba(0,0,0,0.85)", textAlign:"center", flexShrink:0 }}>
+                          <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Streaming via Sachi · sachistream.com</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : !selectedPodcast.is_live ? (
+                <button onClick={() => showToast("🔔 You will be notified when " + selectedPodcast.title + " goes live!", "success")}
+                  style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12 }}>
+                  🔔 Follow & Get Notified
+                </button>
+              ) : null}
+            </div>
           )}
 
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20 }}>
+          {!isHost && !currentUser && (
+            <div style={{ marginBottom:16 }}>
+              {selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+                const getEmbedUrl = (url) => {
+                  if (!url) return null;
+                  // Rumble channel live feed
+                  if (url.includes("rumble.com/c/")) {
+                    const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+                    return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`;
+                  }
+                  // Rumble video page e.g. rumble.com/vXXXXX-title.html
+                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+                  if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+                  // Rumble embed already
+                  if (url.includes("rumble.com/embed/")) return url;
+                  // YouTube embed already
+                  if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
+                  // youtube.com/watch?v=ID
+                  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+                  if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+                  // youtu.be/ID
+                  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+                  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+                  // youtube.com/live/ID
+                  const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+                  if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+                  return url; // fallback: try direct
+                };
+                const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
+                return embedUrl ? (
+                  <div style={{ marginBottom:16 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                      <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
+                      <span style={{ color:"#e53935", fontWeight:800, fontSize:13, letterSpacing:1 }}>LIVE NOW</span>
+                    </div>
+                    <div style={{ position:"relative", width:"100%", paddingBottom:"56.25%", borderRadius:14, overflow:"hidden", background:"#000", boxShadow:"0 4px 24px rgba(229,57,53,0.25)" }}>
+                      <iframe
+                        src={embedUrl}
+                        style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        title={selectedPodcast.title}
+                      />
+                    </div>
+                    <button onClick={onNeedAuth} style={{ width:"100%", marginTop:12, padding:"13px 0", background:"rgba(108,60,247,0.15)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:14, color:"#a78bfa", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+                      Sign in to Follow this Podcast
+                    </button>
+                  </div>
+                ) : null;
+              })() : (
+                <button onClick={onNeedAuth} style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", marginBottom:16 }}>
+                  Sign in to Follow
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* RECENT EPISODES */}
+          <RecentEpisodes episodes={podcastEpisodes} loading={episodesLoading} onEpisodeClick={setSelectedEpisode} />
+
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:16 }}>
             <div style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:20, padding:"4px 14px", color:"#a78bfa", fontSize:12, fontWeight:600 }}>{selectedPodcast.category}</div>
           </div>
         </div>
@@ -2407,50 +4134,107 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
   // ── REGISTER FORM ──
   if (showRegister) {
+    const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
     return (
       <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
-        <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)" }}>
+        {toast && <Toast msg={toast.msg} type={toast.type} />}
+        <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom:60 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
-            <button onClick={() => setShowRegister(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", fontSize:18, cursor:"pointer" }}>←</button>
+            <button onClick={() => setShowRegister(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", flexShrink:0 }}>←</button>
             <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>🎙️ Register Your Podcast</div>
           </div>
           {registerDone ? (
-            <div style={{ textAlign:"center", padding:40 }}>
-              <div style={{ fontSize:64, marginBottom:16 }}>🎉</div>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:22, marginBottom:8 }}>You are on the list!</div>
-              <div style={{ color:"#888", fontSize:14, marginBottom:24 }}>We will review your podcast within 24 hours. Welcome to Sachi Podcasts!</div>
-              <button onClick={() => { setRegisterDone(false); setShowRegister(false); }} style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"12px 28px", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>Back to Podcasts</button>
+            <div style={{ textAlign:"center", padding:"40px 20px" }}>
+              <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:24, marginBottom:10 }}>You are on the list!</div>
+              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:15, marginBottom:8, lineHeight:1.6 }}>
+                Your show is <strong style={{ color:"#81c784" }}>live on Sachi right now.</strong><br/>No waiting. No approval needed.
+              </div>
+              <div style={{ background:"rgba(46,125,50,0.1)", border:"1px solid rgba(46,125,50,0.3)", borderRadius:14, padding:16, margin:"20px 0 28px", textAlign:"left" }}>
+                <div style={{ color:"#81c784", fontWeight:700, fontSize:13, marginBottom:8 }}>⚡ You are all set — here's how to go live:</div>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.7 }}>
+                  1. Go to <strong style={{ color:"#fff" }}>Podcasts tab</strong> and find your show under "My Shows"<br/>
+                  2. Tap your show to open it<br/>
+                  3. (Optional) Add your stream link — YouTube Live, Twitch, etc.<br/>
+                  4. Tap <strong style={{ color:"#e53935" }}>🔴 Go Live Now</strong> — all Sachi users get notified instantly
+                </div>
+              </div>
+              <button onClick={() => { setRegisterDone(false); setShowRegister(false); }}
+                style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"14px 36px", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>
+                Back to Podcasts
+              </button>
             </div>
           ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              <div style={{ background:"linear-gradient(135deg,rgba(108,60,247,0.15),rgba(69,39,160,0.1))", border:"1px solid rgba(108,60,247,0.3)", borderRadius:16, padding:16 }}>
-                <div style={{ color:"#a78bfa", fontWeight:700, fontSize:14, marginBottom:4 }}>Why podcast on Sachi?</div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.5 }}>Your live sessions auto-clip to the For You feed. New listeners discover you every day without extra work.</div>
-              </div>
-              {[{label:"Podcast Title *",key:"title",placeholder:"e.g. The Daily Grind"},{label:"Host Name *",key:"host_name",placeholder:"Your name"},{label:"Cover Image URL",key:"cover_image_url",placeholder:"https://..."}].map(f => (
-                <div key={f.key}>
-                  <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>{f.label}</div>
-                  <input value={registerForm[f.key]} onChange={e => setRegisterForm(p => ({...p,[f.key]:e.target.value}))} placeholder={f.placeholder}
-                    style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }} />
-                </div>
-              ))}
+            <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+              {/* COVER PICKER */}
               <div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Description</div>
-                <textarea value={registerForm.description} onChange={e => setRegisterForm(p => ({...p,description:e.target.value}))} placeholder="What is your podcast about?" rows={3}
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, outline:"none", resize:"none", boxSizing:"border-box" }} />
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:10, fontWeight:600 }}>Choose Your Show Cover</div>
+                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                  {PODCAST_COVER_COLORS.map((c, i) => (
+                    <button key={i} onClick={() => setRegisterForm(p => ({...p, coverIdx:i}))}
+                      style={{ width:52, height:52, borderRadius:14, background:c.bg, border: registerForm.coverIdx===i ? "3px solid #F5C842":"3px solid transparent", cursor:"pointer", fontSize:22, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {c.emoji}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginTop:12, width:"100%", height:70, borderRadius:16, background:selectedCover.bg, display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
+                  <span style={{ fontSize:32 }}>{selectedCover.emoji}</span>
+                  <span style={{ color:"#fff", fontWeight:800, fontSize:15, opacity: registerForm.title ? 1 : 0.4 }}>{registerForm.title || "Your Show Name"}</span>
+                </div>
               </div>
+
+              {/* TITLE */}
+              <div>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Podcast Title <span style={{ color:"#e53935" }}>*</span></div>
+                <input value={registerForm.title} onChange={e => setRegisterForm(p => ({...p, title:e.target.value}))}
+                  placeholder="e.g. The Daily Grind"
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
+              </div>
+
+              {/* HOST NAME */}
+              <div>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Your Name <span style={{ color:"#e53935" }}>*</span></div>
+                <input value={registerForm.host_name} onChange={e => setRegisterForm(p => ({...p, host_name:e.target.value}))}
+                  placeholder="Full name or stage name"
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
+              </div>
+
+              {/* DESCRIPTION */}
+              <div>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>What is your podcast about?</div>
+                <textarea value={registerForm.description} onChange={e => setRegisterForm(p => ({...p, description:e.target.value}))}
+                  placeholder="Tell listeners what to expect — topics, guests, vibe..."
+                  rows={3}
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", resize:"none", boxSizing:"border-box" }} />
+              </div>
+
+              {/* CATEGORY */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Category</div>
-                <select value={registerForm.category} onChange={e => setRegisterForm(p => ({...p,category:e.target.value}))}
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, outline:"none" }}>
-                  {["Business","News & Politics","Entertainment","Comedy","Sports","Technology","Health & Wellness","True Crime","Society & Culture","Education","Other"].map(c => <option key={c} value={c} style={{ background:"#111" }}>{c}</option>)}
+                <select value={registerForm.category} onChange={e => setRegisterForm(p => ({...p, category:e.target.value}))}
+                  style={{ width:"100%", background:"#1a1a2e", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none" }}>
+                  {["Business","News & Politics","Entertainment","Comedy","Sports","Technology","Health & Wellness","True Crime","Society & Culture","Education","Other"].map(c =>
+                    <option key={c} value={c} style={{ background:"#111" }}>{c}</option>
+                  )}
                 </select>
               </div>
+
+              {/* STREAM URL - OPTIONAL */}
+              <div>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>
+                  Stream URL <span style={{ color:"rgba(255,255,255,0.25)", fontWeight:400 }}>(optional — add later too)</span>
+                </div>
+                <input value={registerForm.live_stream_url} onChange={e => setRegisterForm(p => ({...p, live_stream_url:e.target.value}))}
+                  placeholder="https://youtube.com/live/... or Twitch link"
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
+                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, marginTop:5 }}>Where listeners will tune in when you go live. You can update this anytime.</div>
+              </div>
+
               <button onClick={handleRegister} disabled={registering || !registerForm.title || !registerForm.host_name}
-                style={{ width:"100%", padding:"16px 0", background:registering?"rgba(108,60,247,0.4)":"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", marginTop:8 }}>
-                {registering ? "Submitting..." : "Submit My Podcast"}
+                style={{ width:"100%", padding:"16px 0", background: (!registerForm.title || !registerForm.host_name) ? "rgba(108,60,247,0.3)" : registering ? "rgba(108,60,247,0.5)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: (!registerForm.title || !registerForm.host_name) ? "not-allowed" : "pointer", marginTop:4 }}>
+                {registering ? "⏳ Submitting..." : "Submit My Podcast →"}
               </button>
-              <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center", paddingBottom:40 }}>We review all podcasts within 24 hours.</div>
+              <div style={{ color:"rgba(255,255,255,0.2)", fontSize:12, textAlign:"center" }}>Reviewed and approved within 24 hours</div>
             </div>
           )}
         </div>
@@ -2472,6 +4256,78 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         </button>
       </div>
 
+      {/* MY SHOWS — only visible to logged-in hosts */}
+      {currentUser && myShows.length > 0 && (
+        <div style={{ margin:"0 16px 20px" }}>
+          <div style={{ color:"#F5C842", fontWeight:700, fontSize:13, letterSpacing:1.2, textTransform:"uppercase", marginBottom:12 }}>🎙️ My Shows</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {myShows.map(p => {
+              const coverBg = p.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
+              const coverEmoji = p.cover_emoji || "🎙️";
+              return (
+                <div key={p.id} onClick={async () => {
+                  setSelectedPodcast(p);
+                  setEpisodesLoading(true);
+                  setPodcastEpisodes([]);
+                  try {
+                    const token = localStorage.getItem("token");
+                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const json = await res.json();
+                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id);
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
+                    setPodcastEpisodes(sorted);
+                  } catch(e) { setPodcastEpisodes([]); }
+                  finally { setEpisodesLoading(false); }
+                }}
+                  style={{ background:"rgba(245,200,66,0.05)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:16, padding:14, cursor:"pointer", display:"flex", gap:14, alignItems:"center" }}>
+                  <div style={{ width:52, height:52, borderRadius:12, background:coverBg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>{coverEmoji}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                      <div style={{ color:"#fff", fontWeight:700, fontSize:15, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.title}</div>
+                      {p.is_live && <div style={{ background:"#e53935", borderRadius:20, padding:"2px 8px", color:"#fff", fontWeight:700, fontSize:10, flexShrink:0 }}>LIVE</div>}
+                    </div>
+                    <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, marginBottom:4 }}>by {p.host_name}</div>
+                    <div style={{ display:"inline-block", background: p.is_live ? "rgba(229,57,53,0.2)" : "rgba(46,125,50,0.2)", borderRadius:20, padding:"2px 10px", color: p.is_live ? "#ef9a9a" : "#81c784", fontSize:11, fontWeight:700 }}>
+                      {p.is_live ? "🔴 Live Now" : "✅ Active"}
+                    </div>
+                  </div>
+                  <div style={{ color:"rgba(255,255,255,0.2)", fontSize:20 }}>›</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Live News Section ─── */}
+      <div style={{ padding:"0 16px 4px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+          <div style={{ width:8, height:8, borderRadius:"50%", background:"#e53935", animation:"heartbeat 1.4s ease-in-out infinite" }} />
+          <span style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Live News</span>
+          <span style={{ color:"rgba(255,255,255,0.3)", fontSize:12 }}>• tap to watch</span>
+        </div>
+        <div style={{ overflowX:"auto", display:"flex", gap:12, paddingBottom:16, scrollbarWidth:"none" }}>
+          {LIVE_NEWS_CHANNELS.map(ch => (
+            <div key={ch.id}
+              onClick={() => setLiveNewsChannel(ch)}
+              style={{ flexShrink:0, width:140, borderRadius:16, overflow:"hidden", cursor:"pointer", position:"relative" }}>
+              <div style={{ height:80, background:ch.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:36 }}>
+                {ch.emoji}
+              </div>
+              <div style={{ background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.08)", borderTop:"none", borderRadius:"0 0 16px 16px", padding:"8px 10px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:2 }}>
+                  <div style={{ width:5, height:5, borderRadius:"50%", background:"#e53935", flexShrink:0 }} />
+                  <span style={{ color:"#fff", fontWeight:700, fontSize:13, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{ch.name}</span>
+                </div>
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10, lineHeight:1.3 }}>{ch.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ overflowX:"auto", display:"flex", gap:8, padding:"0 16px 16px", scrollbarWidth:"none" }}>
         {CATEGORIES.map(cat => (
           <button key={cat} onClick={() => setSelectedCat(cat)}
@@ -2489,7 +4345,22 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           </div>
           <div style={{ display:"flex", gap:12, padding:"0 16px", overflowX:"auto", scrollbarWidth:"none" }}>
             {livePodcasts.map(p => (
-              <div key={p.id} onClick={() => setSelectedPodcast(p)}
+              <div key={p.id} onClick={async () => {
+                  setSelectedPodcast(p);
+                  setEpisodesLoading(true);
+                  setPodcastEpisodes([]);
+                  try {
+                    const token = localStorage.getItem("token");
+                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const json = await res.json();
+                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id);
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
+                    setPodcastEpisodes(sorted);
+                  } catch(e) { setPodcastEpisodes([]); }
+                  finally { setEpisodesLoading(false); }
+                }}
                 style={{ flexShrink:0, width:200, background:"rgba(229,57,53,0.08)", border:"1.5px solid rgba(229,57,53,0.3)", borderRadius:16, padding:16, cursor:"pointer" }}>
                 <div style={{ background:"#e53935", display:"inline-flex", alignItems:"center", gap:5, borderRadius:20, padding:"3px 10px", marginBottom:10 }}>
                   <div style={{ width:6, height:6, borderRadius:"50%", background:"#fff" }} />
@@ -2523,7 +4394,22 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         )}
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {regularPodcasts.map(p => (
-            <div key={p.id} onClick={() => setSelectedPodcast(p)}
+            <div key={p.id} onClick={async () => {
+                  setSelectedPodcast(p);
+                  setEpisodesLoading(true);
+                  setPodcastEpisodes([]);
+                  try {
+                    const token = localStorage.getItem("token");
+                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const json = await res.json();
+                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
+                    const filtered = items.filter(ep => ep.podcast_id === p.id);
+                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
+                    setPodcastEpisodes(sorted);
+                  } catch(e) { setPodcastEpisodes([]); }
+                  finally { setEpisodesLoading(false); }
+                }}
               style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:16, padding:16, cursor:"pointer", display:"flex", gap:14, alignItems:"center" }}>
               <div style={{ width:64, height:64, borderRadius:12, background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>🎙️</div>
               <div style={{ flex:1, minWidth:0 }}>
@@ -2556,8 +4442,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
 // ─── Admin Panel ─────────────────────────────────────────────────────────────
 function AdminPanel({ currentUser }) {
+  const [modTab, setModTab] = useState("videos"); // videos | ai | analytics
   const [allVideos, setAllVideos] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState(null);
   const [saving, setSaving] = useState(null);
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
@@ -2565,13 +4455,103 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=200&sort=-created_date");
+      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch(e) { console.error(e); }
     setLoading(false);
   };
 
+  const loadAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const [vRes, uRes, cRes] = await Promise.all([
+        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
+        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date"),
+        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date"),
+      ]);
+      const videos = vRes.items || vRes || [];
+      const users  = uRes.items || uRes || [];
+      const comments = cRes.items || cRes || [];
+      setAllUsers(users);
+
+      // Build daily buckets for last 14 days
+      const now = new Date();
+      const days = Array.from({length:14}, (_,i) => {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (13-i));
+        return d.toISOString().slice(0,10);
+      });
+
+      const byDay = (arr, dateField) => {
+        const map = {};
+        days.forEach(d => map[d] = 0);
+        arr.forEach(item => {
+          const d = (item[dateField]||"").slice(0,10);
+          if (map[d] !== undefined) map[d]++;
+        });
+        return days.map(d => ({ date: d, count: map[d] }));
+      };
+
+      // Top creators by video count
+      const creatorMap = {};
+      videos.forEach(v => {
+        const u = v.username || "unknown";
+        creatorMap[u] = (creatorMap[u]||0) + 1;
+      });
+      const topCreators = Object.entries(creatorMap)
+        .sort((a,b) => b[1]-a[1]).slice(0,5)
+        .map(([username, count]) => ({ username, count }));
+
+      // Top videos by views
+      const topVideos = [...videos].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,5);
+
+      // Totals
+      const totalViews  = videos.reduce((s,v) => s+(v.views_count||0), 0);
+      const totalLikes  = videos.reduce((s,v) => s+(v.likes_count||0), 0);
+      const matureCount = videos.filter(v => v.is_mature).length;
+
+      // Today & this week registrations
+      const todayStr = new Date().toISOString().slice(0,10);
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+      const newToday = users.filter(u => (u.created_date||"").slice(0,10) === todayStr).length;
+      const newThisWeek = users.filter(u => new Date(u.created_date) >= weekAgo).length;
+
+      // Recent registrants (last 20)
+      const recentUsers = [...users]
+        .sort((a,b) => new Date(b.created_date) - new Date(a.created_date))
+        .slice(0, 20);
+
+      setAnalyticsData({
+        totalVideos: videos.length,
+        totalUsers: users.length,
+        totalComments: comments.length,
+        totalViews, totalLikes, matureCount,
+        newToday, newThisWeek,
+        dailyVideos: byDay(videos, "created_date"),
+        dailyUsers: byDay(users, "created_date"),
+        topCreators,
+        topVideos,
+        recentUsers,
+      });
+    } catch(e) { console.error("analytics error", e); }
+    setAnalyticsLoading(false);
+  };
+
   useEffect(() => { loadVideos(); }, []);
+  useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
+  useEffect(() => { if (modTab === "users") loadRegisteredUsers(); }, [modTab]);
+
+  const [registeredUsers, setRegisteredUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+
+  const loadRegisteredUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date");
+      setRegisteredUsers(res.items || res || []);
+    } catch(e) { console.error(e); }
+    setUsersLoading(false);
+  };
 
   const toggleMature = async (video, reason) => {
     setSaving(video.id);
@@ -2596,6 +4576,16 @@ function AdminPanel({ currentUser }) {
     setSaving(null);
   };
 
+  const flagAI = async (video) => {
+    setSaving(video.id);
+    try {
+      const newFlag = !video.is_ai_detected;
+      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      setAllVideos(prev => prev.map(v => v.id === video.id ? { ...v, is_ai_detected: newFlag } : v));
+    } catch(e) { alert("Failed to update: " + e.message); }
+    setSaving(null);
+  };
+
   const filtered = allVideos.filter(v => {
     if (filter === "mature" && !v.is_mature) return false;
     if (filter === "clean" && v.is_mature) return false;
@@ -2608,28 +4598,363 @@ function AdminPanel({ currentUser }) {
   return (
     <div style={{ minHeight:"100svh", background:"#0B0C1A", paddingBottom:120, paddingTop:0 }}>
       {/* Header */}
-      <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 12px", position:"sticky", top:0, zIndex:100 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+      <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 10px", position:"sticky", top:0, zIndex:100 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div style={{ color:"#F5C842", fontWeight:900, fontSize:20 }}>🛡️ Mod Panel</div>
-          <button onClick={() => window.open("https://sachi-c7f0261c.base44.app/Dashboard","_blank")} style={{ background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:20, padding:"8px 16px", color:"#0B0C1A", fontWeight:800, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>📊 Analytics</button>
+          <button onClick={() => modTab==="analytics" ? loadAnalytics() : loadVideos()}
+            style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:20, padding:"7px 14px", color:"#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
+            ↻ Refresh
+          </button>
         </div>
-        {/* Search */}
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption or username…"
-          style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10 }} />
-        {/* Filter tabs */}
-        <div style={{ display:"flex", gap:8 }}>
-          {[["all","All"],["mature","🔞 Mature"],["clean","✅ Clean"]].map(([val,label]) => (
-            <button key={val} onClick={() => setFilter(val)}
-              style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
-                background: filter===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
-                color: filter===val ? "#0B0C1A" : "#888" }}>
+        {/* Tab switcher */}
+        <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["analytics","📊 Analytics"]].map(([val,label]) => (
+            <button key={val} onClick={() => setModTab(val)}
+              style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
+                color: modTab===val ? "#0B0C1A" : "#888", transition:"all 0.2s" }}>
               {label}
             </button>
           ))}
-          <button onClick={loadVideos} style={{ marginLeft:"auto", padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, background:"rgba(255,255,255,0.07)", color:"#888" }}>↻ Refresh</button>
         </div>
+        {/* Search + filter — only on videos tab */}
+        {modTab === "videos" && (<>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption or username…"
+            style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10 }} />
+          <div style={{ display:"flex", gap:8 }}>
+            {[["all","All"],["mature","🔞 Mature"],["clean","✅ Clean"]].map(([val,label]) => (
+              <button key={val} onClick={() => setFilter(val)}
+                style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                  background: filter===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
+                  color: filter===val ? "#0B0C1A" : "#888" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </>)}
       </div>
 
+      {/* ── ANALYTICS TAB ── */}
+      {modTab === "analytics" && (
+        <div style={{ padding:"16px 16px 20px" }}>
+          {analyticsLoading ? (
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>Loading analytics…</div>
+          ) : !analyticsData ? (
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>No data yet.</div>
+          ) : (
+            <>
+              {/* KPI Cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+                {[
+                  ["👥","Users",analyticsData.totalUsers,"#6B8AFF"],
+                  ["🎬","Videos",analyticsData.totalVideos,"#F5C842"],
+                  ["💬","Comments",analyticsData.totalComments,"#FF6B6B"],
+                  ["👁","Views",analyticsData.totalViews,"#6BFFB8"],
+                  ["❤️","Likes",analyticsData.totalLikes,"#FF9500"],
+                  ["🔞","Mature",analyticsData.matureCount,"#FF6B6B"],
+                ].map(([icon,label,val,color]) => (
+                  <div key={label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 10px", textAlign:"center", border:`1px solid ${color}22` }}>
+                    <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
+                    <div style={{ color, fontWeight:900, fontSize:18, lineHeight:1 }}>{val.toLocaleString()}</div>
+                    <div style={{ color:"#555", fontSize:10, marginTop:3 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Registrations Summary */}
+              <div style={{ background:"rgba(107,138,255,0.07)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.2)" }}>
+                <div style={{ color:"#6B8AFF", fontWeight:900, fontSize:15, marginBottom:12 }}>👥 User Registrations</div>
+                <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+                  {[
+                    ["Today",analyticsData.newToday,"#6BFFB8"],
+                    ["This Week",analyticsData.newThisWeek,"#F5C842"],
+                    ["All Time",analyticsData.totalUsers,"#6B8AFF"],
+                  ].map(([label,val,color]) => (
+                    <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:"10px 6px", textAlign:"center" }}>
+                      <div style={{ color, fontWeight:900, fontSize:22, lineHeight:1 }}>{val}</div>
+                      <div style={{ color:"#555", fontSize:10, marginTop:4 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* Recent registrants list */}
+                <div style={{ color:"#888", fontWeight:700, fontSize:11, marginBottom:8, letterSpacing:0.5, textTransform:"uppercase" }}>Recent Sign-ups</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {(analyticsData.recentUsers||[]).map((u,i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"8px 10px" }}>
+                      <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                        style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, objectFit:"cover" }} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {u.display_name || u.username || "—"}
+                        </div>
+                        <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.email || "@" + (u.username||"")}</div>
+                      </div>
+                      <div style={{ color:"#444", fontSize:10, flexShrink:0 }}>
+                        {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Daily Videos — bar chart */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(245,200,66,0.1)" }}>
+                <div style={{ color:"#F5C842", fontWeight:800, fontSize:14, marginBottom:12 }}>📈 Daily Videos (14 days)</div>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
+                  {analyticsData.dailyVideos.map(({date,count},i) => {
+                    const maxV = Math.max(...analyticsData.dailyVideos.map(d=>d.count), 1);
+                    const h = Math.max((count/maxV)*56, count>0?4:1);
+                    return (
+                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <div style={{ fontSize:9, color:"#555" }}>{count>0?count:""}</div>
+                        <div style={{ width:"100%", height:h, borderRadius:3, background: count>0 ? "linear-gradient(180deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.06)", transition:"height 0.3s" }} />
+                        <div style={{ fontSize:8, color:"#444", writingMode:"vertical-rl", transform:"rotate(180deg)", height:22, overflow:"hidden" }}>
+                          {date.slice(5)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Daily Users — bar chart */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.15)" }}>
+                <div style={{ color:"#6B8AFF", fontWeight:800, fontSize:14, marginBottom:12 }}>👥 Daily New Users (14 days)</div>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
+                  {analyticsData.dailyUsers.map(({date,count},i) => {
+                    const maxV = Math.max(...analyticsData.dailyUsers.map(d=>d.count), 1);
+                    const h = Math.max((count/maxV)*56, count>0?4:1);
+                    return (
+                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <div style={{ fontSize:9, color:"#555" }}>{count>0?count:""}</div>
+                        <div style={{ width:"100%", height:h, borderRadius:3, background: count>0 ? "linear-gradient(180deg,#6B8AFF,#4A67FF)" : "rgba(255,255,255,0.06)", transition:"height 0.3s" }} />
+                        <div style={{ fontSize:8, color:"#444", writingMode:"vertical-rl", transform:"rotate(180deg)", height:22, overflow:"hidden" }}>
+                          {date.slice(5)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Top Creators */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,255,184,0.1)" }}>
+                <div style={{ color:"#6BFFB8", fontWeight:800, fontSize:14, marginBottom:10 }}>🏆 Top Creators</div>
+                {analyticsData.topCreators.map(({username,count},i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                    <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
+                    <div style={{ flex:1, color:"#fff", fontSize:13 }}>@{username}</div>
+                    <div style={{ background:"rgba(245,200,66,0.15)", color:"#F5C842", fontWeight:800, fontSize:12, padding:"3px 10px", borderRadius:20 }}>{count} videos</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Top Videos */}
+              <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", border:"1px solid rgba(255,107,107,0.1)" }}>
+                <div style={{ color:"#FF6B6B", fontWeight:800, fontSize:14, marginBottom:10 }}>🔥 Top Videos by Views</div>
+                {analyticsData.topVideos.map((v,i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                    <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
+                    <div style={{ width:36, height:44, borderRadius:8, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
+                      {v.thumbnail_url ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : <div style={{ color:"#333", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", height:"100%" }}>🎬</div>}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ color:"#fff", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.caption||"(no caption)"}</div>
+                      <div style={{ color:"#555", fontSize:11 }}>@{v.username} · 👁 {(v.views_count||0).toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── VIDEOS TAB ── */}
+      {/* ── AI FLAGGED TAB ── */}
+      {/* ── USERS TAB ── */}
+      {modTab === "users" && (
+        <div style={{ padding:"16px 16px 20px" }}>
+          {usersLoading ? (
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>Loading users…</div>
+          ) : (
+            (() => {
+              const todayStr = new Date().toISOString().slice(0,10);
+              const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+              const newToday = registeredUsers.filter(u => (u.created_date||"").slice(0,10) === todayStr).length;
+              const newThisWeek = registeredUsers.filter(u => new Date(u.created_date) >= weekAgo).length;
+              return (
+                <>
+                  {/* Summary cards */}
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+                    {[
+                      ["👥","Total",registeredUsers.length,"#6B8AFF"],
+                      ["🌅","Today",newToday,"#6BFFB8"],
+                      ["📅","This Week",newThisWeek,"#F5C842"],
+                    ].map(([icon,label,val,color]) => (
+                      <div key={label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"14px 10px", textAlign:"center", border:`1px solid ${color}33` }}>
+                        <div style={{ fontSize:20, marginBottom:4 }}>{icon}</div>
+                        <div style={{ color, fontWeight:900, fontSize:26, lineHeight:1 }}>{val}</div>
+                        <div style={{ color:"#555", fontSize:11, marginTop:4 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* User list */}
+                  <div style={{ background:"rgba(107,138,255,0.06)", borderRadius:16, border:"1px solid rgba(107,138,255,0.15)", overflow:"hidden" }}>
+                    <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div style={{ color:"#6B8AFF", fontWeight:800, fontSize:14 }}>All Registered Users</div>
+                      <div style={{ color:"#444", fontSize:12 }}>{registeredUsers.length} total</div>
+                    </div>
+                    <div style={{ maxHeight:500, overflowY:"auto" }}>
+                      {registeredUsers.map((u, i) => (
+                        <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                          <img
+                            src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                            style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, objectFit:"cover", border:"2px solid rgba(107,138,255,0.3)" }}
+                          />
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ color:"#fff", fontWeight:700, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              {u.display_name || u.username || "—"}
+                            </div>
+                            <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                              @{u.username || "?"} · {u.email || "no email"}
+                            </div>
+                          </div>
+                          <div style={{ flexShrink:0, textAlign:"right" }}>
+                            <div style={{ color:"#444", fontSize:11 }}>
+                              {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}) : ""}
+                            </div>
+                            <div style={{ color: u.status==="active" ? "#6BFFB8" : "#FF6B6B", fontSize:10, fontWeight:700, marginTop:2 }}>
+                              {u.status || "active"}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {registeredUsers.length === 0 && (
+                        <div style={{ textAlign:"center", color:"#444", padding:40, fontSize:13 }}>No users yet.</div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()
+          )}
+        </div>
+      )}
+
+      {modTab === "ai" && (
+        <div style={{ padding:"16px" }}>
+          <div style={{ display:"flex", gap:12, marginBottom:16 }}>
+            {[
+              ["⏳ Pending Review", allVideos.filter(v=>v.is_ai_detected && !v.is_approved).length, "#FF9500"],
+              ["🤖 Live AI Posts", allVideos.filter(v=>v.is_ai_detected && v.is_approved).length, "#ffcc44"],
+              ["✅ Clean Posts", allVideos.filter(v=>!v.is_ai_detected && v.is_approved).length, "#6BFFB8"],
+            ].map(([label,count,color]) => (
+              <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:"10px 0", textAlign:"center", border:`1px solid ${color}22` }}>
+                <div style={{ color, fontWeight:900, fontSize:20 }}>{count}</div>
+                <div style={{ color:"#555", fontSize:11 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* PENDING AI REVIEW SECTION */}
+          {allVideos.filter(v => v.is_ai_detected && !v.is_approved).length > 0 && (
+            <div style={{ marginBottom:20 }}>
+              <div style={{ color:"#FF9500", fontWeight:800, fontSize:13, marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
+                ⏳ Pending Your Review
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {allVideos.filter(v => v.is_ai_detected && !v.is_approved).map(video => (
+                  <div key={video.id} style={{ background:"rgba(255,149,0,0.08)", borderRadius:16, border:"2px solid rgba(255,149,0,0.5)", overflow:"hidden" }}>
+                    <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
+                      <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
+                        {video.thumbnail_url
+                          ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                          <span style={{ fontSize:11, background:"rgba(255,149,0,0.3)", color:"#FF9500", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>⏳ Awaiting MOD</span>
+                        </div>
+                        <div style={{ color:"#aaa", fontSize:11, marginBottom:3 }}>@{video.username || "unknown"}</div>
+                        <div style={{ color:"#fff", fontSize:13, fontWeight:600, marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {video.caption || "(no caption)"}
+                        </div>
+                        <div style={{ fontSize:11, color:"#FF9500" }}>Creator self-disclosed as AI</div>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:0, borderTop:"1px solid rgba(255,255,255,0.05)" }}>
+                      <button onClick={async () => { setSaving(video.id); await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true }); setAllVideos(p => p.map(v => v.id===video.id ? {...v, is_approved:true} : v)); setSaving(null); }}
+                        disabled={saving===video.id}
+                        style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                          borderRight:"1px solid rgba(255,255,255,0.05)",
+                          background:"rgba(107,255,154,0.1)", color:"#6bff9a" }}>
+                        {saving===video.id ? "Saving…" : "✅ Approve & Post with AI Badge"}
+                      </button>
+                      <button onClick={() => deleteVideo(video)} disabled={saving===video.id}
+                        style={{ width:56, padding:"10px 0", border:"none", cursor:"pointer", fontSize:16,
+                          background:"rgba(255,0,0,0.08)", color:"#ff4444" }}>
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* LIVE AI POSTS SECTION */}
+          <div style={{ color:"#ffcc44", fontWeight:800, fontSize:13, marginBottom:10 }}>🤖 Live AI-Badged Posts</div>
+          {allVideos.filter(v => v.is_ai_detected && v.is_approved).length === 0 ? (
+            <div style={{ textAlign:"center", color:"#555", padding:24 }}>
+              <div style={{ fontSize:12, color:"#444" }}>No approved AI posts yet.</div>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {allVideos.filter(v => v.is_ai_detected && v.is_approved).map(video => (
+                <div key={video.id} style={{ background:"rgba(255,149,0,0.06)", borderRadius:16, border:"1px solid rgba(255,149,0,0.3)", overflow:"hidden" }}>
+                  <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
+                    <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
+                      {video.thumbnail_url
+                        ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                        : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                        <span style={{ fontSize:11, background:"rgba(255,149,0,0.2)", color:"#FF9500", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>🤖 AI Detected</span>
+                      </div>
+                      <div style={{ color:"#aaa", fontSize:11, marginBottom:3 }}>@{video.username || "unknown"}</div>
+                      <div style={{ color:"#fff", fontSize:13, fontWeight:600, marginBottom:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {video.caption || "(no caption)"}
+                      </div>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <span style={{ fontSize:11, color:"#555" }}>👁 {video.views_count||0}</span>
+                        <span style={{ fontSize:11, color:"#555" }}>❤️ {video.likes_count||0}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:0, borderTop:"1px solid rgba(255,255,255,0.05)" }}>
+                    <button onClick={() => flagAI(video)} disabled={saving===video.id}
+                      style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
+                        borderRight:"1px solid rgba(255,255,255,0.05)",
+                        background:"rgba(107,255,154,0.08)", color:"#6bff9a" }}>
+                      {saving===video.id ? "Saving…" : "✅ Clear AI Flag"}
+                    </button>
+                    <button onClick={() => deleteVideo(video)} disabled={saving===video.id}
+                      style={{ width:56, padding:"10px 0", border:"none", cursor:"pointer", fontSize:16,
+                        background:"rgba(255,0,0,0.06)", color:"#ff4444" }}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {modTab === "videos" && (<>
       {/* Stats bar */}
       <div style={{ display:"flex", gap:12, padding:"12px 20px" }}>
         {[
@@ -2707,6 +5032,7 @@ function AdminPanel({ currentUser }) {
           ))}
         </div>
       )}
+      </>)}
     </div>
   );
 }
@@ -2719,6 +5045,29 @@ function App() {
 
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
+
+  // ── Handle Google OAuth redirect callback (runs on every page load) ──
+  useEffect(() => {
+    handleGoogleRedirectCallback().then(result => {
+      if (!result) return;
+      if (result.sessionUser) {
+        // Existing user — log them in directly
+        setCurrentUser(result.sessionUser);
+        setFeedKey(k => k + 1);
+        setLoginToast(true);
+        setTimeout(() => setLoginToast(false), 4000);
+      } else if (result.needsProfile) {
+        // New user — open modal so they can finish their profile
+        setShowAuth(true);
+      }
+    });
+
+    // If user clicked "Sign in" and was redirected to Google, re-open modal on return
+    if (localStorage.getItem('sachi_auth_intent') && window.location.hash.includes('id_token')) {
+      localStorage.removeItem('sachi_auth_intent');
+    }
+  }, []);
+
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
@@ -2733,14 +5082,49 @@ function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
   const [followingVideos, setFollowingVideos] = useState([]);
+  const [followedUserIds, setFollowedUserIds] = useState(new Set());
+
+  // Load all followed user IDs once on login
+  React.useEffect(() => {
+    if (!currentUser) { setFollowedUserIds(new Set()); return; }
+    follows.getFollowing(currentUser.id).then(res => {
+      setFollowedUserIds(new Set((res.items || res || []).map(r => r.following_id)));
+    }).catch(() => {});
+  }, [currentUser]);
+
+  const handleFollowChange = (userId, isNowFollowing) => {
+    setFollowedUserIds(prev => {
+      const next = new Set(prev);
+      if (isNowFollowing) next.add(userId);
+      else next.delete(userId);
+      return next;
+    });
+  };
   const [followingIds, setFollowingIds] = useState([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set()); // video_id -> bookmark record id
+  const [bookmarkRecords, setBookmarkRecords] = useState({}); // video_id -> bookmark record id
+  const [blockedIds, setBlockedIds] = useState(new Set()); // blocked user ids
+  const [feedPage, setFeedPage] = useState(1);
+  const [feedHasMore, setFeedHasMore] = useState(true);
+  const FEED_PAGE_SIZE = 30;
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
-  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [meFollowersCount, setMeFollowersCount] = useState(0);
+  const [meFollowingCount, setMeFollowingCount] = useState(0);
+  const [avatarUrl, setAvatarUrl] = useState(() => {
+    // Pre-load from localStorage to avoid flash on reload
+    try {
+      const last = localStorage.getItem('avatar_last');
+      if (last) return last;
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('avatar_'));
+      if (keys.length > 0) return localStorage.getItem(keys[0]) || null;
+    } catch(e) {}
+    return null;
+  });
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileName, setEditProfileName] = useState('');
@@ -2771,14 +5155,16 @@ function App() {
           const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-          if (match && match.avatar_url) {
+          // Prioritize localStorage (may contain freshly cropped base64 or recent upload)
+          const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
+          if (localSaved) {
+            setAvatarUrl(localSaved);
+          } else if (match && match.avatar_url) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
+            localStorage.setItem(`avatar_last`, match.avatar_url);
           } else if (currentUser.avatar_url) {
             setAvatarUrl(currentUser.avatar_url);
-          } else {
-            const saved = localStorage.getItem(`avatar_${currentUser.id}`);
-            if (saved) setAvatarUrl(saved);
           }
         } catch(e) {
           // Fall back to auth user avatar_url first, then localStorage
@@ -2807,31 +5193,89 @@ function App() {
     } catch(e) { console.error(e); }
   };
 
-  const loadVideos = async (user) => {
-    setLoading(true);
+  const loadVideos = async (user, append = false, page = 1) => {
+    if (!append) setLoading(true);
     try {
-      const data = await videos.list();
-      const raw = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const activeUser = user || currentUser;
+      const skip = (page - 1) * FEED_PAGE_SIZE;
+      const data = await videos.list(FEED_PAGE_SIZE, skip);
+      const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      const raw = rawAll.filter(v => !v.is_archived);
+      setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
+      if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
-      const ranked = activeUser ? await interests.rankFeed(activeUser.id, sorted) : sorted;
-      setVideoList(ranked);
-    } catch { setVideoList([]); }
+      const activeUser = user || currentUser;
+      let ranked = sorted;
+      if (activeUser && !append) {
+        try { ranked = await interests.rankFeed(activeUser.id, sorted); }
+        catch(re) { ranked = sorted; }
+      }
+      if (append) {
+        setVideoList(prev => {
+          const existing = new Set(prev.map(v => v.id));
+          return [...prev, ...ranked.filter(v => !existing.has(v.id))];
+        });
+      } else {
+        setVideoList(ranked);
+        requestAnimationFrame(() => {
+          const el = feedContainerRef.current || window.__sachiEl;
+          if (el) el.scrollTo({ top: 0, behavior: 'instant' });
+        });
+      }
+    } catch(err) { console.error('loadVideos error:', err); if (!append) setVideoList([]); }
     setLoading(false);
+  };
+
+  const loadMoreVideos = () => {
+    if (!feedHasMore || loading) return;
+    const nextPage = feedPage + 1;
+    setFeedPage(nextPage);
+    loadVideos(currentUser, true, nextPage);
+  };
+
+  // Load bookmarks and blocks when user logs in
+  useEffect(() => {
+    if (!currentUser) { setBookmarkedIds(new Set()); setBookmarkRecords({}); setBlockedIds(new Set()); return; }
+    bookmarks.getByUser(currentUser.id).then(res => {
+      const items = res.items || res || [];
+      const ids = new Set(items.map(b => b.video_id));
+      const recs = {};
+      items.forEach(b => { recs[b.video_id] = b.id; });
+      setBookmarkedIds(ids);
+      setBookmarkRecords(recs);
+    }).catch(() => {});
+    blocks.getBlockedByUser(currentUser.id).then(res => {
+      const items = res.items || res || [];
+      setBlockedIds(new Set(items.map(b => b.blocked_id)));
+    }).catch(() => {});
+  }, [currentUser]);
+
+  const handleBookmark = async (videoId, shouldBookmark) => {
+    if (!currentUser) { setShowAuth(true); return; }
+    if (shouldBookmark) {
+      try {
+        const rec = await bookmarks.add(currentUser.id, currentUser.username || currentUser.email, videoId);
+        setBookmarkedIds(prev => new Set([...prev, videoId]));
+        setBookmarkRecords(prev => ({ ...prev, [videoId]: rec.id }));
+      } catch(e) {}
+    } else {
+      const recId = bookmarkRecords[videoId];
+      if (recId) {
+        try {
+          await bookmarks.remove(recId);
+          setBookmarkedIds(prev => { const n = new Set(prev); n.delete(videoId); return n; });
+          setBookmarkRecords(prev => { const n = {...prev}; delete n[videoId]; return n; });
+        } catch(e) {}
+      }
+    }
   };
 
   const goHome = () => {
     setActiveTab("feed");
-    setVideoList([]);
-    setFeedKey(k => k + 1);
-    setTimeout(() => {
-      loadVideos();
-      // Force scroll to top after videos load
-      setTimeout(() => {
-        const el = feedContainerRef.current || window.__sachiEl;
-        if (el) { el.scrollTop = 0; el.scrollTo({ top: 0, behavior: 'instant' }); }
-      }, 200);
-    }, 80);
+    // Scroll to top immediately (keep existing videos visible while refreshing)
+    const el = feedContainerRef.current || window.__sachiEl;
+    if (el) { el.scrollTo({ top: 0, behavior: 'instant' }); }
+    // Then reload fresh data
+    loadVideos();
   };
 
   useEffect(() => {
@@ -2839,20 +5283,37 @@ function App() {
       videos.myVideos(currentUser.id)
         .then(r => setMyVideos(Array.isArray(r) ? r : []))
         .catch(() => setMyVideos([]));
+      // Live follow counts for Me tab
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`)
+        .then(res => setMeFollowersCount((res?.items || res || []).length)).catch(()=>{});
+      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`)
+        .then(res => setMeFollowingCount((res?.items || res || []).length)).catch(()=>{});
     }
   }, [activeTab, currentUser]);
 
-  const handleLike = (videoId, delta) => {
-    setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, likes_count: Math.max(0, (v.likes_count||0)+delta) } : v));
-    const vid = videoList.find(v => v.id === videoId);
-    if (vid) {
-      videos.update(videoId, { likes_count: Math.max(0, (vid.likes_count||0)+delta) }).catch(()=>{});
-      // Record interest signal: like = 3 points, unlike = -1 point
-      if (currentUser && vid.hashtags?.length) {
-        interests.signal(currentUser.id, vid.hashtags, delta > 0 ? 3 : -1).catch(()=>{});
-      }
+  const handleLike = React.useCallback((videoId, delta) => {
+    // Save scroll position before state update to prevent snap-to-top
+    const feedEl = feedContainerRef.current;
+    const savedScroll = feedEl ? feedEl.scrollTop : 0;
+    // Single setVideoList call — update count AND fire side effects in one pass
+    setVideoList(vs => {
+      const updated = vs.map(v => {
+        if (v.id !== videoId) return v;
+        const newCount = Math.max(0, (v.likes_count || 0) + delta);
+        // Side effects (DB + interests) inside the updater so we read fresh state
+        videos.update(videoId, { likes_count: newCount }).catch(() => {});
+        if (currentUser && v.hashtags?.length) {
+          interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
+        }
+        return { ...v, likes_count: newCount };
+      });
+      return updated;
+    });
+    // Restore scroll position after React re-render
+    if (feedEl) {
+      requestAnimationFrame(() => { feedEl.scrollTop = savedScroll; });
     }
-  };
+  }, [currentUser, feedContainerRef]);
 
   const handleView = (videoId) => {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, views_count: (v.views_count||0)+1 } : v));
@@ -2886,38 +5347,11 @@ function App() {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px" }}>
 
           {/* Left: Sachi logo + wordmark */}
-          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            {/* Crystal Sakura Logo — inlined SVG */}
-            <svg width="38" height="38" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style={{ filter:"drop-shadow(0 0 6px rgba(245,200,66,0.5))", flexShrink:0 }}>
-              <defs>
-                <radialGradient id="hg" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#fff9e6"/>
-                  <stop offset="100%" stopColor="#F5C842"/>
-                </radialGradient>
-                <radialGradient id="pg" cx="50%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor="#ffe8f5" stopOpacity="0.95"/>
-                  <stop offset="60%" stopColor="#ffb3d9" stopOpacity="0.85"/>
-                  <stop offset="100%" stopColor="#ff69b4" stopOpacity="0.7"/>
-                </radialGradient>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="1.5" result="blur"/>
-                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-              </defs>
-              {/* Petals */}
-              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(0,50,50)"/>
-              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(72,50,50)"/>
-              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(144,50,50)"/>
-              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(216,50,50)"/>
-              <ellipse cx="50" cy="22" rx="10" ry="18" fill="url(#pg)" opacity="0.9" transform="rotate(288,50,50)"/>
-              {/* Center */}
-              <circle cx="50" cy="50" r="14" fill="url(#hg)" filter="url(#glow)"/>
-              {/* Burning S */}
-              <text x="50" y="56" textAnchor="middle" fontSize="16" fontWeight="900" fontFamily="Georgia,serif" fill="#c0390a" style={{filter:"url(#glow)"}}>S</text>
-            </svg>
+          <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+            <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:30, height:30, borderRadius:8, filter:"drop-shadow(0 0 6px rgba(245,200,66,0.5))" }} />
             <div style={{ display:"flex", alignItems:"baseline", gap:1 }}>
-              <span style={{ fontSize:22, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
-              <span style={{ fontSize:11, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
+              <span style={{ fontSize:24, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
+              <span style={{ fontSize:12, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
             </div>
           </div>
 
@@ -2955,12 +5389,6 @@ function App() {
               <span style={{ width:6, height:6, borderRadius:"50%", background:"#F5C842", display:"inline-block", animation:"heartbeat 1.4s ease-in-out infinite" }} />
               Live
             </button>
-            <button onClick={() => setShowSearch(true)}
-              style={{ background:"none", border:"none", cursor:"pointer", padding:4, WebkitTapHighlightColor:"transparent" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </button>
           </div>
 
         </div>
@@ -2968,7 +5396,7 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div key={feedKey} ref={el => { feedContainerRef.current = el; window.__sachiEl = el; if (el) { el.scrollTop = 0; window.__sachiEl.scrollTop = 0; } }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate" }}>
+        <div key={feedKey} ref={el => { feedContainerRef.current = el; window.__sachiEl = el; }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
@@ -3011,15 +5439,37 @@ function App() {
               </button>
             </div>
           )}
-          {(feedTab === "forYou" ? videoList : followingVideos).map(v => (
+          {(feedTab === "forYou" ? videoList : followingVideos)
+            .filter(v => !blockedIds.has(v.user_id))
+            .map(v => (
             <VideoCard key={v.id} video={v} currentUser={currentUser}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
               onView={handleView}
               onNeedAuth={() => setShowAuth(true)}
               onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
-              onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })} />
+              onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
+              followedUserIds={followedUserIds}
+              onFollowChange={handleFollowChange}
+              onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
+              onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
+              blockedIds={blockedIds}
+              />
           ))}
+          {feedTab === "forYou" && feedHasMore && (
+            <div style={{ textAlign:"center", padding:"24px 0 40px" }}>
+              <button onClick={loadMoreVideos} style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:20, padding:"10px 28px", color:"#fff", fontSize:14, cursor:"pointer", fontWeight:600 }}>
+                Load more
+              </button>
+            </div>
+          )}
+          {feedTab === "following" && followingVideos.length === 0 && !loading && (
+            <div style={{ textAlign:"center", padding:"60px 24px", color:"rgba(255,255,255,0.3)" }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>👀</div>
+              <div style={{ fontSize:16, fontWeight:600, marginBottom:8 }}>Nothing here yet</div>
+              <div style={{ fontSize:13 }}>Follow creators to see their posts here</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -3028,7 +5478,14 @@ function App() {
         <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
           {!currentUser ? (
             <div style={{ textAlign:"center", padding:60 }}>
-              <div style={{ fontSize:56, marginBottom:16 }}>👤</div>
+              <div style={{ position:"relative", display:"inline-block", cursor:"pointer", marginBottom:16 }}
+                onClick={() => setShowAuth(true)}>
+                <div style={{ width:90, height:90, borderRadius:"50%", background:"rgba(255,255,255,0.08)",
+                  border:"3px solid rgba(245,200,66,0.4)", display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:44 }}>👤</div>
+                <div style={{ position:"absolute", bottom:2, right:2, background:"#F5C842", borderRadius:"50%", width:26, height:26,
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0B0C1A" }}>📷</div>
+              </div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:20, marginBottom:8 }}>You're not logged in</div>
               <div style={{ color:"#666", fontSize:14, marginBottom:24 }}>Sign up to post and build your profile</div>
               <button onClick={() => setShowAuth(true)}
@@ -3066,8 +5523,12 @@ function App() {
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
                   <div style={{ textAlign:"center" }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>0</div>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowersCount}</div>
                     <div style={{ color:"#888", fontSize:12 }}>Followers</div>
+                  </div>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowingCount}</div>
+                    <div style={{ color:"#888", fontSize:12 }}>Following</div>
                   </div>
                 </div>
               </div>
@@ -3075,7 +5536,7 @@ function App() {
 
               {/* Log Out */}
               <div style={{ padding:"24px 20px 32px" }}>
-                <button onClick={() => { auth.signOut(); setCurrentUser(null); setActiveTab("feed"); }}
+                <button onClick={() => { auth.signOut(); localStorage.removeItem('sachi_google_user'); setCurrentUser(null); setActiveTab('feed'); }}
                   style={{ width:"100%", padding:"14px 0", background:"rgba(255,50,50,0.1)",
                     border:"1.5px solid rgba(255,80,80,0.3)", borderRadius:14,
                     color:"#ff5555", fontWeight:700, fontSize:15, cursor:"pointer",
@@ -3110,7 +5571,7 @@ function App() {
                   {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
                     <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                      <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                         <div>@{v.username}</div>
                         {v.views_count > 0 && <div style={{ color:"#aaa" }}>👁 {v.views_count}</div>}
@@ -3140,7 +5601,7 @@ function App() {
                     ).map(v => (
                       <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                         onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                        <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                       </div>
                     ))}
@@ -3183,13 +5644,13 @@ function App() {
             <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400, letterSpacing:0.3 }}>Explore</div>
           </button>
 
-          {/* Center ✦ Post button — Sachi original: gold circle */}
+          {/* Post button — flat nav style, no circle */}
           <button onClick={() => requireAuth(() => setShowUpload(true))}
-            style={{ padding:"0 4px 0", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent" }}>
-            <div style={{ width:48, height:48, borderRadius:"50%", background:"linear-gradient(135deg,#F5C842,#FF9500)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 4px 16px rgba(245,200,66,0.5)", marginTop:-16 }}>
-              <span style={{ fontSize:28, fontWeight:300, color:"#0B0C1A", lineHeight:1 }}>+</span>
-            </div>
-            <div style={{ fontSize:9, color:"#4A4A6A", fontWeight:400, letterSpacing:0.3, marginTop:2 }}>Post</div>
+            style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <div style={{ fontSize:9, color:"#F5C842", fontWeight:600, letterSpacing:0.3 }}>Post</div>
           </button>
 
           {/* Podcasts */}
@@ -3232,7 +5693,7 @@ function App() {
         <div style={{ position:"fixed", inset:0, zIndex:500, background:"#000", display:"flex", flexDirection:"column" }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 12px)", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
             <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
@@ -3261,7 +5722,7 @@ function App() {
                   ).map(v => (
                     <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setShowSearch(false); setSearchQuery(""); }}>
-                      <video src={v.video_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                     </div>
                   ))}
@@ -3323,7 +5784,7 @@ function App() {
           </div>
         </div>
       )}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => setShowEditProfile(false)}>
@@ -3366,50 +5827,46 @@ function App() {
         </div>
       )}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
+        // Immediately update UI — works for both base64 and CDN URLs
         setAvatarUrl(url);
+        setCurrentUser(u => ({ ...u, avatar_url: url }));
         if (currentUser) {
           localStorage.setItem(`avatar_${currentUser.id}`, url);
-          // 1. Update auth profile (with token)
-          try {
-            await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
-            setCurrentUser(u => ({ ...u, avatar_url: url }));
-          } catch(e) { console.error("Auth avatar update failed:", e); }
-          // 2. Update AthaVidUser entity (with token)
-          try {
-            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
-            const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
-            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) {
-              await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
-            }
-          } catch(e) { console.error("AthaVidUser avatar update failed:", e); }
-          // 3. Update avatar on all user's videos (with token) + refresh feed instantly
-          try {
-            // Fetch by user_id AND created_by to catch all videos
-            const [vidsData1, vidsData2] = await Promise.allSettled([
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?user_id=${currentUser.id}&limit=200`),
-              request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/?created_by=${currentUser.id}&limit=200`)
-            ]);
-            const list1 = vidsData1.status === 'fulfilled' ? (Array.isArray(vidsData1.value) ? vidsData1.value : (vidsData1.value?.items || [])) : [];
-            const list2 = vidsData2.status === 'fulfilled' ? (Array.isArray(vidsData2.value) ? vidsData2.value : (vidsData2.value?.items || [])) : [];
-            // Deduplicate by id
-            const seen = new Set();
-            const myVids = [...list1, ...list2].filter(v => { if (seen.has(v.id)) return false; seen.add(v.id); return true; });
-            await Promise.all(myVids.map(v =>
-              request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidVideo/${v.id}/`, { avatar_url: url })
-            ));
-            setVideoList(vs => vs.map(v =>
-              (v.user_id === currentUser.id || v.created_by === currentUser.id)
-                ? { ...v, avatar_url: url }
-                : v
-            ));
-          } catch(e) { console.error("Video avatar sync failed:", e); }
+          localStorage.setItem('avatar_last', url);
         }
         setShowAvatarPicker(false);
+
+        // Background sync to DB — only for CDN URLs (not base64, too large for DB)
+        if (currentUser && !url.startsWith("data:")) {
+          try {
+            await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+          } catch(e) { console.warn("Auth avatar update failed:", e); }
+          try {
+            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`);
+            const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
+            if (users[0]) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${users[0].id}/`, { avatar_url: url });
+          } catch(e) { console.warn("User entity update failed:", e); }
+          try {
+            const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
+            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || []);
+            await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
+            setVideoList(vs => vs.map(v =>
+              (v.user_id === currentUser.id || v.created_by === currentUser.id)
+                ? { ...v, avatar_url: url } : v
+            ));
+          } catch(e) { console.warn("Video avatar sync failed:", e); }
+        } else if (currentUser && url.startsWith("data:")) {
+          // For base64 avatars — still update the feed in memory
+          setVideoList(vs => vs.map(v =>
+            (v.user_id === currentUser.id || v.created_by === currentUser.id)
+              ? { ...v, avatar_url: url } : v
+          ));
+        }
       }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
   );
 }
 
 export default App;
-// v1775415323
+// v1775417720513
+
