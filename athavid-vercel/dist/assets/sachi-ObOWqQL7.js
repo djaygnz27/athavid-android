@@ -13364,37 +13364,120 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       ] })
     ] });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px", background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius: 20, padding: "24px 20px", position: "relative", overflow: "hidden" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -20, right: -20, fontSize: 100, opacity: 0.07 }, children: "🎙️" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a78bfa", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 }, children: "Sachi Podcasts" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, lineHeight: 1.3, marginBottom: 8 }, children: [
-        "Listen Live.",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-        "Discover New Shows."
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px", background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius: 20, padding: "24px 20px", position: "relative", overflow: "hidden" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -20, right: -20, fontSize: 100, opacity: 0.07 }, children: "🎙️" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a78bfa", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 }, children: "Sachi Podcasts" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, lineHeight: 1.3, marginBottom: 8 }, children: [
+          "Listen Live.",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+          "Discover New Shows."
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }, children: "Tune into live sessions or browse on-demand — all in one place." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              if (!currentUser) {
+                onNeedAuth();
+                return;
+              }
+              setShowRegister(true);
+            },
+            style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 12, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" },
+            children: "🎙️ Register Your Podcast"
+          }
+        )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }, children: "Tune into live sessions or browse on-demand — all in one place." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
+      currentUser && myShows.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ My Shows" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: myShows.map((p2) => {
+          const coverBg = p2.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
+          const coverEmoji = p2.cover_emoji || "🎙️";
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: async () => {
+                setSelectedPodcast(p2);
+                setEpisodesLoading(true);
+                setPodcastEpisodes([]);
+                try {
+                  const token = localStorage.getItem("token");
+                  const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                  const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                  const json = await res.json();
+                  const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
+                  const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
+                  const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
+                  setPodcastEpisodes(sorted);
+                } catch (e) {
+                  setPodcastEpisodes([]);
+                } finally {
+                  setEpisodesLoading(false);
+                }
+              },
+              style: { background: "rgba(245,200,66,0.05)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 16, padding: 14, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 52, height: 52, borderRadius: 12, background: coverBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: coverEmoji }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
+                    p2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#e53935", borderRadius: 20, padding: "2px 8px", color: "#fff", fontWeight: 700, fontSize: 10, flexShrink: 0 }, children: "LIVE" })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 4 }, children: [
+                    "by ",
+                    p2.host_name
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: p2.is_live ? "rgba(229,57,53,0.2)" : "rgba(46,125,50,0.2)", borderRadius: 20, padding: "2px 10px", color: p2.is_live ? "#ef9a9a" : "#81c784", fontSize: 11, fontWeight: 700 }, children: p2.is_live ? "🔴 Live Now" : "✅ Active" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
+              ]
+            },
+            p2.id
+          );
+        }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 4px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live News" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12 }, children: "• tap to watch" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 12, paddingBottom: 16, scrollbarWidth: "none" }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => setLiveNewsChannel(ch2),
+            style: { flexShrink: 0, width: 140, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 80, background: ch2.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }, children: ch2.emoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "none", borderRadius: "0 0 16px 16px", padding: "8px 10px" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#e53935", flexShrink: 0 } }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: ch2.name })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, lineHeight: 1.3 }, children: ch2.desc })
+              ] })
+            ]
+          },
+          ch2.id
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
-          onClick: () => {
-            if (!currentUser) {
-              onNeedAuth();
-              return;
-            }
-            setShowRegister(true);
-          },
-          style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 12, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" },
-          children: "🎙️ Register Your Podcast"
-        }
-      )
-    ] }),
-    currentUser && myShows.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ My Shows" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: myShows.map((p2) => {
-        const coverBg = p2.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
-        const coverEmoji = p2.cover_emoji || "🎙️";
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          onClick: () => setSelectedCat(cat),
+          style: { flexShrink: 0, padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: selectedCat === cat ? "#6c3cf7" : "rgba(255,255,255,0.07)", color: selectedCat === cat ? "#fff" : "rgba(255,255,255,0.5)", WebkitTapHighlightColor: "transparent" },
+          children: cat
+        },
+        cat
+      )) }),
+      livePodcasts.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 24 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 8 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live Now" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, padding: "0 16px", overflowX: "auto", scrollbarWidth: "none" }, children: livePodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
             onClick: async () => {
@@ -13416,177 +13499,167 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 setEpisodesLoading(false);
               }
             },
-            style: { background: "rgba(245,200,66,0.05)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 16, padding: 14, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
+            style: { flexShrink: 0, width: 200, background: "rgba(229,57,53,0.08)", border: "1.5px solid rgba(229,57,53,0.3)", borderRadius: 16, padding: 16, cursor: "pointer" },
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 52, height: 52, borderRadius: 12, background: coverBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: coverEmoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#e53935", display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 20, padding: "3px 10px", marginBottom: 10 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 6, height: 6, borderRadius: "50%", background: "#fff" } }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 11 }, children: "LIVE" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28, marginBottom: 8 }, children: "🎙️" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 4 }, children: p2.title }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 8 }, children: p2.host_name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#e53935", fontSize: 12, fontWeight: 600 }, children: [
+                "🎧 ",
+                p2.listener_count || 0,
+                " listening"
+              ] })
+            ]
+          },
+          p2.id
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase" }, children: selectedCat === "All" ? "All Shows" : selectedCat }),
+        loadingPodcasts && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(245,200,66,0.5)", fontSize: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12, animation: "spin 1.5s linear infinite", display: "inline-block" }, children: "⟳" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading podcasts..." })
+        ] }),
+        !loadingPodcasts && regularPodcasts.length === 0 && livePodcasts.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)", fontSize: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🎙️" }),
+          "No podcasts in this category yet."
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: regularPodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: async () => {
+              setSelectedPodcast(p2);
+              setEpisodesLoading(true);
+              setPodcastEpisodes([]);
+              try {
+                const token = localStorage.getItem("token");
+                const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                const json = await res.json();
+                const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
+                const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
+                const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
+                setPodcastEpisodes(sorted);
+              } catch (e) {
+                setPodcastEpisodes([]);
+              } finally {
+                setEpisodesLoading(false);
+              }
+            },
+            style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 16, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 64, borderRadius: 12, background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }, children: "🎙️" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
-                  p2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#e53935", borderRadius: 20, padding: "2px 8px", color: "#fff", fontWeight: 700, fontSize: 10, flexShrink: 0 }, children: "LIVE" })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 4 }, children: [
-                  "by ",
-                  p2.host_name
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: p2.is_live ? "rgba(229,57,53,0.2)" : "rgba(46,125,50,0.2)", borderRadius: 20, padding: "2px 10px", color: p2.is_live ? "#ef9a9a" : "#81c784", fontSize: 11, fontWeight: 700 }, children: p2.is_live ? "🔴 Live Now" : "✅ Active" })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 12, marginBottom: 6 }, children: p2.host_name }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", borderRadius: 20, padding: "2px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 600 }, children: p2.category }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.25)", fontSize: 11 }, children: [
+                    p2.follower_count || 0,
+                    " followers"
+                  ] })
+                ] })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
             ]
           },
           p2.id
-        );
-      }) })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 4px" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live News" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12 }, children: "• tap to watch" })
+        )) })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 12, paddingBottom: 16, scrollbarWidth: "none" }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "div",
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "32px 16px 0", background: "rgba(108,60,247,0.08)", border: "1px solid rgba(108,60,247,0.2)", borderRadius: 20, padding: 24, textAlign: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "🚀" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18, marginBottom: 8 }, children: "Have a podcast?" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 16, lineHeight: 1.5 }, children: "Join Sachi and reach new listeners through our For You feed every day." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              if (!currentUser) {
+                onNeedAuth();
+                return;
+              }
+              setShowRegister(true);
+            },
+            style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "13px 28px", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" },
+            children: "Get Started Free →"
+          }
+        )
+      ] })
+    ] }),
+    liveNewsChannel && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "#000", display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "16px 20px",
+        background: "rgba(0,0,0,0.9)",
+        borderBottom: "1px solid rgba(255,255,255,0.1)",
+        zIndex: 1e4
+      }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setLiveNewsChannel(null),
+            style: { background: "none", border: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1, padding: 4 },
+            children: "✕"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: [
+            liveNewsChannel.emoji,
+            " ",
+            liveNewsChannel.name
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { background: "#e53935", color: "#fff", fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", letterSpacing: 1 }, children: "LIVE" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40 } })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, position: "relative" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "iframe",
+        {
+          src: liveNewsChannel.url,
+          allow: "autoplay; encrypted-media; fullscreen; picture-in-picture",
+          allowFullScreen: true,
+          style: { position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" },
+          title: liveNewsChannel.name + " Live"
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        background: "rgba(0,0,0,0.9)",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+        padding: "10px 16px",
+        overflowX: "auto",
+        display: "flex",
+        gap: 10,
+        scrollbarWidth: "none"
+      }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
         {
           onClick: () => setLiveNewsChannel(ch2),
-          style: { flexShrink: 0, width: 140, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative" },
+          style: {
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 14px",
+            borderRadius: 20,
+            border: "none",
+            cursor: "pointer",
+            background: ch2.id === liveNewsChannel.id ? "rgba(229,57,53,0.3)" : "rgba(255,255,255,0.07)",
+            outline: ch2.id === liveNewsChannel.id ? "1.5px solid #e53935" : "none"
+          },
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 80, background: ch2.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }, children: ch2.emoji }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "none", borderRadius: "0 0 16px 16px", padding: "8px 10px" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#e53935", flexShrink: 0 } }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: ch2.name })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, lineHeight: 1.3 }, children: ch2.desc })
-            ] })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 16 }, children: ch2.emoji }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 600, fontSize: 12, whiteSpace: "nowrap" }, children: ch2.name })
           ]
         },
         ch2.id
       )) })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "button",
-      {
-        onClick: () => setSelectedCat(cat),
-        style: { flexShrink: 0, padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: selectedCat === cat ? "#6c3cf7" : "rgba(255,255,255,0.07)", color: selectedCat === cat ? "#fff" : "rgba(255,255,255,0.5)", WebkitTapHighlightColor: "transparent" },
-        children: cat
-      },
-      cat
-    )) }),
-    livePodcasts.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 24 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 8 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live Now" })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, padding: "0 16px", overflowX: "auto", scrollbarWidth: "none" }, children: livePodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "div",
-        {
-          onClick: async () => {
-            setSelectedPodcast(p2);
-            setEpisodesLoading(true);
-            setPodcastEpisodes([]);
-            try {
-              const token = localStorage.getItem("token");
-              const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-              const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-              const json = await res.json();
-              const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-              const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-              const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-              setPodcastEpisodes(sorted);
-            } catch (e) {
-              setPodcastEpisodes([]);
-            } finally {
-              setEpisodesLoading(false);
-            }
-          },
-          style: { flexShrink: 0, width: 200, background: "rgba(229,57,53,0.08)", border: "1.5px solid rgba(229,57,53,0.3)", borderRadius: 16, padding: 16, cursor: "pointer" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#e53935", display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 20, padding: "3px 10px", marginBottom: 10 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 6, height: 6, borderRadius: "50%", background: "#fff" } }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 11 }, children: "LIVE" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28, marginBottom: 8 }, children: "🎙️" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 4 }, children: p2.title }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 8 }, children: p2.host_name }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#e53935", fontSize: 12, fontWeight: 600 }, children: [
-              "🎧 ",
-              p2.listener_count || 0,
-              " listening"
-            ] })
-          ]
-        },
-        p2.id
-      )) })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase" }, children: selectedCat === "All" ? "All Shows" : selectedCat }),
-      loadingPodcasts && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(245,200,66,0.5)", fontSize: 14 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12, animation: "spin 1.5s linear infinite", display: "inline-block" }, children: "⟳" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading podcasts..." })
-      ] }),
-      !loadingPodcasts && regularPodcasts.length === 0 && livePodcasts.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)", fontSize: 14 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🎙️" }),
-        "No podcasts in this category yet."
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: regularPodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "div",
-        {
-          onClick: async () => {
-            setSelectedPodcast(p2);
-            setEpisodesLoading(true);
-            setPodcastEpisodes([]);
-            try {
-              const token = localStorage.getItem("token");
-              const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-              const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-              const json = await res.json();
-              const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-              const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-              const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-              setPodcastEpisodes(sorted);
-            } catch (e) {
-              setPodcastEpisodes([]);
-            } finally {
-              setEpisodesLoading(false);
-            }
-          },
-          style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 16, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 64, borderRadius: 12, background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }, children: "🎙️" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 12, marginBottom: 6 }, children: p2.host_name }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", borderRadius: 20, padding: "2px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 600 }, children: p2.category }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.25)", fontSize: 11 }, children: [
-                  p2.follower_count || 0,
-                  " followers"
-                ] })
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
-          ]
-        },
-        p2.id
-      )) })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "32px 16px 0", background: "rgba(108,60,247,0.08)", border: "1px solid rgba(108,60,247,0.2)", borderRadius: 20, padding: 24, textAlign: "center" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "🚀" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18, marginBottom: 8 }, children: "Have a podcast?" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 16, lineHeight: 1.5 }, children: "Join Sachi and reach new listeners through our For You feed every day." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => {
-            if (!currentUser) {
-              onNeedAuth();
-              return;
-            }
-            setShowRegister(true);
-          },
-          style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "13px 28px", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" },
-          children: "Get Started Free →"
-        }
-      )
     ] })
   ] });
 }
