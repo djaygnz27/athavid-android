@@ -9568,9 +9568,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setDetectingLocation(false);
   };
   const goToPostDetails = () => {
-    if (!postLocation && navigator.geolocation) {
-      detectLocation();
-    }
+    detectLocation();
     setShowPostDetails(true);
   };
   const uploadTextPost = async () => {
@@ -9796,22 +9794,28 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "📍" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 15 }, children: "Location" })
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 15 }, children: "Location" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { marginLeft: 8, background: "rgba(245,200,66,0.15)", color: "#F5C842", fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 6px", letterSpacing: 0.5 }, children: "REQUIRED" })
+                  ] })
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
-                  detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 12 }, children: "Detecting..." }),
-                  postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#aaa", fontSize: 13 }, children: postLocation.name || postLocation.city }),
-                  !postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 13 }, children: "Tap to add" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#555", fontSize: 18 }, children: "›" })
+                  detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontSize: 12, fontWeight: 600 }, children: "📡 Detecting..." }),
+                  postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#8BC34A", fontSize: 13, fontWeight: 600 }, children: [
+                    "✓ ",
+                    postLocation.name
+                  ] }),
+                  !postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b", fontSize: 12, fontWeight: 600 }, children: "Not set — tap to detect" })
                 ] })
               ]
             }
           ),
-          postLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, paddingBottom: 12, flexWrap: "wrap" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "5px 12px", fontSize: 13, color: "#ccc", display: "flex", alignItems: "center", gap: 6 }, children: [
+          postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, paddingBottom: 12, flexWrap: "wrap" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(139,195,74,0.12)", border: "1px solid rgba(139,195,74,0.25)", borderRadius: 20, padding: "5px 14px", fontSize: 13, color: "#8BC34A", display: "flex", alignItems: "center", gap: 6 }, children: [
             "📍 ",
-            postLocation.name || [postLocation.city, postLocation.state].filter(Boolean).join(", ") || postLocation.city,
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { onClick: () => setPostLocation(null), style: { cursor: "pointer", color: "#888", fontSize: 14, marginLeft: 4 }, children: "✕" })
-          ] }) })
+            postLocation.name,
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { onClick: detectLocation, style: { cursor: "pointer", color: "#666", fontSize: 11, marginLeft: 4 }, children: "↺ refresh" })
+          ] }) }),
+          !postLocation && !detectingLocation && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingBottom: 12 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 11, opacity: 0.8 }, children: "📍 Location is required to post on Sachi. Tap above to detect automatically." }) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 4 } }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 0", cursor: "pointer" }, onClick: () => setShowVisibilityPicker((v2) => !v2), children: [
@@ -9925,28 +9929,33 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           "button",
           {
             onClick: () => {
+              if (!postLocation) {
+                alert("📍 Please allow location access to post on Sachi.");
+                detectLocation();
+                return;
+              }
               if (uploadTab === "text") uploadTextPost();
               else if (uploadTab === "photo") uploadPhotos();
               else upload();
             },
-            disabled: uploading,
+            disabled: uploading || detectingLocation,
             style: {
               flex: 2.5,
               padding: "14px 0",
-              background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
-              border: "none",
+              background: uploading ? "#333" : !postLocation || detectingLocation ? "rgba(255,107,107,0.25)" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border: !postLocation && !uploading ? "1.5px solid rgba(255,107,107,0.4)" : "none",
               borderRadius: 14,
-              color: "#fff",
+              color: !postLocation && !uploading ? "rgba(255,255,255,0.4)" : "#fff",
               fontWeight: 900,
               fontSize: 16,
-              cursor: uploading ? "default" : "pointer",
-              boxShadow: "0 4px 20px rgba(255,107,107,0.35)",
+              cursor: uploading || detectingLocation ? "default" : "pointer",
+              boxShadow: postLocation && !uploading ? "0 4px 20px rgba(255,107,107,0.35)" : "none",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 8
             },
-            children: uploading ? step : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            children: uploading ? step : detectingLocation ? "📡 Detecting location..." : !postLocation ? "📍 Location required" : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: "⬆" }),
               " Post"
             ] })
@@ -10158,33 +10167,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               caption.length,
               "/500"
             ] })
-          ] }),
-          !localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.07)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 13, marginBottom: 4 }, children: "📍 Add your location to this post?" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 11, marginBottom: 10 }, children: "Posts with location get more reach. Enable once, applies to all future posts." }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-              if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                  (pos) => {
-                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`).then((r2) => r2.json()).then((data) => {
-                      const addr = data.address || {};
-                      const code = addr.country_code ? addr.country_code.toUpperCase() : null;
-                      const region = addr.state || addr.city || addr.county || null;
-                      if (code) {
-                        localStorage.setItem("sachi_country_code", code);
-                      }
-                      if (region) {
-                        localStorage.setItem("sachi_region", region);
-                      }
-                    }).catch(() => {
-                    });
-                  },
-                  () => {
-                  },
-                  { timeout: 8e3 }
-                );
-              }
-            }, style: { width: "100%", padding: "10px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 10, color: "#0B0C1A", fontWeight: 800, fontSize: 13, cursor: "pointer" }, children: "📍 Enable Location" })
           ] })
         ] }),
         uploadTab === "text" && (() => {
