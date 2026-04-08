@@ -14,13 +14,22 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
       - uses: android-actions/setup-android@v3
+
+      - name: Install dependencies and sync Capacitor
+        run: |
+          cd athavid-vercel
+          npm install
+          npx cap sync android
 
       - name: Decode keystore
         run: |
-          mkdir -p athavid-vercel/android/app
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > athavid-vercel/android/app/sachi-upload-key.jks
-          ls -la athavid-vercel/android/app/
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > sachi-upload-key.jks
+          ls -la sachi-upload-key.jks
 
       - name: Make gradlew executable
         run: chmod +x athavid-vercel/android/gradlew
@@ -28,7 +37,7 @@ jobs:
       - name: Build signed AAB
         run: |
           cd athavid-vercel/android && ./gradlew bundleRelease --no-daemon \
-            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/athavid-vercel/android/app/sachi-upload-key.jks \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/sachi-upload-key.jks \
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
