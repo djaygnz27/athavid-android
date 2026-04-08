@@ -12156,19 +12156,21 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-      try {
-        const url = await uploadFile(file);
-        onSelect(url);
+      const base64 = dataUrl;
+      const res = await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_base64: base64, mime_type: "image/jpeg" })
+      });
+      const data = await res.json();
+      if (data.file_url) {
+        onSelect(data.file_url);
         return;
-      } catch (e) {
-        console.warn("CDN upload failed, falling back to base64:", e);
       }
-      onSelect(dataUrl);
+      throw new Error(data.error || "Upload failed");
     } catch (e) {
-      alert("Could not save avatar. Try again.");
+      console.warn("Avatar upload failed:", e);
+      alert("Could not save avatar. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -13925,78 +13927,14 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      let allUsersFetched = [], uSkip = 0, uMore = true;
-      while (uMore) {
-        const uRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
-        const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
-        allUsersFetched = [...allUsersFetched, ...uItems];
-        uMore = uRes.has_more === true && uItems.length === 500;
-        uSkip += 500;
-      }
-      let legacyUsers = [], lSkip = 0, lMore = true;
-      while (lMore) {
-        const lRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
-        const lItems = lRes.items || (Array.isArray(lRes) ? lRes : []);
-        legacyUsers = [...legacyUsers, ...lItems];
-        lMore = lRes.has_more === true && lItems.length === 500;
-        lSkip += 500;
-      }
-      const knownEmails = new Set(allUsersFetched.map((u2) => (u2.email || "").toLowerCase()));
-      const normalizedLegacy = legacyUsers.filter((u2) => u2.email && !knownEmails.has(u2.email.toLowerCase())).map((u2) => ({ id: u2.id, email: u2.email, username: u2.full_name || u2.email.split("@")[0], display_name: u2.full_name || u2.email.split("@")[0], created_date: u2.created_date, status: "active", _source: "legacy" }));
-      const [vRes, cRes] = await Promise.all([
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date")
-      ]);
-      const videos2 = vRes.items || vRes || [];
-      const users = [...allUsersFetched, ...normalizedLegacy];
-      const comments2 = cRes.items || cRes || [];
-      setAllUsers(users);
-      const now = /* @__PURE__ */ new Date();
-      const days = Array.from({ length: 14 }, (_, i) => {
-        const d = new Date(now);
-        d.setDate(d.getDate() - (13 - i));
-        return d.toISOString().slice(0, 10);
-      });
-      const byDay = (arr, dateField) => {
-        const map = {};
-        days.forEach((d) => map[d] = 0);
-        arr.forEach((item) => {
-          const d = (item[dateField] || "").slice(0, 10);
-          if (map[d] !== void 0) map[d]++;
-        });
-        return days.map((d) => ({ date: d, count: map[d] }));
-      };
-      const creatorMap = {};
-      videos2.forEach((v2) => {
-        const u2 = v2.username || "unknown";
-        creatorMap[u2] = (creatorMap[u2] || 0) + 1;
-      });
-      const topCreators = Object.entries(creatorMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([username, count]) => ({ username, count }));
-      const topVideos = [...videos2].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 5);
-      const totalViews = videos2.reduce((s, v2) => s + (v2.views_count || 0), 0);
-      const totalLikes = videos2.reduce((s, v2) => s + (v2.likes_count || 0), 0);
-      const matureCount = videos2.filter((v2) => v2.is_mature).length;
-      const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-      const weekAgo = /* @__PURE__ */ new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const newToday = users.filter((u2) => (u2.created_date || "").slice(0, 10) === todayStr).length;
-      const newThisWeek = users.filter((u2) => new Date(u2.created_date) >= weekAgo).length;
-      const recentUsers = [...users].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 20);
-      setAnalyticsData({
-        totalVideos: videos2.length,
-        totalUsers: users.length,
-        totalComments: comments2.length,
-        totalViews,
-        totalLikes,
-        matureCount,
-        newToday,
-        newThisWeek,
-        dailyVideos: byDay(videos2, "created_date"),
-        dailyUsers: byDay(users, "created_date"),
-        topCreators,
-        topVideos,
-        recentUsers
-      });
+      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      }).then((r2) => r2.json());
+      if (data.error) throw new Error(data.error);
+      setAllUsers(data.users || []);
+      setAnalyticsData(data.analytics);
     } catch (e) {
       console.error("analytics error", e);
     }
@@ -14016,39 +13954,15 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      let athavid = [], skip = 0, hasMore = true;
-      while (hasMore) {
-        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
-        const items = res.items || (Array.isArray(res) ? res : []);
-        athavid = [...athavid, ...items];
-        hasMore = res.has_more === true && items.length === 500;
-        skip += 500;
-      }
-      let oldUsers = [], skip2 = 0, hasMore2 = true;
-      while (hasMore2) {
-        const res2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
-        const items2 = res2.items || (Array.isArray(res2) ? res2 : []);
-        oldUsers = [...oldUsers, ...items2];
-        hasMore2 = res2.has_more === true && items2.length === 500;
-        skip2 += 500;
-      }
-      const athavid_emails = new Set(athavid.map((u2) => (u2.email || "").toLowerCase()));
-      const normalized = oldUsers.filter((u2) => u2.email && !athavid_emails.has(u2.email.toLowerCase())).map((u2) => ({
-        id: u2.id,
-        email: u2.email,
-        username: u2.full_name || u2.email.split("@")[0],
-        display_name: u2.full_name || u2.email.split("@")[0],
-        avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.full_name || u2.email)}&background=random&color=fff&size=128&bold=true&format=png`,
-        status: u2.disabled ? "disabled" : "active",
-        is_verified: u2.is_verified,
-        created_date: u2.created_date,
-        updated_date: u2.updated_date,
-        _source: "legacy"
-      }));
-      const merged = [...athavid, ...normalized].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-      setRegisteredUsers(merged);
+      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      }).then((r2) => r2.json());
+      if (data.error) throw new Error(data.error);
+      setRegisteredUsers(data.users || []);
     } catch (e) {
-      console.error(e);
+      console.error("loadRegisteredUsers error", e);
     }
     setUsersLoading(false);
   };
@@ -14102,7 +14016,7 @@ function AdminPanel({ currentUser }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => modTab === "analytics" ? loadAnalytics() : loadVideos(),
+            onClick: () => modTab === "analytics" ? loadAnalytics() : modTab === "users" ? loadRegisteredUsers() : loadVideos(),
             style: { background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 20, padding: "7px 14px", color: "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" },
             children: "↻ Refresh"
           }
@@ -15825,41 +15739,47 @@ function App() {
       }
     ),
     showAvatarPicker && /* @__PURE__ */ jsxRuntimeExports.jsx(AvatarPickerModal, { currentAvatar: avatarUrl, onSelect: async (url) => {
+      var _a2;
       setAvatarUrl(url);
       setCurrentUser((u2) => ({ ...u2, avatar_url: url }));
-      if (currentUser) {
-        localStorage.removeItem(`avatar_${currentUser.id}`);
-        localStorage.removeItem("avatar_last");
-        if (!url.startsWith("data:")) {
-          localStorage.setItem(`avatar_${currentUser.id}`, url);
-          localStorage.setItem("avatar_last", url);
-        }
-      }
       setShowAvatarPicker(false);
-      if (currentUser && !url.startsWith("data:")) {
-        try {
-          await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
-        } catch (e) {
-          console.warn("Auth avatar update failed:", e);
+      if (!currentUser || url.startsWith("data:")) return;
+      localStorage.setItem(`avatar_${currentUser.id}`, url);
+      localStorage.setItem("avatar_last", url);
+      localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, avatar_url: url }));
+      try {
+        const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+        const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
+        const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
+        if (match) {
+          if (url.startsWith("https://") || url.startsWith("http://")) {
+            await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image_base64: url, mime_type: "image/jpeg", entity_id: match.id })
+            });
+          }
         }
-        try {
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
-          const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
-          const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
-          if (match) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
-        } catch (e) {
-          console.warn("User entity update failed:", e);
-        }
-        try {
-          const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
-          const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
-          await Promise.all(vids.map((v2) => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
-          setVideoList((vs) => vs.map(
-            (v2) => v2.user_id === currentUser.id || v2.created_by === currentUser.id ? { ...v2, avatar_url: url } : v2
-          ));
-        } catch (e) {
-          console.warn("Video avatar sync failed:", e);
-        }
+      } catch (e) {
+        console.warn("User entity update failed:", e);
+      }
+      try {
+        await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+      } catch (e) {
+        console.warn("Auth avatar update failed (ok for Google users):", e);
+      }
+      try {
+        const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
+        const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
+        await Promise.all(vids.map((v2) => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
+        setVideoList((vs) => vs.map(
+          (v2) => {
+            var _a3;
+            return v2.user_id === currentUser.id || v2.created_by === currentUser.id || v2.username === (currentUser.username || ((_a3 = currentUser.email) == null ? void 0 : _a3.split("@")[0])) ? { ...v2, avatar_url: url } : v2;
+          }
+        ));
+      } catch (e) {
+        console.warn("Video avatar sync failed:", e);
       }
     }, onClose: () => setShowAvatarPicker(false) })
   ] });
