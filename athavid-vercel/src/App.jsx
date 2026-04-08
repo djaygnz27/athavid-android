@@ -4613,42 +4613,72 @@ function AdminPanel({ currentUser }) {
           ) : (
             <>
               {/* KPI Cards */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
-                {[
-                  ["👥","Users",analyticsData.totalUsers,"#6B8AFF"],
-                  ["🎬","Videos",analyticsData.totalVideos,"#F5C842"],
-                  ["💬","Comments",analyticsData.totalComments,"#FF6B6B"],
-                  ["👁","Views",analyticsData.totalViews,"#6BFFB8"],
-                  ["❤️","Likes",analyticsData.totalLikes,"#FF9500"],
-                  ["🔞","Mature",analyticsData.matureCount,"#FF6B6B"],
-                ].map(([icon,label,val,color]) => (
-                  <div key={label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 10px", textAlign:"center", border:`1px solid ${color}22` }}>
-                    <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
-                    <div style={{ color, fontWeight:900, fontSize:18, lineHeight:1 }}>{val.toLocaleString()}</div>
-                    <div style={{ color:"#555", fontSize:10, marginTop:3 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
+              {(() => {
+                const engRate = analyticsData.totalViews > 0
+                  ? (((analyticsData.totalLikes + analyticsData.totalComments) / analyticsData.totalViews) * 100).toFixed(1)
+                  : "0.0";
+                const avgViews = analyticsData.totalVideos > 0
+                  ? Math.round(analyticsData.totalViews / analyticsData.totalVideos)
+                  : 0;
+                const activeCreators = analyticsData.topCreators ? analyticsData.topCreators.length : 0;
+                return (
+                  <>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:10 }}>
+                      {[
+                        ["👥","Users",analyticsData.totalUsers,"#6B8AFF"],
+                        ["🎬","Videos",analyticsData.totalVideos,"#F5C842"],
+                        ["👁","Views",analyticsData.totalViews.toLocaleString(),"#6BFFB8"],
+                        ["❤️","Likes",analyticsData.totalLikes,"#FF9500"],
+                        ["💬","Comments",analyticsData.totalComments,"#FF6B6B"],
+                        ["🔞","Mature",analyticsData.matureCount,"#FF6B6B"],
+                      ].map(([icon,label,val,color]) => (
+                        <div key={label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 10px", textAlign:"center", border:`1px solid ${color}22` }}>
+                          <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
+                          <div style={{ color, fontWeight:900, fontSize:18, lineHeight:1 }}>{typeof val === "number" ? val.toLocaleString() : val}</div>
+                          <div style={{ color:"#555", fontSize:10, marginTop:3 }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
+                      {[
+                        ["📊","Eng. Rate",`${engRate}%`,"#A78BFA"],
+                        ["🎯","Avg Views",avgViews,"#34D399"],
+                        ["🎨","Creators",activeCreators,"#F472B6"],
+                      ].map(([icon,label,val,color]) => (
+                        <div key={label} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 10px", textAlign:"center", border:`1px solid ${color}22` }}>
+                          <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
+                          <div style={{ color, fontWeight:900, fontSize:18, lineHeight:1 }}>{typeof val === "number" ? val.toLocaleString() : val}</div>
+                          <div style={{ color:"#555", fontSize:10, marginTop:3 }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Registrations Summary */}
               <div style={{ background:"rgba(107,138,255,0.07)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.2)" }}>
                 <div style={{ color:"#6B8AFF", fontWeight:900, fontSize:15, marginBottom:12 }}>👥 User Registrations</div>
                 <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-                  {[
-                    ["Today",analyticsData.newToday,"#6BFFB8"],
-                    ["This Week",analyticsData.newThisWeek,"#F5C842"],
-                    ["All Time",analyticsData.totalUsers,"#6B8AFF"],
-                  ].map(([label,val,color]) => (
+                  {(() => {
+                    const today = new Date();
+                    const weekAgoD = new Date(); weekAgoD.setDate(today.getDate()-6);
+                    const weekLabel = `${weekAgoD.toLocaleDateString("en-US",{month:"short",day:"numeric"})}–${today.toLocaleDateString("en-US",{month:"short",day:"numeric"})}`;
+                    return [
+                      ["Today",analyticsData.newToday,"#6BFFB8"],
+                      [weekLabel,analyticsData.newThisWeek,"#F5C842"],
+                      ["All Time",analyticsData.totalUsers,"#6B8AFF"],
+                    ].map(([label,val,color]) => (
                     <div key={label} style={{ flex:1, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:"10px 6px", textAlign:"center" }}>
                       <div style={{ color, fontWeight:900, fontSize:22, lineHeight:1 }}>{val}</div>
                       <div style={{ color:"#555", fontSize:10, marginTop:4 }}>{label}</div>
                     </div>
-                  ))}
+                  ))})()}
                 </div>
                 {/* Recent registrants list */}
                 <div style={{ color:"#888", fontWeight:700, fontSize:11, marginBottom:8, letterSpacing:0.5, textTransform:"uppercase" }}>Recent Sign-ups</div>
                 <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  {(analyticsData.recentUsers||[]).map((u,i) => (
+                  {(analyticsData.recentUsers||[]).slice(0,5).map((u,i) => (
                     <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"8px 10px" }}>
                       <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
                         style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, objectFit:"cover" }} />
@@ -4729,7 +4759,7 @@ function AdminPanel({ currentUser }) {
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ color:"#fff", fontSize:12, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.caption||"(no caption)"}</div>
-                      <div style={{ color:"#555", fontSize:11 }}>@{v.username} · 👁 {(v.views_count||0).toLocaleString()}</div>
+                      <div style={{ color:"#555", fontSize:11 }}>@{v.username} · 👁 {(v.views_count||0).toLocaleString()} · ❤️ {(v.likes_count||0)} · 💬 {(v.comments_count||0)}</div>
                     </div>
                   </div>
                 ))}

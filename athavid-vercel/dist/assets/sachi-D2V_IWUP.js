@@ -14072,30 +14072,52 @@ function AdminPanel({ currentUser }) {
       ] })
     ] }),
     modTab === "analytics" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 20px" }, children: analyticsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "Loading analytics…" }) : !analyticsData ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "No data yet." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }, children: [
-        ["👥", "Users", analyticsData.totalUsers, "#6B8AFF"],
-        ["🎬", "Videos", analyticsData.totalVideos, "#F5C842"],
-        ["💬", "Comments", analyticsData.totalComments, "#FF6B6B"],
-        ["👁", "Views", analyticsData.totalViews, "#6BFFB8"],
-        ["❤️", "Likes", analyticsData.totalLikes, "#FF9500"],
-        ["🔞", "Mature", analyticsData.matureCount, "#FF6B6B"]
-      ].map(([icon, label, val, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: "12px 10px", textAlign: "center", border: `1px solid ${color}22` }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 18, marginBottom: 3 }, children: icon }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 18, lineHeight: 1 }, children: val.toLocaleString() }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 3 }, children: label })
-      ] }, label)) }),
+      (() => {
+        const engRate = analyticsData.totalViews > 0 ? ((analyticsData.totalLikes + analyticsData.totalComments) / analyticsData.totalViews * 100).toFixed(1) : "0.0";
+        const avgViews = analyticsData.totalVideos > 0 ? Math.round(analyticsData.totalViews / analyticsData.totalVideos) : 0;
+        const activeCreators = analyticsData.topCreators ? analyticsData.topCreators.length : 0;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }, children: [
+            ["👥", "Users", analyticsData.totalUsers, "#6B8AFF"],
+            ["🎬", "Videos", analyticsData.totalVideos, "#F5C842"],
+            ["👁", "Views", analyticsData.totalViews.toLocaleString(), "#6BFFB8"],
+            ["❤️", "Likes", analyticsData.totalLikes, "#FF9500"],
+            ["💬", "Comments", analyticsData.totalComments, "#FF6B6B"],
+            ["🔞", "Mature", analyticsData.matureCount, "#FF6B6B"]
+          ].map(([icon, label, val, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: "12px 10px", textAlign: "center", border: `1px solid ${color}22` }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 18, marginBottom: 3 }, children: icon }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 18, lineHeight: 1 }, children: typeof val === "number" ? val.toLocaleString() : val }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 3 }, children: label })
+          ] }, label)) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }, children: [
+            ["📊", "Eng. Rate", `${engRate}%`, "#A78BFA"],
+            ["🎯", "Avg Views", avgViews, "#34D399"],
+            ["🎨", "Creators", activeCreators, "#F472B6"]
+          ].map(([icon, label, val, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: "12px 10px", textAlign: "center", border: `1px solid ${color}22` }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 18, marginBottom: 3 }, children: icon }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 18, lineHeight: 1 }, children: typeof val === "number" ? val.toLocaleString() : val }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 3 }, children: label })
+          ] }, label)) })
+        ] });
+      })(),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(107,138,255,0.07)", borderRadius: 16, padding: "14px 16px", marginBottom: 14, border: "1px solid rgba(107,138,255,0.2)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#6B8AFF", fontWeight: 900, fontSize: 15, marginBottom: 12 }, children: "👥 User Registrations" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 14 }, children: [
-          ["Today", analyticsData.newToday, "#6BFFB8"],
-          ["This Week", analyticsData.newThisWeek, "#F5C842"],
-          ["All Time", analyticsData.totalUsers, "#6B8AFF"]
-        ].map(([label, val, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 6px", textAlign: "center" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 22, lineHeight: 1 }, children: val }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 4 }, children: label })
-        ] }, label)) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 14 }, children: (() => {
+          const today = /* @__PURE__ */ new Date();
+          const weekAgoD = /* @__PURE__ */ new Date();
+          weekAgoD.setDate(today.getDate() - 6);
+          const weekLabel = `${weekAgoD.toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${today.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+          return [
+            ["Today", analyticsData.newToday, "#6BFFB8"],
+            [weekLabel, analyticsData.newThisWeek, "#F5C842"],
+            ["All Time", analyticsData.totalUsers, "#6B8AFF"]
+          ].map(([label, val, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "10px 6px", textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 22, lineHeight: 1 }, children: val }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 4 }, children: label })
+          ] }, label));
+        })() }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontWeight: 700, fontSize: 11, marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }, children: "Recent Sign-ups" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6 }, children: (analyticsData.recentUsers || []).map((u2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "8px 10px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6 }, children: (analyticsData.recentUsers || []).slice(0, 5).map((u2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "8px 10px" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "img",
             {
@@ -14165,7 +14187,11 @@ function AdminPanel({ currentUser }) {
               "@",
               v2.username,
               " · 👁 ",
-              (v2.views_count || 0).toLocaleString()
+              (v2.views_count || 0).toLocaleString(),
+              " · ❤️ ",
+              v2.likes_count || 0,
+              " · 💬 ",
+              v2.comments_count || 0
             ] })
           ] })
         ] }, i))
