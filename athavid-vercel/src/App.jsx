@@ -4318,6 +4318,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
   // ── MAIN PODCAST LIST ──
   return (
+    <>
     <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
       <div style={{ margin:"0 16px 20px", background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius:20, padding:"24px 20px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:-20, right:-20, fontSize:100, opacity:0.07 }}>🎙️</div>
@@ -4510,6 +4511,49 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         </button>
       </div>
     </div>
+
+    {/* ─── Live News Viewer Modal ─── */}
+    {liveNewsChannel && (
+      <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#000", display:"flex", flexDirection:"column" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px",
+          background:"rgba(0,0,0,0.9)", borderBottom:"1px solid rgba(255,255,255,0.1)", zIndex:10000 }}>
+          <button onClick={() => setLiveNewsChannel(null)}
+            style={{ background:"none", border:"none", color:"#fff", fontSize:24, cursor:"pointer", lineHeight:1, padding:4 }}>✕</button>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:"#e53935", animation:"heartbeat 1.4s ease-in-out infinite" }} />
+            <span style={{ color:"#fff", fontWeight:800, fontSize:16 }}>{liveNewsChannel.emoji} {liveNewsChannel.name}</span>
+            <span style={{ background:"#e53935", color:"#fff", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 8px", letterSpacing:1 }}>LIVE</span>
+          </div>
+          <div style={{ width:40 }} />
+        </div>
+        {/* Stream */}
+        <div style={{ flex:1, position:"relative" }}>
+          <iframe
+            src={liveNewsChannel.url}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+            style={{ position:"absolute", inset:0, width:"100%", height:"100%", border:"none" }}
+            title={liveNewsChannel.name + " Live"}
+          />
+        </div>
+        {/* Channel selector strip */}
+        <div style={{ background:"rgba(0,0,0,0.9)", borderTop:"1px solid rgba(255,255,255,0.08)",
+          padding:"10px 16px", overflowX:"auto", display:"flex", gap:10, scrollbarWidth:"none" }}>
+          {LIVE_NEWS_CHANNELS.map(ch => (
+            <button key={ch.id} onClick={() => setLiveNewsChannel(ch)}
+              style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6,
+                padding:"8px 14px", borderRadius:20, border:"none", cursor:"pointer",
+                background: ch.id === liveNewsChannel.id ? "rgba(229,57,53,0.3)" : "rgba(255,255,255,0.07)",
+                outline: ch.id === liveNewsChannel.id ? "1.5px solid #e53935" : "none" }}>
+              <span style={{ fontSize:16 }}>{ch.emoji}</span>
+              <span style={{ color:"#fff", fontWeight:600, fontSize:12, whiteSpace:"nowrap" }}>{ch.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
