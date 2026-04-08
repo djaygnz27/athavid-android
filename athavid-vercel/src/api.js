@@ -278,7 +278,7 @@ export const likes = {
   },
   async checkUserLiked(video_id, user_id) {
     const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
-    const items = Array.isArray(res) ? res : (res?.items || []);
+    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
     return items.length > 0 ? items[0] : null;
   },
 };

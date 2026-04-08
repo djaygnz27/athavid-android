@@ -2271,7 +2271,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     setLikesListLoading(true);
     try {
       const res = await likes.getByVideo(video.id);
-      const items = Array.isArray(res) ? res : (res?.items || []);
+      const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
       setLikesList(items);
     } catch(e) { setLikesList([]); }
     setLikesListLoading(false);

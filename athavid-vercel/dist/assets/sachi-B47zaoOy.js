@@ -7388,7 +7388,7 @@ const likes = {
   },
   async checkUserLiked(video_id, user_id) {
     const res = await request("GET", `/apps/${APP_ID$1}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
-    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
+    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
     return items.length > 0 ? items[0] : null;
   }
 };
@@ -11162,7 +11162,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     setLikesListLoading(true);
     try {
       const res = await likes.getByVideo(video.id);
-      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
+      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
       setLikesList(items);
     } catch (e) {
       setLikesList([]);
