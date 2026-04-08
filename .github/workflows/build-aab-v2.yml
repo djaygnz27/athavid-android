@@ -17,7 +17,10 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - name: Decode keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/sachi-upload-key.jks
+        run: |
+          mkdir -p android/app
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/sachi-upload-key.jks
+          ls -la android/app/
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
