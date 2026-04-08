@@ -4778,24 +4778,42 @@ function AdminPanel({ currentUser }) {
                     </div>
                   ))})()}
                 </div>
-                {/* Recent registrants list */}
-                <div style={{ color:"#888", fontWeight:700, fontSize:11, marginBottom:8, letterSpacing:0.5, textTransform:"uppercase" }}>Recent Sign-ups</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  {(analyticsData.recentUsers||[]).slice(0,5).map((u,i) => (
-                    <div key={i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"8px 10px" }}>
-                      <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
-                        style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, objectFit:"cover" }} />
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ color:"#fff", fontSize:13, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          {u.display_name || u.username || "—"}
+                {/* All registrants list */}
+                <div style={{ color:"#888", fontWeight:700, fontSize:11, marginBottom:8, letterSpacing:0.5, textTransform:"uppercase" }}>
+                  All Registered Users ({(analyticsData.recentUsers||[]).length})
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:320, overflowY:"auto" }}>
+                  {(analyticsData.recentUsers||[]).map((u,i) => {
+                    const joinDate = u.created_date ? new Date(u.created_date) : null;
+                    const today = new Date();
+                    const isNew = joinDate && (today - joinDate) < 24*60*60*1000;
+                    const isThisWeek = joinDate && (today - joinDate) < 7*24*60*60*1000;
+                    return (
+                      <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"10px 12px", border: isNew ? "1px solid rgba(107,255,184,0.25)" : "1px solid transparent" }}>
+                        <div style={{ color:"#444", fontWeight:700, fontSize:11, width:18, textAlign:"right", flexShrink:0 }}>{i+1}</div>
+                        <img src={u.avatar_url || u.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.display_name||u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                          style={{ width:32, height:32, borderRadius:"50%", flexShrink:0, objectFit:"cover" }} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ color:"#fff", fontSize:13, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            {u.display_name || u.full_name || u.username || "—"}
+                            {isNew && <span style={{ marginLeft:6, background:"#6BFFB8", color:"#0B0C1A", fontSize:9, fontWeight:900, padding:"1px 6px", borderRadius:20 }}>NEW</span>}
+                          </div>
+                          <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            {u.email || ""}{u.username ? ` · @${u.username}` : ""}
+                          </div>
+                          {u.location && <div style={{ color:"#444", fontSize:10, marginTop:1 }}>📍 {u.location}</div>}
                         </div>
-                        <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.email || "@" + (u.username||"")}</div>
+                        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:3, flexShrink:0 }}>
+                          <div style={{ color: isNew ? "#6BFFB8" : isThisWeek ? "#F5C842" : "#444", fontSize:10, fontWeight:600 }}>
+                            {joinDate ? joinDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "—"}
+                          </div>
+                          <div style={{ fontSize:9, color:"#333" }}>
+                            {joinDate ? joinDate.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}) : ""}
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ color:"#444", fontSize:10, flexShrink:0 }}>
-                        {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric"}) : ""}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

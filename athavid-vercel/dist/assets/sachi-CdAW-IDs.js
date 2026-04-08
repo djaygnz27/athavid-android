@@ -14236,21 +14236,45 @@ function AdminPanel({ currentUser }) {
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 4 }, children: label })
           ] }, label));
         })() }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontWeight: 700, fontSize: 11, marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }, children: "Recent Sign-ups" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6 }, children: (analyticsData.recentUsers || []).slice(0, 5).map((u2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "8px 10px" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "img",
-            {
-              src: u2.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.username || u2.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
-              style: { width: 28, height: 28, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: u2.display_name || u2.username || "—" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: u2.email || "@" + (u2.username || "") })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontSize: 10, flexShrink: 0 }, children: u2.created_date ? new Date(u2.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "" })
-        ] }, i)) })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontWeight: 700, fontSize: 11, marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }, children: [
+          "All Registered Users (",
+          (analyticsData.recentUsers || []).length,
+          ")"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 320, overflowY: "auto" }, children: (analyticsData.recentUsers || []).map((u2, i) => {
+          const joinDate = u2.created_date ? new Date(u2.created_date) : null;
+          const today = /* @__PURE__ */ new Date();
+          const isNew = joinDate && today - joinDate < 24 * 60 * 60 * 1e3;
+          const isThisWeek = joinDate && today - joinDate < 7 * 24 * 60 * 60 * 1e3;
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", border: isNew ? "1px solid rgba(107,255,184,0.25)" : "1px solid transparent" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontWeight: 700, fontSize: 11, width: 18, textAlign: "right", flexShrink: 0 }, children: i + 1 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: u2.avatar_url || u2.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.display_name || u2.username || u2.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
+                style: { width: 32, height: 32, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                u2.display_name || u2.full_name || u2.username || "—",
+                isNew && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { marginLeft: 6, background: "#6BFFB8", color: "#0B0C1A", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 20 }, children: "NEW" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                u2.email || "",
+                u2.username ? ` · @${u2.username}` : ""
+              ] }),
+              u2.location && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#444", fontSize: 10, marginTop: 1 }, children: [
+                "📍 ",
+                u2.location
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isNew ? "#6BFFB8" : isThisWeek ? "#F5C842" : "#444", fontSize: 10, fontWeight: 600 }, children: joinDate ? joinDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#333" }, children: joinDate ? joinDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "" })
+            ] })
+          ] }, u2.id || i);
+        }) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: "14px 16px", marginBottom: 14, border: "1px solid rgba(245,200,66,0.1)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, marginBottom: 12 }, children: "📈 Daily Videos (14 days)" }),
