@@ -262,3 +262,23 @@ export const interests = {
     return scored;
   }
 };
+
+// ── Likes ──────────────────────────────────────────────────────────────────
+export const likes = {
+  async add(video_id, user_id, username, display_name, avatar_url) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiLike`, {
+      video_id, user_id, username, display_name, avatar_url
+    });
+  },
+  async remove(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
+  },
+  async getByVideo(video_id) {
+    return request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&limit=500`);
+  },
+  async checkUserLiked(video_id, user_id) {
+    const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+    const items = Array.isArray(res) ? res : (res?.items || []);
+    return items.length > 0 ? items[0] : null;
+  },
+};

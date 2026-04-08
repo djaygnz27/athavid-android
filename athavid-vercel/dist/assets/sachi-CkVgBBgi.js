@@ -7370,6 +7370,28 @@ const interests = {
     return scored;
   }
 };
+const likes = {
+  async add(video_id, user_id, username, display_name, avatar_url) {
+    return request("POST", `/apps/${APP_ID$1}/entities/SachiLike`, {
+      video_id,
+      user_id,
+      username,
+      display_name,
+      avatar_url
+    });
+  },
+  async remove(id2) {
+    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiLike/${id2}`);
+  },
+  async getByVideo(video_id) {
+    return request("GET", `/apps/${APP_ID$1}/entities/SachiLike?video_id=${video_id}&limit=500`);
+  },
+  async checkUserLiked(video_id, user_id) {
+    const res = await request("GET", `/apps/${APP_ID$1}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
+    return items.length > 0 ? items[0] : null;
+  }
+};
 const COUNTRIES = [
   "Afghanistan",
   "Albania",
@@ -11053,6 +11075,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     obs.observe(el2);
     return () => obs.disconnect();
   }, []);
+  reactExports.useEffect(() => {
+    if (!currentUser) return;
+    likes.checkUserLiked(video.id, currentUser.id).then((rec) => {
+      if (rec) {
+        setLiked(true);
+        setLikeRecordId(rec.id);
+      }
+    }).catch(() => {
+    });
+  }, [video.id, currentUser == null ? void 0 : currentUser.id]);
   const doMute = () => {
     const el2 = videoRef.current;
     if (!el2) return;
@@ -11085,21 +11117,52 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }
   };
   const likeLockedRef = React$1.useRef(false);
-  const doLike = () => {
+  const doLike = async () => {
+    var _a2;
     if (!currentUser) {
       onNeedAuth();
       return;
     }
-    if (likeLockedRef.current) return;
+    if (likeLockedRef.current || likeLoading) return;
     likeLockedRef.current = true;
+    setLikeLoading(true);
     setTimeout(() => {
       likeLockedRef.current = false;
-    }, 500);
-    setLiked((prev) => {
-      const newLiked = !prev;
-      onLike(video.id, newLiked ? 1 : -1);
-      return newLiked;
-    });
+    }, 1e3);
+    try {
+      if (liked) {
+        if (likeRecordId) await likes.remove(likeRecordId);
+        setLiked(false);
+        setLikeRecordId(null);
+        onLike(video.id, -1);
+      } else {
+        const rec = await likes.add(
+          video.id,
+          currentUser.id,
+          currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "user",
+          currentUser.display_name || currentUser.full_name || currentUser.username || "User",
+          currentUser.avatar_url || currentUser.picture || ""
+        );
+        setLiked(true);
+        setLikeRecordId(rec.id);
+        onLike(video.id, 1);
+      }
+    } catch (e) {
+      console.error("like error", e);
+    }
+    setLikeLoading(false);
+  };
+  const openLikesPanel = async () => {
+    setShowLikesPanel(true);
+    setLikesListLoading(true);
+    try {
+      const res = await likes.getByVideo(video.id);
+      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
+      setLikesList(items);
+    } catch (e) {
+      setLikesList([]);
+    }
+    setLikesListLoading(false);
   };
   const doFollow = async () => {
     var _a2;
@@ -11744,23 +11807,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           ]
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(doLike),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: tap(doLike),
+            disabled: likeLoading,
+            style: {
+              background: "none",
+              border: "none",
+              cursor: likeLoading ? "default" : "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              opacity: likeLoading ? 0.6 : 1
+            },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
               width: 28,
               height: 28,
               borderRadius: 8,
@@ -11773,11 +11838,18 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               animation: liked ? "heartpop 0.4s ease forwards" : "none",
               transformOrigin: "center",
               transition: "background 0.2s, border 0.2s"
-            }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: "#FF6B6B", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.likes_count || 0) })
-          ]
-        }
-      ),
+            }, children: likeLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10 }, children: "⏳" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: "#FF6B6B", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: tap(openLikesPanel),
+            style: { background: "none", border: "none", cursor: "pointer", padding: 0, WebkitTapHighlightColor: "transparent" },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600, textDecoration: "underline", textDecorationColor: "rgba(255,255,255,0.3)" }, children: formatCount(video.likes_count || 0) })
+          }
+        )
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
@@ -11897,6 +11969,42 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )
     ] }),
     reportTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(ReportModal, { video: reportTarget, currentUser, onClose: () => setReportTarget(null) }),
+    showLikesPanel && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center" },
+        onClick: () => setShowLikesPanel(false),
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), style: { width: "100%", maxWidth: 480, background: "#13142A", borderRadius: "24px 24px 0 0", padding: "0 0 40px", maxHeight: "70vh", display: "flex", flexDirection: "column" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: "❤️" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: likesListLoading ? "Likes" : `${likesList.length} ${likesList.length === 1 ? "Like" : "Likes"}` })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowLikesPanel(false), style: { background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 22, lineHeight: 1, padding: "2px 6px" }, children: "✕" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1 }, children: likesListLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40, fontSize: 14 }, children: "Loading…" }) : likesList.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🤍" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No likes yet — be the first!" })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column" }, children: likesList.map((lk2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: lk2.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(lk2.display_name || lk2.username || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
+                style: { width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: lk2.display_name || lk2.username || "User" }),
+              lk2.username && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12 }, children: [
+                "@",
+                lk2.username
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#FF6B6B", fontSize: 16 }, children: "❤️" })
+          ] }, lk2.id || i)) }) })
+        ] })
+      }
+    ),
     showDeleteConfirm && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -13911,6 +14019,7 @@ function AdminPanel({ currentUser }) {
   const [loading, setLoading] = reactExports.useState(true);
   const [analyticsLoading, setAnalyticsLoading] = reactExports.useState(false);
   const [analyticsData, setAnalyticsData] = reactExports.useState(null);
+  const [analyticsError, setAnalyticsError] = reactExports.useState(null);
   const [saving, setSaving] = reactExports.useState(null);
   const [filter, setFilter] = reactExports.useState("all");
   const [search, setSearch] = reactExports.useState("");
@@ -13926,22 +14035,28 @@ function AdminPanel({ currentUser }) {
   };
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
+    setAnalyticsError(null);
     try {
-      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: "{}"
-      }).then((r2) => r2.json());
+      });
+      const data = await resp.json();
       if (data.error) throw new Error(data.error);
       setAllUsers(data.users || []);
       setAnalyticsData(data.analytics);
     } catch (e) {
       console.error("analytics error", e);
+      setAnalyticsError(e.message || "Failed to load analytics");
     }
     setAnalyticsLoading(false);
   };
   reactExports.useEffect(() => {
     loadVideos();
+  }, []);
+  reactExports.useEffect(() => {
+    loadAnalytics();
   }, []);
   reactExports.useEffect(() => {
     if (modTab === "analytics") loadAnalytics();
@@ -14071,7 +14186,12 @@ function AdminPanel({ currentUser }) {
         )) })
       ] })
     ] }),
-    modTab === "analytics" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 20px" }, children: analyticsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "Loading analytics…" }) : !analyticsData ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "No data yet." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    modTab === "analytics" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 20px" }, children: analyticsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "Loading analytics…" }) : analyticsError ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#FF6B6B", padding: 40, fontSize: 13 }, children: [
+      "⚠️ ",
+      analyticsError,
+      /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: loadAnalytics, style: { marginTop: 12, background: "#F5C842", color: "#0B0C1A", border: "none", borderRadius: 8, padding: "8px 20px", fontWeight: 700, cursor: "pointer" }, children: "Retry" })
+    ] }) : !analyticsData ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "No data yet." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       (() => {
         const engRate = analyticsData.totalViews > 0 ? ((analyticsData.totalLikes + analyticsData.totalComments) / analyticsData.totalViews * 100).toFixed(1) : "0.0";
         const avgViews = analyticsData.totalVideos > 0 ? Math.round(analyticsData.totalViews / analyticsData.totalVideos) : 0;

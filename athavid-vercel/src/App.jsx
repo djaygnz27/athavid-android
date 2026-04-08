@@ -1,7 +1,7 @@
 // Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
@@ -2181,6 +2181,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   // Follow state is driven by the shared followedUserIds prop — no per-card API call needed
 
+  // Check if current user has already liked this video
+  useEffect(() => {
+    if (!currentUser) return;
+    likes.checkUserLiked(video.id, currentUser.id).then(rec => {
+      if (rec) { setLiked(true); setLikeRecordId(rec.id); }
+    }).catch(() => {});
+  }, [video.id, currentUser?.id]);
+
   const doMute = () => {
     const el = videoRef.current;
     if (!el) return;
@@ -2223,16 +2231,45 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   };
 
   const likeLockedRef = React.useRef(false);
-  const doLike = () => {
+  const doLike = async () => {
     if (!currentUser) { onNeedAuth(); return; }
-    if (likeLockedRef.current) return;
+    if (likeLockedRef.current || likeLoading) return;
     likeLockedRef.current = true;
-    setTimeout(() => { likeLockedRef.current = false; }, 500);
-    setLiked(prev => {
-      const newLiked = !prev;
-      onLike(video.id, newLiked ? 1 : -1);
-      return newLiked;
-    });
+    setLikeLoading(true);
+    setTimeout(() => { likeLockedRef.current = false; }, 1000);
+    try {
+      if (liked) {
+        // Unlike: delete the record
+        if (likeRecordId) await likes.remove(likeRecordId);
+        setLiked(false);
+        setLikeRecordId(null);
+        onLike(video.id, -1);
+      } else {
+        // Like: create record
+        const rec = await likes.add(
+          video.id,
+          currentUser.id,
+          currentUser.username || currentUser.email?.split("@")[0] || "user",
+          currentUser.display_name || currentUser.full_name || currentUser.username || "User",
+          currentUser.avatar_url || currentUser.picture || ""
+        );
+        setLiked(true);
+        setLikeRecordId(rec.id);
+        onLike(video.id, 1);
+      }
+    } catch(e) { console.error("like error", e); }
+    setLikeLoading(false);
+  };
+
+  const openLikesPanel = async () => {
+    setShowLikesPanel(true);
+    setLikesListLoading(true);
+    try {
+      const res = await likes.getByVideo(video.id);
+      const items = Array.isArray(res) ? res : (res?.items || []);
+      setLikesList(items);
+    } catch(e) { setLikesList([]); }
+    setLikesListLoading(false);
   };
 
   const doFollow = async () => {
@@ -2634,17 +2671,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </button>
 
         {/* Like */}
-        <button onClick={tap(doLike)}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:28, height:28, borderRadius:8, background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center",
-            animation: liked ? "heartpop 0.4s ease forwards" : "none", transformOrigin:"center", transition:"background 0.2s, border 0.2s" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke="#FF6B6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </div>
-          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.likes_count||0)}</div>
-        </button>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+          <button onClick={tap(doLike)} disabled={likeLoading}
+            style={{ background:"none", border:"none", cursor: likeLoading ? "default" : "pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+              WebkitTapHighlightColor:"transparent", touchAction:"manipulation", opacity: likeLoading ? 0.6 : 1 }}>
+            <div style={{ width:28, height:28, borderRadius:8, background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center",
+              animation: liked ? "heartpop 0.4s ease forwards" : "none", transformOrigin:"center", transition:"background 0.2s, border 0.2s" }}>
+              {likeLoading ? <span style={{ fontSize:10 }}>⏳</span> : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke="#FF6B6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              )}
+            </div>
+          </button>
+          <button onClick={tap(openLikesPanel)}
+            style={{ background:"none", border:"none", cursor:"pointer", padding:0, WebkitTapHighlightColor:"transparent" }}>
+            <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600, textDecoration:"underline", textDecorationColor:"rgba(255,255,255,0.3)" }}>{formatCount(video.likes_count||0)}</div>
+          </button>
+        </div>
 
         {/* Comment */}
         <button onClick={tap(() => onCommentOpen(video))}
@@ -2722,6 +2766,56 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {reportTarget && <ReportModal video={reportTarget} currentUser={currentUser} onClose={() => setReportTarget(null)} />}
+
+      {/* Likes Panel */}
+      {showLikesPanel && (
+        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+          onClick={() => setShowLikesPanel(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:480, background:"#13142A", borderRadius:"24px 24px 0 0", padding:"0 0 40px", maxHeight:"70vh", display:"flex", flexDirection:"column" }}>
+            {/* Header */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 14px", borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:18 }}>❤️</span>
+                <span style={{ color:"#fff", fontWeight:800, fontSize:16 }}>
+                  {likesListLoading ? "Likes" : `${likesList.length} ${likesList.length === 1 ? "Like" : "Likes"}`}
+                </span>
+              </div>
+              <button onClick={() => setShowLikesPanel(false)} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(255,255,255,0.5)", fontSize:22, lineHeight:1, padding:"2px 6px" }}>✕</button>
+            </div>
+            {/* Body */}
+            <div style={{ overflowY:"auto", flex:1 }}>
+              {likesListLoading ? (
+                <div style={{ textAlign:"center", color:"#555", padding:40, fontSize:14 }}>Loading…</div>
+              ) : likesList.length === 0 ? (
+                <div style={{ textAlign:"center", padding:40 }}>
+                  <div style={{ fontSize:36, marginBottom:8 }}>🤍</div>
+                  <div style={{ color:"rgba(255,255,255,0.4)", fontSize:14 }}>No likes yet — be the first!</div>
+                </div>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column" }}>
+                  {likesList.map((lk, i) => (
+                    <div key={lk.id || i} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                      <img
+                        src={lk.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(lk.display_name || lk.username || "?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                        style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", flexShrink:0 }}
+                      />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                          {lk.display_name || lk.username || "User"}
+                        </div>
+                        {lk.username && (
+                          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>@{lk.username}</div>
+                        )}
+                      </div>
+                      <div style={{ color:"#FF6B6B", fontSize:16 }}>❤️</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (
@@ -4477,6 +4571,7 @@ function AdminPanel({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsError, setAnalyticsError] = useState(null);
   const [saving, setSaving] = useState(null);
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
@@ -4492,18 +4587,24 @@ function AdminPanel({ currentUser }) {
 
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
+    setAnalyticsError(null);
     try {
-      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
-      }).then(r => r.json());
+      });
+      const data = await resp.json();
       if (data.error) throw new Error(data.error);
       setAllUsers(data.users || []);
       setAnalyticsData(data.analytics);
-    } catch(e) { console.error("analytics error", e); }
+    } catch(e) {
+      console.error("analytics error", e);
+      setAnalyticsError(e.message || "Failed to load analytics");
+    }
     setAnalyticsLoading(false);
   };
 
   useEffect(() => { loadVideos(); }, []);
+  useEffect(() => { loadAnalytics(); }, []); // load on mount
   useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
   useEffect(() => { if (modTab === "users") loadRegisteredUsers(); }, [modTab]);
 
@@ -4608,6 +4709,8 @@ function AdminPanel({ currentUser }) {
         <div style={{ padding:"16px 16px 20px" }}>
           {analyticsLoading ? (
             <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>Loading analytics…</div>
+          ) : analyticsError ? (
+            <div style={{ textAlign:"center", color:"#FF6B6B", padding:40, fontSize:13 }}>⚠️ {analyticsError}<br/><button onClick={loadAnalytics} style={{ marginTop:12, background:"#F5C842", color:"#0B0C1A", border:"none", borderRadius:8, padding:"8px 20px", fontWeight:700, cursor:"pointer" }}>Retry</button></div>
           ) : !analyticsData ? (
             <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>No data yet.</div>
           ) : (
