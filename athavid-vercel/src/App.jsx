@@ -4801,6 +4801,28 @@ function AdminPanel({ currentUser }) {
                     ))}
                   </div>
 
+                  {/* Country breakdown */}
+                  {(() => {
+                    const countries = {};
+                    registeredUsers.forEach(u => {
+                      const loc = u.location || "Unknown";
+                      countries[loc] = (countries[loc] || 0) + 1;
+                    });
+                    const sorted = Object.entries(countries).sort((a,b) => b[1]-a[1]);
+                    return sorted.length > 0 ? (
+                      <div style={{ background:"rgba(245,200,66,0.06)", borderRadius:16, border:"1px solid rgba(245,200,66,0.15)", padding:"12px 16px", marginBottom:12 }}>
+                        <div style={{ color:"#F5C842", fontWeight:800, fontSize:13, marginBottom:8 }}>🌍 Users by Location</div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                          {sorted.map(([loc, count]) => (
+                            <div key={loc} style={{ background:"rgba(245,200,66,0.12)", borderRadius:20, padding:"4px 12px", fontSize:12, color:"#F5C842", fontWeight:600 }}>
+                              {loc === "Unknown" ? "🌍" : loc.toLowerCase().includes("australia") ? "🇦🇺" : loc.toLowerCase().includes("sri lanka") ? "🇱🇰" : loc.toLowerCase().includes("united states") || loc.toLowerCase().includes("usa") ? "🇺🇸" : "🌍"} {loc} · {count}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                   {/* User list */}
                   <div style={{ background:"rgba(107,138,255,0.06)", borderRadius:16, border:"1px solid rgba(107,138,255,0.15)", overflow:"hidden" }}>
                     <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -4808,30 +4830,50 @@ function AdminPanel({ currentUser }) {
                       <div style={{ color:"#444", fontSize:12 }}>{registeredUsers.length} total</div>
                     </div>
                     <div style={{ maxHeight:500, overflowY:"auto" }}>
-                      {registeredUsers.map((u, i) => (
-                        <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                      {registeredUsers.map((u, i) => {
+                        const locationFlag = (loc) => {
+                          if (!loc) return "🌍 Unknown";
+                          const l = loc.toLowerCase();
+                          if (l.includes("australia") || l.includes("au")) return "🇦🇺 " + loc;
+                          if (l.includes("sri lanka") || l.includes("lk")) return "🇱🇰 " + loc;
+                          if (l.includes("united states") || l.includes("usa") || l.includes("us")) return "🇺🇸 " + loc;
+                          if (l.includes("new zealand") || l.includes("nz")) return "🇳🇿 " + loc;
+                          if (l.includes("india")) return "🇮🇳 " + loc;
+                          if (l.includes("canada")) return "🇨🇦 " + loc;
+                          if (l.includes("uk") || l.includes("united kingdom")) return "🇬🇧 " + loc;
+                          return "🌍 " + loc;
+                        };
+                        return (
+                        <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
                           <img
                             src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
-                            style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, objectFit:"cover", border:"2px solid rgba(107,138,255,0.3)" }}
+                            style={{ width:40, height:40, borderRadius:"50%", flexShrink:0, objectFit:"cover", border:"2px solid rgba(107,138,255,0.3)" }}
                           />
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ color:"#fff", fontWeight:700, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                               {u.display_name || u.username || "—"}
                             </div>
-                            <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            <div style={{ color:"#aaa", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>
                               @{u.username || "?"} · {u.email || "no email"}
+                            </div>
+                            <div style={{ color:"#F5C842", fontSize:11, fontWeight:600, marginTop:2 }}>
+                              {locationFlag(u.location)}
                             </div>
                           </div>
                           <div style={{ flexShrink:0, textAlign:"right" }}>
-                            <div style={{ color:"#444", fontSize:11 }}>
-                              {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}) : ""}
+                            <div style={{ color:"#888", fontSize:11 }}>
+                              {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : ""}
+                            </div>
+                            <div style={{ color:"#777", fontSize:10, marginTop:1 }}>
+                              {u.created_date ? new Date(u.created_date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}) : ""}
                             </div>
                             <div style={{ color: u.status==="active" ? "#6BFFB8" : "#FF6B6B", fontSize:10, fontWeight:700, marginTop:2 }}>
                               {u.status || "active"}
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       {registeredUsers.length === 0 && (
                         <div style={{ textAlign:"center", color:"#444", padding:40, fontSize:13 }}>No users yet.</div>
                       )}

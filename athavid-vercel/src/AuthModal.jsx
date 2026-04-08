@@ -157,6 +157,7 @@ function FinishStep({ googlePayload, onSuccess }) {
             followers_count: 0,
             following_count: 0,
             videos_count: 0,
+            location: country || "",
           })
         }
       ).then(r => r.json());
