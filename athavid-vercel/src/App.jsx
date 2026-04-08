@@ -33,15 +33,16 @@ const resolveMediaUrl = (url, isVideo) => {
 };
 // Get user's location for post geo-tagging
 async function getPostLocation() {
-  const savedCountry = localStorage.getItem("sachi_country");
-  const savedRegion = localStorage.getItem("sachi_region");
-  const savedCode = localStorage.getItem("sachi_country_code");
-  // Use precise GPS-derived data if available
+  const savedCode = localStorage.getItem('sachi_country_code');
+  const savedRegion = localStorage.getItem('sachi_region');
+  const savedCity = localStorage.getItem('sachi_city');
+  const savedCountry = localStorage.getItem('sachi_country');
+  // Use cached data if available
   if (savedCode) {
-    return { post_country: savedCode, post_region: savedRegion || null };
+    return { post_country: savedCode, post_region: savedRegion || null, post_city: savedCity || null };
   }
   if (savedCountry) {
-    return { post_country: savedCountry, post_region: savedRegion || null };
+    return { post_country: savedCountry, post_region: savedRegion || null, post_city: savedCity || null };
   }
   // Fallback: try GPS reverse geocode
   try {
@@ -55,13 +56,63 @@ async function getPostLocation() {
     const data = await res.json();
     const addr = data.address || {};
     const country = addr.country_code ? addr.country_code.toUpperCase() : null;
-    const region = addr.state || addr.city || addr.county || null;
-    if (country) localStorage.setItem("sachi_country_code", country);
-    if (region) localStorage.setItem("sachi_region", region);
-    return { post_country: country, post_region: region };
+    const city = addr.city || addr.town || addr.village || addr.county || null;
+    const region = addr.state || addr.region || null;
+    if (country) localStorage.setItem('sachi_country_code', country);
+    if (region) localStorage.setItem('sachi_region', region);
+    if (city) localStorage.setItem('sachi_city', city);
+    return { post_country: country, post_region: region, post_city: city };
   } catch {
-    return {};
+    // Final fallback: IP geolocation
+    try {
+      const r = await fetch('https://ipapi.co/json/');
+      const d = await r.json();
+      const country = d.country_code || null;
+      const region = d.region || null;
+      const city = d.city || null;
+      if (country) localStorage.setItem('sachi_country_code', country);
+      if (region) localStorage.setItem('sachi_region', region);
+      if (city) localStorage.setItem('sachi_city', city);
+      return { post_country: country, post_region: region, post_city: city };
+    } catch {
+      return {};
+    }
   }
+}
+
+// US/AU/CA state abbreviation helper
+function getStateAbbr(state, countryCode) {
+  if (!state) return '';
+  const US_STATES = {
+    'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
+    'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
+    'Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA',
+    'Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD',
+    'Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO',
+    'Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ',
+    'New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH',
+    'Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC',
+    'South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT',
+    'Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY',
+    'District of Columbia':'DC'
+  };
+  const AU_STATES = {
+    'New South Wales':'NSW','Victoria':'VIC','Queensland':'QLD','South Australia':'SA',
+    'Western Australia':'WA','Tasmania':'TAS','Northern Territory':'NT',
+    'Australian Capital Territory':'ACT'
+  };
+  const CA_PROVINCES = {
+    'Ontario':'ON','Quebec':'QC','British Columbia':'BC','Alberta':'AB',
+    'Manitoba':'MB','Saskatchewan':'SK','Nova Scotia':'NS','New Brunswick':'NB',
+    'Newfoundland and Labrador':'NL','Prince Edward Island':'PE','Northwest Territories':'NT',
+    'Nunavut':'NU','Yukon':'YT'
+  };
+  if (countryCode === 'US' && US_STATES[state]) return US_STATES[state];
+  if (countryCode === 'AU' && AU_STATES[state]) return AU_STATES[state];
+  if (countryCode === 'CA' && CA_PROVINCES[state]) return CA_PROVINCES[state];
+  // For other countries, return state as-is (already short)
+  if (state.length <= 4) return state;
+  return state; // Return full state name for others
 }
 
 // Country code -> emoji flag
@@ -1011,6 +1062,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || photoGeo.post_city || null,
         ...photoGeo,
       });
       setProgress(100);
@@ -1078,6 +1130,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || null,
         sound_title: selectedTrack?.title || null,
         sound_artist: selectedTrack?.artist || null,
         sound_url: selectedTrack?.url || null,
@@ -1171,10 +1224,33 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
       const data = await resp.json();
       const addr = data.address || {};
-      const city = addr.city || addr.town || addr.county || addr.state || "";
-      const suburb = addr.suburb || addr.neighbourhood || addr.district || "";
-      setPostLocation({ name: suburb || city, city });
-    } catch { setPostLocation(null); }
+      const city = addr.city || addr.town || addr.village || addr.county || "";
+      const state = addr.state || addr.region || "";
+      const country_code = addr.country_code ? addr.country_code.toUpperCase() : "";
+      // Save to localStorage for future posts
+      if (city) localStorage.setItem('sachi_city', city);
+      if (state) localStorage.setItem('sachi_region', state);
+      if (country_code) localStorage.setItem('sachi_country_code', country_code);
+      // Build display label: "New Providence, NJ" or "Auckland, New Zealand"
+      const stateAbbr = getStateAbbr(state, country_code);
+      const label = [city, stateAbbr || state].filter(Boolean).join(', ');
+      setPostLocation({ name: label, city, state, country_code });
+    } catch {
+      // Fallback: try IP-based
+      try {
+        const r = await fetch('https://ipapi.co/json/');
+        const d = await r.json();
+        const city = d.city || '';
+        const state = d.region || '';
+        const country_code = d.country_code || '';
+        if (city) localStorage.setItem('sachi_city', city);
+        if (state) localStorage.setItem('sachi_region', state);
+        if (country_code) localStorage.setItem('sachi_country_code', country_code);
+        const stateAbbr = getStateAbbr(state, country_code);
+        const label = [city, stateAbbr || state].filter(Boolean).join(', ');
+        setPostLocation({ name: label, city, state, country_code });
+      } catch { setPostLocation(null); }
+    }
     setDetectingLocation(false);
   };
 
@@ -1300,6 +1376,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         sound_title: "Text Post", sound_artist: "sachi",
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || null,
         ...textGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
@@ -1388,7 +1465,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             {postLocation && (
               <div style={{ display:"flex", gap:8, paddingBottom:12, flexWrap:"wrap" }}>
                 <div style={{ background:"rgba(255,255,255,0.07)", borderRadius:20, padding:"5px 12px", fontSize:13, color:"#ccc", display:"flex", alignItems:"center", gap:6 }}>
-                  📍 {postLocation.name || postLocation.city}
+                  📍 {postLocation.name || [postLocation.city, postLocation.state].filter(Boolean).join(', ') || postLocation.city}
                   <span onClick={() => setPostLocation(null)} style={{ cursor:"pointer", color:"#888", fontSize:14, marginLeft:4 }}>✕</span>
                 </div>
               </div>
@@ -2565,7 +2642,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               {video.post_country && (
                 <span style={{ marginLeft:6, opacity:0.9 }}>
                   {countryFlag(video.post_country)}
-                  {video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`}
+                  {(() => {
+                    const city = video.post_city || null;
+                    const stateAbbr = video.post_region ? getStateAbbr(video.post_region, video.post_country) : null;
+                    if (city && stateAbbr) return ` ${city}, ${stateAbbr}`;
+                    if (city) return ` ${city}`;
+                    if (stateAbbr) return ` ${stateAbbr}`;
+                    return ` ${video.post_country}`;
+                  })()}
                 </span>
               )}
             </span>
@@ -5596,7 +5680,7 @@ function App() {
 
       {/* Profile */}
       {activeTab === "profile" && (
-        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
+        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A", position:"relative", zIndex:10, isolation:"isolate" }}>
           {!currentUser ? (
             <div style={{ textAlign:"center", padding:60 }}>
               <div style={{ position:"relative", display:"inline-block", cursor:"pointer", marginBottom:16 }}
