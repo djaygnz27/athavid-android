@@ -302,3 +302,20 @@
 ---
 *Last updated: April 8, 2026 by Daminie*
 *"Sachi means Truth — and building it was anything but easy."*
+
+---
+
+## 📅 April 8, 2026 (continued)
+
+### 🌸 Founding Creator Application Page Launched
+- Created `FoundingCreatorPage` component — full 3-step flow: Landing → Form → Success
+- New `FoundingCreator` database entity created to store all applications
+- Fields captured: name, email, phone, location, content type, audience size, social links, content description, why Sachi
+- Status field: Pending / Approved / Rejected / Waitlisted
+- Two accessible URLs:
+  - **https://www.sachistream.com/founding-creator**
+  - **https://www.sachistream.com/apply** (shareable short link)
+- 🌸 **"Apply to be a Founding Creator"** button added to the ME tab profile page
+- All applications stored in the Base44 database, visible in MOD panel
+- Target: 50 founding creator spots before public May 2026 launch
+
