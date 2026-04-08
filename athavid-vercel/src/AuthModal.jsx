@@ -111,6 +111,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const [username, setUsername] = useState(suggested);
   const [dob, setDob] = useState("");
   const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
   const [is18, setIs18] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -127,6 +128,17 @@ function FinishStep({ googlePayload, onSuccess }) {
     borderRadius:14, color:"#0B0C1A", fontWeight:800, fontSize:16,
     cursor:"pointer", marginBottom:10,
   };
+
+  // Auto-detect location via IP
+  React.useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then(r => r.json())
+      .then(d => {
+        if (d.city && !city) setCity(d.city);
+        if (d.country_name && !country) setCountry(d.country_name);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleFinish = async () => {
     if (!username.trim()) return setError("Please enter a username.");
@@ -157,12 +169,14 @@ function FinishStep({ googlePayload, onSuccess }) {
             followers_count: 0,
             following_count: 0,
             videos_count: 0,
+            location: (city && country) ? city + ", " + country : (city || country || ""),
           })
         }
       ).then(r => r.json());
 
       localStorage.setItem("sachi_dob", dob);
       if (country) localStorage.setItem("sachi_country", country);
+      if (city) localStorage.setItem("sachi_city", city);
       localStorage.removeItem("sachi_pending_google");
 
       const sessionUser = {
@@ -216,7 +230,18 @@ function FinishStep({ googlePayload, onSuccess }) {
       />
 
       <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
-        Where are you from? <span style={{color:"#888", fontSize:11}}>(optional)</span>
+        City <span style={{color:"#888", fontSize:11}}>(optional)</span>
+      </div>
+      <input
+        value={city}
+        onChange={e => setCity(e.target.value)}
+        placeholder="e.g. Sydney, Colombo, New York"
+        style={inp}
+        maxLength={60}
+      />
+
+      <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
+        Country <span style={{color:"#888", fontSize:11}}>(optional)</span>
       </div>
       <select
         value={country}
