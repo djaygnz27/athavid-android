@@ -3097,22 +3097,18 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      // Try to upload to server first (works for email-login users with token)
-      const token = localStorage.getItem("sachi_token");
-      if (token) {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-        try {
-          const url = await uploadFile(file);
-          onSelect(url);
-          return;
-        } catch(e) {
-          console.warn("Server upload failed, falling back to base64:", e);
-        }
+      // Always try to upload to CDN (works for all login types)
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      try {
+        const url = await uploadFile(file);
+        onSelect(url);
+        return;
+      } catch(e) {
+        console.warn("CDN upload failed, falling back to base64:", e);
       }
-      // Fallback: use base64 dataURL directly (Google login users, or upload failure)
-      // Store compressed in localStorage and use as avatar
+      // Last resort fallback
       onSelect(dataUrl);
     } catch(e) { alert("Could not save avatar. Try again."); }
     finally { setUploading(false); }
@@ -5375,16 +5371,16 @@ function App() {
           const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-          // Prioritize localStorage (may contain freshly cropped base64 or recent upload)
-          const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
-          if (localSaved) {
-            setAvatarUrl(localSaved);
-          } else if (match && match.avatar_url) {
+          // DB takes priority — always use latest CDN avatar_url
+          if (match && match.avatar_url && !match.avatar_url.startsWith('data:')) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
-            localStorage.setItem(`avatar_last`, match.avatar_url);
-          } else if (currentUser.avatar_url) {
+            localStorage.setItem('avatar_last', match.avatar_url);
+          } else if (currentUser.avatar_url && !currentUser.avatar_url.startsWith('data:')) {
             setAvatarUrl(currentUser.avatar_url);
+          } else {
+            const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
+            if (localSaved && !localSaved.startsWith('data:')) setAvatarUrl(localSaved);
           }
         } catch(e) {
           // Fall back to auth user avatar_url first, then localStorage
@@ -6149,12 +6145,17 @@ function App() {
         </div>
       )}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
-        // Immediately update UI — works for both base64 and CDN URLs
+        // Immediately update UI
         setAvatarUrl(url);
         setCurrentUser(u => ({ ...u, avatar_url: url }));
         if (currentUser) {
-          localStorage.setItem(`avatar_${currentUser.id}`, url);
-          localStorage.setItem('avatar_last', url);
+          // Clear old cached values so DB takes priority on next load
+          localStorage.removeItem(`avatar_${currentUser.id}`);
+          localStorage.removeItem('avatar_last');
+          if (!url.startsWith('data:')) {
+            localStorage.setItem(`avatar_${currentUser.id}`, url);
+            localStorage.setItem('avatar_last', url);
+          }
         }
         setShowAvatarPicker(false);
 
@@ -6164,25 +6165,21 @@ function App() {
             await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
-            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`);
-            const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
-            if (users[0]) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${users[0].id}/`, { avatar_url: url });
+            // Match by email (works for Google users)
+            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+            const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
+            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
+            if (match) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           } catch(e) { console.warn("User entity update failed:", e); }
           try {
             const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
-            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || []);
+            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
             await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
             setVideoList(vs => vs.map(v =>
               (v.user_id === currentUser.id || v.created_by === currentUser.id)
                 ? { ...v, avatar_url: url } : v
             ));
           } catch(e) { console.warn("Video avatar sync failed:", e); }
-        } else if (currentUser && url.startsWith("data:")) {
-          // For base64 avatars — still update the feed in memory
-          setVideoList(vs => vs.map(v =>
-            (v.user_id === currentUser.id || v.created_by === currentUser.id)
-              ? { ...v, avatar_url: url } : v
-          ));
         }
       }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
