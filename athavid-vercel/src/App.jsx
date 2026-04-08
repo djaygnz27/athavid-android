@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
-import AuthModal, { initGoogleOneTap } from "./AuthModal.jsx";
+import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
 
@@ -5046,13 +5046,25 @@ function App() {
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
 
-  // ── Google One Tap: auto-prompt on every page load for logged-out users ──
+  // ── Handle Google OAuth redirect callback (runs on every page load) ──
   useEffect(() => {
-    if (!auth.getUser()) {
-      initGoogleOneTap((user) => {
-        setCurrentUser(user);
+    handleGoogleRedirectCallback().then(result => {
+      if (!result) return;
+      if (result.sessionUser) {
+        // Existing user — log them in directly
+        setCurrentUser(result.sessionUser);
         setFeedKey(k => k + 1);
-      });
+        setLoginToast(true);
+        setTimeout(() => setLoginToast(false), 4000);
+      } else if (result.needsProfile) {
+        // New user — open modal so they can finish their profile
+        setShowAuth(true);
+      }
+    });
+
+    // If user clicked "Sign in" and was redirected to Google, re-open modal on return
+    if (localStorage.getItem('sachi_auth_intent') && window.location.hash.includes('id_token')) {
+      localStorage.removeItem('sachi_auth_intent');
     }
   }, []);
 

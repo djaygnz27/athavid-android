@@ -1,4 +1,3 @@
-
 const COUNTRIES = [
   "Afghanistan","Albania","Algeria","Argentina","Armenia","Australia","Austria","Azerbaijan",
   "Bahamas","Bahrain","Bangladesh","Belarus","Belgium","Bolivia","Bosnia","Brazil","Bulgaria",
@@ -49,57 +48,60 @@ function buildSessionUser(found, payload) {
   };
 }
 
-// ─── Global One Tap init (call from App root for auto-prompt) ─────────────────
-export function initGoogleOneTap(onSuccess) {
-  const load = () => {
-    if (!window.google?.accounts?.id) return;
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async (response) => {
-        try {
-          const payload = JSON.parse(atob(response.credential.split(".")[1]));
-          const found = await lookupSachiUser(payload.email);
-          if (found) {
-            const sessionUser = buildSessionUser(found, payload);
-            localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-            localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-            onSuccess(sessionUser);
-          }
-          // If not found → user needs to open modal to finish profile
-          // We store payload so modal can pick it up
-          localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
-        } catch(e) {
-          console.error("One Tap auto callback error:", e);
-        }
-      },
-      auto_select: true,             // ← silently signs in returning users
-      cancel_on_tap_outside: false,
-      itp_support: true,             // ← ITP support for Safari
-    });
-    window.google.accounts.id.prompt((notification) => {
-      // notification.isNotDisplayed() → browser blocked it (incognito, dismissed too many times)
-      // notification.isSkippedMoment() → user cancelled
-      // We don't need to do anything special here
-    });
-  };
-
-  if (window.google?.accounts?.id) {
-    load();
-  } else {
-    // Script not yet loaded — wait for it
-    const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
-    if (!existing) {
-      const s = document.createElement("script");
-      s.src = "https://accounts.google.com/gsi/client";
-      s.async = true;
-      s.defer = true;
-      s.onload = load;
-      document.head.appendChild(s);
-    } else {
-      existing.addEventListener("load", load);
-    }
-  }
+// ─── Decode JWT payload (no verification needed — Google sends to our origin) ─
+function decodeJwt(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+  } catch { return null; }
 }
+
+// ─── Google OAuth redirect URL builder ───────────────────────────────────────
+function buildGoogleAuthUrl() {
+  const origin = window.location.origin; // https://sachistream.com
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: origin,
+    response_type: "id_token",
+    scope: "openid email profile",
+    nonce: Math.random().toString(36).slice(2),
+    prompt: "select_account",
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+// ─── Handle OAuth redirect return (call this on app boot) ────────────────────
+export async function handleGoogleRedirectCallback() {
+  // Google returns: https://sachistream.com/#id_token=xxx&token_type=Bearer&expires_in=3599
+  const hash = window.location.hash;
+  if (!hash || !hash.includes("id_token=")) return null;
+
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const idToken = params.get("id_token");
+  if (!idToken) return null;
+
+  // Clean URL immediately so refresh doesn't re-trigger
+  window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+
+  const payload = decodeJwt(idToken);
+  if (!payload?.email) return null;
+
+  // Store pending so FinishStep can pick up
+  localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+
+  const found = await lookupSachiUser(payload.email);
+  if (found) {
+    const sessionUser = buildSessionUser(found, payload);
+    localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+    localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+    localStorage.removeItem("sachi_pending_google");
+    return { sessionUser, needsProfile: false };
+  }
+
+  return { payload, needsProfile: true };
+}
+
+// ─── Legacy no-op for backward compat ────────────────────────────────────────
+export function initGoogleOneTap() {}
 
 // ─── Finish Step: new Google users pick username, dob, country ────────────────
 function FinishStep({ googlePayload, onSuccess }) {
@@ -252,96 +254,43 @@ function FinishStep({ googlePayload, onSuccess }) {
   );
 }
 
-// ─── Google Sign-In Button (used inside modal) ────────────────────────────────
-function GoogleSignInButton({ onVerified }) {
-  const [error, setError] = useState("");
-
-  const handleCredential = useCallback(async (response) => {
-    setError("");
-    try {
-      const payload = JSON.parse(atob(response.credential.split(".")[1]));
-      const found = await lookupSachiUser(payload.email);
-      let existingUser = null;
-      if (found) {
-        existingUser = buildSessionUser(found, payload);
-        localStorage.setItem("sachi_google_user", JSON.stringify(existingUser));
-        localStorage.setItem("sachi_user", JSON.stringify(existingUser));
-      }
-      localStorage.removeItem("sachi_pending_google");
-      onVerified({ payload, existingUser });
-    } catch(e) {
-      console.error(e);
-      setError("Sign-in failed. Please try again.");
-    }
-  }, [onVerified]);
-
-  useEffect(() => {
-    const init = () => {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: false,
-        itp_support: true,
-      });
-      window.google.accounts.id.renderButton(
-        document.getElementById("google-signin-btn"),
-        { theme: "filled_black", size: "large", width: 320, text: "continue_with", shape: "pill", logo_alignment: "left" }
-      );
-      // ← THIS is the missing piece — fire the One Tap overlay
-      window.google.accounts.id.prompt();
-    };
-
-    if (window.google?.accounts?.id) {
-      init();
-    } else {
-      const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
-      if (!existing) {
-        const s = document.createElement("script");
-        s.src = "https://accounts.google.com/gsi/client";
-        s.async = true;
-        s.defer = true;
-        s.onload = init;
-        document.head.appendChild(s);
-      } else {
-        existing.addEventListener("load", init);
-      }
-    }
-  }, [handleCredential]);
-
-  return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
-      <div id="google-signin-btn" style={{ minHeight:44 }} />
-      {error && <div style={{ color:"#ff6b6b", fontSize:13 }}>{error}</div>}
-    </div>
-  );
-}
-
-// ─── Main Auth Modal ──────────────────────────────────────────────────────────
+// ─── Main AuthModal ────────────────────────────────────────────────────────────
 export default function AuthModal({ onClose, onSuccess }) {
-  const [step, setStep] = useState("google"); // google | finish
-  const [googlePayload, setGooglePayload] = useState(null);
+  // Check if we have a pending Google payload (from redirect callback)
+  const pendingRaw = localStorage.getItem("sachi_pending_google");
+  const pending = pendingRaw ? (() => { try { return JSON.parse(pendingRaw); } catch { return null; } })() : null;
 
-  // If One Tap auto-fired before modal opened, pick up pending payload
-  useEffect(() => {
-    const pending = localStorage.getItem("sachi_pending_google");
-    if (pending) {
-      try {
-        const payload = JSON.parse(pending);
-        setGooglePayload(payload);
-        setStep("finish");
-      } catch {}
-    }
-  }, []);
+  const [step, setStep] = useState(pending ? "finish" : "signin");
+  const [googlePayload, setGooglePayload] = useState(pending || null);
+  const [loading, setLoading] = useState(false);
 
-  const handleVerified = ({ payload, existingUser }) => {
-    if (existingUser) {
-      onSuccess(existingUser);
-    } else {
-      setGooglePayload(payload);
-      setStep("finish");
-    }
+  const handleGoogleRedirect = () => {
+    // Save a flag so on return we know to open the modal
+    localStorage.setItem("sachi_auth_intent", "1");
+    window.location.href = buildGoogleAuthUrl();
   };
+
+  if (step === "finish" && googlePayload) {
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 16px" }}>
+        <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.88)" }} />
+        <div style={{
+          position:"relative", zIndex:3001, background:"#12132A",
+          borderRadius:24, border:"1px solid rgba(245,200,66,0.1)",
+          padding:"32px 24px", width:"100%", maxWidth:380,
+          maxHeight:"90vh", overflowY:"auto",
+          boxShadow:"0 24px 80px rgba(0,0,0,0.8)",
+        }}>
+          <button onClick={onClose} style={{ position:"absolute", top:16, right:16, background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:22, cursor:"pointer", lineHeight:1 }}>✕</button>
+          <div style={{ textAlign:"center", marginBottom:24 }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>🌸</div>
+            <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5 }}>Almost there!</div>
+          </div>
+          <FinishStep googlePayload={googlePayload} onSuccess={onSuccess} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 16px" }}>
@@ -349,36 +298,55 @@ export default function AuthModal({ onClose, onSuccess }) {
       <div style={{
         position:"relative", zIndex:3001, background:"#12132A",
         borderRadius:24, border:"1px solid rgba(245,200,66,0.1)",
-        padding:"28px 24px 32px", width:"100%", maxWidth:400,
-        maxHeight:"92vh", overflowY:"auto",
+        padding:"32px 24px", width:"100%", maxWidth:380,
+        boxShadow:"0 24px 80px rgba(0,0,0,0.8)",
       }}>
+        <button onClick={onClose} style={{ position:"absolute", top:16, right:16, background:"none", border:"none", color:"rgba(255,255,255,0.4)", fontSize:22, cursor:"pointer", lineHeight:1 }}>✕</button>
 
-        {/* ── Google Sign-In ── */}
-        {step === "google" && (
-          <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:48, marginBottom:8 }}>🌸</div>
-            <div style={{ color:"#fff", fontWeight:900, fontSize:24, marginBottom:6 }}>Join Sachi</div>
-            <div style={{ color:"#777", fontSize:14, marginBottom:28 }}>Your stage. Share your truth with the world.</div>
+        {/* Logo & title */}
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <div style={{ fontSize:40, marginBottom:8 }}>🌸</div>
+          <div style={{ color:"#F5C842", fontWeight:800, fontSize:24, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
+          <div style={{ color:"rgba(255,255,255,0.45)", fontSize:14 }}>Where truth meets community</div>
+        </div>
 
-            <GoogleSignInButton onVerified={handleVerified} />
+        {/* Google Sign In Button */}
+        <button
+          onClick={handleGoogleRedirect}
+          disabled={loading}
+          style={{
+            display:"flex", alignItems:"center", justifyContent:"center", gap:12,
+            width:"100%", padding:"15px 20px",
+            background:"#fff", border:"none", borderRadius:14,
+            cursor: loading ? "wait" : "pointer",
+            fontSize:16, fontWeight:700, color:"#1a1a2e",
+            boxShadow:"0 2px 12px rgba(0,0,0,0.3)",
+            transition:"transform 0.15s, box-shadow 0.15s",
+            marginBottom:20,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform="scale(1.02)"; e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.4)"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,0.3)"; }}
+        >
+          {/* Google G logo */}
+          <svg width="22" height="22" viewBox="0 0 48 48">
+            <path fill="#4285F4" d="M43.6 20.5H42V20H24v8h11.3C33.6 32.8 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.1 6.6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z"/>
+            <path fill="#34A853" d="M6.3 14.7l6.6 4.8C14.6 16 19 12 24 12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.1 6.6 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/>
+            <path fill="#FBBC05" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.5 26.9 36 24 36c-5.2 0-9.5-3.2-11.3-7.8l-6.5 5C9.6 39.5 16.4 44 24 44z"/>
+            <path fill="#EA4335" d="M43.6 20.5H42V20H24v8h11.3c-0.8 2.4-2.4 4.4-4.5 5.8l6.2 5.2C41.2 36 44 30.5 44 24c0-1.2-.1-2.4-.4-3.5z"/>
+          </svg>
+          Continue with Google
+        </button>
 
-            <div style={{ color:"#555", fontSize:11, marginTop:20, lineHeight:1.6 }}>
-              By continuing you agree to our{" "}
-              <a href="/terms" target="_blank" style={{ color:"#F5C842" }}>Terms</a> &amp;{" "}
-              <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
-            </div>
+        <div style={{ color:"rgba(255,255,255,0.2)", fontSize:12, textAlign:"center", marginBottom:20 }}>
+          Free to join. No spam. No BS.
+        </div>
 
-            <button onClick={onClose} style={{ marginTop:16, background:"none", border:"none", color:"#555", fontSize:13, cursor:"pointer" }}>
-              Maybe later
-            </button>
-          </div>
-        )}
-
-        {/* ── Finish Profile ── */}
-        {step === "finish" && googlePayload && (
-          <FinishStep googlePayload={googlePayload} onSuccess={onSuccess} />
-        )}
-
+        <div style={{ color:"#444", fontSize:11, textAlign:"center", lineHeight:1.6 }}>
+          By continuing you agree to our{" "}
+          <a href="/terms" target="_blank" style={{ color:"#F5C842" }}>Terms</a>{" "}
+          &amp;{" "}
+          <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
+        </div>
       </div>
     </div>
   );
