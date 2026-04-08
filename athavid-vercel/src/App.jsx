@@ -4465,13 +4465,21 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      const [vRes, uRes, cRes] = await Promise.all([
+      // Paginate through ALL users
+      let allUsersFetched = [], uSkip = 0, uMore = true;
+      while (uMore) {
+        const uRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
+        const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
+        allUsersFetched = [...allUsersFetched, ...uItems];
+        uMore = uRes.has_more === true && uItems.length === 500;
+        uSkip += 500;
+      }
+      const [vRes, cRes] = await Promise.all([
         request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date"),
         request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date"),
       ]);
       const videos = vRes.items || vRes || [];
-      const users  = uRes.items || uRes || [];
+      const users  = allUsersFetched;
       const comments = cRes.items || cRes || [];
       setAllUsers(users);
 
@@ -4548,8 +4556,15 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date");
-      setRegisteredUsers(res.items || res || []);
+      let all = [], skip = 0, hasMore = true;
+      while (hasMore) {
+        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
+        const items = res.items || (Array.isArray(res) ? res : []);
+        all = [...all, ...items];
+        hasMore = res.has_more === true && items.length === 500;
+        skip += 500;
+      }
+      setRegisteredUsers(all);
     } catch(e) { console.error(e); }
     setUsersLoading(false);
   };
