@@ -7955,6 +7955,262 @@ function ChildSafety() {
     ] })
   ] });
 }
+const CONTENT_TYPES = [
+  "Short Videos",
+  "Podcasts",
+  "Live Streams",
+  "News & Commentary",
+  "Music",
+  "Comedy",
+  "Sports",
+  "Fitness & Wellness",
+  "Food & Lifestyle",
+  "Tech & Gaming",
+  "Education",
+  "Other"
+];
+const FOLLOWER_OPTIONS = [
+  "Just starting out",
+  "Under 1K",
+  "1K–10K",
+  "10K–100K",
+  "100K+"
+];
+const PERKS = [
+  { icon: "🌸", title: "Founding Creator Badge", desc: "Permanent verified badge on your profile — shows you were here from day one." },
+  { icon: "🎙️", title: "First Live Podcast Slot", desc: "Priority access to go live on Sachi Stream before the public launch." },
+  { icon: "📣", title: "Featured in the Feed", desc: "Your content gets promoted to every new user during the first 30 days." },
+  { icon: "🚫", title: "Zero Censorship — Ever", desc: "No shadowbanning. No algorithm suppression. No demonetisation risk." },
+  { icon: "📊", title: "Early Analytics Access", desc: "Full creator dashboard before it's available to the public." },
+  { icon: "💬", title: "Direct Line to the Team", desc: "Your feedback goes straight to the founders. You help shape this platform." }
+];
+function FoundingCreatorPage({ onBack }) {
+  const [step, setStep] = reactExports.useState(1);
+  const [loading, setLoading] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState("");
+  const [form, setForm] = reactExports.useState({
+    full_name: "",
+    email: "",
+    phone: "",
+    location: "",
+    content_type: "",
+    social_links: "",
+    follower_count: "",
+    why_sachi: "",
+    content_description: ""
+  });
+  const set = (k2, v2) => setForm((f2) => ({ ...f2, [k2]: v2 }));
+  const submit = async () => {
+    if (!form.full_name.trim() || !form.email.trim() || !form.content_type || !form.why_sachi.trim()) {
+      setError("Please fill in all required fields marked with *");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      await request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator", { ...form, status: "Pending" });
+      setStep(3);
+    } catch (e) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const inputStyle = {
+    width: "100%",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(245,200,66,0.2)",
+    borderRadius: 12,
+    padding: "12px 14px",
+    color: "#fff",
+    fontSize: 15,
+    outline: "none",
+    boxSizing: "border-box"
+  };
+  if (step === 3) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { minHeight: "100dvh", background: "linear-gradient(160deg,#0B0C1A 0%,#12132B 60%,#1a0f2e 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px", textAlign: "center" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 80, marginBottom: 16 }, children: "🌸" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { color: "#F5C842", fontSize: 28, fontWeight: 800, margin: "0 0 12px" }, children: "You're In!" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "#ccc", fontSize: 16, maxWidth: 320, lineHeight: 1.6, margin: "0 0 8px" }, children: "Your application has been received. We'll review it and get back to you within 48 hours." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#888", fontSize: 14, maxWidth: 300, lineHeight: 1.5, margin: "0 0 32px" }, children: [
+      "Welcome to the beginning of something real. ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842" }, children: "Sachi means Truth" }),
+      " — and you're one of the first to stand for it."
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        onClick: onBack,
+        style: { background: "#F5C842", color: "#0B0C1A", border: "none", borderRadius: 14, padding: "14px 36px", fontSize: 16, fontWeight: 700, cursor: "pointer" },
+        children: "Back to Sachi Stream"
+      }
+    )
+  ] });
+  if (step === 2) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { minHeight: "100dvh", background: "linear-gradient(160deg,#0B0C1A 0%,#12132B 100%)", paddingBottom: 40 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid rgba(245,200,66,0.15)", position: "sticky", top: 0, background: "#0B0C1A", zIndex: 10 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setStep(1), style: { background: "none", border: "none", color: "#F5C842", fontSize: 22, cursor: "pointer", marginRight: 12, padding: 0 }, children: "←" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 17 }, children: "Founding Creator Application" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: "Takes about 3 minutes · 50 spots available" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "24px 20px", maxWidth: 480, margin: "0 auto" }, children: [
+      [
+        { label: "Full Name *", key: "full_name", type: "text", placeholder: "Your full name" },
+        { label: "Email Address *", key: "email", type: "email", placeholder: "you@example.com" },
+        { label: "Phone (optional)", key: "phone", type: "tel", placeholder: "+1 555-000-0000" },
+        { label: "Location (City, Country)", key: "location", type: "text", placeholder: "e.g. New York, USA" },
+        { label: "Your Social Media Links", key: "social_links", type: "text", placeholder: "Instagram, TikTok, YouTube, etc." }
+      ].map(({ label, key, type, placeholder }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 18 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: { color: "#ccc", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }, children: label }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            type,
+            value: form[key],
+            placeholder,
+            onChange: (e) => set(key, e.target.value),
+            style: inputStyle
+          }
+        )
+      ] }, key)),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 18 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: { color: "#ccc", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }, children: "What type of content do you make? *" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: CONTENT_TYPES.map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => set("content_type", t2), style: {
+          background: form.content_type === t2 ? "#F5C842" : "rgba(255,255,255,0.07)",
+          color: form.content_type === t2 ? "#0B0C1A" : "#ccc",
+          border: form.content_type === t2 ? "none" : "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 20,
+          padding: "7px 14px",
+          fontSize: 13,
+          fontWeight: form.content_type === t2 ? 700 : 400,
+          cursor: "pointer"
+        }, children: t2 }, t2)) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 18 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: { color: "#ccc", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 8 }, children: "Current audience size (all platforms)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: FOLLOWER_OPTIONS.map((f2) => /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => set("follower_count", f2), style: {
+          background: form.follower_count === f2 ? "#F5C842" : "rgba(255,255,255,0.07)",
+          color: form.follower_count === f2 ? "#0B0C1A" : "#ccc",
+          border: form.follower_count === f2 ? "none" : "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 20,
+          padding: "7px 14px",
+          fontSize: 13,
+          fontWeight: form.follower_count === f2 ? 700 : 400,
+          cursor: "pointer"
+        }, children: f2 }, f2)) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 18 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: { color: "#ccc", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }, children: "Tell us about your content" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "textarea",
+          {
+            value: form.content_description,
+            rows: 3,
+            placeholder: "What do you create? Who's your audience? What's your style?",
+            onChange: (e) => set("content_description", e.target.value),
+            style: { ...inputStyle, resize: "none", fontFamily: "inherit" }
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 24 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: { color: "#ccc", fontSize: 13, fontWeight: 600, display: "block", marginBottom: 6 }, children: "Why do you want to join Sachi? *" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "textarea",
+          {
+            value: form.why_sachi,
+            rows: 4,
+            placeholder: "What brought you here? What does 'truth in content' mean to you?",
+            onChange: (e) => set("why_sachi", e.target.value),
+            style: { ...inputStyle, resize: "none", fontFamily: "inherit" }
+          }
+        )
+      ] }),
+      error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#FF6B6B", fontSize: 14, marginBottom: 16, padding: "10px 14px", background: "rgba(255,107,107,0.1)", borderRadius: 10 }, children: error }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: submit, disabled: loading, style: {
+        width: "100%",
+        background: loading ? "#555" : "linear-gradient(135deg,#F5C842,#e6a800)",
+        color: "#0B0C1A",
+        border: "none",
+        borderRadius: 16,
+        padding: "16px",
+        fontSize: 17,
+        fontWeight: 800,
+        cursor: loading ? "not-allowed" : "pointer"
+      }, children: loading ? "Submitting..." : "🌸 Submit My Application" })
+    ] })
+  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { minHeight: "100dvh", background: "linear-gradient(160deg,#0B0C1A 0%,#12132B 60%,#1a0f2e 100%)", overflowY: "auto" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 20px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onBack, style: { background: "none", border: "none", color: "#F5C842", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, padding: 0 }, children: "← Back to Sachi" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "20px 24px 32px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64, marginBottom: 12 }, children: "🌸" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 20, padding: "5px 16px", color: "#F5C842", fontSize: 11, fontWeight: 800, letterSpacing: 1.5, marginBottom: 18, textTransform: "uppercase" }, children: "Limited — 50 Founding Spots" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { style: { color: "#fff", fontSize: 30, fontWeight: 900, margin: "0 0 14px", lineHeight: 1.2 }, children: [
+        "Be the Voice of",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842" }, children: "Something Real" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#aaa", fontSize: 16, lineHeight: 1.65, maxWidth: 340, margin: "0 auto 28px" }, children: [
+        "Sachi Stream launches ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "May 2026" }),
+        ". We're the anti-TikTok — built for authentic creators who are done being censored, suppressed, and replaced by AI. We're looking for ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "50 founding creators" }),
+        " to shape what this platform becomes."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setStep(2), style: {
+        background: "linear-gradient(135deg,#F5C842,#e6a800)",
+        color: "#0B0C1A",
+        border: "none",
+        borderRadius: 16,
+        padding: "16px 40px",
+        fontSize: 17,
+        fontWeight: 800,
+        cursor: "pointer",
+        boxShadow: "0 4px 24px rgba(245,200,66,0.35)"
+      }, children: "Apply Now — It's Free" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 12, marginTop: 10 }, children: "No charge. No obligation. Just your story." })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "linear-gradient(90deg,transparent,rgba(245,200,66,0.2),transparent)", margin: "0 24px 32px" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 20px 32px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: { color: "#fff", fontSize: 20, fontWeight: 800, textAlign: "center", marginBottom: 20 }, children: "What Founding Creators Get" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 14 }, children: PERKS.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,200,66,0.12)", borderRadius: 16, padding: "16px 18px", display: "flex", gap: 14, alignItems: "flex-start" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 28, flexShrink: 0 }, children: p2.icon }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 15, marginBottom: 4 }, children: p2.title }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#999", fontSize: 13, lineHeight: 1.5 }, children: p2.desc })
+        ] })
+      ] }, p2.title)) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 20px 32px", background: "rgba(245,200,66,0.06)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 20, padding: "24px 20px", textAlign: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "📣" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "#ddd", fontSize: 15, lineHeight: 1.7, margin: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("em", { children: [
+        '"The biggest platforms reward performance over reality. Sachi was built for creators who are done performing — and ready to just be ',
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#F5C842" }, children: "real" }),
+        '."'
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 12, marginTop: 12 }, children: "— Jaya Gunaratne, Founder of Sachi Stream" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 20px 60px", textAlign: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setStep(2), style: {
+        width: "100%",
+        maxWidth: 400,
+        background: "linear-gradient(135deg,#F5C842,#e6a800)",
+        color: "#0B0C1A",
+        border: "none",
+        borderRadius: 16,
+        padding: "16px",
+        fontSize: 17,
+        fontWeight: 800,
+        cursor: "pointer",
+        boxShadow: "0 4px 24px rgba(245,200,66,0.3)"
+      }, children: "🌸 Apply to Be a Founding Creator" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 12, marginTop: 10 }, children: "Launching May 2026 · 50 spots · sachistream.com" })
+    ] })
+  ] });
+}
 function formatDate(d) {
   if (!d) return "";
   const dt = new Date(d);
@@ -14324,6 +14580,7 @@ function App() {
   if (path === "/terms") return /* @__PURE__ */ jsxRuntimeExports.jsx(Terms, {});
   if (path === "/privacy") return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
   if (path === "/child-safety") return /* @__PURE__ */ jsxRuntimeExports.jsx(ChildSafety, {});
+  if (path === "/founding-creator" || path === "/apply") return /* @__PURE__ */ jsxRuntimeExports.jsx(FoundingCreatorPage, { onBack: () => window.location.href = "/" });
   const [hasEntered, setHasEntered] = reactExports.useState(false);
   const [currentUser, setCurrentUser] = reactExports.useState(() => auth.getUser());
   reactExports.useEffect(() => {
@@ -14981,6 +15238,28 @@ function App() {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(VideoManageGrid, { videos: myVideos, onRefresh: () => videos.myVideos(currentUser.id, currentUser.email).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => {
       }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "0 20px 12px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: () => window.location.href = "/founding-creator",
+          style: {
+            width: "100%",
+            padding: "15px 0",
+            background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+            border: "1.5px solid rgba(245,200,66,0.4)",
+            borderRadius: 14,
+            color: "#F5C842",
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8
+          },
+          children: "🌸 Apply to be a Founding Creator"
+        }
+      ) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "24px 20px 32px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {

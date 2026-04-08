@@ -1,0 +1,68 @@
+{
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "Short Videos",
+        "Podcasts",
+        "Live Streams",
+        "News & Commentary",
+        "Music",
+        "Comedy",
+        "Sports",
+        "Fitness & Wellness",
+        "Food & Lifestyle",
+        "Tech & Gaming",
+        "Education",
+        "Other"
+      ]
+    },
+    "social_links": {
+      "type": "string"
+    },
+    "follower_count": {
+      "type": "string",
+      "enum": [
+        "Just starting out",
+        "Under 1K",
+        "1K\u201310K",
+        "10K\u2013100K",
+        "100K+"
+      ]
+    },
+    "why_sachi": {
+      "type": "string"
+    },
+    "content_description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Rejected",
+        "Waitlisted"
+      ],
+      "default": "Pending"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "FoundingCreator"
+}
