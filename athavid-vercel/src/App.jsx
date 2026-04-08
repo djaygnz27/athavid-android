@@ -5391,22 +5391,24 @@ function App() {
         .catch(() => setMyVideos([]));
       // Live follow counts - check both current ID and legacy username match
       const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
-      Promise.all([
-        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`),
-        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`),
-      ]).then(([r1, r2]) => {
-        const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
-        const unique = [...new Map(all.map(f => [f.id, f])).values()];
-        setMeFollowersCount(unique.length);
-      }).catch(()=>{});
-      Promise.all([
-        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`),
-        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`),
-      ]).then(([r1, r2]) => {
-        const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
-        const unique = [...new Map(all.map(f => [f.id, f])).values()];
-        setMeFollowingCount(unique.length);
-      }).catch(()=>{});
+      (async () => {
+        try {
+          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+          const unique = [...new Map(all.map(f => [f.id, f])).values()];
+          setMeFollowersCount(unique.length);
+        } catch(e) {}
+      })();
+      (async () => {
+        try {
+          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+          const unique = [...new Map(all.map(f => [f.id, f])).values()];
+          setMeFollowingCount(unique.length);
+        } catch(e) {}
+      })();
     }
   }, [activeTab, currentUser]);
 
@@ -5642,30 +5644,32 @@ function App() {
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
                   <div style={{ textAlign:"center", cursor:"pointer" }} onClick={async () => {
-                    setFollowListLoading(true); setShowFollowersList(true);
-                    const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
-                    const [r1, r2] = await Promise.all([
-                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`),
-                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`),
-                    ]).catch(() => [[],[]]);
-                    const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
-                    const unique = [...new Map(all.map(f=>[f.id,f])).values()];
-                    setFollowersList(unique);
+                    setShowFollowersList(true);
+                    setFollowListLoading(true);
+                    try {
+                      const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
+                      const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+                      const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+                      const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+                      const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                      setFollowersList(unique);
+                    } catch(e) { setFollowersList([]); }
                     setFollowListLoading(false);
                   }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowersCount}</div>
                     <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Followers</div>
                   </div>
                   <div style={{ textAlign:"center", cursor:"pointer" }} onClick={async () => {
-                    setFollowListLoading(true); setShowFollowingList(true);
-                    const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
-                    const [r1, r2] = await Promise.all([
-                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`),
-                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`),
-                    ]).catch(() => [[],[]]);
-                    const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
-                    const unique = [...new Map(all.map(f=>[f.id,f])).values()];
-                    setFollowingList(unique);
+                    setShowFollowingList(true);
+                    setFollowListLoading(true);
+                    try {
+                      const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
+                      const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+                      const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+                      const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+                      const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                      setFollowingList(unique);
+                    } catch(e) { setFollowingList([]); }
                     setFollowListLoading(false);
                   }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowingCount}</div>
