@@ -11,50 +11,56 @@ Deno.serve(async (req) => {
       return Response.json({ error: "image_base64 required" }, { status: 400 });
     }
 
-    // Strip data URL prefix if present
-    const base64Data = image_base64.replace(/^data:[^,]+,/, "");
+    let file_url: string;
 
-    // Convert base64 to binary
-    const binaryStr = atob(base64Data);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], { type: mime_type });
-
-    // Upload to Base44 CDN using service role
-    const form = new FormData();
-    form.append("file", blob, "avatar.jpg");
-
-    const serviceToken = Deno.env.get("BASE44_SERVICE_TOKEN");
-    const appId = Deno.env.get("BASE44_APP_ID") || "69b2ee18a8e6fb58c7f0261c";
-
-    const uploadRes = await fetch(
-      `https://sachi-c7f0261c.base44.app/api/apps/${appId}/integration-endpoints/Core/UploadFile`,
-      {
-        method: "POST",
-        headers: serviceToken ? { "Authorization": `Bearer ${serviceToken}` } : {},
-        body: form
+    // If it's already a URL (DiceBear, existing CDN), skip upload — just update the entity
+    if (image_base64.startsWith("http://") || image_base64.startsWith("https://")) {
+      file_url = image_base64;
+    } else {
+      // It's a base64 data URL — upload to CDN
+      const base64Data = image_base64.replace(/^data:[^,]+,/, "");
+      const binaryStr = atob(base64Data);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
       }
-    );
+      const blob = new Blob([bytes], { type: mime_type });
 
-    const uploadText = await uploadRes.text();
-    let uploadData: any;
-    try { uploadData = JSON.parse(uploadText); } catch(_) { throw new Error(`Upload failed: ${uploadText.slice(0, 100)}`); }
+      const form = new FormData();
+      form.append("file", blob, "avatar.jpg");
 
-    if (!uploadRes.ok || uploadData.error) {
-      throw new Error(uploadData.error || uploadData.message || "Upload failed");
+      const appId = Deno.env.get("BASE44_APP_ID") || "69b2ee18a8e6fb58c7f0261c";
+      const serviceToken = Deno.env.get("BASE44_SERVICE_TOKEN");
+
+      const uploadRes = await fetch(
+        `https://sachi-c7f0261c.base44.app/api/apps/${appId}/integration-endpoints/Core/UploadFile`,
+        {
+          method: "POST",
+          headers: serviceToken ? { "Authorization": `Bearer ${serviceToken}` } : {},
+          body: form
+        }
+      );
+
+      const uploadText = await uploadRes.text();
+      let uploadData: any;
+      try { uploadData = JSON.parse(uploadText); } catch(_) {
+        throw new Error(`Upload failed: ${uploadText.slice(0, 100)}`);
+      }
+
+      if (!uploadRes.ok || uploadData.error) {
+        throw new Error(uploadData.error || uploadData.message || "Upload failed");
+      }
+
+      file_url = uploadData.file_url;
     }
 
-    const file_url = uploadData.file_url;
-
-    // If entity_id provided, update AthaVidUser record directly via service role
+    // Update AthaVidUser entity via service role
     if (entity_id && file_url) {
       try {
         await base44.asServiceRole.entities.AthaVidUser.update(entity_id, { avatar_url: file_url });
       } catch(e: any) {
         console.warn("Entity update failed:", e.message);
-        // Don't fail the whole request — file_url is still valid
+        // Return file_url anyway — client can retry the entity update
       }
     }
 

@@ -3010,21 +3010,23 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      // Always try to upload to CDN (works for all login types)
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-      try {
-        const url = await uploadFile(file);
-        onSelect(url);
+      // Use backend function — works for ALL login types (Google + email)
+      const base64 = dataUrl; // already a data URL from crop
+      const res = await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_base64: base64, mime_type: "image/jpeg" })
+      });
+      const data = await res.json();
+      if (data.file_url) {
+        onSelect(data.file_url);
         return;
-      } catch(e) {
-        console.warn("CDN upload failed, falling back to base64:", e);
       }
-      // Last resort fallback
-      onSelect(dataUrl);
-    } catch(e) { alert("Could not save avatar. Try again."); }
-    finally { setUploading(false); }
+      throw new Error(data.error || "Upload failed");
+    } catch(e) {
+      console.warn("Avatar upload failed:", e);
+      alert("Could not save avatar. Please try again.");
+    } finally { setUploading(false); }
   };
 
   return (
@@ -6069,42 +6071,50 @@ function App() {
         </div>
       )}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
-        // Immediately update UI
+        // Immediately update UI state
         setAvatarUrl(url);
         setCurrentUser(u => ({ ...u, avatar_url: url }));
-        if (currentUser) {
-          // Clear old cached values so DB takes priority on next load
-          localStorage.removeItem(`avatar_${currentUser.id}`);
-          localStorage.removeItem('avatar_last');
-          if (!url.startsWith('data:')) {
-            localStorage.setItem(`avatar_${currentUser.id}`, url);
-            localStorage.setItem('avatar_last', url);
-          }
-        }
         setShowAvatarPicker(false);
 
-        // Background sync to DB — only for CDN URLs (not base64, too large for DB)
-        if (currentUser && !url.startsWith("data:")) {
-          try {
-            await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
-          } catch(e) { console.warn("Auth avatar update failed:", e); }
-          try {
-            // Match by email (works for Google users)
-            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
-            const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
-            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
-          } catch(e) { console.warn("User entity update failed:", e); }
-          try {
-            const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
-            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
-            await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
-            setVideoList(vs => vs.map(v =>
-              (v.user_id === currentUser.id || v.created_by === currentUser.id)
-                ? { ...v, avatar_url: url } : v
-            ));
-          } catch(e) { console.warn("Video avatar sync failed:", e); }
-        }
+        if (!currentUser || url.startsWith("data:")) return;
+
+        // Persist to localStorage
+        localStorage.setItem(`avatar_${currentUser.id}`, url);
+        localStorage.setItem('avatar_last', url);
+        localStorage.setItem('sachi_user', JSON.stringify({ ...currentUser, avatar_url: url }));
+
+        // Background sync to DB — works for ALL auth types (Google + email)
+        try {
+          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
+          const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
+          if (match) {
+            if (url.startsWith("https://") || url.startsWith("http://")) {
+              // Already a URL (DiceBear, CDN etc) — direct entity update
+              await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image_base64: url, mime_type: "image/jpeg", entity_id: match.id })
+              });
+            }
+          }
+        } catch(e) { console.warn("User entity update failed:", e); }
+
+        // Also try auth/me update (works for email users)
+        try {
+          await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+        } catch(e) { console.warn("Auth avatar update failed (ok for Google users):", e); }
+
+        // Update all existing videos so feed shows new avatar immediately
+        try {
+          const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || currentUser.email?.split("@")[0])}&limit=200`);
+          const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
+          await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
+          setVideoList(vs => vs.map(v =>
+            (v.user_id === currentUser.id || v.created_by === currentUser.id || v.username === (currentUser.username || currentUser.email?.split("@")[0]))
+              ? { ...v, avatar_url: url } : v
+          ));
+        } catch(e) { console.warn("Video avatar sync failed:", e); }
       }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
   );
