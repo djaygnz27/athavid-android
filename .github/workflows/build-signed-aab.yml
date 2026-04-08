@@ -1,0 +1,48 @@
+name: Build Signed AAB for Google Play
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install @capacitor/core@6 @capacitor/android@6 @capacitor/cli@6
+
+      - name: Cap sync
+        run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/sachi-upload-key.jks
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build signed AAB
+        run: |
+          cd android && ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/app/sachi-upload-key.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: sachi-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
