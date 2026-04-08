@@ -20726,14 +20726,14 @@ function App() {
 				setLoading(false);
 				return;
 			}
-			const sorted = [...raw].sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
-			const activeUser = user || currentUser;
-			let ranked = sorted;
-			if (activeUser && !append) try {
-				ranked = await interests.rankFeed(activeUser.id, sorted);
-			} catch (re) {
-				ranked = sorted;
-			}
+			const ranked = [...raw].sort((a, b) => {
+				const ageDiffHours = (new Date(b.created_date || 0) - new Date(a.created_date || 0)) / 36e5;
+				const engA = (a.likes_count || 0) * 2 + (a.comments_count || 0) * 3 + (a.views_count || 0) * .01;
+				const engB = (b.likes_count || 0) * 2 + (b.comments_count || 0) * 3 + (b.views_count || 0) * .01;
+				if (Math.abs(ageDiffHours) > 48 && engB - engA > 50) return 1;
+				if (Math.abs(ageDiffHours) > 48 && engA - engB > 50) return -1;
+				return new Date(b.created_date || 0) - new Date(a.created_date || 0);
+			});
 			if (append) setVideoList((prev) => {
 				const existing = new Set(prev.map((v) => v.id));
 				return [...prev, ...ranked.filter((v) => !existing.has(v.id))];
@@ -20814,12 +20814,9 @@ function App() {
 	};
 	const goHome = () => {
 		setActiveTab("feed");
-		const el = feedContainerRef.current || window.__sachiEl;
-		if (el) el.scrollTo({
-			top: 0,
-			behavior: "instant"
-		});
-		loadVideos();
+		setFeedPage(1);
+		setFeedKey((k) => k + 1);
+		loadVideos(currentUser, false, 1);
 	};
 	(0, import_react.useEffect)(() => {
 		if (activeTab === "profile" && currentUser) {
