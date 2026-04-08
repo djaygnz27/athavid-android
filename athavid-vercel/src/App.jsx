@@ -2080,6 +2080,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [likeRecordId, setLikeRecordId] = useState(null);
+  const [showLikesPanel, setShowLikesPanel] = useState(false);
+  const [likesList, setLikesList] = useState([]);
+  const [likesListLoading, setLikesListLoading] = useState(false);
   // Global mute stored on window — readable by stale closures, no prop-drilling
   if (window.__sachiMuted === undefined) window.__sachiMuted = true;
   const [muted, _setMutedLocal] = useState(() => window.__sachiMuted);

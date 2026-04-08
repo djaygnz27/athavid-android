@@ -10990,6 +10990,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const viewedRef = reactExports.useRef(false);
   const [playing, setPlaying] = reactExports.useState(false);
   const [liked, setLiked] = reactExports.useState(false);
+  const [likeLoading, setLikeLoading] = reactExports.useState(false);
+  const [likeRecordId, setLikeRecordId] = reactExports.useState(null);
+  const [showLikesPanel, setShowLikesPanel] = reactExports.useState(false);
+  const [likesList, setLikesList] = reactExports.useState([]);
+  const [likesListLoading, setLikesListLoading] = reactExports.useState(false);
   if (window.__sachiMuted === void 0) window.__sachiMuted = true;
   const [muted, _setMutedLocal] = reactExports.useState(() => window.__sachiMuted);
   const setMuted = (val) => {
