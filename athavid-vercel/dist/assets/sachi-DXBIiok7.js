@@ -8211,6 +8211,238 @@ function FoundingCreatorPage({ onBack }) {
     ] })
   ] });
 }
+const APP_NAME = "SachiStream";
+const AUDIUS_BASE = "https://api.audius.co/v1";
+const GENRES = ["All", "Hip-Hop", "Pop", "Electronic", "R&B/Soul", "Latin", "Rock", "Metal", "Country", "Jazz", "Classical", "Reggae", "Podcasts", "Alternative", "Ambient"];
+function formatDuration(secs) {
+  const m2 = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m2}:${s.toString().padStart(2, "0")}`;
+}
+async function fetchTrending(genre) {
+  const url = genre && genre !== "All" ? `${AUDIUS_BASE}/tracks/trending?app_name=${APP_NAME}&limit=20&genre=${encodeURIComponent(genre)}` : `${AUDIUS_BASE}/tracks/trending?app_name=${APP_NAME}&limit=20`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.data || [];
+}
+async function searchTracks(query) {
+  const res = await fetch(`${AUDIUS_BASE}/tracks/search?app_name=${APP_NAME}&query=${encodeURIComponent(query)}&limit=20`);
+  const data = await res.json();
+  return data.data || [];
+}
+function getStreamUrl(trackId) {
+  return `${AUDIUS_BASE}/tracks/${trackId}/stream?app_name=${APP_NAME}`;
+}
+function MusicPicker({ onSelect, onClose, currentSound }) {
+  const [tab, setTab] = reactExports.useState("trending");
+  const [genre, setGenre] = reactExports.useState("All");
+  const [tracks, setTracks] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [searchQuery, setSearchQuery] = reactExports.useState("");
+  const [searching, setSearching] = reactExports.useState(false);
+  const [playing, setPlaying] = reactExports.useState(null);
+  const [originalSounds, setOriginalSounds] = reactExports.useState([]);
+  const audioRef = reactExports.useRef(null);
+  const searchTimer = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (tab !== "trending") return;
+    setLoading(true);
+    fetchTrending(genre).then(setTracks).catch(() => setTracks([])).finally(() => setLoading(false));
+  }, [genre, tab]);
+  reactExports.useEffect(() => {
+    if (tab !== "search") return;
+    clearTimeout(searchTimer.current);
+    if (!searchQuery.trim()) {
+      setTracks([]);
+      return;
+    }
+    setSearching(true);
+    searchTimer.current = setTimeout(() => {
+      searchTracks(searchQuery).then(setTracks).catch(() => setTracks([])).finally(() => setSearching(false));
+    }, 400);
+  }, [searchQuery, tab]);
+  reactExports.useEffect(() => {
+    if (tab !== "original") return;
+    fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
+      headers: { "Content-Type": "application/json" }
+    }).then((r2) => r2.json()).then((d) => {
+      const all = Array.isArray(d) ? d : d.records || d.data || [];
+      const withSound = all.filter((v2) => v2.sound_url || v2.video_url);
+      setOriginalSounds(withSound);
+    }).catch(() => setOriginalSounds([]));
+  }, [tab]);
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+    setPlaying(null);
+  };
+  const previewTrack = (track) => {
+    if (playing === track.id) {
+      stopAudio();
+      return;
+    }
+    stopAudio();
+    const audio = new Audio(getStreamUrl(track.id));
+    audio.volume = 0.7;
+    audio.play().catch(() => {
+    });
+    audio.onended = () => setPlaying(null);
+    audioRef.current = audio;
+    setPlaying(track.id);
+  };
+  const selectAudiusTrack = (track) => {
+    var _a, _b;
+    stopAudio();
+    onSelect({
+      sound_title: track.title,
+      sound_artist: ((_a = track.user) == null ? void 0 : _a.name) || "Unknown",
+      sound_url: getStreamUrl(track.id),
+      sound_artwork: ((_b = track.artwork) == null ? void 0 : _b["150x150"]) || null,
+      sound_type: "audius",
+      sound_id: track.id
+    });
+  };
+  const selectOriginalSound = (video) => {
+    stopAudio();
+    onSelect({
+      sound_title: video.sound_title || video.caption || "Original Sound",
+      sound_artist: video.display_name || video.username || "Sachi Creator",
+      sound_url: video.sound_url || video.video_url,
+      sound_type: "original",
+      sound_id: video.id
+    });
+  };
+  const clearSound = () => {
+    stopAudio();
+    onSelect(null);
+  };
+  const TAB_STYLE = (active) => ({
+    flex: 1,
+    padding: "10px 4px",
+    background: "none",
+    border: "none",
+    borderBottom: active ? "2px solid #F5C842" : "2px solid transparent",
+    color: active ? "#F5C842" : "#888",
+    fontSize: 13,
+    fontWeight: active ? 700 : 400,
+    cursor: "pointer",
+    transition: "all 0.15s"
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxHeight: "85dvh", background: "#13142A", borderRadius: "20px 20px 0 0", display: "flex", flexDirection: "column", overflow: "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 18, fontWeight: 800, color: "#fff" }, children: "🎵 Add Music" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+        stopAudio();
+        onClose();
+      }, style: { background: "none", border: "none", color: "#888", fontSize: 22, cursor: "pointer", padding: 0 }, children: "✕" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", borderBottom: "1px solid rgba(255,255,255,0.07)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { style: TAB_STYLE(tab === "trending"), onClick: () => setTab("trending"), children: "🔥 Trending" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { style: TAB_STYLE(tab === "search"), onClick: () => setTab("search"), children: "🔍 Search" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { style: TAB_STYLE(tab === "original"), onClick: () => setTab("original"), children: "🎤 Sachi Sounds" })
+    ] }),
+    tab === "trending" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", padding: "10px 16px", scrollbarWidth: "none" }, children: GENRES.map((g) => /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setGenre(g), style: {
+      flexShrink: 0,
+      background: genre === g ? "#F5C842" : "rgba(255,255,255,0.07)",
+      color: genre === g ? "#0B0C1A" : "#bbb",
+      border: "none",
+      borderRadius: 20,
+      padding: "6px 14px",
+      fontSize: 12,
+      fontWeight: genre === g ? 700 : 400,
+      cursor: "pointer"
+    }, children: g }, g)) }),
+    tab === "search" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 16px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "10px 14px", gap: 8 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 16 }, children: "🔍" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          autoFocus: true,
+          value: searchQuery,
+          onChange: (e) => setSearchQuery(e.target.value),
+          placeholder: "Search songs, artists...",
+          style: { flex: 1, background: "none", border: "none", outline: "none", color: "#fff", fontSize: 15 }
+        }
+      ),
+      searchQuery && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setSearchQuery(""), style: { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 18, padding: 0 }, children: "✕" })
+    ] }) }),
+    currentSound && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 8px", background: "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 12, fontWeight: 700 }, children: "♪ Now using" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 13, fontWeight: 600 }, children: currentSound.sound_title }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 11 }, children: currentSound.sound_artist })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: clearSound, style: { background: "rgba(255,80,80,0.15)", border: "1px solid rgba(255,80,80,0.3)", borderRadius: 8, padding: "6px 10px", color: "#ff6666", fontSize: 12, cursor: "pointer" }, children: "Remove" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "0 0 20px" }, children: [
+      (tab === "trending" || tab === "search") && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        (loading || searching) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "40px 20px", color: "#666" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🎵" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: searching ? "Searching..." : "Loading music..." })
+        ] }),
+        !loading && !searching && tracks.length === 0 && tab === "search" && searchQuery && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "40px 20px", color: "#666" }, children: [
+          'No results for "',
+          searchQuery,
+          '"'
+        ] }),
+        !loading && !searching && tracks.length === 0 && tab === "search" && !searchQuery && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "40px 20px", color: "#666" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🎵" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Type to search for music" })
+        ] }),
+        !loading && !searching && tracks.map((track) => {
+          var _a, _b;
+          const isPlaying = playing === track.id;
+          const artwork = (_a = track.artwork) == null ? void 0 : _a["150x150"];
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: isPlaying ? "rgba(245,200,66,0.06)" : "transparent" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: 48, height: 48, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }, children: [
+              artwork ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: artwork, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "🎵" }),
+              isPlaying && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontSize: 18 }, children: "▶" }) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isPlaying ? "#F5C842" : "#fff", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: track.title }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12 }, children: [
+                (_b = track.user) == null ? void 0 : _b.name,
+                " · ",
+                formatDuration(track.duration)
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginTop: 1 }, children: [
+                track.genre,
+                " ",
+                track.play_count ? `· ${(track.play_count / 1e3).toFixed(0)}K plays` : ""
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, flexShrink: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => previewTrack(track), style: { background: isPlaying ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 34, height: 34, cursor: "pointer", color: isPlaying ? "#F5C842" : "#ccc", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }, children: isPlaying ? "⏸" : "▶" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => selectAudiusTrack(track), style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 8, padding: "0 12px", height: 34, cursor: "pointer", color: "#F5C842", fontSize: 12, fontWeight: 700 }, children: "Use" })
+            ] })
+          ] }, track.id);
+        }),
+        !loading && tracks.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "12px", color: "#444", fontSize: 11 }, children: [
+          "Music powered by ",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#666" }, children: "Audius" }),
+          " · Free & licensed for creators"
+        ] })
+      ] }),
+      tab === "original" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 16px 4px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, lineHeight: 1.5 }, children: "🎤 Sounds created by Sachi creators. Use them on your own videos." }) }),
+        originalSounds.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "40px 20px", color: "#666" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 10 }, children: "🎤" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 700, color: "#888", marginBottom: 6 }, children: "No original sounds yet" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13 }, children: "Post a video — your audio becomes a sound other creators can use." })
+        ] }) : originalSounds.map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 48, height: 48, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.08)" }, children: v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: v2.thumbnail_url, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }, children: "🎵" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: v2.sound_title || v2.caption || "Original Sound" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: v2.display_name || v2.username })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => selectOriginalSound(v2), style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 8, padding: "0 12px", height: 34, cursor: "pointer", color: "#F5C842", fontSize: 12, fontWeight: 700, flexShrink: 0 }, children: "Use" })
+        ] }, v2.id))
+      ] })
+    ] })
+  ] }) });
+}
 function formatDate(d) {
   if (!d) return "";
   const dt = new Date(d);
@@ -9680,9 +9912,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         post_visibility: postVisibility,
         post_location_name: (postLocation == null ? void 0 : postLocation.name) || null,
         post_city: (postLocation == null ? void 0 : postLocation.city) || null,
-        sound_title: (selectedTrack == null ? void 0 : selectedTrack.title) || null,
-        sound_artist: (selectedTrack == null ? void 0 : selectedTrack.artist) || null,
-        sound_url: (selectedTrack == null ? void 0 : selectedTrack.url) || null,
+        sound_title: (selectedTrack == null ? void 0 : selectedTrack.sound_title) || (selectedTrack == null ? void 0 : selectedTrack.title) || null,
+        sound_artist: (selectedTrack == null ? void 0 : selectedTrack.sound_artist) || (selectedTrack == null ? void 0 : selectedTrack.artist) || null,
+        sound_url: (selectedTrack == null ? void 0 : selectedTrack.sound_url) || (selectedTrack == null ? void 0 : selectedTrack.url) || null,
         ...videoGeo
       });
       setProgress(100);
@@ -9704,89 +9936,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setProgress(0);
       setStep("");
     }
-  };
-  const JAMENDO_CLIENT_ID = "c9f4d87f";
-  const GENRE_TAG_MAP = {
-    "All": "",
-    "Lo-Fi": "lounge",
-    "Hip-Hop": "hiphop",
-    "Electronic": "electronic",
-    "R&B": "rnb",
-    "Pop": "pop",
-    "Chill": "relaxation",
-    "Afrobeats": "afrobeats",
-    "Jazz": "jazz",
-    "Rock": "rock",
-    "Acoustic": "acoustic",
-    "Classical": "classical"
-  };
-  const GENRE_EMOJI = {
-    "lounge": "🌆",
-    "hiphop": "🔥",
-    "electronic": "⚡",
-    "rnb": "❤️",
-    "pop": "🌈",
-    "relaxation": "🌊",
-    "afrobeats": "🌍",
-    "jazz": "🎷",
-    "rock": "🎸",
-    "acoustic": "🎸",
-    "classical": "🎻"
-  };
-  const fetchMusicTracks = async (genre = "All", search = "") => {
-    setMusicLoading(true);
-    setMusicTracks([]);
-    try {
-      const tag = GENRE_TAG_MAP[genre] || "";
-      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
-      if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
-      console.log("[Sachi Music] Fetching via proxy:", apiUrl);
-      let tracks = [];
-      try {
-        const resp = await fetch(apiUrl);
-        if (resp.ok) {
-          const data = await resp.json();
-          tracks = data.tracks || [];
-          console.log("[Sachi Music] Proxy results:", tracks.length);
-        }
-      } catch (proxyErr) {
-        console.warn("[Sachi Music] Proxy failed, trying direct:", proxyErr);
-      }
-      if (tracks.length === 0) {
-        let directUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
-        if (tag) directUrl += `&tags=${encodeURIComponent(tag)}`;
-        if (search) directUrl += `&namesearch=${encodeURIComponent(search)}`;
-        console.log("[Sachi Music] Trying direct:", directUrl);
-        const resp2 = await fetch(directUrl);
-        if (resp2.ok) {
-          const data2 = await resp2.json();
-          tracks = (data2.results || []).map((t2) => {
-            var _a, _b, _c;
-            return {
-              id: `j_${t2.id}`,
-              title: t2.name,
-              artist: t2.artist_name,
-              url: t2.audio || t2.audiodownload,
-              genre: genre === "All" ? ((_c = (_b = (_a = t2.musicinfo) == null ? void 0 : _a.tags) == null ? void 0 : _b.genres) == null ? void 0 : _c[0]) || "Music" : genre,
-              emoji: GENRE_EMOJI[tag] || "🎵",
-              duration: t2.duration,
-              image: t2.image
-            };
-          }).filter((t2) => t2.url);
-          console.log("[Sachi Music] Direct results:", tracks.length);
-        }
-      }
-      if (tracks.length > 0) {
-        setMusicTracks(tracks);
-      } else {
-        throw new Error("No tracks from any source");
-      }
-    } catch (e) {
-      console.error("[Sachi Music] All sources failed:", e);
-      const fallback = MUSIC_TRACKS.filter((t2) => genre === "All" || t2.genre === genre);
-      setMusicTracks(fallback.length > 0 ? fallback : MUSIC_TRACKS);
-    }
-    setMusicLoading(false);
   };
   const detectLocation = async () => {
     setDetectingLocation(true);
@@ -10629,190 +10778,31 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
             {
-              onClick: () => {
-                const next = !showMusicPicker;
-                setShowMusicPicker(next);
-                if (next && musicTracks.length === 0) fetchMusicTracks("All", "");
-              },
-              style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "12px 14px", marginBottom: 12, cursor: "pointer" },
+              onClick: () => setShowMusicPicker(true),
+              style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.06)", border: `1px solid ${selectedTrack ? "rgba(245,200,66,0.4)" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "12px 14px", marginBottom: 12, cursor: "pointer" },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22 }, children: "🎵" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: selectedTrack ? selectedTrack.title : "Add Sound" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: selectedTrack ? selectedTrack.artist : "Pick from free music library" })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedTrack ? "#F5C842" : "#fff", fontWeight: 700, fontSize: 14 }, children: selectedTrack ? selectedTrack.sound_title || selectedTrack.title : "Add Sound" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: selectedTrack ? selectedTrack.sound_artist || selectedTrack.artist : "Pick from trending, search, or Sachi creators" })
                 ] }),
                 selectedTrack && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: (e) => {
                   e.stopPropagation();
                   setSelectedTrack(null);
-                }, style: { background: "none", border: "none", color: "#ff6b6b", fontSize: 16, cursor: "pointer" }, children: "✕" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 18 }, children: showMusicPicker ? "▲" : "▼" })
+                }, style: { background: "none", border: "none", color: "#ff6b6b", fontSize: 16, cursor: "pointer", padding: 0 }, children: "✕" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 18 }, children: "▶" })
               ]
             }
           ),
           showMusicPicker && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "div",
+            MusicPicker,
             {
-              style: { position: "fixed", inset: 0, zIndex: 3500, display: "flex", flexDirection: "column", justifyContent: "flex-end" },
-              onClick: (e) => {
-                if (e.target === e.currentTarget) setShowMusicPicker(false);
+              currentSound: selectedTrack,
+              onSelect: (track) => {
+                setSelectedTrack(track);
+                setShowMusicPicker(false);
               },
-              children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-                background: "#0f0f1a",
-                borderRadius: "20px 20px 0 0",
-                maxHeight: "70vh",
-                display: "flex",
-                flexDirection: "column",
-                boxShadow: "0 -8px 40px rgba(0,0,0,0.8)",
-                border: "1px solid rgba(255,255,255,0.08)"
-              }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 8px" }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: "🎵 Add Sound" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "button",
-                    {
-                      onClick: () => setShowMusicPicker(false),
-                      style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer", fontSize: 16 },
-                      children: "✕"
-                    }
-                  )
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "0 12px 8px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "8px 12px", gap: 8 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 14 }, children: "🔍" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "input",
-                    {
-                      value: musicSearch,
-                      onChange: (e) => setMusicSearch(e.target.value),
-                      onKeyDown: (e) => e.key === "Enter" && fetchMusicTracks(musicGenreFilter, musicSearch),
-                      placeholder: "Search songs, artists...",
-                      style: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#fff", fontSize: 13 }
-                    }
-                  ),
-                  musicSearch && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "button",
-                    {
-                      onClick: () => {
-                        setMusicSearch("");
-                        fetchMusicTracks(musicGenreFilter, "");
-                      },
-                      style: { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 14, padding: 0 },
-                      children: "✕"
-                    }
-                  ),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(
-                    "button",
-                    {
-                      onClick: () => fetchMusicTracks(musicGenreFilter, musicSearch),
-                      style: {
-                        background: "rgba(255,107,107,0.25)",
-                        border: "none",
-                        borderRadius: 8,
-                        padding: "4px 10px",
-                        color: "#ff6b6b",
-                        fontSize: 11,
-                        fontWeight: 700,
-                        cursor: "pointer"
-                      },
-                      children: "Go"
-                    }
-                  )
-                ] }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, padding: "0 12px 8px", overflowX: "auto", scrollbarWidth: "none", flexShrink: 0 }, children: ["All", "Lo-Fi", "Hip-Hop", "Electronic", "R&B", "Pop", "Chill", "Afrobeats", "Jazz", "Rock", "Acoustic", "Classical"].map((g) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    onClick: () => {
-                      setMusicGenreFilter(g);
-                      fetchMusicTracks(g, musicSearch);
-                    },
-                    style: {
-                      flexShrink: 0,
-                      padding: "5px 12px",
-                      borderRadius: 20,
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      background: musicGenreFilter === g ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
-                      color: musicGenreFilter === g ? "#fff" : "#aaa"
-                    },
-                    children: g
-                  },
-                  g
-                )) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }, children: musicLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "20px", textAlign: "center", color: "#666", fontSize: 13 }, children: "🎵 Loading tracks..." }) : musicTracks.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "20px", textAlign: "center", color: "#666", fontSize: 13 }, children: "No tracks found. Try another genre or search." }) : musicTracks.map((track) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "div",
-                  {
-                    onClick: () => {
-                      setSelectedTrack(track);
-                      setShowMusicPicker(false);
-                      if (previewAudioRef.current) {
-                        previewAudioRef.current.pause();
-                        setPreviewTrack(null);
-                      }
-                    },
-                    style: {
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "10px 14px",
-                      borderBottom: "1px solid rgba(255,255,255,0.05)",
-                      cursor: "pointer",
-                      background: (selectedTrack == null ? void 0 : selectedTrack.id) === track.id ? "rgba(255,107,107,0.15)" : "transparent"
-                    },
-                    children: [
-                      track.image ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: track.image, style: { width: 36, height: 36, borderRadius: 6, objectFit: "cover", flexShrink: 0 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, width: 36, textAlign: "center" }, children: track.emoji || "🎵" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: track.title }),
-                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
-                          track.artist,
-                          track.duration ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,107,107,0.6)", marginLeft: 6 }, children: [
-                            Math.floor(track.duration / 60),
-                            ":",
-                            String(track.duration % 60).padStart(2, "0")
-                          ] }) : null
-                        ] })
-                      ] }),
-                      (selectedTrack == null ? void 0 : selectedTrack.id) === track.id && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b", fontSize: 14, marginRight: 4 }, children: "✓" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        if (previewTrack === track.id) {
-                          if (previewAudioRef.current) {
-                            previewAudioRef.current.pause();
-                            previewAudioRef.current.currentTime = 0;
-                          }
-                          setPreviewTrack(null);
-                        } else {
-                          setPreviewTrack(track.id);
-                          if (previewAudioRef.current) {
-                            previewAudioRef.current.pause();
-                            previewAudioRef.current.src = track.url;
-                            previewAudioRef.current.load();
-                            previewAudioRef.current.play().catch((err) => console.warn("[Sachi Preview]", err));
-                          }
-                        }
-                      }, style: {
-                        background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
-                        border: "2px solid rgba(255,107,107,0.4)",
-                        borderRadius: "50%",
-                        width: 38,
-                        height: 38,
-                        color: "#ff6b6b",
-                        cursor: "pointer",
-                        fontSize: 16,
-                        flexShrink: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        WebkitTapHighlightColor: "transparent",
-                        touchAction: "manipulation"
-                      }, children: previewTrack === track.id ? "⏹" : "▶" })
-                    ]
-                  },
-                  track.id
-                )) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "6px 14px 16px", color: "#444", fontSize: 10, textAlign: "right" }, children: "Powered by Jamendo • Free music" })
-              ] })
+              onClose: () => setShowMusicPicker(false)
             }
           ),
           explicitBlocked && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,50,50,0.12)", border: "1px solid rgba(255,50,50,0.4)", borderRadius: 12, padding: "14px 16px", marginBottom: 12, display: "flex", gap: 10, alignItems: "flex-start" }, children: [
@@ -11578,12 +11568,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       ),
       video.sound_title && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6, overflow: "hidden" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          fontSize: 14,
-          flexShrink: 0,
-          animation: playing ? "spin 3s linear infinite" : "none",
-          display: "inline-block"
-        }, children: "🎵" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 14, flexShrink: 0, animation: playing ? "spin 3s linear infinite" : "none", display: "inline-block" }, children: "🎵" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflow: "hidden", flex: 1 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
           color: "rgba(255,255,255,0.85)",
           fontSize: 12,
