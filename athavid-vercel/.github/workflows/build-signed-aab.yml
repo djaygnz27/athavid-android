@@ -9,24 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install @capacitor/core@6 @capacitor/android@6 @capacitor/cli@6
-
-      - name: Add android platform if missing
-        run: |
-          if [ ! -f "android/app/build.gradle" ]; then
-            npx cap add android
-          else
-            echo "Android platform already exists, skipping add"
-          fi
-
-      - name: Copy web assets to android
-        run: npx cap copy android
-
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
