@@ -5380,14 +5380,28 @@ function App() {
 
   useEffect(() => {
     if (activeTab === "profile" && currentUser) {
-      videos.myVideos(currentUser.id)
+      // Load my videos - match by both current ID and email to catch legacy posts
+      videos.myVideos(currentUser.id, currentUser.email)
         .then(r => setMyVideos(Array.isArray(r) ? r : []))
         .catch(() => setMyVideos([]));
-      // Live follow counts for Me tab
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`)
-        .then(res => setMeFollowersCount((res?.items || res || []).length)).catch(()=>{});
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`)
-        .then(res => setMeFollowingCount((res?.items || res || []).length)).catch(()=>{});
+      // Live follow counts - check both current ID and legacy username match
+      const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
+      Promise.all([
+        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`),
+        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`),
+      ]).then(([r1, r2]) => {
+        const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+        const unique = [...new Map(all.map(f => [f.id, f])).values()];
+        setMeFollowersCount(unique.length);
+      }).catch(()=>{});
+      Promise.all([
+        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`),
+        request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`),
+      ]).then(([r1, r2]) => {
+        const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+        const unique = [...new Map(all.map(f => [f.id, f])).values()];
+        setMeFollowingCount(unique.length);
+      }).catch(()=>{});
     }
   }, [activeTab, currentUser]);
 
@@ -5632,7 +5646,7 @@ function App() {
                   </div>
                 </div>
               </div>
-              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id).then(setMyVideos).catch(()=>{})} />
+              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
 
               {/* Log Out */}
               <div style={{ padding:"24px 20px 32px" }}>
