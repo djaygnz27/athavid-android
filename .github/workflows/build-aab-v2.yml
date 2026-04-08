@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - uses: android-actions/setup-android@v3
 
@@ -24,12 +24,12 @@ jobs:
         run: |
           cd athavid-vercel
           npm install
+          npm install @capacitor/cli @capacitor/core @capacitor/android
           npx cap sync android
 
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > sachi-upload-key.jks
-          ls -la sachi-upload-key.jks
 
       - name: Make gradlew executable
         run: chmod +x athavid-vercel/android/gradlew
