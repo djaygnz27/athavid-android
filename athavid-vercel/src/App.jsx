@@ -5202,13 +5202,17 @@ function App() {
       const raw = rawAll.filter(v => !v.is_archived);
       setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
-      const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
-      const activeUser = user || currentUser;
-      let ranked = sorted;
-      if (activeUser && !append) {
-        try { ranked = await interests.rankFeed(activeUser.id, sorted); }
-        catch(re) { ranked = sorted; }
-      }
+      // Sort: newest first, with a mild boost for high-engagement videos
+      const sorted = [...raw].sort((a,b) => {
+        const ageDiffHours = (new Date(b.created_date||0) - new Date(a.created_date||0)) / 3600000;
+        const engA = (a.likes_count||0)*2 + (a.comments_count||0)*3 + (a.views_count||0)*0.01;
+        const engB = (b.likes_count||0)*2 + (b.comments_count||0)*3 + (b.views_count||0)*0.01;
+        // Only let engagement override if >24h apart AND significantly more engaging
+        if (Math.abs(ageDiffHours) > 48 && (engB - engA) > 50) return 1;
+        if (Math.abs(ageDiffHours) > 48 && (engA - engB) > 50) return -1;
+        return new Date(b.created_date||0) - new Date(a.created_date||0);
+      });
+      const ranked = sorted;
       if (append) {
         setVideoList(prev => {
           const existing = new Set(prev.map(v => v.id));
@@ -5271,11 +5275,9 @@ function App() {
 
   const goHome = () => {
     setActiveTab("feed");
-    // Scroll to top immediately (keep existing videos visible while refreshing)
-    const el = feedContainerRef.current || window.__sachiEl;
-    if (el) { el.scrollTo({ top: 0, behavior: 'instant' }); }
-    // Then reload fresh data
-    loadVideos();
+    setFeedPage(1);
+    setFeedKey(k => k + 1);   // remounts feed container → guaranteed scroll reset
+    loadVideos(currentUser, false, 1);
   };
 
   useEffect(() => {
