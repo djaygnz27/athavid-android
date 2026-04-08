@@ -8778,6 +8778,92 @@ function Privacy() {
 	});
 }
 //#endregion
+//#region src/ChildSafety.jsx
+function ChildSafety() {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		style: {
+			maxWidth: "800px",
+			margin: "0 auto",
+			padding: "40px 20px",
+			fontFamily: "sans-serif",
+			color: "#333",
+			lineHeight: "1.7"
+		},
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+				style: {
+					color: "#1a1a2e",
+					borderBottom: "3px solid #F5C842",
+					paddingBottom: "10px"
+				},
+				children: "Child Safety Standards"
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Last updated: April 8, 2026" }) }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+				"Sachi, operated by ",
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "LDNA Consulting" }),
+				", is committed to maintaining a safe platform and actively combating child sexual abuse and exploitation (CSAE)."
+			] }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "1. Prohibited Content" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Sachi strictly prohibits any content that sexually exploits minors, including child sexual abuse material (CSAM). Any such content is immediately removed and reported to the National Center for Missing & Exploited Children (NCMEC) and relevant law enforcement authorities." }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "2. Age Restrictions" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Sachi is intended for users aged 18 and older. Users must confirm their age during registration. Accounts found to belong to minors are immediately suspended." }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "3. Content Moderation" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Sachi employs both automated AI-based content detection and human moderation to identify and remove harmful content, including CSAM. Our moderation team reviews flagged content promptly." }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "4. Reporting Mechanism" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Users can report any content they believe violates our child safety standards using the in-app report feature. Reports are reviewed within 24 hours." }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: ["You may also report directly to: ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+				href: "mailto:safety@sachistream.com",
+				children: "safety@sachistream.com"
+			})] }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "5. CSAM Reporting" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+				"Any discovered CSAM is immediately reported to the ",
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+					href: "https://www.missingkids.org/gethelpnow/cybertipline",
+					target: "_blank",
+					rel: "noopener noreferrer",
+					children: "NCMEC CyberTipline"
+				}),
+				" and cooperating law enforcement agencies. We maintain a zero-tolerance policy."
+			] }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "6. Designated Safety Contact" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Email:" }),
+				" ",
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+					href: "mailto:jaygnz27@gmail.com",
+					children: "jaygnz27@gmail.com"
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("br", {}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Organization:" }),
+				" LDNA Consulting"
+			] }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "7. Compliance" }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "Sachi complies with the PROTECT Our Children Act, COPPA, and all applicable federal and state laws regarding child safety online." }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+				style: {
+					marginTop: "40px",
+					fontSize: "14px",
+					color: "#666"
+				},
+				children: [
+					"© 2026 LDNA Consulting. | ",
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+						href: "/privacy",
+						children: "Privacy Policy"
+					}),
+					" | ",
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+						href: "/terms",
+						children: "Terms of Service"
+					})
+				]
+			})
+		]
+	});
+}
+//#endregion
 //#region src/App.jsx
 function formatDate(d) {
 	if (!d) return "";
@@ -20580,6 +20666,7 @@ function App() {
 	const path = window.location.pathname;
 	if (path === "/terms") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Terms, {});
 	if (path === "/privacy") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Privacy, {});
+	if (path === "/child-safety") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChildSafety, {});
 	const [hasEntered, setHasEntered] = (0, import_react.useState)(false);
 	const [currentUser, setCurrentUser] = (0, import_react.useState)(() => auth.getUser());
 	(0, import_react.useEffect)(() => {
