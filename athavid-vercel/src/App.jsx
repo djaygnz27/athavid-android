@@ -1256,10 +1256,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   // Intercept post buttons — go to details step first
   const goToPostDetails = () => {
-    // Auto-detect location quietly
-    if (!postLocation && navigator.geolocation) {
-      detectLocation();
-    }
+    // Always re-detect location on each post (mandatory)
+    detectLocation();
     setShowPostDetails(true);
   };
 
@@ -1447,27 +1445,40 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           {/* Divider */}
           <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:20 }} />
 
-          {/* Location row */}
+          {/* Location row - MANDATORY */}
           <div style={{ marginBottom:4 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", cursor:"pointer" }}
               onClick={detectLocation}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <span style={{ fontSize:20 }}>📍</span>
-                <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Location</span>
+                <div>
+                  <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Location</span>
+                  <span style={{ marginLeft:8, background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px", letterSpacing:0.5 }}>REQUIRED</span>
+                </div>
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                {detectingLocation && <span style={{ color:"#888", fontSize:12 }}>Detecting...</span>}
-                {postLocation && !detectingLocation && <span style={{ color:"#aaa", fontSize:13 }}>{postLocation.name || postLocation.city}</span>}
-                {!postLocation && !detectingLocation && <span style={{ color:"#555", fontSize:13 }}>Tap to add</span>}
-                <span style={{ color:"#555", fontSize:18 }}>›</span>
+                {detectingLocation && <span style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>📡 Detecting...</span>}
+                {postLocation && !detectingLocation && (
+                  <span style={{ color:"#8BC34A", fontSize:13, fontWeight:600 }}>
+                    ✓ {postLocation.name}
+                  </span>
+                )}
+                {!postLocation && !detectingLocation && (
+                  <span style={{ color:"#ff6b6b", fontSize:12, fontWeight:600 }}>Not set — tap to detect</span>
+                )}
               </div>
             </div>
-            {postLocation && (
+            {postLocation && !detectingLocation && (
               <div style={{ display:"flex", gap:8, paddingBottom:12, flexWrap:"wrap" }}>
-                <div style={{ background:"rgba(255,255,255,0.07)", borderRadius:20, padding:"5px 12px", fontSize:13, color:"#ccc", display:"flex", alignItems:"center", gap:6 }}>
-                  📍 {postLocation.name || [postLocation.city, postLocation.state].filter(Boolean).join(', ') || postLocation.city}
-                  <span onClick={() => setPostLocation(null)} style={{ cursor:"pointer", color:"#888", fontSize:14, marginLeft:4 }}>✕</span>
+                <div style={{ background:"rgba(139,195,74,0.12)", border:"1px solid rgba(139,195,74,0.25)", borderRadius:20, padding:"5px 14px", fontSize:13, color:"#8BC34A", display:"flex", alignItems:"center", gap:6 }}>
+                  📍 {postLocation.name}
+                  <span onClick={detectLocation} style={{ cursor:"pointer", color:"#666", fontSize:11, marginLeft:4 }}>↺ refresh</span>
                 </div>
+              </div>
+            )}
+            {!postLocation && !detectingLocation && (
+              <div style={{ paddingBottom:12 }}>
+                <div style={{ color:"#ff6b6b", fontSize:11, opacity:0.8 }}>📍 Location is required to post on Sachi. Tap above to detect automatically.</div>
               </div>
             )}
           </div>
@@ -1557,15 +1568,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </button>
           <button
             onClick={() => {
+              if (!postLocation) { alert('📍 Please allow location access to post on Sachi.'); detectLocation(); return; }
               if (uploadTab === "text") uploadTextPost();
               else if (uploadTab === "photo") uploadPhotos();
               else upload();
             }}
-            disabled={uploading}
-            style={{ flex:2.5, padding:"14px 0", background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
-              border:"none", borderRadius:14, color:"#fff", fontWeight:900, fontSize:16, cursor: uploading ? "default" : "pointer",
-              boxShadow:"0 4px 20px rgba(255,107,107,0.35)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            {uploading ? step : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
+            disabled={uploading || detectingLocation}
+            style={{ flex:2.5, padding:"14px 0",
+              background: uploading ? "#333" : (!postLocation || detectingLocation) ? "rgba(255,107,107,0.25)" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border: (!postLocation && !uploading) ? "1.5px solid rgba(255,107,107,0.4)" : "none",
+              borderRadius:14, color: (!postLocation && !uploading) ? "rgba(255,255,255,0.4)" : "#fff",
+              fontWeight:900, fontSize:16, cursor: (uploading || detectingLocation) ? "default" : "pointer",
+              boxShadow: postLocation && !uploading ? "0 4px 20px rgba(255,107,107,0.35)" : "none",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            {uploading ? step : detectingLocation ? "📡 Detecting location..." : !postLocation ? "📍 Location required" : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
           </button>
         </div>
       </div>
@@ -1695,34 +1711,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
-        {/* Location permission prompt — only show if not yet granted */}
-        {!localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && (
-          <div style={{ background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
-            <div style={{ color:"#F5C842", fontWeight:800, fontSize:13, marginBottom:4 }}>📍 Add your location to this post?</div>
-            <div style={{ color:"#777", fontSize:11, marginBottom:10 }}>Posts with location get more reach. Enable once, applies to all future posts.</div>
-            <button onClick={() => {
-              if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                  (pos) => {
-                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
-                      .then(r => r.json())
-                      .then(data => {
-                        const addr = data.address || {};
-                        const code = addr.country_code ? addr.country_code.toUpperCase() : null;
-                        const region = addr.state || addr.city || addr.county || null;
-                        if (code) { localStorage.setItem("sachi_country_code", code); }
-                        if (region) { localStorage.setItem("sachi_region", region); }
-                      }).catch(()=>{});
-                  },
-                  () => {},
-                  { timeout: 8000 }
-                );
-              }
-            }} style={{ width:"100%", padding:"10px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:10, color:"#0B0C1A", fontWeight:800, fontSize:13, cursor:"pointer" }}>
-              📍 Enable Location
-            </button>
-          </div>
-        )}
+
 
         </>)}
 
