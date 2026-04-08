@@ -5464,8 +5464,8 @@ function App() {
     <div style={{ background:"#0B0C1A", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
       {/* Header — Sachi original */}
-      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px" }}>
+      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px", pointerEvents:"auto" }}>
 
           {/* Left: Sachi logo + wordmark */}
           <div style={{ display:"flex", alignItems:"center", gap:7 }}>
@@ -5638,43 +5638,41 @@ function App() {
                   <div style={{ fontSize:13, color:"#888" }}>✏️</div>
                 </div>
                 <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
-                <div style={{ display:"flex", justifyContent:"center", gap:32, marginTop:20, marginBottom:20 }}>
-                  <div style={{ textAlign:"center" }}>
+                <div style={{ display:"flex", justifyContent:"center", gap:0, marginTop:20, marginBottom:20, pointerEvents:"auto" }}>
+                  <div style={{ textAlign:"center", padding:"10px 24px" }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{myVideos.length}</div>
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
-                  <div style={{ textAlign:"center", cursor:"pointer" }} onClick={async () => {
-                    setShowFollowersList(true);
-                    setFollowListLoading(true);
-                    try {
-                      const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
-                      const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
-                      const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
-                      const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
-                      const unique = [...new Map(all.map(f=>[f.id,f])).values()];
-                      setFollowersList(unique);
-                    } catch(e) { setFollowersList([]); }
-                    setFollowListLoading(false);
-                  }}>
+                  <button style={{ textAlign:"center", padding:"10px 24px", background:"none", border:"none", cursor:"pointer", pointerEvents:"auto", WebkitTapHighlightColor:"transparent" }}
+                    onClick={async () => {
+                      setShowFollowersList(true);
+                      setFollowListLoading(true);
+                      try {
+                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const all = r1?.items || r1 || [];
+                        const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                        setFollowersList(unique);
+                      } catch(e) { setFollowersList([]); }
+                      setFollowListLoading(false);
+                    }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowersCount}</div>
                     <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Followers</div>
-                  </div>
-                  <div style={{ textAlign:"center", cursor:"pointer" }} onClick={async () => {
-                    setShowFollowingList(true);
-                    setFollowListLoading(true);
-                    try {
-                      const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
-                      const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
-                      const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
-                      const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
-                      const unique = [...new Map(all.map(f=>[f.id,f])).values()];
-                      setFollowingList(unique);
-                    } catch(e) { setFollowingList([]); }
-                    setFollowListLoading(false);
-                  }}>
+                  </button>
+                  <button style={{ textAlign:"center", padding:"10px 24px", background:"none", border:"none", cursor:"pointer", pointerEvents:"auto", WebkitTapHighlightColor:"transparent" }}
+                    onClick={async () => {
+                      setShowFollowingList(true);
+                      setFollowListLoading(true);
+                      try {
+                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const all = r1?.items || r1 || [];
+                        const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                        setFollowingList(unique);
+                      } catch(e) { setFollowingList([]); }
+                      setFollowListLoading(false);
+                    }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowingCount}</div>
                     <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Following</div>
-                  </div>
+                  </button>
                 </div>
               </div>
               <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
@@ -5903,7 +5901,7 @@ function App() {
             ) : followersList.map((f, i) => (
               <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px",
                 borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}
-                onClick={() => { setShowFollowersList(false); setSelectedProfileId(f.follower_id); setSelectedProfileUsername(f.follower_username); setShowProfile(true); }}>
+                onClick={() => { setShowFollowersList(false); setProfileSheet({ userId: f.follower_id, username: f.follower_username }); }}>
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.follower_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
                   style={{ width:48, height:48, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.4)" }} />
                 <div>
@@ -5934,7 +5932,7 @@ function App() {
             ) : followingList.map((f, i) => (
               <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px",
                 borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}
-                onClick={() => { setShowFollowingList(false); setSelectedProfileId(f.following_id); setSelectedProfileUsername(f.following_username); setShowProfile(true); }}>
+                onClick={() => { setShowFollowingList(false); setProfileSheet({ userId: f.following_id, username: f.following_username }); }}>
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.following_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
                   style={{ width:48, height:48, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.4)" }} />
                 <div>
