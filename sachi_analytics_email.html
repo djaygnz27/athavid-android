@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; background: #0B0C1A; font-family: 'Segoe UI', Arial, sans-serif; color: #fff; }
+  .wrapper { max-width: 680px; margin: 0 auto; background: #0B0C1A; padding: 20px; }
+  .header { text-align: center; padding: 30px 0 20px; border-bottom: 1px solid #1e2040; }
+  .logo { font-size: 28px; font-weight: 900; color: #F5C842; letter-spacing: 2px; }
+  .logo span { color: #fff; }
+  .tagline { font-size: 12px; color: #888; margin-top: 4px; letter-spacing: 3px; text-transform: uppercase; }
+  .report-title { font-size: 20px; font-weight: 700; color: #fff; margin-top: 8px; }
+  .report-date { font-size: 12px; color: #888; }
+
+  /* KPI Cards */
+  .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0; }
+  .kpi-card { background: #13152b; border: 1px solid #1e2040; border-radius: 12px; padding: 18px; text-align: center; }
+  .kpi-number { font-size: 32px; font-weight: 900; }
+  .kpi-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .kpi-gold { color: #F5C842; }
+  .kpi-coral { color: #FF6B6B; }
+  .kpi-green { color: #4ADE80; }
+  .kpi-blue { color: #60A5FA; }
+  .kpi-purple { color: #C084FC; }
+
+  /* Section */
+  .section { margin: 28px 0; }
+  .section-title { font-size: 14px; font-weight: 700; color: #F5C842; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; border-left: 3px solid #F5C842; padding-left: 10px; }
+
+  /* Bar chart */
+  .bar-chart { background: #13152b; border: 1px solid #1e2040; border-radius: 12px; padding: 20px; }
+  .bar-row { display: flex; align-items: center; margin-bottom: 14px; }
+  .bar-label { width: 140px; font-size: 12px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #1e2040; border-radius: 4px; height: 20px; margin: 0 10px; position: relative; }
+  .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-size: 11px; font-weight: 700; color: #fff; min-width: 20px; }
+  .bar-val { width: 36px; font-size: 12px; color: #F5C842; font-weight: 700; text-align: right; flex-shrink: 0; }
+
+  /* Creator table */
+  .creator-table { background: #13152b; border: 1px solid #1e2040; border-radius: 12px; overflow: hidden; }
+  .ct-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #1e2040; }
+  .ct-row:last-child { border-bottom: none; }
+  .ct-rank { width: 28px; font-size: 16px; }
+  .ct-name { flex: 1; font-size: 13px; font-weight: 600; }
+  .ct-stat { font-size: 12px; color: #888; margin-left: 8px; }
+  .ct-badge { font-size: 10px; background: #F5C84220; color: #F5C842; border-radius: 20px; padding: 2px 8px; }
+
+  /* Top video */
+  .top-video { background: #13152b; border: 1px solid #F5C84240; border-radius: 12px; padding: 18px; }
+  .tv-label { font-size: 10px; color: #F5C842; text-transform: uppercase; letter-spacing: 2px; }
+  .tv-caption { font-size: 15px; font-weight: 700; margin: 6px 0; }
+  .tv-stats { display: flex; gap: 16px; margin-top: 10px; }
+  .tv-stat { font-size: 12px; color: #888; }
+  .tv-stat span { color: #fff; font-weight: 700; }
+
+  /* Engagement donut (simulated with table) */
+  .eng-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .eng-card { background: #13152b; border: 1px solid #1e2040; border-radius: 12px; padding: 16px; }
+  .eng-title { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .eng-bar-row { margin-bottom: 8px; }
+  .eng-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: #ccc; margin-bottom: 3px; }
+  .eng-bar-track { background: #1e2040; border-radius: 3px; height: 6px; }
+  .eng-bar-fill { height: 100%; border-radius: 3px; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 24px 0; border-top: 1px solid #1e2040; margin-top: 30px; }
+  .footer-text { font-size: 11px; color: #555; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">🌸 Sachi<span>™</span></div>
+    <div class="tagline">Sachi means Truth</div>
+    <div class="report-title">📊 Analytics Report</div>
+    <div class="report-date">April 2026 — Beta Launch Period · Generated April 8, 2026</div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="section">
+    <div class="section-title">Platform Overview</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-number kpi-gold">3</div>
+        <div class="kpi-label">Registered Users</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-number kpi-coral">37</div>
+        <div class="kpi-label">Total Posts</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-number kpi-green">1,409</div>
+        <div class="kpi-label">Total Views</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-number kpi-blue">22</div>
+        <div class="kpi-label">Total Likes</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-number kpi-purple">28</div>
+        <div class="kpi-label">Total Comments</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-number kpi-gold">0</div>
+        <div class="kpi-label">Total Shares</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Views by Post Bar Chart -->
+  <div class="section">
+    <div class="section-title">👁 Top Posts by Views</div>
+    <div class="bar-chart">
+
+      <div class="bar-row">
+        <div class="bar-label">Work is fun #Datacenter</div>
+        <div class="bar-track"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,#F5C842,#FF6B6B);">188</div></div>
+        <div class="bar-val">188</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">[no caption] mary.manj</div>
+        <div class="bar-track"><div class="bar-fill" style="width:57%;background:linear-gradient(90deg,#60A5FA,#C084FC);">107</div></div>
+        <div class="bar-val">107</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Being out in wild...</div>
+        <div class="bar-track"><div class="bar-fill" style="width:44%;background:linear-gradient(90deg,#4ADE80,#60A5FA);">83</div></div>
+        <div class="bar-val">83</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">July 4th fireworks #2025</div>
+        <div class="bar-track"><div class="bar-fill" style="width:41%;background:linear-gradient(90deg,#FF6B6B,#F5C842);">78</div></div>
+        <div class="bar-val">78</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">NotoriousJOB hitting drums</div>
+        <div class="bar-track"><div class="bar-fill" style="width:30%;background:linear-gradient(90deg,#C084FC,#FF6B6B);">57</div></div>
+        <div class="bar-val">57</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Let's go baby</div>
+        <div class="bar-track"><div class="bar-fill" style="width:29%;background:linear-gradient(90deg,#F5C842,#4ADE80);">54</div></div>
+        <div class="bar-val">54</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Working out with homies</div>
+        <div class="bar-track"><div class="bar-fill" style="width:27%;background:linear-gradient(90deg,#60A5FA,#F5C842);">51</div></div>
+        <div class="bar-val">51</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">[no caption] Jay Guns</div>
+        <div class="bar-track"><div class="bar-fill" style="width:26%;background:linear-gradient(90deg,#FF6B6B,#C084FC);">49</div></div>
+        <div class="bar-val">49</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Thank God Amazing Grace</div>
+        <div class="bar-track"><div class="bar-fill" style="width:26%;background:linear-gradient(90deg,#4ADE80,#60A5FA);">49</div></div>
+        <div class="bar-val">49</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">[no caption] mary.manj</div>
+        <div class="bar-track"><div class="bar-fill" style="width:35%;background:linear-gradient(90deg,#C084FC,#F5C842);">66</div></div>
+        <div class="bar-val">66</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Top Creators -->
+  <div class="section">
+    <div class="section-title">🏆 Top Creators by Views</div>
+    <div class="creator-table">
+      <div class="ct-row">
+        <div class="ct-rank">🥇</div>
+        <div class="ct-name">Jay Guns <span class="ct-badge">@jaygnz27</span></div>
+        <div class="ct-stat">👁 717 views</div>
+        <div class="ct-stat">📹 15 posts</div>
+      </div>
+      <div class="ct-row">
+        <div class="ct-rank">🥈</div>
+        <div class="ct-name">mary.manj <span class="ct-badge">@mary.manj</span></div>
+        <div class="ct-stat">👁 499 views</div>
+        <div class="ct-stat">📹 12 posts</div>
+      </div>
+      <div class="ct-row">
+        <div class="ct-rank">🥉</div>
+        <div class="ct-name">amnyc86 <span class="ct-badge">@amnyc86</span></div>
+        <div class="ct-stat">👁 83 views</div>
+        <div class="ct-stat">📹 1 post</div>
+      </div>
+      <div class="ct-row">
+        <div class="ct-rank">4️⃣</div>
+        <div class="ct-name">workplayhard785</div>
+        <div class="ct-stat">👁 49 views</div>
+        <div class="ct-stat">📹 1 post</div>
+      </div>
+      <div class="ct-row">
+        <div class="ct-rank">5️⃣</div>
+        <div class="ct-name">djaygnz27</div>
+        <div class="ct-stat">👁 29 views</div>
+        <div class="ct-stat">📹 2 posts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Engagement Breakdown -->
+  <div class="section">
+    <div class="section-title">💡 Engagement Breakdown</div>
+    <div class="eng-grid">
+      <div class="eng-card">
+        <div class="eng-title">Engagement Rate by Type</div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>👁 Views</span><span style="color:#4ADE80">1,409</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:100%;background:#4ADE80"></div></div>
+        </div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>💬 Comments</span><span style="color:#60A5FA">28</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:60%;background:#60A5FA"></div></div>
+        </div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>❤️ Likes</span><span style="color:#FF6B6B">22</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:47%;background:#FF6B6B"></div></div>
+        </div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>🔗 Shares</span><span style="color:#888">0</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:1%;background:#888"></div></div>
+        </div>
+      </div>
+      <div class="eng-card">
+        <div class="eng-title">Posts per Creator</div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>Jay Guns</span><span style="color:#F5C842">15</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:100%;background:#F5C842"></div></div>
+        </div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>mary.manj</span><span style="color:#FF6B6B">12</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:80%;background:#FF6B6B"></div></div>
+        </div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>acegun39</span><span style="color:#C084FC">4</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:27%;background:#C084FC"></div></div>
+        </div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>djaygnz27</span><span style="color:#60A5FA">2</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:13%;background:#60A5FA"></div></div>
+        </div>
+        <div class="eng-bar-row">
+          <div class="eng-bar-label"><span>Others</span><span style="color:#4ADE80">4</span></div>
+          <div class="eng-bar-track"><div class="eng-bar-fill" style="width:27%;background:#4ADE80"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Video Spotlight -->
+  <div class="section">
+    <div class="section-title">⭐ Top Video Spotlight</div>
+    <div class="top-video">
+      <div class="tv-label">🏆 Most Viewed Post</div>
+      <div class="tv-caption">"Work is fun. #Datacenter build."</div>
+      <div style="font-size:12px;color:#888;">by Jay Guns (@jaygnz27) · April 3, 2026</div>
+      <div class="tv-stats">
+        <div class="tv-stat">👁 <span>188</span> views</div>
+        <div class="tv-stat">❤️ <span>1</span> like</div>
+        <div class="tv-stat">💬 <span>1</span> comment</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Insights -->
+  <div class="section">
+    <div class="section-title">🧠 Key Insights</div>
+    <div style="background:#13152b;border:1px solid #1e2040;border-radius:12px;padding:18px;">
+      <div style="margin-bottom:12px;font-size:13px;line-height:1.6;">
+        📌 <strong style="color:#F5C842">Content engagement is strong</strong> — 28 comments across 37 posts = 0.76 comments/post avg in early beta.
+      </div>
+      <div style="margin-bottom:12px;font-size:13px;line-height:1.6;">
+        📌 <strong style="color:#FF6B6B">Sharing is the gap</strong> — 0 shares recorded. Activating the share flow is the #1 growth lever.
+      </div>
+      <div style="margin-bottom:12px;font-size:13px;line-height:1.6;">
+        📌 <strong style="color:#4ADE80">mary.manj is your top organic creator</strong> — 12 posts, consistent engagement, real community building.
+      </div>
+      <div style="font-size:13px;line-height:1.6;">
+        📌 <strong style="color:#60A5FA">Next milestone:</strong> Google Play Closed Testing (14 days) → Production release → 50-60 Founding Creators onboarded by May 4, 2026.
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div style="font-size:20px;margin-bottom:6px;">🌸</div>
+    <div class="footer-text">Sachi™ — Analytics Report · April 2026</div>
+    <div class="footer-text" style="margin-top:4px;">sachistream.com · Generated by Daminie</div>
+  </div>
+
+</div>
+</body>
+</html>
