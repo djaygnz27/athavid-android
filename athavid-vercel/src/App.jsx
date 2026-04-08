@@ -5,6 +5,9 @@ import { auth, videos, comments, uploadFile, follows, request, interests, report
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
+import ChildSafety from "./ChildSafety.jsx";
+import FoundingCreatorPage from "./FoundingCreator.jsx";
+import MusicPicker from "./MusicPicker.jsx";
 
 function formatDate(d) {
   if (!d) return "";
@@ -32,15 +35,16 @@ const resolveMediaUrl = (url, isVideo) => {
 };
 // Get user's location for post geo-tagging
 async function getPostLocation() {
-  const savedCountry = localStorage.getItem("sachi_country");
-  const savedRegion = localStorage.getItem("sachi_region");
-  const savedCode = localStorage.getItem("sachi_country_code");
-  // Use precise GPS-derived data if available
+  const savedCode = localStorage.getItem('sachi_country_code');
+  const savedRegion = localStorage.getItem('sachi_region');
+  const savedCity = localStorage.getItem('sachi_city');
+  const savedCountry = localStorage.getItem('sachi_country');
+  // Use cached data if available
   if (savedCode) {
-    return { post_country: savedCode, post_region: savedRegion || null };
+    return { post_country: savedCode, post_region: savedRegion || null, post_city: savedCity || null };
   }
   if (savedCountry) {
-    return { post_country: savedCountry, post_region: savedRegion || null };
+    return { post_country: savedCountry, post_region: savedRegion || null, post_city: savedCity || null };
   }
   // Fallback: try GPS reverse geocode
   try {
@@ -54,13 +58,63 @@ async function getPostLocation() {
     const data = await res.json();
     const addr = data.address || {};
     const country = addr.country_code ? addr.country_code.toUpperCase() : null;
-    const region = addr.state || addr.city || addr.county || null;
-    if (country) localStorage.setItem("sachi_country_code", country);
-    if (region) localStorage.setItem("sachi_region", region);
-    return { post_country: country, post_region: region };
+    const city = addr.city || addr.town || addr.village || addr.county || null;
+    const region = addr.state || addr.region || null;
+    if (country) localStorage.setItem('sachi_country_code', country);
+    if (region) localStorage.setItem('sachi_region', region);
+    if (city) localStorage.setItem('sachi_city', city);
+    return { post_country: country, post_region: region, post_city: city };
   } catch {
-    return {};
+    // Final fallback: IP geolocation
+    try {
+      const r = await fetch('https://ipapi.co/json/');
+      const d = await r.json();
+      const country = d.country_code || null;
+      const region = d.region || null;
+      const city = d.city || null;
+      if (country) localStorage.setItem('sachi_country_code', country);
+      if (region) localStorage.setItem('sachi_region', region);
+      if (city) localStorage.setItem('sachi_city', city);
+      return { post_country: country, post_region: region, post_city: city };
+    } catch {
+      return {};
+    }
   }
+}
+
+// US/AU/CA state abbreviation helper
+function getStateAbbr(state, countryCode) {
+  if (!state) return '';
+  const US_STATES = {
+    'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
+    'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
+    'Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA',
+    'Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD',
+    'Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS','Missouri':'MO',
+    'Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH','New Jersey':'NJ',
+    'New Mexico':'NM','New York':'NY','North Carolina':'NC','North Dakota':'ND','Ohio':'OH',
+    'Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA','Rhode Island':'RI','South Carolina':'SC',
+    'South Dakota':'SD','Tennessee':'TN','Texas':'TX','Utah':'UT','Vermont':'VT',
+    'Virginia':'VA','Washington':'WA','West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY',
+    'District of Columbia':'DC'
+  };
+  const AU_STATES = {
+    'New South Wales':'NSW','Victoria':'VIC','Queensland':'QLD','South Australia':'SA',
+    'Western Australia':'WA','Tasmania':'TAS','Northern Territory':'NT',
+    'Australian Capital Territory':'ACT'
+  };
+  const CA_PROVINCES = {
+    'Ontario':'ON','Quebec':'QC','British Columbia':'BC','Alberta':'AB',
+    'Manitoba':'MB','Saskatchewan':'SK','Nova Scotia':'NS','New Brunswick':'NB',
+    'Newfoundland and Labrador':'NL','Prince Edward Island':'PE','Northwest Territories':'NT',
+    'Nunavut':'NU','Yukon':'YT'
+  };
+  if (countryCode === 'US' && US_STATES[state]) return US_STATES[state];
+  if (countryCode === 'AU' && AU_STATES[state]) return AU_STATES[state];
+  if (countryCode === 'CA' && CA_PROVINCES[state]) return CA_PROVINCES[state];
+  // For other countries, return state as-is (already short)
+  if (state.length <= 4) return state;
+  return state; // Return full state name for others
 }
 
 // Country code -> emoji flag
@@ -1010,6 +1064,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || photoGeo.post_city || null,
+        sound_title: selectedTrack?.sound_title || selectedTrack?.title || null,
+        sound_artist: selectedTrack?.sound_artist || selectedTrack?.artist || null,
+        sound_url: selectedTrack?.sound_url || selectedTrack?.url || null,
         ...photoGeo,
       });
       setProgress(100);
@@ -1077,9 +1135,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
-        sound_title: selectedTrack?.title || null,
-        sound_artist: selectedTrack?.artist || null,
-        sound_url: selectedTrack?.url || null,
+        post_city: postLocation?.city || null,
+        sound_title: selectedTrack?.sound_title || selectedTrack?.title || null,
+        sound_artist: selectedTrack?.sound_artist || selectedTrack?.artist || null,
+        sound_url: selectedTrack?.sound_url || selectedTrack?.url || null,
         ...videoGeo,
       });
       setProgress(100);
@@ -1170,19 +1229,40 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
       const data = await resp.json();
       const addr = data.address || {};
-      const city = addr.city || addr.town || addr.county || addr.state || "";
-      const suburb = addr.suburb || addr.neighbourhood || addr.district || "";
-      setPostLocation({ name: suburb || city, city });
-    } catch { setPostLocation(null); }
+      const city = addr.city || addr.town || addr.village || addr.county || "";
+      const state = addr.state || addr.region || "";
+      const country_code = addr.country_code ? addr.country_code.toUpperCase() : "";
+      // Save to localStorage for future posts
+      if (city) localStorage.setItem('sachi_city', city);
+      if (state) localStorage.setItem('sachi_region', state);
+      if (country_code) localStorage.setItem('sachi_country_code', country_code);
+      // Build display label: "New Providence, NJ" or "Auckland, New Zealand"
+      const stateAbbr = getStateAbbr(state, country_code);
+      const label = [city, stateAbbr || state].filter(Boolean).join(', ');
+      setPostLocation({ name: label, city, state, country_code });
+    } catch {
+      // Fallback: try IP-based
+      try {
+        const r = await fetch('https://ipapi.co/json/');
+        const d = await r.json();
+        const city = d.city || '';
+        const state = d.region || '';
+        const country_code = d.country_code || '';
+        if (city) localStorage.setItem('sachi_city', city);
+        if (state) localStorage.setItem('sachi_region', state);
+        if (country_code) localStorage.setItem('sachi_country_code', country_code);
+        const stateAbbr = getStateAbbr(state, country_code);
+        const label = [city, stateAbbr || state].filter(Boolean).join(', ');
+        setPostLocation({ name: label, city, state, country_code });
+      } catch { setPostLocation(null); }
+    }
     setDetectingLocation(false);
   };
 
   // Intercept post buttons — go to details step first
   const goToPostDetails = () => {
-    // Auto-detect location quietly
-    if (!postLocation && navigator.geolocation) {
-      detectLocation();
-    }
+    // Always re-detect location on each post (mandatory)
+    detectLocation();
     setShowPostDetails(true);
   };
 
@@ -1299,6 +1379,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         sound_title: "Text Post", sound_artist: "sachi",
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || null,
         ...textGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
@@ -1369,27 +1450,40 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           {/* Divider */}
           <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:20 }} />
 
-          {/* Location row */}
+          {/* Location row - MANDATORY */}
           <div style={{ marginBottom:4 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", cursor:"pointer" }}
               onClick={detectLocation}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <span style={{ fontSize:20 }}>📍</span>
-                <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Location</span>
+                <div>
+                  <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Location</span>
+                  <span style={{ marginLeft:8, background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px", letterSpacing:0.5 }}>REQUIRED</span>
+                </div>
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                {detectingLocation && <span style={{ color:"#888", fontSize:12 }}>Detecting...</span>}
-                {postLocation && !detectingLocation && <span style={{ color:"#aaa", fontSize:13 }}>{postLocation.name || postLocation.city}</span>}
-                {!postLocation && !detectingLocation && <span style={{ color:"#555", fontSize:13 }}>Tap to add</span>}
-                <span style={{ color:"#555", fontSize:18 }}>›</span>
+                {detectingLocation && <span style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>📡 Detecting...</span>}
+                {postLocation && !detectingLocation && (
+                  <span style={{ color:"#8BC34A", fontSize:13, fontWeight:600 }}>
+                    ✓ {postLocation.name}
+                  </span>
+                )}
+                {!postLocation && !detectingLocation && (
+                  <span style={{ color:"#ff6b6b", fontSize:12, fontWeight:600 }}>Not set — tap to detect</span>
+                )}
               </div>
             </div>
-            {postLocation && (
+            {postLocation && !detectingLocation && (
               <div style={{ display:"flex", gap:8, paddingBottom:12, flexWrap:"wrap" }}>
-                <div style={{ background:"rgba(255,255,255,0.07)", borderRadius:20, padding:"5px 12px", fontSize:13, color:"#ccc", display:"flex", alignItems:"center", gap:6 }}>
-                  📍 {postLocation.name || postLocation.city}
-                  <span onClick={() => setPostLocation(null)} style={{ cursor:"pointer", color:"#888", fontSize:14, marginLeft:4 }}>✕</span>
+                <div style={{ background:"rgba(139,195,74,0.12)", border:"1px solid rgba(139,195,74,0.25)", borderRadius:20, padding:"5px 14px", fontSize:13, color:"#8BC34A", display:"flex", alignItems:"center", gap:6 }}>
+                  📍 {postLocation.name}
+                  <span onClick={detectLocation} style={{ cursor:"pointer", color:"#666", fontSize:11, marginLeft:4 }}>↺ refresh</span>
                 </div>
+              </div>
+            )}
+            {!postLocation && !detectingLocation && (
+              <div style={{ paddingBottom:12 }}>
+                <div style={{ color:"#ff6b6b", fontSize:11, opacity:0.8 }}>📍 Location is required to post on Sachi. Tap above to detect automatically.</div>
               </div>
             )}
           </div>
@@ -1479,15 +1573,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </button>
           <button
             onClick={() => {
+              if (!postLocation) { alert('📍 Please allow location access to post on Sachi.'); detectLocation(); return; }
               if (uploadTab === "text") uploadTextPost();
               else if (uploadTab === "photo") uploadPhotos();
               else upload();
             }}
-            disabled={uploading}
-            style={{ flex:2.5, padding:"14px 0", background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
-              border:"none", borderRadius:14, color:"#fff", fontWeight:900, fontSize:16, cursor: uploading ? "default" : "pointer",
-              boxShadow:"0 4px 20px rgba(255,107,107,0.35)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            {uploading ? step : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
+            disabled={uploading || detectingLocation}
+            style={{ flex:2.5, padding:"14px 0",
+              background: uploading ? "#333" : (!postLocation || detectingLocation) ? "rgba(255,107,107,0.25)" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border: (!postLocation && !uploading) ? "1.5px solid rgba(255,107,107,0.4)" : "none",
+              borderRadius:14, color: (!postLocation && !uploading) ? "rgba(255,255,255,0.4)" : "#fff",
+              fontWeight:900, fontSize:16, cursor: (uploading || detectingLocation) ? "default" : "pointer",
+              boxShadow: postLocation && !uploading ? "0 4px 20px rgba(255,107,107,0.35)" : "none",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            {uploading ? step : detectingLocation ? "📡 Detecting location..." : !postLocation ? "📍 Location required" : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
           </button>
         </div>
       </div>
@@ -1617,34 +1716,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
         )}
 
-        {/* Location permission prompt — only show if not yet granted */}
-        {!localStorage.getItem("sachi_country_code") && !localStorage.getItem("sachi_country") && (
-          <div style={{ background:"rgba(245,200,66,0.07)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:12, padding:"12px 14px", marginBottom:14 }}>
-            <div style={{ color:"#F5C842", fontWeight:800, fontSize:13, marginBottom:4 }}>📍 Add your location to this post?</div>
-            <div style={{ color:"#777", fontSize:11, marginBottom:10 }}>Posts with location get more reach. Enable once, applies to all future posts.</div>
-            <button onClick={() => {
-              if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                  (pos) => {
-                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
-                      .then(r => r.json())
-                      .then(data => {
-                        const addr = data.address || {};
-                        const code = addr.country_code ? addr.country_code.toUpperCase() : null;
-                        const region = addr.state || addr.city || addr.county || null;
-                        if (code) { localStorage.setItem("sachi_country_code", code); }
-                        if (region) { localStorage.setItem("sachi_region", region); }
-                      }).catch(()=>{});
-                  },
-                  () => {},
-                  { timeout: 8000 }
-                );
-              }
-            }} style={{ width:"100%", padding:"10px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)", border:"none", borderRadius:10, color:"#0B0C1A", fontWeight:800, fontSize:13, cursor:"pointer" }}>
-              📍 Enable Location
-            </button>
-          </div>
-        )}
+
 
         </>)}
 
@@ -1848,111 +1920,23 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
         {uploadTab !== "text" && <>
         {/* Music Picker Button */}
-        <div onClick={() => { const next = !showMusicPicker; setShowMusicPicker(next); if(next && musicTracks.length === 0) fetchMusicTracks("All", ""); }}
-          style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"12px 14px", marginBottom:12, cursor:"pointer" }}>
+        <div onClick={() => setShowMusicPicker(true)}
+          style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:`1px solid ${selectedTrack ? "rgba(245,200,66,0.4)" : "rgba(255,255,255,0.1)"}`, borderRadius:12, padding:"12px 14px", marginBottom:12, cursor:"pointer" }}>
           <div style={{ fontSize:22 }}>🎵</div>
           <div style={{ flex:1 }}>
-            <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{selectedTrack ? selectedTrack.title : "Add Sound"}</div>
-            <div style={{ color:"#888", fontSize:12 }}>{selectedTrack ? selectedTrack.artist : "Pick from free music library"}</div>
+            <div style={{ color: selectedTrack ? "#F5C842" : "#fff", fontWeight:700, fontSize:14 }}>{selectedTrack ? selectedTrack.sound_title || selectedTrack.title : "Add Sound"}</div>
+            <div style={{ color:"#888", fontSize:12 }}>{selectedTrack ? (selectedTrack.sound_artist || selectedTrack.artist) : "Pick from trending, search, or Sachi creators"}</div>
           </div>
-          {selectedTrack && <button onClick={e => { e.stopPropagation(); setSelectedTrack(null); }} style={{ background:"none", border:"none", color:"#ff6b6b", fontSize:16, cursor:"pointer" }}>✕</button>}
-          <div style={{ color:"#888", fontSize:18 }}>{showMusicPicker ? "▲" : "▼"}</div>
+          {selectedTrack && <button onClick={e => { e.stopPropagation(); setSelectedTrack(null); }} style={{ background:"none", border:"none", color:"#ff6b6b", fontSize:16, cursor:"pointer", padding:0 }}>✕</button>}
+          <div style={{ color:"#888", fontSize:18 }}>▶</div>
         </div>
 
-        {/* Music Library — fixed slide-up overlay so it doesn't push content */}
         {showMusicPicker && (
-          <div style={{ position:"fixed", inset:0, zIndex:3500, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}
-            onClick={e => { if(e.target === e.currentTarget) setShowMusicPicker(false); }}>
-            <div style={{ background:"#0f0f1a", borderRadius:"20px 20px 0 0", maxHeight:"70vh", display:"flex", flexDirection:"column",
-              boxShadow:"0 -8px 40px rgba(0,0,0,0.8)", border:"1px solid rgba(255,255,255,0.08)" }}>
-              {/* Header */}
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px 8px" }}>
-                <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>🎵 Add Sound</div>
-                <button onClick={() => setShowMusicPicker(false)}
-                  style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer", fontSize:16 }}>✕</button>
-              </div>
-              {/* Search bar */}
-              <div style={{ padding:"0 12px 8px" }}>
-                <div style={{ display:"flex", alignItems:"center", background:"rgba(255,255,255,0.07)", borderRadius:10, padding:"8px 12px", gap:8 }}>
-                  <span style={{ fontSize:14 }}>🔍</span>
-                  <input
-                    value={musicSearch}
-                    onChange={e => setMusicSearch(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && fetchMusicTracks(musicGenreFilter, musicSearch)}
-                    placeholder="Search songs, artists..."
-                    style={{ flex:1, background:"transparent", border:"none", outline:"none", color:"#fff", fontSize:13 }}
-                  />
-                  {musicSearch && (
-                    <button onClick={() => { setMusicSearch(""); fetchMusicTracks(musicGenreFilter, ""); }}
-                      style={{ background:"none", border:"none", color:"#888", cursor:"pointer", fontSize:14, padding:0 }}>✕</button>
-                  )}
-                  <button onClick={() => fetchMusicTracks(musicGenreFilter, musicSearch)}
-                    style={{ background:"rgba(255,107,107,0.25)", border:"none", borderRadius:8, padding:"4px 10px",
-                      color:"#ff6b6b", fontSize:11, fontWeight:700, cursor:"pointer" }}>Go</button>
-                </div>
-              </div>
-              {/* Genre filter tabs */}
-              <div style={{ display:"flex", gap:6, padding:"0 12px 8px", overflowX:"auto", scrollbarWidth:"none", flexShrink:0 }}>
-                {["All","Lo-Fi","Hip-Hop","Electronic","R&B","Pop","Chill","Afrobeats","Jazz","Rock","Acoustic","Classical"].map(g => (
-                  <button key={g} onClick={() => { setMusicGenreFilter(g); fetchMusicTracks(g, musicSearch); }}
-                    style={{ flexShrink:0, padding:"5px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:700,
-                      background: musicGenreFilter === g ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
-                      color: musicGenreFilter === g ? "#fff" : "#aaa" }}>
-                    {g}
-                  </button>
-                ))}
-              </div>
-              {/* Track list */}
-              <div style={{ flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
-                {musicLoading ? (
-                  <div style={{ padding:"20px", textAlign:"center", color:"#666", fontSize:13 }}>🎵 Loading tracks...</div>
-                ) : musicTracks.length === 0 ? (
-                  <div style={{ padding:"20px", textAlign:"center", color:"#666", fontSize:13 }}>No tracks found. Try another genre or search.</div>
-                ) : (
-                  musicTracks.map(track => (
-                    <div key={track.id} onClick={() => { setSelectedTrack(track); setShowMusicPicker(false); if(previewAudioRef.current){ previewAudioRef.current.pause(); setPreviewTrack(null); } }}
-                      style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer",
-                        background: selectedTrack?.id === track.id ? "rgba(255,107,107,0.15)" : "transparent" }}>
-                      {track.image
-                        ? <img src={track.image} style={{ width:36, height:36, borderRadius:6, objectFit:"cover", flexShrink:0 }} />
-                        : <div style={{ fontSize:22, width:36, textAlign:"center" }}>{track.emoji || "🎵"}</div>
-                      }
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ color:"#fff", fontWeight:600, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{track.title}</div>
-                        <div style={{ color:"#888", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                          {track.artist}
-                          {track.duration ? <span style={{ color:"rgba(255,107,107,0.6)", marginLeft:6 }}>{Math.floor(track.duration/60)}:{String(track.duration%60).padStart(2,"0")}</span> : null}
-                        </div>
-                      </div>
-                      {selectedTrack?.id === track.id && <span style={{ color:"#ff6b6b", fontSize:14, marginRight:4 }}>✓</span>}
-                      <button onClick={e => {
-                        e.stopPropagation(); e.preventDefault();
-                        if (previewTrack === track.id) {
-                          if (previewAudioRef.current) { previewAudioRef.current.pause(); previewAudioRef.current.currentTime = 0; }
-                          setPreviewTrack(null);
-                        } else {
-                          setPreviewTrack(track.id);
-                          if (previewAudioRef.current) {
-                            previewAudioRef.current.pause();
-                            previewAudioRef.current.src = track.url;
-                            previewAudioRef.current.load();
-                            previewAudioRef.current.play().catch(err => console.warn("[Sachi Preview]", err));
-                          }
-                        }
-                      }} style={{ background: previewTrack === track.id ? "rgba(255,107,107,0.5)" : "rgba(255,107,107,0.2)",
-                        border:"2px solid rgba(255,107,107,0.4)", borderRadius:"50%",
-                        width:38, height:38, color:"#ff6b6b", cursor:"pointer", fontSize:16,
-                        flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
-                        WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                        {previewTrack === track.id ? "⏹" : "▶"}
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div style={{ padding:"6px 14px 16px", color:"#444", fontSize:10, textAlign:"right" }}>Powered by Jamendo • Free music</div>
-            </div>
-          </div>
+          <MusicPicker
+            currentSound={selectedTrack}
+            onSelect={track => { setSelectedTrack(track); setShowMusicPicker(false); }}
+            onClose={() => setShowMusicPicker(false)}
+          />
         )}
         {/* Explicit Content Block Warning */}
         {explicitBlocked && (
@@ -2514,12 +2498,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
         {video.sound_title && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
-          <div style={{ fontSize:14, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none",
-            display:"inline-block" }}>🎵</div>
+          <div style={{ fontSize:14, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none", display:"inline-block" }}>🎵</div>
           <div style={{ overflow:"hidden", flex:1 }}>
             <div style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600, whiteSpace:"nowrap",
-              animation: playing ? "marquee 8s linear infinite" : "none",
-              display:"inline-block" }}>
+              animation: playing ? "marquee 8s linear infinite" : "none", display:"inline-block" }}>
               {video.sound_title}{video.sound_artist ? ` · ${video.sound_artist}` : ""}
             </div>
           </div>
@@ -2564,7 +2546,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               {video.post_country && (
                 <span style={{ marginLeft:6, opacity:0.9 }}>
                   {countryFlag(video.post_country)}
-                  {video.post_region ? ` ${video.post_region}` : ` ${video.post_country}`}
+                  {(() => {
+                    const city = video.post_city || null;
+                    const stateAbbr = video.post_region ? getStateAbbr(video.post_region, video.post_country) : null;
+                    if (city && stateAbbr) return ` ${city}, ${stateAbbr}`;
+                    if (city) return ` ${city}`;
+                    if (stateAbbr) return ` ${stateAbbr}`;
+                    return ` ${video.post_country}`;
+                  })()}
                 </span>
               )}
             </span>
@@ -3023,22 +3012,18 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      // Try to upload to server first (works for email-login users with token)
-      const token = localStorage.getItem("sachi_token");
-      if (token) {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-        try {
-          const url = await uploadFile(file);
-          onSelect(url);
-          return;
-        } catch(e) {
-          console.warn("Server upload failed, falling back to base64:", e);
-        }
+      // Always try to upload to CDN (works for all login types)
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      try {
+        const url = await uploadFile(file);
+        onSelect(url);
+        return;
+      } catch(e) {
+        console.warn("CDN upload failed, falling back to base64:", e);
       }
-      // Fallback: use base64 dataURL directly (Google login users, or upload failure)
-      // Store compressed in localStorage and use as avatar
+      // Last resort fallback
       onSelect(dataUrl);
     } catch(e) { alert("Could not save avatar. Try again."); }
     finally { setUploading(false); }
@@ -4244,6 +4229,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
   // ── MAIN PODCAST LIST ──
   return (
+    <>
     <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
       <div style={{ margin:"0 16px 20px", background:"linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius:20, padding:"24px 20px", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", top:-20, right:-20, fontSize:100, opacity:0.07 }}>🎙️</div>
@@ -4436,6 +4422,49 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         </button>
       </div>
     </div>
+
+    {/* ─── Live News Viewer Modal ─── */}
+    {liveNewsChannel && (
+      <div style={{ position:"fixed", inset:0, zIndex:9999, background:"#000", display:"flex", flexDirection:"column" }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px",
+          background:"rgba(0,0,0,0.9)", borderBottom:"1px solid rgba(255,255,255,0.1)", zIndex:10000 }}>
+          <button onClick={() => setLiveNewsChannel(null)}
+            style={{ background:"none", border:"none", color:"#fff", fontSize:24, cursor:"pointer", lineHeight:1, padding:4 }}>✕</button>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:"#e53935", animation:"heartbeat 1.4s ease-in-out infinite" }} />
+            <span style={{ color:"#fff", fontWeight:800, fontSize:16 }}>{liveNewsChannel.emoji} {liveNewsChannel.name}</span>
+            <span style={{ background:"#e53935", color:"#fff", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 8px", letterSpacing:1 }}>LIVE</span>
+          </div>
+          <div style={{ width:40 }} />
+        </div>
+        {/* Stream */}
+        <div style={{ flex:1, position:"relative" }}>
+          <iframe
+            src={liveNewsChannel.url}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
+            style={{ position:"absolute", inset:0, width:"100%", height:"100%", border:"none" }}
+            title={liveNewsChannel.name + " Live"}
+          />
+        </div>
+        {/* Channel selector strip */}
+        <div style={{ background:"rgba(0,0,0,0.9)", borderTop:"1px solid rgba(255,255,255,0.08)",
+          padding:"10px 16px", overflowX:"auto", display:"flex", gap:10, scrollbarWidth:"none" }}>
+          {LIVE_NEWS_CHANNELS.map(ch => (
+            <button key={ch.id} onClick={() => setLiveNewsChannel(ch)}
+              style={{ flexShrink:0, display:"flex", alignItems:"center", gap:6,
+                padding:"8px 14px", borderRadius:20, border:"none", cursor:"pointer",
+                background: ch.id === liveNewsChannel.id ? "rgba(229,57,53,0.3)" : "rgba(255,255,255,0.07)",
+                outline: ch.id === liveNewsChannel.id ? "1.5px solid #e53935" : "none" }}>
+              <span style={{ fontSize:16 }}>{ch.emoji}</span>
+              <span style={{ color:"#fff", fontWeight:600, fontSize:12, whiteSpace:"nowrap" }}>{ch.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -4464,13 +4493,33 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      const [vRes, uRes, cRes] = await Promise.all([
+      // Paginate through ALL users (AthaVidUser + legacy User entity merged)
+      let allUsersFetched = [], uSkip = 0, uMore = true;
+      while (uMore) {
+        const uRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
+        const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
+        allUsersFetched = [...allUsersFetched, ...uItems];
+        uMore = uRes.has_more === true && uItems.length === 500;
+        uSkip += 500;
+      }
+      let legacyUsers = [], lSkip = 0, lMore = true;
+      while (lMore) {
+        const lRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
+        const lItems = lRes.items || (Array.isArray(lRes) ? lRes : []);
+        legacyUsers = [...legacyUsers, ...lItems];
+        lMore = lRes.has_more === true && lItems.length === 500;
+        lSkip += 500;
+      }
+      const knownEmails = new Set(allUsersFetched.map(u => (u.email||'').toLowerCase()));
+      const normalizedLegacy = legacyUsers
+        .filter(u => u.email && !knownEmails.has(u.email.toLowerCase()))
+        .map(u => ({ id: u.id, email: u.email, username: u.full_name||u.email.split('@')[0], display_name: u.full_name||u.email.split('@')[0], created_date: u.created_date, status: 'active', _source: 'legacy' }));
+      const [vRes, cRes] = await Promise.all([
         request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date"),
         request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date"),
       ]);
       const videos = vRes.items || vRes || [];
-      const users  = uRes.items || uRes || [];
+      const users  = [...allUsersFetched, ...normalizedLegacy];
       const comments = cRes.items || cRes || [];
       setAllUsers(users);
 
@@ -4547,8 +4596,42 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&sort=-created_date");
-      setRegisteredUsers(res.items || res || []);
+      // Fetch AthaVidUser (Google auth) - paginated
+      let athavid = [], skip = 0, hasMore = true;
+      while (hasMore) {
+        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
+        const items = res.items || (Array.isArray(res) ? res : []);
+        athavid = [...athavid, ...items];
+        hasMore = res.has_more === true && items.length === 500;
+        skip += 500;
+      }
+      // Fetch User entity (old OTP auth users)
+      let oldUsers = [], skip2 = 0, hasMore2 = true;
+      while (hasMore2) {
+        const res2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
+        const items2 = res2.items || (Array.isArray(res2) ? res2 : []);
+        oldUsers = [...oldUsers, ...items2];
+        hasMore2 = res2.has_more === true && items2.length === 500;
+        skip2 += 500;
+      }
+      // Merge: normalize old users to same shape, deduplicate by email
+      const athavid_emails = new Set(athavid.map(u => (u.email||'').toLowerCase()));
+      const normalized = oldUsers
+        .filter(u => u.email && !athavid_emails.has(u.email.toLowerCase()))
+        .map(u => ({
+          id: u.id,
+          email: u.email,
+          username: u.full_name || u.email.split('@')[0],
+          display_name: u.full_name || u.email.split('@')[0],
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name||u.email)}&background=random&color=fff&size=128&bold=true&format=png`,
+          status: u.disabled ? 'disabled' : 'active',
+          is_verified: u.is_verified,
+          created_date: u.created_date,
+          updated_date: u.updated_date,
+          _source: 'legacy'
+        }));
+      const merged = [...athavid, ...normalized].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
+      setRegisteredUsers(merged);
     } catch(e) { console.error(e); }
     setUsersLoading(false);
   };
@@ -4800,6 +4883,28 @@ function AdminPanel({ currentUser }) {
                     ))}
                   </div>
 
+                  {/* Country breakdown */}
+                  {(() => {
+                    const countries = {};
+                    registeredUsers.forEach(u => {
+                      const loc = u.location || "Unknown";
+                      countries[loc] = (countries[loc] || 0) + 1;
+                    });
+                    const sorted = Object.entries(countries).sort((a,b) => b[1]-a[1]);
+                    return sorted.length > 0 ? (
+                      <div style={{ background:"rgba(245,200,66,0.06)", borderRadius:16, border:"1px solid rgba(245,200,66,0.15)", padding:"12px 16px", marginBottom:12 }}>
+                        <div style={{ color:"#F5C842", fontWeight:800, fontSize:13, marginBottom:8 }}>🌍 Users by Location</div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                          {sorted.map(([loc, count]) => (
+                            <div key={loc} style={{ background:"rgba(245,200,66,0.12)", borderRadius:20, padding:"4px 12px", fontSize:12, color:"#F5C842", fontWeight:600 }}>
+                              {loc === "Unknown" ? "🌍" : loc.toLowerCase().includes("australia") ? "🇦🇺" : loc.toLowerCase().includes("sri lanka") ? "🇱🇰" : loc.toLowerCase().includes("united states") || loc.toLowerCase().includes("usa") ? "🇺🇸" : "🌍"} {loc} · {count}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+
                   {/* User list */}
                   <div style={{ background:"rgba(107,138,255,0.06)", borderRadius:16, border:"1px solid rgba(107,138,255,0.15)", overflow:"hidden" }}>
                     <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -4807,30 +4912,50 @@ function AdminPanel({ currentUser }) {
                       <div style={{ color:"#444", fontSize:12 }}>{registeredUsers.length} total</div>
                     </div>
                     <div style={{ maxHeight:500, overflowY:"auto" }}>
-                      {registeredUsers.map((u, i) => (
-                        <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                      {registeredUsers.map((u, i) => {
+                        const locationFlag = (loc) => {
+                          if (!loc) return "🌍 Unknown";
+                          const l = loc.toLowerCase();
+                          if (l.includes("australia") || l.includes("au")) return "🇦🇺 " + loc;
+                          if (l.includes("sri lanka") || l.includes("lk")) return "🇱🇰 " + loc;
+                          if (l.includes("united states") || l.includes("usa") || l.includes("us")) return "🇺🇸 " + loc;
+                          if (l.includes("new zealand") || l.includes("nz")) return "🇳🇿 " + loc;
+                          if (l.includes("india")) return "🇮🇳 " + loc;
+                          if (l.includes("canada")) return "🇨🇦 " + loc;
+                          if (l.includes("uk") || l.includes("united kingdom")) return "🇬🇧 " + loc;
+                          return "🌍 " + loc;
+                        };
+                        return (
+                        <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
                           <img
                             src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
-                            style={{ width:36, height:36, borderRadius:"50%", flexShrink:0, objectFit:"cover", border:"2px solid rgba(107,138,255,0.3)" }}
+                            style={{ width:40, height:40, borderRadius:"50%", flexShrink:0, objectFit:"cover", border:"2px solid rgba(107,138,255,0.3)" }}
                           />
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ color:"#fff", fontWeight:700, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                               {u.display_name || u.username || "—"}
                             </div>
-                            <div style={{ color:"#555", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                            <div style={{ color:"#aaa", fontSize:11, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>
                               @{u.username || "?"} · {u.email || "no email"}
+                            </div>
+                            <div style={{ color:"#F5C842", fontSize:11, fontWeight:600, marginTop:2 }}>
+                              {locationFlag(u.location)}
                             </div>
                           </div>
                           <div style={{ flexShrink:0, textAlign:"right" }}>
-                            <div style={{ color:"#444", fontSize:11 }}>
-                              {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}) : ""}
+                            <div style={{ color:"#888", fontSize:11 }}>
+                              {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : ""}
+                            </div>
+                            <div style={{ color:"#777", fontSize:10, marginTop:1 }}>
+                              {u.created_date ? new Date(u.created_date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}) : ""}
                             </div>
                             <div style={{ color: u.status==="active" ? "#6BFFB8" : "#FF6B6B", fontSize:10, fontWeight:700, marginTop:2 }}>
                               {u.status || "active"}
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       {registeredUsers.length === 0 && (
                         <div style={{ textAlign:"center", color:"#444", padding:40, fontSize:13 }}>No users yet.</div>
                       )}
@@ -5042,6 +5167,8 @@ function App() {
   const path = window.location.pathname;
   if (path === "/terms") return <Terms />;
   if (path === "/privacy") return <Privacy />;
+  if (path === "/child-safety") return <ChildSafety />;
+  if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
 
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
@@ -5115,6 +5242,11 @@ function App() {
   const [myVideos, setMyVideos] = useState([]);
   const [meFollowersCount, setMeFollowersCount] = useState(0);
   const [meFollowingCount, setMeFollowingCount] = useState(0);
+  const [showFollowersList, setShowFollowersList] = useState(false);
+  const [showFollowingList, setShowFollowingList] = useState(false);
+  const [followersList, setFollowersList] = useState([]);
+  const [followingList, setFollowingList] = useState([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(() => {
     // Pre-load from localStorage to avoid flash on reload
     try {
@@ -5155,16 +5287,16 @@ function App() {
           const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-          // Prioritize localStorage (may contain freshly cropped base64 or recent upload)
-          const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
-          if (localSaved) {
-            setAvatarUrl(localSaved);
-          } else if (match && match.avatar_url) {
+          // DB takes priority — always use latest CDN avatar_url
+          if (match && match.avatar_url && !match.avatar_url.startsWith('data:')) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
-            localStorage.setItem(`avatar_last`, match.avatar_url);
-          } else if (currentUser.avatar_url) {
+            localStorage.setItem('avatar_last', match.avatar_url);
+          } else if (currentUser.avatar_url && !currentUser.avatar_url.startsWith('data:')) {
             setAvatarUrl(currentUser.avatar_url);
+          } else {
+            const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
+            if (localSaved && !localSaved.startsWith('data:')) setAvatarUrl(localSaved);
           }
         } catch(e) {
           // Fall back to auth user avatar_url first, then localStorage
@@ -5282,14 +5414,30 @@ function App() {
 
   useEffect(() => {
     if (activeTab === "profile" && currentUser) {
-      videos.myVideos(currentUser.id)
+      // Load my videos - match by both current ID and email to catch legacy posts
+      videos.myVideos(currentUser.id, currentUser.email)
         .then(r => setMyVideos(Array.isArray(r) ? r : []))
         .catch(() => setMyVideos([]));
-      // Live follow counts for Me tab
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`)
-        .then(res => setMeFollowersCount((res?.items || res || []).length)).catch(()=>{});
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`)
-        .then(res => setMeFollowingCount((res?.items || res || []).length)).catch(()=>{});
+      // Live follow counts - check both current ID and legacy username match
+      const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
+      (async () => {
+        try {
+          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+          const unique = [...new Map(all.map(f => [f.id, f])).values()];
+          setMeFollowersCount(unique.length);
+        } catch(e) {}
+      })();
+      (async () => {
+        try {
+          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+          const unique = [...new Map(all.map(f => [f.id, f])).values()];
+          setMeFollowingCount(unique.length);
+        } catch(e) {}
+      })();
     }
   }, [activeTab, currentUser]);
 
@@ -5345,8 +5493,8 @@ function App() {
     <div style={{ background:"#0B0C1A", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
       {/* Header — Sachi original */}
-      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px" }}>
+      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px", pointerEvents:"auto" }}>
 
           {/* Left: Sachi logo + wordmark */}
           <div style={{ display:"flex", alignItems:"center", gap:7 }}>
@@ -5477,7 +5625,7 @@ function App() {
 
       {/* Profile */}
       {activeTab === "profile" && (
-        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
+        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A", position:"relative", zIndex:10, isolation:"isolate" }}>
           {!currentUser ? (
             <div style={{ textAlign:"center", padding:60 }}>
               <div style={{ position:"relative", display:"inline-block", cursor:"pointer", marginBottom:16 }}
@@ -5519,23 +5667,55 @@ function App() {
                   <div style={{ fontSize:13, color:"#888" }}>✏️</div>
                 </div>
                 <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
-                <div style={{ display:"flex", justifyContent:"center", gap:32, marginTop:20, marginBottom:20 }}>
-                  <div style={{ textAlign:"center" }}>
+                <div style={{ display:"flex", justifyContent:"center", gap:0, marginTop:20, marginBottom:20, pointerEvents:"auto" }}>
+                  <div style={{ textAlign:"center", padding:"10px 24px" }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{myVideos.length}</div>
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
-                  <div style={{ textAlign:"center" }}>
+                  <button style={{ textAlign:"center", padding:"10px 24px", background:"none", border:"none", cursor:"pointer", pointerEvents:"auto", WebkitTapHighlightColor:"transparent" }}
+                    onClick={async () => {
+                      setShowFollowersList(true);
+                      setFollowListLoading(true);
+                      try {
+                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const all = r1?.items || r1 || [];
+                        const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                        setFollowersList(unique);
+                      } catch(e) { setFollowersList([]); }
+                      setFollowListLoading(false);
+                    }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowersCount}</div>
-                    <div style={{ color:"#888", fontSize:12 }}>Followers</div>
-                  </div>
-                  <div style={{ textAlign:"center" }}>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Followers</div>
+                  </button>
+                  <button style={{ textAlign:"center", padding:"10px 24px", background:"none", border:"none", cursor:"pointer", pointerEvents:"auto", WebkitTapHighlightColor:"transparent" }}
+                    onClick={async () => {
+                      setShowFollowingList(true);
+                      setFollowListLoading(true);
+                      try {
+                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const all = r1?.items || r1 || [];
+                        const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                        setFollowingList(unique);
+                      } catch(e) { setFollowingList([]); }
+                      setFollowListLoading(false);
+                    }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowingCount}</div>
-                    <div style={{ color:"#888", fontSize:12 }}>Following</div>
-                  </div>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Following</div>
+                  </button>
                 </div>
               </div>
-              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id).then(setMyVideos).catch(()=>{})} />
+              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
 
+              {/* Founding Creator CTA */}
+              <div style={{ padding:"0 20px 12px" }}>
+                <button onClick={() => window.location.href='/founding-creator'}
+                  style={{ width:"100%", padding:"15px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                    border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:14,
+                    color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  🌸 Apply to be a Founding Creator
+                </button>
+              </div>
               {/* Log Out */}
               <div style={{ padding:"24px 20px 32px" }}>
                 <button onClick={() => { auth.signOut(); localStorage.removeItem('sachi_google_user'); setCurrentUser(null); setActiveTab('feed'); }}
@@ -5742,6 +5922,68 @@ function App() {
           currentUser={currentUser}
           onClose={() => setProfileSheet(null)} />
       )}
+      {/* ── Followers Sheet (top-level so nothing clips it) ── */}
+      {showFollowersList && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:19999, display:"flex", alignItems:"flex-end" }}
+          onClick={e => { if(e.target===e.currentTarget) setShowFollowersList(false); }}>
+          <div style={{ width:"100%", maxHeight:"75vh", background:"#13142A", borderRadius:"20px 20px 0 0", overflowY:"auto", paddingBottom:32 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 12px",
+              borderBottom:"1px solid rgba(255,255,255,0.08)", position:"sticky", top:0, background:"#13142A", zIndex:1 }}>
+              <div style={{ fontWeight:800, fontSize:17, color:"#fff" }}>Followers ({followersList.length})</div>
+              <button onClick={() => setShowFollowersList(false)}
+                style={{ background:"none", border:"none", color:"#888", fontSize:24, cursor:"pointer", lineHeight:1 }}>✕</button>
+            </div>
+            {followListLoading ? (
+              <div style={{ textAlign:"center", padding:40, color:"#888" }}>Loading...</div>
+            ) : followersList.length === 0 ? (
+              <div style={{ textAlign:"center", padding:40, color:"#888" }}>No followers yet</div>
+            ) : followersList.map((f, i) => (
+              <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px",
+                borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}
+                onClick={() => { setShowFollowersList(false); setProfileSheet({ userId: f.follower_id, username: f.follower_username }); }}>
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.follower_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
+                  style={{ width:48, height:48, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.4)" }} />
+                <div>
+                  <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>{f.follower_username || "Unknown"}</div>
+                  <div style={{ color:"#888", fontSize:12 }}>@{f.follower_username}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Following Sheet (top-level so nothing clips it) ── */}
+      {showFollowingList && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:19999, display:"flex", alignItems:"flex-end" }}
+          onClick={e => { if(e.target===e.currentTarget) setShowFollowingList(false); }}>
+          <div style={{ width:"100%", maxHeight:"75vh", background:"#13142A", borderRadius:"20px 20px 0 0", overflowY:"auto", paddingBottom:32 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 12px",
+              borderBottom:"1px solid rgba(255,255,255,0.08)", position:"sticky", top:0, background:"#13142A", zIndex:1 }}>
+              <div style={{ fontWeight:800, fontSize:17, color:"#fff" }}>Following ({followingList.length})</div>
+              <button onClick={() => setShowFollowingList(false)}
+                style={{ background:"none", border:"none", color:"#888", fontSize:24, cursor:"pointer", lineHeight:1 }}>✕</button>
+            </div>
+            {followListLoading ? (
+              <div style={{ textAlign:"center", padding:40, color:"#888" }}>Loading...</div>
+            ) : followingList.length === 0 ? (
+              <div style={{ textAlign:"center", padding:40, color:"#888" }}>Not following anyone yet</div>
+            ) : followingList.map((f, i) => (
+              <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px",
+                borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}
+                onClick={() => { setShowFollowingList(false); setProfileSheet({ userId: f.following_id, username: f.following_username }); }}>
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.following_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
+                  style={{ width:48, height:48, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.4)" }} />
+                <div>
+                  <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>{f.following_username || "Unknown"}</div>
+                  <div style={{ color:"#888", fontSize:12 }}>@{f.following_username}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {commentVideo && <CommentSheet video={commentVideo} currentUser={currentUser} onClose={() => setCommentVideo(null)} onCommentPosted={handleCommentCount} onNeedAuth={() => { setCommentVideo(null); setShowAuth(true); }} />}
       {showUpload && currentUser && <UploadModal currentUser={currentUser} onClose={() => setShowUpload(false)} onUploaded={() => { goHome(); setUploadToast(true); setTimeout(() => setUploadToast(false), 4000); }} />}
       {showGoLive && currentUser && <GoLiveModal currentUser={currentUser} onClose={() => setShowGoLive(false)} onUploaded={() => { goHome(); setUploadToast(true); setTimeout(() => setUploadToast(false), 4000); }} />}
@@ -5829,12 +6071,17 @@ function App() {
         </div>
       )}
       {showAvatarPicker && <AvatarPickerModal currentAvatar={avatarUrl} onSelect={async (url) => {
-        // Immediately update UI — works for both base64 and CDN URLs
+        // Immediately update UI
         setAvatarUrl(url);
         setCurrentUser(u => ({ ...u, avatar_url: url }));
         if (currentUser) {
-          localStorage.setItem(`avatar_${currentUser.id}`, url);
-          localStorage.setItem('avatar_last', url);
+          // Clear old cached values so DB takes priority on next load
+          localStorage.removeItem(`avatar_${currentUser.id}`);
+          localStorage.removeItem('avatar_last');
+          if (!url.startsWith('data:')) {
+            localStorage.setItem(`avatar_${currentUser.id}`, url);
+            localStorage.setItem('avatar_last', url);
+          }
         }
         setShowAvatarPicker(false);
 
@@ -5844,25 +6091,21 @@ function App() {
             await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
-            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`);
-            const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
-            if (users[0]) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${users[0].id}/`, { avatar_url: url });
+            // Match by email (works for Google users)
+            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+            const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
+            const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
+            if (match) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           } catch(e) { console.warn("User entity update failed:", e); }
           try {
             const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
-            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || []);
+            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
             await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
             setVideoList(vs => vs.map(v =>
               (v.user_id === currentUser.id || v.created_by === currentUser.id)
                 ? { ...v, avatar_url: url } : v
             ));
           } catch(e) { console.warn("Video avatar sync failed:", e); }
-        } else if (currentUser && url.startsWith("data:")) {
-          // For base64 avatars — still update the feed in memory
-          setVideoList(vs => vs.map(v =>
-            (v.user_id === currentUser.id || v.created_by === currentUser.id)
-              ? { ...v, avatar_url: url } : v
-          ));
         }
       }} onClose={() => setShowAvatarPicker(false)} />}
     </div>
