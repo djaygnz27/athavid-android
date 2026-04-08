@@ -1065,9 +1065,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
         post_city: postLocation?.city || photoGeo.post_city || null,
-        sound_title: selectedTrack?.sound_title || selectedTrack?.title || null,
-        sound_artist: selectedTrack?.sound_artist || selectedTrack?.artist || null,
-        sound_url: selectedTrack?.sound_url || selectedTrack?.url || null,
         ...photoGeo,
       });
       setProgress(100);
@@ -2145,7 +2142,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   // Sync video element muted attribute whenever global mute state changes
   useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = muted;
+    if (videoRef.current) videoRef.current.muted = video.sound_url ? true : muted;
     if (soundRef.current) {
       if (muted) { soundRef.current.pause(); }
       else if (playing && video.sound_url) { soundRef.current.play().catch(() => {}); }
@@ -2159,10 +2156,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
         const currentlyMuted = window.__sachiMuted !== undefined ? window.__sachiMuted : true;
-        el.muted = currentlyMuted;
+        el.muted = video.sound_url ? true : currentlyMuted;
         el.play().catch(() => {});
         setPlaying(true);
-        // Start sound track if unmuted and post has music
+        // Start sound track if unmuted and post has music (video audio stays muted)
         if (!currentlyMuted && soundRef.current && video.sound_url) {
           soundRef.current.play().catch(() => {});
         }
@@ -2189,7 +2186,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const wasPlaying = !el.paused;
     const nm = !muted;
-    el.muted = nm;
+    el.muted = video.sound_url ? true : nm;
     setMuted(nm);
     // If video was already playing and we're unmuting, browser needs .play()
     // at this exact user-gesture moment to allow audio — but only resume if
@@ -2429,6 +2426,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <>
             <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
               loop playsInline
+              muted={muted || !!video.sound_url}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
                 if (soundRef.current && video.sound_url && !muted) {
