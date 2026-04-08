@@ -4,11 +4,11 @@ import { auth } from "./api.js";
 // ─── Google One Tap ────────────────────────────────────────────────────────────
 // Replace this placeholder with your real Google OAuth Client ID from:
 // console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID
-const GOOGLE_CLIENT_ID = "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID";
+const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 
 function GoogleOneTap({ onSuccess }) {
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID") return;
+    if (!GOOGLE_CLIENT_ID || false) return;
 
     // Load Google Identity Services script
     const script = document.createElement("script");
@@ -75,7 +75,7 @@ function GoogleOneTap({ onSuccess }) {
     return () => { try { document.head.removeChild(script); } catch {} };
   }, []);
 
-  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID") return null;
+  if (!GOOGLE_CLIENT_ID || false) return null;
 
   return (
     <div style={{ width: "100%", display: "flex", justifyContent: "center", marginBottom: 16 }}>
@@ -338,3 +338,4 @@ export default function AuthModal({ onClose, onSuccess }) {
     </div>
   );
 }
+
