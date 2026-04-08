@@ -11011,7 +11011,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     };
   }, []);
   reactExports.useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = muted;
+    if (videoRef.current) videoRef.current.muted = video.sound_url ? true : muted;
     if (soundRef.current) {
       if (muted) {
         soundRef.current.pause();
@@ -11027,7 +11027,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
         const currentlyMuted = window.__sachiMuted !== void 0 ? window.__sachiMuted : true;
-        el2.muted = currentlyMuted;
+        el2.muted = video.sound_url ? true : currentlyMuted;
         el2.play().catch(() => {
         });
         setPlaying(true);
@@ -11058,7 +11058,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el2) return;
     const wasPlaying = !el2.paused;
     const nm = !muted;
-    el2.muted = nm;
+    el2.muted = video.sound_url ? true : nm;
     setMuted(nm);
     if (!nm && wasPlaying) {
       el2.play().catch(() => {
@@ -11431,6 +11431,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             poster: resolveMediaUrl(video.thumbnail_url),
             loop: true,
             playsInline: true,
+            muted: muted || !!video.sound_url,
             onPlay: () => {
               setPlaying(true);
               hideUIAfterDelay(1500);
