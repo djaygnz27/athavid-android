@@ -16,8 +16,16 @@ jobs:
       - name: Install dependencies
         run: npm install @capacitor/core@6 @capacitor/android@6 @capacitor/cli@6
 
-      - name: Cap sync
-        run: npx cap sync android
+      - name: Add android platform if missing
+        run: |
+          if [ ! -f "android/app/build.gradle" ]; then
+            npx cap add android
+          else
+            echo "Android platform already exists, skipping add"
+          fi
+
+      - name: Copy web assets to android
+        run: npx cap copy android
 
       - uses: actions/setup-java@v4
         with:
