@@ -5,6 +5,7 @@ import { auth, videos, comments, uploadFile, follows, request, interests, report
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
+import ChildSafety from "./ChildSafety.jsx";
 
 function formatDate(d) {
   if (!d) return "";
@@ -5042,6 +5043,7 @@ function App() {
   const path = window.location.pathname;
   if (path === "/terms") return <Terms />;
   if (path === "/privacy") return <Privacy />;
+  if (path === "/child-safety") return <ChildSafety />;
 
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
