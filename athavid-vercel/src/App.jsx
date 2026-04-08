@@ -4493,95 +4493,12 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      // Paginate through ALL users (AthaVidUser + legacy User entity merged)
-      let allUsersFetched = [], uSkip = 0, uMore = true;
-      while (uMore) {
-        const uRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
-        const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
-        allUsersFetched = [...allUsersFetched, ...uItems];
-        uMore = uRes.has_more === true && uItems.length === 500;
-        uSkip += 500;
-      }
-      let legacyUsers = [], lSkip = 0, lMore = true;
-      while (lMore) {
-        const lRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
-        const lItems = lRes.items || (Array.isArray(lRes) ? lRes : []);
-        legacyUsers = [...legacyUsers, ...lItems];
-        lMore = lRes.has_more === true && lItems.length === 500;
-        lSkip += 500;
-      }
-      const knownEmails = new Set(allUsersFetched.map(u => (u.email||'').toLowerCase()));
-      const normalizedLegacy = legacyUsers
-        .filter(u => u.email && !knownEmails.has(u.email.toLowerCase()))
-        .map(u => ({ id: u.id, email: u.email, username: u.full_name||u.email.split('@')[0], display_name: u.full_name||u.email.split('@')[0], created_date: u.created_date, status: 'active', _source: 'legacy' }));
-      const [vRes, cRes] = await Promise.all([
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date"),
-      ]);
-      const videos = vRes.items || vRes || [];
-      const users  = [...allUsersFetched, ...normalizedLegacy];
-      const comments = cRes.items || cRes || [];
-      setAllUsers(users);
-
-      // Build daily buckets for last 14 days
-      const now = new Date();
-      const days = Array.from({length:14}, (_,i) => {
-        const d = new Date(now);
-        d.setDate(d.getDate() - (13-i));
-        return d.toISOString().slice(0,10);
-      });
-
-      const byDay = (arr, dateField) => {
-        const map = {};
-        days.forEach(d => map[d] = 0);
-        arr.forEach(item => {
-          const d = (item[dateField]||"").slice(0,10);
-          if (map[d] !== undefined) map[d]++;
-        });
-        return days.map(d => ({ date: d, count: map[d] }));
-      };
-
-      // Top creators by video count
-      const creatorMap = {};
-      videos.forEach(v => {
-        const u = v.username || "unknown";
-        creatorMap[u] = (creatorMap[u]||0) + 1;
-      });
-      const topCreators = Object.entries(creatorMap)
-        .sort((a,b) => b[1]-a[1]).slice(0,5)
-        .map(([username, count]) => ({ username, count }));
-
-      // Top videos by views
-      const topVideos = [...videos].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,5);
-
-      // Totals
-      const totalViews  = videos.reduce((s,v) => s+(v.views_count||0), 0);
-      const totalLikes  = videos.reduce((s,v) => s+(v.likes_count||0), 0);
-      const matureCount = videos.filter(v => v.is_mature).length;
-
-      // Today & this week registrations
-      const todayStr = new Date().toISOString().slice(0,10);
-      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
-      const newToday = users.filter(u => (u.created_date||"").slice(0,10) === todayStr).length;
-      const newThisWeek = users.filter(u => new Date(u.created_date) >= weekAgo).length;
-
-      // Recent registrants (last 20)
-      const recentUsers = [...users]
-        .sort((a,b) => new Date(b.created_date) - new Date(a.created_date))
-        .slice(0, 20);
-
-      setAnalyticsData({
-        totalVideos: videos.length,
-        totalUsers: users.length,
-        totalComments: comments.length,
-        totalViews, totalLikes, matureCount,
-        newToday, newThisWeek,
-        dailyVideos: byDay(videos, "created_date"),
-        dailyUsers: byDay(users, "created_date"),
-        topCreators,
-        topVideos,
-        recentUsers,
-      });
+      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
+      }).then(r => r.json());
+      if (data.error) throw new Error(data.error);
+      setAllUsers(data.users || []);
+      setAnalyticsData(data.analytics);
     } catch(e) { console.error("analytics error", e); }
     setAnalyticsLoading(false);
   };
@@ -4596,43 +4513,12 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      // Fetch AthaVidUser (Google auth) - paginated
-      let athavid = [], skip = 0, hasMore = true;
-      while (hasMore) {
-        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
-        const items = res.items || (Array.isArray(res) ? res : []);
-        athavid = [...athavid, ...items];
-        hasMore = res.has_more === true && items.length === 500;
-        skip += 500;
-      }
-      // Fetch User entity (old OTP auth users)
-      let oldUsers = [], skip2 = 0, hasMore2 = true;
-      while (hasMore2) {
-        const res2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
-        const items2 = res2.items || (Array.isArray(res2) ? res2 : []);
-        oldUsers = [...oldUsers, ...items2];
-        hasMore2 = res2.has_more === true && items2.length === 500;
-        skip2 += 500;
-      }
-      // Merge: normalize old users to same shape, deduplicate by email
-      const athavid_emails = new Set(athavid.map(u => (u.email||'').toLowerCase()));
-      const normalized = oldUsers
-        .filter(u => u.email && !athavid_emails.has(u.email.toLowerCase()))
-        .map(u => ({
-          id: u.id,
-          email: u.email,
-          username: u.full_name || u.email.split('@')[0],
-          display_name: u.full_name || u.email.split('@')[0],
-          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name||u.email)}&background=random&color=fff&size=128&bold=true&format=png`,
-          status: u.disabled ? 'disabled' : 'active',
-          is_verified: u.is_verified,
-          created_date: u.created_date,
-          updated_date: u.updated_date,
-          _source: 'legacy'
-        }));
-      const merged = [...athavid, ...normalized].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
-      setRegisteredUsers(merged);
-    } catch(e) { console.error(e); }
+      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
+      }).then(r => r.json());
+      if (data.error) throw new Error(data.error);
+      setRegisteredUsers(data.users || []);
+    } catch(e) { console.error("loadRegisteredUsers error", e); }
     setUsersLoading(false);
   };
 
@@ -4684,7 +4570,7 @@ function AdminPanel({ currentUser }) {
       <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 10px", position:"sticky", top:0, zIndex:100 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div style={{ color:"#F5C842", fontWeight:900, fontSize:20 }}>🛡️ Mod Panel</div>
-          <button onClick={() => modTab==="analytics" ? loadAnalytics() : loadVideos()}
+          <button onClick={() => modTab==="analytics" ? loadAnalytics() : modTab==="users" ? loadRegisteredUsers() : loadVideos()}
             style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:20, padding:"7px 14px", color:"#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
             ↻ Refresh
           </button>
