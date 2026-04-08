@@ -6,6 +6,7 @@ import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./Aut
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
 import ChildSafety from "./ChildSafety.jsx";
+import FoundingCreatorPage from "./FoundingCreator.jsx";
 
 function formatDate(d) {
   if (!d) return "";
@@ -5253,6 +5254,7 @@ function App() {
   if (path === "/terms") return <Terms />;
   if (path === "/privacy") return <Privacy />;
   if (path === "/child-safety") return <ChildSafety />;
+  if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
 
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
@@ -5790,6 +5792,16 @@ function App() {
               </div>
               <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
 
+              {/* Founding Creator CTA */}
+              <div style={{ padding:"0 20px 12px" }}>
+                <button onClick={() => window.location.href='/founding-creator'}
+                  style={{ width:"100%", padding:"15px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                    border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:14,
+                    color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  🌸 Apply to be a Founding Creator
+                </button>
+              </div>
               {/* Log Out */}
               <div style={{ padding:"24px 20px 32px" }}>
                 <button onClick={() => { auth.signOut(); localStorage.removeItem('sachi_google_user'); setCurrentUser(null); setActiveTab('feed'); }}
