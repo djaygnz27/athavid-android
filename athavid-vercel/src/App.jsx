@@ -4465,7 +4465,7 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      // Paginate through ALL users
+      // Paginate through ALL users (AthaVidUser + legacy User entity merged)
       let allUsersFetched = [], uSkip = 0, uMore = true;
       while (uMore) {
         const uRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
@@ -4474,12 +4474,24 @@ function AdminPanel({ currentUser }) {
         uMore = uRes.has_more === true && uItems.length === 500;
         uSkip += 500;
       }
+      let legacyUsers = [], lSkip = 0, lMore = true;
+      while (lMore) {
+        const lRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
+        const lItems = lRes.items || (Array.isArray(lRes) ? lRes : []);
+        legacyUsers = [...legacyUsers, ...lItems];
+        lMore = lRes.has_more === true && lItems.length === 500;
+        lSkip += 500;
+      }
+      const knownEmails = new Set(allUsersFetched.map(u => (u.email||'').toLowerCase()));
+      const normalizedLegacy = legacyUsers
+        .filter(u => u.email && !knownEmails.has(u.email.toLowerCase()))
+        .map(u => ({ id: u.id, email: u.email, username: u.full_name||u.email.split('@')[0], display_name: u.full_name||u.email.split('@')[0], created_date: u.created_date, status: 'active', _source: 'legacy' }));
       const [vRes, cRes] = await Promise.all([
         request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
         request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date"),
       ]);
       const videos = vRes.items || vRes || [];
-      const users  = allUsersFetched;
+      const users  = [...allUsersFetched, ...normalizedLegacy];
       const comments = cRes.items || cRes || [];
       setAllUsers(users);
 
@@ -4556,15 +4568,42 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      let all = [], skip = 0, hasMore = true;
+      // Fetch AthaVidUser (Google auth) - paginated
+      let athavid = [], skip = 0, hasMore = true;
       while (hasMore) {
         const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
         const items = res.items || (Array.isArray(res) ? res : []);
-        all = [...all, ...items];
+        athavid = [...athavid, ...items];
         hasMore = res.has_more === true && items.length === 500;
         skip += 500;
       }
-      setRegisteredUsers(all);
+      // Fetch User entity (old OTP auth users)
+      let oldUsers = [], skip2 = 0, hasMore2 = true;
+      while (hasMore2) {
+        const res2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
+        const items2 = res2.items || (Array.isArray(res2) ? res2 : []);
+        oldUsers = [...oldUsers, ...items2];
+        hasMore2 = res2.has_more === true && items2.length === 500;
+        skip2 += 500;
+      }
+      // Merge: normalize old users to same shape, deduplicate by email
+      const athavid_emails = new Set(athavid.map(u => (u.email||'').toLowerCase()));
+      const normalized = oldUsers
+        .filter(u => u.email && !athavid_emails.has(u.email.toLowerCase()))
+        .map(u => ({
+          id: u.id,
+          email: u.email,
+          username: u.full_name || u.email.split('@')[0],
+          display_name: u.full_name || u.email.split('@')[0],
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name||u.email)}&background=random&color=fff&size=128&bold=true&format=png`,
+          status: u.disabled ? 'disabled' : 'active',
+          is_verified: u.is_verified,
+          created_date: u.created_date,
+          updated_date: u.updated_date,
+          _source: 'legacy'
+        }));
+      const merged = [...athavid, ...normalized].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
+      setRegisteredUsers(merged);
     } catch(e) { console.error(e); }
     setUsersLoading(false);
   };
