@@ -3,35 +3,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const APP_ID = Deno.env.get("BASE44_APP_ID") || "69b2ee18a8e6fb58c7f0261c";
-    const SERVICE_TOKEN = Deno.env.get("BASE44_SERVICE_TOKEN");
-    const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+    const db = base44.asServiceRole;
 
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (SERVICE_TOKEN) headers["Authorization"] = `Bearer ${SERVICE_TOKEN}`;
-
-    // Helper to paginate entity endpoint
-    const fetchAll = async (entity: string) => {
-      let all: any[] = [], skip = 0, hasMore = true;
-      while (hasMore) {
-        const res = await fetch(
-          `${BASE_URL}/apps/${APP_ID}/entities/${entity}?limit=500&skip=${skip}&sort=-created_date`,
-          { headers }
-        );
-        const data = await res.json();
-        const items = data.items || (Array.isArray(data) ? data : []);
-        all = [...all, ...items];
-        hasMore = data.has_more === true && items.length === 500;
-        skip += 500;
-      }
-      return all;
-    };
-
-    // Fetch all data in parallel
+    // Fetch all data in parallel using service role (bypasses auth)
+    // Use .filter({}) — .list() returns empty without user context
     const [allUsers, allVideos, allComments] = await Promise.all([
-      fetchAll("AthaVidUser"),
-      fetchAll("SachiVideo"),
-      fetchAll("SachiComment"),
+      db.entities.AthaVidUser.filter({}),
+      db.entities.SachiVideo.filter({}),
+      db.entities.SachiComment.filter({}),
     ]);
 
     // Compute analytics
@@ -45,7 +24,7 @@ Deno.serve(async (req) => {
     const totalLikes = allVideos.reduce((s: number, v: any) => s + (v.likes_count || 0), 0);
     const matureCount = allVideos.filter((v: any) => v.is_mature).length;
 
-    // Daily buckets 14 days
+    // Daily buckets — 14 days
     const days = Array.from({ length: 14 }, (_, i) => {
       const d = new Date(now);
       d.setDate(d.getDate() - (13 - i));
@@ -72,9 +51,10 @@ Deno.serve(async (req) => {
       .map(([username, count]) => ({ username, count }));
 
     const topVideos = [...allVideos]
-      .sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 5);
+      .sort((a: any, b: any) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 5);
+
     const recentUsers = [...allUsers]
-      .sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
+      .sort((a: any, b: any) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
       .slice(0, 20);
 
     // Location breakdown
