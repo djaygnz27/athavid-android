@@ -11914,18 +11914,15 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      const token = localStorage.getItem("sachi_token");
-      if (token) {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-        try {
-          const url = await uploadFile(file);
-          onSelect(url);
-          return;
-        } catch (e) {
-          console.warn("Server upload failed, falling back to base64:", e);
-        }
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      try {
+        const url = await uploadFile(file);
+        onSelect(url);
+        return;
+      } catch (e) {
+        console.warn("CDN upload failed, falling back to base64:", e);
       }
       onSelect(dataUrl);
     } catch (e) {
@@ -14436,15 +14433,15 @@ function App() {
           const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : usersData.items || [];
           const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
-          const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
-          if (localSaved) {
-            setAvatarUrl(localSaved);
-          } else if (match && match.avatar_url) {
+          if (match && match.avatar_url && !match.avatar_url.startsWith("data:")) {
             setAvatarUrl(match.avatar_url);
             localStorage.setItem(`avatar_${currentUser.id}`, match.avatar_url);
-            localStorage.setItem(`avatar_last`, match.avatar_url);
-          } else if (currentUser.avatar_url) {
+            localStorage.setItem("avatar_last", match.avatar_url);
+          } else if (currentUser.avatar_url && !currentUser.avatar_url.startsWith("data:")) {
             setAvatarUrl(currentUser.avatar_url);
+          } else {
+            const localSaved = localStorage.getItem(`avatar_${currentUser.id}`);
+            if (localSaved && !localSaved.startsWith("data:")) setAvatarUrl(localSaved);
           }
         } catch (e) {
           if (currentUser.avatar_url) setAvatarUrl(currentUser.avatar_url);
@@ -15566,8 +15563,12 @@ function App() {
       setAvatarUrl(url);
       setCurrentUser((u2) => ({ ...u2, avatar_url: url }));
       if (currentUser) {
-        localStorage.setItem(`avatar_${currentUser.id}`, url);
-        localStorage.setItem("avatar_last", url);
+        localStorage.removeItem(`avatar_${currentUser.id}`);
+        localStorage.removeItem("avatar_last");
+        if (!url.startsWith("data:")) {
+          localStorage.setItem(`avatar_${currentUser.id}`, url);
+          localStorage.setItem("avatar_last", url);
+        }
       }
       setShowAvatarPicker(false);
       if (currentUser && !url.startsWith("data:")) {
@@ -15577,15 +15578,16 @@ function App() {
           console.warn("Auth avatar update failed:", e);
         }
         try {
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?created_by=${currentUser.id}`);
-          const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || [];
-          if (users[0]) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${users[0].id}/`, { avatar_url: url });
+          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
+          const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
+          if (match) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
         } catch (e) {
           console.warn("User entity update failed:", e);
         }
         try {
           const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
-          const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || [];
+          const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
           await Promise.all(vids.map((v2) => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
           setVideoList((vs) => vs.map(
             (v2) => v2.user_id === currentUser.id || v2.created_by === currentUser.id ? { ...v2, avatar_url: url } : v2
@@ -15593,10 +15595,6 @@ function App() {
         } catch (e) {
           console.warn("Video avatar sync failed:", e);
         }
-      } else if (currentUser && url.startsWith("data:")) {
-        setVideoList((vs) => vs.map(
-          (v2) => v2.user_id === currentUser.id || v2.created_by === currentUser.id ? { ...v2, avatar_url: url } : v2
-        ));
       }
     }, onClose: () => setShowAvatarPicker(false) })
   ] });
