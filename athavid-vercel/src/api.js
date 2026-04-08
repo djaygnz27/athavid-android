@@ -58,8 +58,8 @@ export const auth = {
 };
 
 export const videos = {
-  async list() {
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
+  async list(limit = 30, skip = 0) {
+    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
@@ -67,11 +67,25 @@ export const videos = {
   async update(id, data) {
     return request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${id}`, data);
   },
-  async myVideos(userId) {
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}`);
+  async myVideos(userId, userEmail) {
+    // Fetch by user_id first
+    const res1 = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const items1 = res1?.items || (Array.isArray(res1) ? res1 : []);
+    // Also fetch by created_by email to catch legacy posts
+    let items2 = [];
+    if (userEmail) {
+      const res2 = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      items2 = res2?.items || (Array.isArray(res2) ? res2 : []);
+    }
+    // Merge, deduplicate by id
+    const seen = new Set();
+    return [...items1, ...items2].filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return !v.is_archived;
+    });
   },
   async byUser(userId) {
-    // Fetch all videos and filter client-side by user_id
     let all = [];
     let skip = 0;
     const limit = 100;
@@ -81,7 +95,7 @@ export const videos = {
       all = all.concat(items);
       if (items.length < limit) break;
       skip += limit;
-      if (skip > 500) break; // safety cap
+      if (skip > 500) break;
     }
     return all.filter(v => v.user_id === userId && !v.is_archived);
   },
@@ -92,29 +106,29 @@ export const videos = {
 
 export const comments = {
   async list(videoId) {
-    return request("GET", `/apps/${APP_ID}/entities/SachiComment?video_id=${videoId}`);
+    return request("GET", `/apps/${APP_ID}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiComment`, data);
   },
+  async update(id, data) {
+    return request("PUT", `/apps/${APP_ID}/entities/SachiComment/${id}`, data);
+  },
+  async delete(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiComment/${id}`);
+  },
 };
 
 export async function uploadFile(file) {
-  // Upload directly to Base44 storage — CORS open, works with or without auth
   const token = getToken();
   const form = new FormData();
   form.append("file", file);
-
-  // Build headers — only add Authorization if we have a token
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
-
   const res = await fetch(
     `https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/integration-endpoints/Core/UploadFile`,
     { method: "POST", headers, body: form }
   );
-
-  // If 404 or non-JSON, give a clear error
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); } catch(_) { throw new Error(`Upload error ${res.status}: ${text.slice(0,100)}`); }
@@ -132,21 +146,54 @@ export const follows = {
     return request("DELETE", `/apps/${APP_ID}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${follower_id}`);
+    return request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${following_id}`);
+    return request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${following_id}&limit=500`);
   },
-  async getFollowingVideos(userIds) {
-    // fetch videos from followed users
-    const ids = userIds.join(",");
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?is_approved=true&is_archived=false&sort=-created_date`);
-  }
+};
+
+// ── Reports ────────────────────────────────────────────────────────────────
+export const reports = {
+  async create(data) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiReport`, data);
+  },
+  async list() {
+    return request("GET", `/apps/${APP_ID}/entities/SachiReport?sort=-created_date&limit=200`);
+  },
+  async update(id, data) {
+    return request("PUT", `/apps/${APP_ID}/entities/SachiReport/${id}`, data);
+  },
+};
+
+// ── Bookmarks ──────────────────────────────────────────────────────────────
+export const bookmarks = {
+  async add(user_id, username, video_id) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiBookmark`, { user_id, username, video_id });
+  },
+  async remove(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiBookmark/${id}`);
+  },
+  async getByUser(user_id) {
+    return request("GET", `/apps/${APP_ID}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+  },
+};
+
+// ── Blocks ─────────────────────────────────────────────────────────────────
+export const blocks = {
+  async block(blocker_id, blocker_username, blocked_id, blocked_username) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+  },
+  async unblock(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiBlock/${id}`);
+  },
+  async getBlockedByUser(blocker_id) {
+    return request("GET", `/apps/${APP_ID}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+  },
 };
 
 // ── Recommendation Engine ──────────────────────────────────────────────────
 export const interests = {
-  // Fetch a user's interest scores
   async get(userId) {
     try {
       const res = await request("GET", `/apps/${APP_ID}/entities/UserInterest?user_id=${userId}&limit=100`);
@@ -154,7 +201,6 @@ export const interests = {
     } catch { return []; }
   },
 
-  // Record a signal: like=3pts, watch(50%+)=1pt, follow=5pts
   async signal(userId, hashtags, points) {
     if (!userId || !hashtags?.length) return;
     const existing = await this.get(userId);
@@ -164,7 +210,6 @@ export const interests = {
       if (!clean) continue;
       const entry = existing.find(e => e.hashtag === clean);
       if (entry) {
-        // Decay old score slightly then add new points (recency matters)
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
         await request("PUT", `/apps/${APP_ID}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
@@ -181,46 +226,39 @@ export const interests = {
     }
   },
 
-  // Score a list of videos against user's interests and return sorted list
   async rankFeed(userId, videoList) {
-    // Always sort newest-first as the base — most recent video always appears first
     const byDate = [...videoList].sort((a, b) =>
       new Date(b.created_date || 0).getTime() - new Date(a.created_date || 0).getTime()
     );
-
-    if (!userId) return byDate; // guests: pure chronological
+    if (!userId) return byDate;
     const userInterests = await this.get(userId);
-    if (!userInterests.length) return byDate; // no interaction data yet: pure chronological
-
-    // Build a score map: hashtag -> interest score
+    if (!userInterests.length) return byDate;
     const scoreMap = {};
     for (const i of userInterests) {
       scoreMap[i.hashtag.toLowerCase()] = i.score || 0;
     }
-
-    // Only apply interest ranking if there's meaningful data (>= 3 interest signals)
     const totalSignal = Object.values(scoreMap).reduce((s, v) => s + v, 0);
-    if (totalSignal < 3) return byDate; // not enough data: newest first
-
-    // Score each video
+    if (totalSignal < 3) return byDate;
     const scored = byDate.map(v => {
       const tags = (v.hashtags || []).map(t => t.replace(/^#/, "").toLowerCase());
       let relevance = 0;
-      for (const tag of tags) {
-        relevance += scoreMap[tag] || 0;
-      }
+      for (const tag of tags) relevance += scoreMap[tag] || 0;
       return { ...v, _relevance: relevance };
     });
-
-    // Blend: 50% recency + 50% relevance — recency always has strong weight
+    const times = scored.map(v => new Date(v.created_date || 0).getTime());
+    const minT = Math.min(...times);
+    const maxT = Math.max(...times);
+    const timeRange = maxT - minT || 1;
+    const maxRel = Math.max(...scored.map(v => v._relevance), 1);
     scored.sort((a, b) => {
-      const recencyA = new Date(a.created_date || 0).getTime() / 1e12;
-      const recencyB = new Date(b.created_date || 0).getTime() / 1e12;
-      const scoreA = (a._relevance * 0.5) + (recencyA * 0.5);
-      const scoreB = (b._relevance * 0.5) + (recencyB * 0.5);
+      const recencyA = (new Date(a.created_date || 0).getTime() - minT) / timeRange;
+      const recencyB = (new Date(b.created_date || 0).getTime() - minT) / timeRange;
+      const relA = a._relevance / maxRel;
+      const relB = b._relevance / maxRel;
+      const scoreA = (relA * 0.3) + (recencyA * 0.7);
+      const scoreB = (relB * 0.3) + (recencyB * 0.7);
       return scoreB - scoreA;
     });
-
     return scored;
   }
 };
