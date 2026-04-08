@@ -5213,6 +5213,11 @@ function App() {
   const [myVideos, setMyVideos] = useState([]);
   const [meFollowersCount, setMeFollowersCount] = useState(0);
   const [meFollowingCount, setMeFollowingCount] = useState(0);
+  const [showFollowersList, setShowFollowersList] = useState(false);
+  const [showFollowingList, setShowFollowingList] = useState(false);
+  const [followersList, setFollowersList] = useState([]);
+  const [followingList, setFollowingList] = useState([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(() => {
     // Pre-load from localStorage to avoid flash on reload
     try {
@@ -5636,17 +5641,95 @@ function App() {
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{myVideos.length}</div>
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
-                  <div style={{ textAlign:"center" }}>
+                  <div style={{ textAlign:"center", cursor:"pointer" }} onClick={async () => {
+                    setFollowListLoading(true); setShowFollowersList(true);
+                    const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
+                    const [r1, r2] = await Promise.all([
+                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`),
+                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`),
+                    ]).catch(() => [[],[]]);
+                    const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+                    const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                    setFollowersList(unique);
+                    setFollowListLoading(false);
+                  }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowersCount}</div>
-                    <div style={{ color:"#888", fontSize:12 }}>Followers</div>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Followers</div>
                   </div>
-                  <div style={{ textAlign:"center" }}>
+                  <div style={{ textAlign:"center", cursor:"pointer" }} onClick={async () => {
+                    setFollowListLoading(true); setShowFollowingList(true);
+                    const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
+                    const [r1, r2] = await Promise.all([
+                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`),
+                      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`),
+                    ]).catch(() => [[],[]]);
+                    const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+                    const unique = [...new Map(all.map(f=>[f.id,f])).values()];
+                    setFollowingList(unique);
+                    setFollowListLoading(false);
+                  }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowingCount}</div>
-                    <div style={{ color:"#888", fontSize:12 }}>Following</div>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Following</div>
                   </div>
                 </div>
               </div>
               <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
+
+              {/* Followers Sheet */}
+              {showFollowersList && (
+                <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:9999, display:"flex", alignItems:"flex-end" }}
+                  onClick={e => { if(e.target===e.currentTarget) setShowFollowersList(false); }}>
+                  <div style={{ width:"100%", maxHeight:"75vh", background:"#13142A", borderRadius:"20px 20px 0 0", overflowY:"auto", padding:"0 0 32px" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 12px", borderBottom:"1px solid rgba(255,255,255,0.08)", position:"sticky", top:0, background:"#13142A", zIndex:1 }}>
+                      <div style={{ fontWeight:800, fontSize:17, color:"#fff" }}>Followers ({followersList.length})</div>
+                      <button onClick={() => setShowFollowersList(false)} style={{ background:"none", border:"none", color:"#888", fontSize:22, cursor:"pointer" }}>✕</button>
+                    </div>
+                    {followListLoading ? (
+                      <div style={{ textAlign:"center", padding:40, color:"#888" }}>Loading...</div>
+                    ) : followersList.length === 0 ? (
+                      <div style={{ textAlign:"center", padding:40, color:"#888" }}>No followers yet</div>
+                    ) : followersList.map((f, i) => (
+                      <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}
+                        onClick={() => { setShowFollowersList(false); setSelectedProfileId(f.follower_id); setSelectedProfileUsername(f.follower_username); setShowProfile(true); }}>
+                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.follower_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
+                          style={{ width:46, height:46, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.3)" }} />
+                        <div>
+                          <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>{f.follower_username || "Unknown"}</div>
+                          <div style={{ color:"#888", fontSize:12 }}>@{f.follower_username}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Following Sheet */}
+              {showFollowingList && (
+                <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:9999, display:"flex", alignItems:"flex-end" }}
+                  onClick={e => { if(e.target===e.currentTarget) setShowFollowingList(false); }}>
+                  <div style={{ width:"100%", maxHeight:"75vh", background:"#13142A", borderRadius:"20px 20px 0 0", overflowY:"auto", padding:"0 0 32px" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px 12px", borderBottom:"1px solid rgba(255,255,255,0.08)", position:"sticky", top:0, background:"#13142A", zIndex:1 }}>
+                      <div style={{ fontWeight:800, fontSize:17, color:"#fff" }}>Following ({followingList.length})</div>
+                      <button onClick={() => setShowFollowingList(false)} style={{ background:"none", border:"none", color:"#888", fontSize:22, cursor:"pointer" }}>✕</button>
+                    </div>
+                    {followListLoading ? (
+                      <div style={{ textAlign:"center", padding:40, color:"#888" }}>Loading...</div>
+                    ) : followingList.length === 0 ? (
+                      <div style={{ textAlign:"center", padding:40, color:"#888" }}>Not following anyone yet</div>
+                    ) : followingList.map((f, i) => (
+                      <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}
+                        onClick={() => { setShowFollowingList(false); setSelectedProfileId(f.following_id); setSelectedProfileUsername(f.following_username); setShowProfile(true); }}>
+                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.following_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
+                          style={{ width:46, height:46, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.3)" }} />
+                        <div>
+                          <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>{f.following_username || "Unknown"}</div>
+                          <div style={{ color:"#888", fontSize:12 }}>@{f.following_username}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Log Out */}
               <div style={{ padding:"24px 20px 32px" }}>
