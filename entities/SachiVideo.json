@@ -68,28 +68,34 @@
       "type": "boolean"
     },
     "mature_reason": {
-      "type": "string",
-      "enum": [
-        "violence",
-        "fighting",
-        "adult_themes",
-        "strong_language",
-        "other"
-      ]
+      "type": "string"
     },
     "is_photo": {
       "type": "boolean"
     },
     "photo_urls": {
-      "type": "string"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "post_country": {
-      "type": "string",
-      "description": "2-letter ISO country code of poster e.g. US, AU, GB"
+      "type": "string"
     },
     "post_region": {
-      "type": "string",
-      "description": "State/region abbreviation e.g. NJ, QLD, ON"
+      "type": "string"
+    },
+    "post_city": {
+      "type": "string"
+    },
+    "post_location_name": {
+      "type": "string"
+    },
+    "post_visibility": {
+      "type": "string"
+    },
+    "is_text_post": {
+      "type": "boolean"
     }
   },
   "required": [],
