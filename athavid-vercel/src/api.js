@@ -67,8 +67,23 @@ export const videos = {
   async update(id, data) {
     return request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${id}`, data);
   },
-  async myVideos(userId) {
-    return request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}`);
+  async myVideos(userId, userEmail) {
+    // Fetch by user_id first
+    const res1 = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const items1 = res1?.items || (Array.isArray(res1) ? res1 : []);
+    // Also fetch by created_by email to catch legacy posts
+    let items2 = [];
+    if (userEmail) {
+      const res2 = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      items2 = res2?.items || (Array.isArray(res2) ? res2 : []);
+    }
+    // Merge, deduplicate by id
+    const seen = new Set();
+    return [...items1, ...items2].filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return !v.is_archived;
+    });
   },
   async byUser(userId) {
     let all = [];
