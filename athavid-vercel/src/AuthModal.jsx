@@ -173,6 +173,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const handleFinish = async () => {
     if (!username.trim()) return setError("Please enter a username.");
     if (!dob) return setError("Please enter your birthday.");
+    if (!country.trim()) return setError("Please select your country.");
     if (!is18) return setError("You must confirm you are 18 years or older.");
     const birthDate = new Date(dob);
     const today = new Date();
@@ -271,12 +272,12 @@ function FinishStep({ googlePayload, onSuccess }) {
       />
 
       <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
-        Country <span style={{color:"#888", fontSize:11}}>(optional)</span>
+        Country <span style={{color:"#ff6b6b"}}>*</span>
       </div>
       <select
         value={country}
         onChange={e => setCountry(e.target.value)}
-        style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border:"1px solid rgba(245,200,66,0.3)", borderRadius:12, padding:"14px 16px", color: country ? "#fff" : "#888", fontSize:15, outline:"none", marginBottom:12, cursor:"pointer" }}
+        style={{ display:"block", width:"100%", boxSizing:"border-box", background:"#1a1b2e", border: country ? "1px solid rgba(245,200,66,0.6)" : "1px solid rgba(255,107,107,0.5)", borderRadius:12, padding:"14px 16px", color: country ? "#fff" : "#888", fontSize:15, outline:"none", marginBottom:12, cursor:"pointer" }}
       >
         <option value="" style={{background:"#1a1b2e", color:"#888"}}>🌍 Select your country</option>
         {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}

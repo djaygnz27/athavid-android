@@ -7852,6 +7852,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const handleFinish = async () => {
     if (!username.trim()) return setError("Please enter a username.");
     if (!dob) return setError("Please enter your birthday.");
+    if (!country.trim()) return setError("Please select your country.");
     if (!is18) return setError("You must confirm you are 18 years or older.");
     const birthDate = new Date(dob);
     const today = /* @__PURE__ */ new Date();
@@ -7953,14 +7954,14 @@ function FinishStep({ googlePayload, onSuccess }) {
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
       "Country ",
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "select",
       {
         value: country,
         onChange: (e) => setCountry(e.target.value),
-        style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
+        style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: country ? "1px solid rgba(245,200,66,0.6)" : "1px solid rgba(255,107,107,0.5)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
         children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
           COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
