@@ -25671,6 +25671,10 @@ function PodcastHost() {
 	});
 	const [addingEp, setAddingEp] = (0, import_react.useState)(false);
 	const [episodes, setEpisodes] = (0, import_react.useState)([]);
+	const [streamKey, setStreamKey] = (0, import_react.useState)(null);
+	const [rtmpUrl, setRtmpUrl] = (0, import_react.useState)(null);
+	const [loadingKey, setLoadingKey] = (0, import_react.useState)(false);
+	const [showKey, setShowKey] = (0, import_react.useState)(false);
 	const googleLoaded = (0, import_react.useRef)(false);
 	const showToast = (msg, type = "success") => {
 		setToast({
@@ -25845,22 +25849,38 @@ function PodcastHost() {
 		}
 		setEndingLive(false);
 	};
-	const saveStreamUrl = async () => {
+	const getStreamKey = async () => {
+		setLoadingKey(true);
 		try {
-			await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { live_stream_url: streamUrl });
-			setSelectedShow((s) => ({
-				...s,
-				live_stream_url: streamUrl
-			}));
-			setMyShows((ms) => ms.map((s) => s.id === selectedShow.id ? {
-				...s,
-				live_stream_url: streamUrl
-			} : s));
-			setEditingUrl(false);
-			showToast("✅ Stream URL saved", "success");
+			const data = await (await fetch(`${SACHI_FN}/createLiveStream`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					podcast_id: selectedShow.id,
+					podcast_title: selectedShow.title,
+					host_username: selectedShow.host_username || user?.full_name || "host"
+				})
+			})).json();
+			if (data.success) {
+				setStreamKey(data.stream_key);
+				setRtmpUrl(data.rtmp_url);
+				setShowKey(true);
+				if (!selectedShow.live_stream_url) {
+					await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { live_stream_url: data.playback_url });
+					setSelectedShow((s) => ({
+						...s,
+						live_stream_url: data.playback_url,
+						stream_key: data.stream_key,
+						rtmp_url: data.rtmp_url,
+						cf_input_id: data.cf_input_id
+					}));
+				}
+				showToast(data.reused ? "✅ Stream key loaded" : "✅ New stream key created", "success");
+			} else showToast("Could not get stream key. Try again.", "error");
 		} catch (e) {
-			showToast("Failed to save URL", "error");
+			showToast("Error connecting to Cloudflare", "error");
 		}
+		setLoadingKey(false);
 	};
 	const addEpisode = async () => {
 		if (!epForm.title || !epForm.video_url) return showToast("Title and video URL are required", "error");
@@ -25898,6 +25918,9 @@ function PodcastHost() {
 	const openShow = (show) => {
 		setSelectedShow(show);
 		setStreamUrl(show.live_stream_url || "");
+		setStreamKey(show.stream_key || null);
+		setRtmpUrl(show.rtmp_url || null);
+		setShowKey(false);
 		loadEpisodes(show.id);
 		setView("manage");
 	};
@@ -26470,68 +26493,173 @@ function PodcastHost() {
 										fontSize: 15,
 										marginBottom: 14
 									},
-									children: "🔴 Go Live"
+									children: "🔴 Go Live with OBS"
 								}),
-								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", {
-									style: s.label,
-									children: "Your Stream URL (YouTube Live, Rumble, Twitch...)"
-								}),
-								editingUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 									style: {
-										display: "flex",
-										gap: 8,
-										marginBottom: 12
+										background: "rgba(245,200,66,0.07)",
+										border: "1px solid rgba(245,200,66,0.2)",
+										borderRadius: 12,
+										padding: "14px 16px",
+										marginBottom: 14
 									},
 									children: [
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 											style: {
-												...s.input,
-												marginBottom: 0,
-												flex: 1
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "space-between",
+												marginBottom: 10
 											},
-											placeholder: "https://youtube.com/live/...",
-											value: streamUrl,
-											onChange: (e) => setStreamUrl(e.target.value)
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+												style: {
+													fontWeight: 700,
+													fontSize: 13,
+													color: "#F5C842"
+												},
+												children: "🎙️ OBS Stream Key"
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+												style: {
+													color: "rgba(255,255,255,0.4)",
+													fontSize: 11,
+													marginTop: 2
+												},
+												children: "Use with OBS Studio to stream directly to Sachi"
+											})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+												onClick: getStreamKey,
+												disabled: loadingKey,
+												style: {
+													...s.smallBtn("rgba(245,200,66,0.2)", "#F5C842"),
+													fontSize: 11,
+													padding: "6px 12px"
+												},
+												children: loadingKey ? "Loading..." : streamKey ? "Refresh Key" : "Get Stream Key"
+											})]
 										}),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-											onClick: saveStreamUrl,
-											style: s.smallBtn("#6c3cf7"),
-											children: "Save"
+										streamKey && showKey && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											style: { marginTop: 4 },
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+												style: { marginBottom: 8 },
+												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+													style: {
+														color: "rgba(255,255,255,0.4)",
+														fontSize: 10,
+														marginBottom: 3
+													},
+													children: "SERVER URL"
+												}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+													style: {
+														display: "flex",
+														alignItems: "center",
+														gap: 8
+													},
+													children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+														style: {
+															flex: 1,
+															background: "rgba(0,0,0,0.3)",
+															borderRadius: 8,
+															padding: "7px 10px",
+															fontFamily: "monospace",
+															fontSize: 11,
+															color: "#a78bfa",
+															overflow: "hidden",
+															textOverflow: "ellipsis",
+															whiteSpace: "nowrap"
+														},
+														children: rtmpUrl || "rtmps://live.cloudflare.com:443/live/"
+													}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+														onClick: () => {
+															navigator.clipboard.writeText(rtmpUrl || "rtmps://live.cloudflare.com:443/live/");
+															showToast("Server URL copied!", "success");
+														},
+														style: {
+															...s.smallBtn("rgba(108,60,247,0.3)", "#a78bfa"),
+															fontSize: 11,
+															padding: "6px 10px",
+															flexShrink: 0
+														},
+														children: "Copy"
+													})]
+												})]
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+												style: {
+													color: "rgba(255,255,255,0.4)",
+													fontSize: 10,
+													marginBottom: 3
+												},
+												children: "STREAM KEY (keep private!)"
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+												style: {
+													display: "flex",
+													alignItems: "center",
+													gap: 8
+												},
+												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+													style: {
+														flex: 1,
+														background: "rgba(0,0,0,0.3)",
+														borderRadius: 8,
+														padding: "7px 10px",
+														fontFamily: "monospace",
+														fontSize: 11,
+														color: "#4ade80",
+														overflow: "hidden",
+														textOverflow: "ellipsis",
+														whiteSpace: "nowrap"
+													},
+													children: streamKey
+												}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+													onClick: () => {
+														navigator.clipboard.writeText(streamKey);
+														showToast("Stream key copied! 🔑", "success");
+													},
+													style: {
+														...s.smallBtn("rgba(74,222,128,0.2)", "#4ade80"),
+														fontSize: 11,
+														padding: "6px 10px",
+														flexShrink: 0
+													},
+													children: "Copy"
+												})]
+											})] })]
 										}),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-											onClick: () => setEditingUrl(false),
-											style: s.smallBtn("rgba(255,255,255,0.08)", "rgba(255,255,255,0.6)"),
-											children: "✕"
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											style: {
+												marginTop: 12,
+												paddingTop: 10,
+												borderTop: "1px solid rgba(255,255,255,0.06)",
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "space-between"
+											},
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+												style: {
+													color: "rgba(255,255,255,0.35)",
+													fontSize: 11
+												},
+												children: "New to OBS? Download the setup guide"
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+												href: "https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/files/mp/public/69b2ee18a8e6fb58c7f0261c/bbc3469b5_Sachi_OBS_Setup_Guide.pdf",
+												target: "_blank",
+												rel: "noopener noreferrer",
+												style: {
+													display: "flex",
+													alignItems: "center",
+													gap: 5,
+													background: "rgba(245,200,66,0.12)",
+													border: "1px solid rgba(245,200,66,0.3)",
+													borderRadius: 8,
+													padding: "5px 12px",
+													color: "#F5C842",
+													fontSize: 11,
+													fontWeight: 600,
+													textDecoration: "none",
+													cursor: "pointer"
+												},
+												children: "📄 OBS Setup Guide"
+											})]
 										})
 									]
-								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-									style: {
-										display: "flex",
-										alignItems: "center",
-										justifyContent: "space-between",
-										marginBottom: 16,
-										background: "rgba(255,255,255,0.04)",
-										borderRadius: 10,
-										padding: "10px 14px"
-									},
-									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-										style: {
-											color: selectedShow.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)",
-											fontSize: 13,
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											whiteSpace: "nowrap",
-											maxWidth: "75%"
-										},
-										children: selectedShow.live_stream_url || "No stream URL set yet"
-									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-										onClick: () => {
-											setStreamUrl(selectedShow.live_stream_url || "");
-											setEditingUrl(true);
-										},
-										style: s.smallBtn("rgba(108,60,247,0.25)", "#a78bfa"),
-										children: selectedShow.live_stream_url ? "Edit" : "Add URL"
-									})]
 								}),
 								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 									onClick: goLive,
@@ -26549,7 +26677,7 @@ function PodcastHost() {
 										textAlign: "center",
 										marginTop: -6
 									},
-									children: "Add a stream URL above to enable Go Live"
+									children: "Click \"Get Stream Key\" above, then start streaming in OBS first"
 								})
 							]
 						}),
