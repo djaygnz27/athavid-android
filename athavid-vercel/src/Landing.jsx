@@ -234,28 +234,31 @@ export default function Landing({ onEnter }) {
 
         {/* Sub tagline */}
         <div className="f3" style={{
-          marginTop:16, fontSize:28, lineHeight:1.75,
-          color:"rgba(220,180,255,0.7)", maxWidth:300, fontWeight:600,
+          marginTop:16, fontSize:26, lineHeight:1.6,
+          color:"rgba(220,180,255,0.7)", maxWidth:320, fontWeight:600,
+          textAlign:"center",
         }}>
-          Real moments. Real people.<br/>No filters.
+          Real moments. Real people. No filters.
         </div>
 
         {/* Founding creator sentence */}
         <div className="f4" style={{
-          marginTop:20, fontSize:22, lineHeight:1.7,
+          marginTop:20, fontSize:18, lineHeight:1.8,
           color:"#F5C842", maxWidth:340, letterSpacing:0.3,
-          fontWeight:800, textAlign:"right",
+          fontWeight:700, textAlign:"center",
         }}>
-          We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE.
+          We're looking for <strong>50 Founding Creators</strong><br/>
+          to shape Sachi and help test<br/>
+          before we go LIVE.
         </div>
 
         {/* CTA hint */}
         <div className="f4" style={{
-          marginTop:14, fontSize:26, lineHeight:1.6,
+          marginTop:14, fontSize:22, lineHeight:1.6,
           color:"rgba(220,180,255,0.9)", maxWidth:300, letterSpacing:0.3,
-          fontWeight:600, textAlign:"right",
+          fontWeight:600, textAlign:"center",
         }}>
-          Click top right to apply!
+          Tap top right to apply!
         </div>
 
 
