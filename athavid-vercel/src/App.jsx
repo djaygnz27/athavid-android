@@ -290,10 +290,10 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
             style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:12, padding:0 }}>
             👎 <span style={{ fontSize:10 }}>{c.thumbsDown || 0}</span>
           </button>
-          {/* 😄 Emoji picker button */}
+          {/* Emoji picker button */}
           <button onClick={() => setPickerOpen(p => !p)}
-            style={{ background:"none", border:"none", cursor:"pointer", fontSize:15, padding:0, lineHeight:1, fontFamily:"Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" }}>
-            😄
+            style={{ background:"rgba(255,255,255,0.08)", border:"none", cursor:"pointer", fontSize:10, padding:"2px 7px", lineHeight:1.6, borderRadius:10, color: pickerOpen ? "#F5C842" : "#aaa", fontWeight:600, letterSpacing:0.3 }}>
+            {pickerOpen ? "✕" : "+ React"}
           </button>
           {!isReply && (
             <button onClick={() => { startReply(c); setPickerOpen(false); }}
