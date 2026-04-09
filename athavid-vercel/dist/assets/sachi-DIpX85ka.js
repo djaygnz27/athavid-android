@@ -18546,12 +18546,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 			url: "https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1"
 		},
 		{
-			id: "abc",
-			name: "ABC News",
-			emoji: "🇺🇸",
-			desc: "Live U.S. news coverage",
-			color: "linear-gradient(135deg,#1565c0,#0d47a1)",
-			url: "https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1"
+			id: "dn",
+			name: "Democracy Now",
+			emoji: "✊",
+			desc: "Independent global news",
+			color: "linear-gradient(135deg,#4a148c,#1a237e)",
+			url: "https://www.youtube.com/embed/live_stream?channel=UC3KEoMzNz8eYnwBC34RaKCQ&autoplay=1"
 		},
 		{
 			id: "bbc",
@@ -18568,14 +18568,6 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 			desc: "Breaking news worldwide",
 			color: "linear-gradient(135deg,#1b5e20,#004d40)",
 			url: "https://www.youtube.com/embed/live_stream?channel=UCNye-wNBqNL5ZzHSJj3l8Bg&autoplay=1"
-		},
-		{
-			id: "cnn",
-			name: "CNN",
-			emoji: "📡",
-			desc: "24/7 breaking news",
-			color: "linear-gradient(135deg,#c62828,#4a148c)",
-			url: "https://www.youtube.com/embed/live_stream?channel=UCupvZG-5ko_eiXAupbDfxWw&autoplay=1"
 		},
 		{
 			id: "sky",
