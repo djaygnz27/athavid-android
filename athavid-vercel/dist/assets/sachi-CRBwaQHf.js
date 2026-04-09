@@ -11002,15 +11002,18 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								onClick: () => setPickerOpen((p) => !p),
 								style: {
-									background: "none",
+									background: "rgba(255,255,255,0.08)",
 									border: "none",
 									cursor: "pointer",
-									fontSize: 15,
-									padding: 0,
-									lineHeight: 1,
-									fontFamily: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif"
+									fontSize: 10,
+									padding: "2px 7px",
+									lineHeight: 1.6,
+									borderRadius: 10,
+									color: pickerOpen ? "#F5C842" : "#aaa",
+									fontWeight: 600,
+									letterSpacing: .3
 								},
-								children: "😄"
+								children: pickerOpen ? "✕" : "+ React"
 							}),
 							!isReply && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								onClick: () => {
