@@ -156,7 +156,7 @@ export default function PodcastHost() {
   };
 
   const goLive = async () => {
-    if (!selectedShow.live_stream_url) return showToast("Add a stream URL first", "error");
+    if (!selectedShow.cf_input_id && !selectedShow.stream_key) return showToast("Get your stream key first, then start OBS before going live", "error");
     setGoingLive(true);
     try {
       await fetch(`${SACHI_FN}/podcastGoLiveNotify`, {
@@ -367,7 +367,8 @@ export default function PodcastHost() {
         {/* ── REGISTER ── */}
         {view === "register" && (
           <>
-            <div style={{ fontSize:20, fontWeight:800, marginBottom:20 }}>Register a New Show</div>
+            <div style={{ fontSize:20, fontWeight:800, marginBottom:6 }}>Register a New Show</div>
+            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:13, marginBottom:20 }}>Fill in your show details below. Once registered, you'll get your personal OBS stream key to broadcast directly on Sachi.</div>
 
             <label style={s.label}>Show Name *</label>
             <input style={s.input} placeholder="e.g. The Daily Breakdown" value={regForm.title} onChange={e => setRegForm(f => ({...f, title:e.target.value}))} />
@@ -390,6 +391,54 @@ export default function PodcastHost() {
                   {c.emoji}
                 </div>
               ))}
+            </div>
+
+            {/* How Broadcasting Works */}
+            <div style={{ background:"rgba(108,60,247,0.1)", border:"1px solid rgba(108,60,247,0.3)", borderRadius:14, padding:"16px 18px", marginBottom:20 }}>
+              <div style={{ fontWeight:700, fontSize:14, color:"#a78bfa", marginBottom:12 }}>📡 How Broadcasting Works on Sachi</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                  <div style={{ background:"rgba(245,200,66,0.15)", borderRadius:"50%", width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:12, color:"#F5C842", flexShrink:0 }}>1</div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:13, color:"rgba(255,255,255,0.9)" }}>Register your show</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>Fill in the details above and hit Register. Your show goes live on Sachi instantly.</div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                  <div style={{ background:"rgba(245,200,66,0.15)", borderRadius:"50%", width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:12, color:"#F5C842", flexShrink:0 }}>2</div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:13, color:"rgba(255,255,255,0.9)" }}>Get your personal stream key</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>From your show dashboard, click "Get Stream Key." You'll receive a private RTMP server URL and stream key — these stay the same every session.</div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                  <div style={{ background:"rgba(245,200,66,0.15)", borderRadius:"50%", width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:12, color:"#F5C842", flexShrink:0 }}>3</div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:13, color:"rgba(255,255,255,0.9)" }}>Set up OBS Studio (free)</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>Download OBS, paste your stream key, and hit "Start Streaming." OBS is free, works on Mac, Windows, and Linux.</div>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                  <div style={{ background:"rgba(245,200,66,0.15)", borderRadius:"50%", width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:12, color:"#F5C842", flexShrink:0 }}>4</div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:13, color:"rgba(255,255,255,0.9)" }}>Go Live on Sachi</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>Once OBS is streaming, tap "Go Live Now" in your dashboard. Your audience sees your stream in real time on Sachi.</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* OBS Guide Download */}
+              <div style={{ marginTop:14, paddingTop:12, borderTop:"1px solid rgba(108,60,247,0.2)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
+                <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Need a step-by-step walkthrough?</div>
+                <a
+                  href="https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/files/mp/public/69b2ee18a8e6fb58c7f0261c/bbc3469b5_Sachi_OBS_Setup_Guide.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:8, padding:"7px 14px", color:"#F5C842", fontSize:12, fontWeight:700, textDecoration:"none" }}
+                >
+                  📄 Download OBS Setup Guide
+                </a>
+              </div>
             </div>
 
             <button onClick={handleRegister} disabled={registering} style={s.btn("linear-gradient(135deg,#F5C842,#F5A623)", "#0B0C1A")}>
@@ -482,12 +531,12 @@ export default function PodcastHost() {
                 </div>
 
                 {/* Go Live Button */}
-                <button onClick={goLive} disabled={goingLive || !selectedShow.live_stream_url} style={{ ...s.btn(selectedShow.live_stream_url ? "linear-gradient(135deg,#e53935,#c62828)" : "rgba(255,255,255,0.06)"), opacity: selectedShow.live_stream_url ? 1 : 0.4 }}>
+                <button onClick={goLive} disabled={goingLive || (!selectedShow.cf_input_id && !selectedShow.stream_key)} style={{ ...s.btn(selectedShow.cf_input_id || selectedShow.stream_key ? "linear-gradient(135deg,#e53935,#c62828)" : "rgba(255,255,255,0.06)"), opacity: selectedShow.cf_input_id || selectedShow.stream_key ? 1 : 0.4 }}>
                   {goingLive ? "Going Live..." : "🔴 Go Live Now"}
                 </button>
 
-                {!selectedShow.live_stream_url && (
-                  <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center", marginTop:-6 }}>Click "Get Stream Key" above, then start streaming in OBS first</div>
+                {(!selectedShow.cf_input_id && !selectedShow.stream_key) && (
+                  <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center", marginTop:-6 }}>Get your stream key first, then start OBS before going live</div>
                 )}
               </div>
             )}
