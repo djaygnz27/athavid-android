@@ -182,7 +182,7 @@ export default function Landing({ onEnter }) {
       }} />
 
       {/* Content */}
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", zIndex:10, padding:"0 28px", textAlign:"center" }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", zIndex:10, padding:"0 28px", textAlign:"center", width:"100%", maxWidth:400 }}>
 
         {/* Logo with pulse rings */}
         <div style={{ position:"relative", marginBottom:26 }}>
