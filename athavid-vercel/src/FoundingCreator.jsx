@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { request } from "./api.js";
 
 const CONTENT_TYPES = [
@@ -9,15 +9,21 @@ const CONTENT_TYPES = [
 const FOLLOWER_OPTIONS = ["Just starting out","Under 1K","1K–10K","10K–100K","100K+"];
 
 const PERKS = [
-  { icon:"🌸", title:"Founding Creator Badge", desc:"Permanent verified badge — shows you were here from day one.", color:"#FF6B9D" },
-  { icon:"🎙️", title:"First Live Podcast Slot", desc:"Priority access to go live on Sachi before the public launch.", color:"#a78bfa" },
-  { icon:"📣", title:"Featured in the Feed", desc:"Your content gets promoted to every new user for the first 30 days.", color:"#F5C842" },
-  { icon:"🚫", title:"Zero Censorship — Ever", desc:"No shadowbanning. No suppression. No demonetisation risk.", color:"#4ade80" },
-  { icon:"📊", title:"Early Analytics Access", desc:"Full creator dashboard before it's available to the public.", color:"#60a5fa" },
-  { icon:"💬", title:"Direct Line to the Team", desc:"Your feedback shapes the platform. You talk to the founders.", color:"#fb923c" },
+  { icon:"🌸", title:"Founding Creator Badge", desc:"A permanent badge that shows you were here from day one — forever.", color:"#FF85A1" },
+  { icon:"🎙️", title:"First Live Podcast Slot", desc:"Go live on Sachi before anyone else. Your show. Your audience.", color:"#c084fc" },
+  { icon:"📣", title:"Featured in Every Feed", desc:"Your content gets promoted to every new user for the first 30 days.", color:"#fbbf24" },
+  { icon:"🔓", title:"Zero Censorship — Ever", desc:"No shadowbanning. No suppression. We will never touch your reach.", color:"#4ade80" },
+  { icon:"📊", title:"Creator Dashboard Early Access", desc:"Full analytics before it's released to the public.", color:"#60a5fa" },
+  { icon:"💬", title:"Direct Line to the Founders", desc:"Your ideas shape the platform. We actually pick up the phone.", color:"#f97316" },
 ];
 
-const SPOTS_LEFT = 50;
+const TESTIMONIALS = [
+  { name:"TikTok creator, 250K followers", quote:"I've been shadowbanned 4 times this year. Done with it." },
+  { name:"Independent podcaster", quote:"A platform that doesn't punish you for having an opinion? I'm in." },
+  { name:"Sports commentator", quote:"Finally somewhere that values real content over viral garbage." },
+];
+
+const SPOTS_TOTAL = 50;
 
 export default function FoundingCreatorPage({ onBack }) {
   const [step, setStep] = useState(1);
@@ -31,396 +37,393 @@ export default function FoundingCreatorPage({ onBack }) {
   });
 
   useEffect(() => {
-    // Load current application count
-    fetch("https://api.base44.app/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/filter", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({})
-    }).then(r=>r.json()).then(d=> {
-      if (Array.isArray(d)) setCount(d.length);
-    }).catch(()=>{});
+    request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/filter", {})
+      .then(d => { if (Array.isArray(d)) setCount(d.length); })
+      .catch(() => {});
   }, []);
 
   const set = (k, v) => setForm(f => ({...f, [k]: v}));
+  const spotsLeft = count !== null ? Math.max(0, SPOTS_TOTAL - count) : SPOTS_TOTAL;
+  const pctFilled = count !== null ? Math.min(100, (count / SPOTS_TOTAL) * 100) : 0;
 
   const submit = async () => {
     if (!form.full_name.trim() || !form.email.trim() || !form.content_type || !form.why_sachi.trim()) {
-      setError("Please fill in all required fields marked *");
-      return;
+      setError("Please fill in all required fields marked *"); return;
     }
     if (!/\S+@\S+\.\S+/.test(form.email)) {
-      setError("Please enter a valid email address.");
-      return;
+      setError("Please enter a valid email address."); return;
     }
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
       await request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator", { ...form, status:"Pending" });
       setStep(3);
-    } catch(e) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    } catch { setError("Something went wrong. Please try again."); }
+    finally { setLoading(false); }
   };
 
-  const spotsLeft = count !== null ? Math.max(0, SPOTS_LEFT - count) : "50";
-  const pctFilled = count !== null ? Math.min(100, (count / SPOTS_LEFT) * 100) : 0;
+  const PETALS = useMemo(() => Array.from({length:16},(_,i)=>({
+    id:i, left:`${4+Math.random()*92}%`, delay:`${Math.random()*8}s`,
+    dur:`${6+Math.random()*5}s`, size:5+Math.random()*9, rot:Math.random()*360,
+  })),[]);
 
-  // ── CSS ─────────────────────────────────────────────────────────────────────
   const css = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body { font-family:'Inter',-apple-system,sans-serif; }
     @keyframes petalFall {
       0%   { transform:translateY(-30px) rotate(0deg); opacity:0; }
-      8%   { opacity:0.6; }
-      92%  { opacity:0.25; }
-      100% { transform:translateY(100vh) rotate(540deg); opacity:0; }
+      8%   { opacity:0.55; }
+      92%  { opacity:0.2; }
+      100% { transform:translateY(110vh) rotate(560deg); opacity:0; }
     }
     @keyframes float {
-      0%,100%{ transform:translateY(0); }
-      50%    { transform:translateY(-12px); }
+      0%,100%{ transform:translateY(0px) rotate(-1deg); }
+      50%    { transform:translateY(-14px) rotate(1deg); }
     }
-    @keyframes shimmer {
-      0%   { background-position:-400% center; }
-      100% { background-position:400% center; }
+    @keyframes shimmerText {
+      0%   { background-position:-300% center; }
+      100% { background-position:300% center; }
     }
-    @keyframes fadeUp {
-      0%   { opacity:0; transform:translateY(24px); }
+    @keyframes fadeSlide {
+      0%   { opacity:0; transform:translateY(22px); }
       100% { opacity:1; transform:translateY(0); }
     }
-    @keyframes pulse {
-      0%,100%{ box-shadow:0 0 0 0 rgba(245,200,66,0.4); }
-      50%    { box-shadow:0 0 0 14px rgba(245,200,66,0); }
+    @keyframes glowPulse {
+      0%,100%{ box-shadow:0 0 0 0 rgba(245,168,66,0.45), 0 8px 32px rgba(245,168,66,0.25); }
+      50%    { box-shadow:0 0 0 10px rgba(245,168,66,0), 0 12px 48px rgba(245,168,66,0.45); }
     }
-    @keyframes countUp {
-      0%   { transform:scale(0.5); opacity:0; }
-      100% { transform:scale(1);   opacity:1; }
+    @keyframes softBreathe {
+      0%,100%{ opacity:0.55; }
+      50%    { opacity:0.85; }
     }
-    @keyframes ringExpand {
-      0%  { transform:scale(1); opacity:0.5; }
-      100%{ transform:scale(2.5); opacity:0; }
+    @keyframes ringOut {
+      0%  { transform:scale(1); opacity:0.4; }
+      100%{ transform:scale(2.8); opacity:0; }
     }
-    .hero-logo { animation: float 4s ease-in-out infinite; }
-    .fade-1 { animation: fadeUp 0.7s ease 0.1s both; }
-    .fade-2 { animation: fadeUp 0.7s ease 0.25s both; }
-    .fade-3 { animation: fadeUp 0.7s ease 0.4s both; }
-    .fade-4 { animation: fadeUp 0.7s ease 0.55s both; }
-    .fade-5 { animation: fadeUp 0.7s ease 0.7s both; }
-    .fade-6 { animation: fadeUp 0.7s ease 0.85s both; }
-    .cta-main {
-      background: linear-gradient(135deg,#F5C842,#FFB020);
-      color: #0B0C1A;
-      border: none; border-radius: 18px;
-      padding: 18px 40px;
-      font-size: 17px; font-weight: 800;
-      cursor: pointer; width: 100%;
-      animation: pulse 2.5s ease-in-out infinite;
+    @keyframes badgePop {
+      0%   { transform:scale(0.7); opacity:0; }
+      70%  { transform:scale(1.05); }
+      100% { transform:scale(1); opacity:1; }
+    }
+    .float-logo { animation: float 5s ease-in-out infinite; }
+    .shimmer-text {
+      background: linear-gradient(120deg, #FFE082 0%, #F5A623 25%, #FFD060 50%, #F5A623 75%, #FFE082 100%);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmerText 5s linear infinite;
+    }
+    .f1 { animation: fadeSlide 0.6s ease 0.05s both; }
+    .f2 { animation: fadeSlide 0.6s ease 0.18s both; }
+    .f3 { animation: fadeSlide 0.6s ease 0.31s both; }
+    .f4 { animation: fadeSlide 0.6s ease 0.44s both; }
+    .f5 { animation: fadeSlide 0.6s ease 0.57s both; }
+    .f6 { animation: fadeSlide 0.6s ease 0.70s both; }
+    .f7 { animation: fadeSlide 0.6s ease 0.83s both; }
+    .f8 { animation: fadeSlide 0.6s ease 0.96s both; }
+    .btn-gold {
+      background: linear-gradient(135deg, #F5C842 0%, #F5A623 100%);
+      color: #1a0f00;
+      border: none;
+      border-radius: 20px;
+      padding: 20px 36px;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: -0.3px;
+      animation: glowPulse 2.8s ease-in-out infinite;
       transition: transform 0.15s ease, filter 0.15s ease;
+      font-family: inherit;
     }
-    .cta-main:hover { transform:scale(1.03); filter:brightness(1.08); }
-    .cta-main:active { transform:scale(0.97); }
+    .btn-gold:hover  { transform:translateY(-2px) scale(1.02); filter:brightness(1.07); }
+    .btn-gold:active { transform:translateY(0) scale(0.98); }
     .perk-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 16px;
-      padding: 18px 16px;
-      transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 22px 18px;
+      transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+      cursor: default;
     }
     .perk-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(245,200,66,0.25);
-      background: rgba(255,255,255,0.07);
-    }
-    .input-field {
-      width: 100%;
+      transform: translateY(-5px);
+      border-color: rgba(245,200,66,0.22);
       background: rgba(255,255,255,0.06);
-      border: 1.5px solid rgba(245,200,66,0.15);
-      border-radius: 14px;
-      padding: 14px 16px;
-      color: #fff;
-      font-size: 15px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s ease, background 0.2s ease;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
     }
-    .input-field:focus {
-      border-color: rgba(245,200,66,0.5);
-      background: rgba(255,255,255,0.09);
-    }
-    .input-field::placeholder { color: rgba(255,255,255,0.25); }
     .chip {
       display: inline-flex; align-items: center;
-      padding: 8px 14px;
-      border-radius: 99px;
-      border: 1.5px solid rgba(245,200,66,0.2);
-      color: rgba(255,255,255,0.55);
+      padding: 9px 16px; border-radius: 99px;
+      border: 1.5px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.5);
       font-size: 13px; font-weight: 500;
       cursor: pointer;
       background: rgba(255,255,255,0.04);
       transition: all 0.15s ease;
       margin: 4px;
+      font-family: inherit;
     }
-    .chip:hover { border-color: rgba(245,200,66,0.5); color: #F5C842; background: rgba(245,200,66,0.08); }
-    .chip.selected { background: rgba(245,200,66,0.15); border-color: #F5C842; color: #F5C842; font-weight: 600; }
+    .chip:hover { border-color:rgba(245,200,66,0.4); color:#F5C842; background:rgba(245,200,66,0.07); }
+    .chip.sel   { background:rgba(245,200,66,0.14); border-color:#F5C842; color:#F5C842; font-weight:700; }
+    .input-f {
+      width:100%; background:rgba(255,255,255,0.05);
+      border:1.5px solid rgba(255,255,255,0.1);
+      border-radius:14px; padding:14px 16px;
+      color:#fff; font-size:15px; font-family:inherit;
+      outline:none; transition:border-color 0.2s, background 0.2s;
+    }
+    .input-f:focus { border-color:rgba(245,200,66,0.5); background:rgba(255,255,255,0.08); }
+    .input-f::placeholder { color:rgba(255,255,255,0.22); }
+    .tcard {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 18px 18px;
+    }
   `;
 
-  const PETALS = React.useMemo(() => Array.from({length:14}, (_,i) => ({
-    id:i, left:`${5+Math.random()*90}%`,
-    delay:`${Math.random()*7}s`, dur:`${6+Math.random()*5}s`,
-    size:5+Math.random()*8, rot:Math.random()*360,
-  })), []);
-
-  // ── SUCCESS ──────────────────────────────────────────────────────────────
+  // ── SUCCESS ──────────────────────────────────────────────────────────────────
   if (step === 3) return (
-    <div style={{ minHeight:"100dvh", background:"radial-gradient(ellipse at 50% 20%,#1a1535,#0B0C1A 60%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center", fontFamily:"Inter,-apple-system,sans-serif" }}>
+    <div style={{
+      minHeight:"100dvh",
+      background:"radial-gradient(ellipse at 50% 30%, #241830 0%, #0D0B1A 55%, #080910 100%)",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      padding:"40px 24px", textAlign:"center",
+      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+    }}>
       <style>{css}</style>
-      <div style={{ fontSize:88, marginBottom:8, animation:"float 3s ease-in-out infinite" }}>🌸</div>
-      <div style={{ position:"relative", display:"inline-block", marginBottom:20 }}>
-        <div style={{ position:"absolute", inset:"-20px", borderRadius:"50%", border:"2px solid rgba(245,200,66,0.3)", animation:"ringExpand 2s ease-out infinite" }} />
-      </div>
-      <h1 style={{ color:"#F5C842", fontSize:36, fontWeight:900, marginBottom:14, letterSpacing:-0.5 }}>You're In! 🎉</h1>
-      <p style={{ color:"rgba(255,255,255,0.65)", fontSize:16, maxWidth:320, lineHeight:1.7, marginBottom:10 }}>
-        Your application has been received. We'll review it within <strong style={{color:"#F5C842"}}>48 hours</strong>.
+      <div style={{ fontSize:90, marginBottom:6, animation:"float 3.5s ease-in-out infinite" }}>🌸</div>
+      <h1 style={{ color:"#fff", fontSize:38, fontWeight:900, marginBottom:12, letterSpacing:"-1px" }}>
+        Welcome to <span className="shimmer-text">Sachi</span>
+      </h1>
+      <p style={{ color:"rgba(255,255,255,0.6)", fontSize:17, maxWidth:320, lineHeight:1.75, marginBottom:10 }}>
+        Your application is in. We'll be in touch within <strong style={{color:"#F5C842"}}>48 hours</strong>.
       </p>
-      <p style={{ color:"rgba(255,255,255,0.35)", fontSize:14, maxWidth:300, lineHeight:1.6, marginBottom:40 }}>
-        Welcome to the beginning of something real.<br/>
-        <span style={{color:"#F5C842", fontWeight:700}}>Sachi means Truth</span> — and you're one of the first to stand for it.
+      <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14, maxWidth:290, lineHeight:1.65, marginBottom:40 }}>
+        You're one of the first people to stand for real, unfiltered content. That matters.
+        <span style={{color:"#F5C842", display:"block", fontWeight:700, marginTop:8}}>Sachi means Truth 🌸</span>
       </p>
-      <button onClick={onBack} className="cta-main" style={{ maxWidth:280, animation:"none" }}>
-        → Enter Sachi Stream
+      <button onClick={onBack} className="btn-gold" style={{ maxWidth:290, animation:"none", padding:"16px 36px", fontSize:16 }}>
+        Enter Sachi Stream →
       </button>
-      <div style={{ marginTop:20, color:"rgba(255,255,255,0.2)", fontSize:12 }}>sachistream.com</div>
     </div>
   );
 
-  // ── APPLICATION FORM ─────────────────────────────────────────────────────
+  // ── FORM ──────────────────────────────────────────────────────────────────────
   if (step === 2) return (
-    <div style={{ minHeight:"100dvh", background:"linear-gradient(160deg,#0B0C1A 0%,#0e0f22 100%)", paddingBottom:60, fontFamily:"Inter,-apple-system,sans-serif" }}>
+    <div style={{ minHeight:"100dvh", background:"linear-gradient(170deg,#0D0B1A 0%,#111228 100%)", paddingBottom:70, fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       <style>{css}</style>
-
-      {/* Sticky header */}
-      <div style={{ position:"sticky", top:0, background:"rgba(11,12,26,0.95)", backdropFilter:"blur(12px)", borderBottom:"1px solid rgba(245,200,66,0.12)", padding:"14px 20px", display:"flex", alignItems:"center", gap:14, zIndex:50 }}>
-        <button onClick={() => setStep(1)} style={{ background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.25)", color:"#F5C842", borderRadius:10, width:36, height:36, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
+      <div style={{ position:"sticky", top:0, background:"rgba(13,11,26,0.94)", backdropFilter:"blur(14px)", borderBottom:"1px solid rgba(255,255,255,0.07)", padding:"14px 20px", display:"flex", alignItems:"center", gap:12, zIndex:50 }}>
+        <button onClick={() => setStep(1)} style={{ background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.25)", color:"#F5C842", borderRadius:11, width:38, height:38, fontSize:19, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>←</button>
         <div>
-          <div style={{ color:"#F5C842", fontWeight:800, fontSize:17 }}>Founding Creator Application</div>
-          <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>~3 minutes · {spotsLeft} spots remaining</div>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Founding Creator Application</div>
+          <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12 }}>{spotsLeft} spots left · ~3 minutes</div>
         </div>
       </div>
 
       <div style={{ padding:"28px 20px", maxWidth:520, margin:"0 auto" }}>
-
-        {/* Progress */}
-        <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:99, height:5, marginBottom:28, overflow:"hidden" }}>
-          <div style={{ height:"100%", width:`${pctFilled}%`, background:"linear-gradient(90deg,#F5C842,#FFB020)", borderRadius:99, transition:"width 0.5s ease" }} />
+        {/* Fill bar */}
+        <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:99, height:5, marginBottom:30, overflow:"hidden" }}>
+          <div style={{ height:"100%", width:`${pctFilled}%`, background:"linear-gradient(90deg,#F5C842,#F5A623)", borderRadius:99, transition:"width 0.8s ease" }} />
         </div>
 
-        {/* Fields */}
         {[
           { label:"Full Name *", key:"full_name", type:"text", ph:"Your full name" },
           { label:"Email Address *", key:"email", type:"email", ph:"you@example.com" },
           { label:"Phone (optional)", key:"phone", type:"tel", ph:"+1 555-000-0000" },
           { label:"Where are you based?", key:"location", type:"text", ph:"City, Country" },
-          { label:"Social Media Links", key:"social_links", type:"text", ph:"Instagram, TikTok, YouTube URLs..." },
+          { label:"Social Media Links", key:"social_links", type:"text", ph:"Instagram, TikTok, YouTube..." },
         ].map(({label,key,type,ph}) => (
           <div key={key} style={{ marginBottom:20 }}>
-            <label style={{ color:"rgba(255,255,255,0.6)", fontSize:12, fontWeight:600, letterSpacing:0.5, display:"block", marginBottom:8, textTransform:"uppercase" }}>{label}</label>
-            <input type={type} value={form[key]} placeholder={ph} onChange={e => set(key, e.target.value)} className="input-field" />
+            <label style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:0.8, textTransform:"uppercase", display:"block", marginBottom:8 }}>{label}</label>
+            <input type={type} value={form[key]} placeholder={ph} onChange={e=>set(key,e.target.value)} className="input-f" />
           </div>
         ))}
 
-        {/* Content type chips */}
         <div style={{ marginBottom:22 }}>
-          <label style={{ color:"rgba(255,255,255,0.6)", fontSize:12, fontWeight:600, letterSpacing:0.5, display:"block", marginBottom:10, textTransform:"uppercase" }}>Content Type *</label>
+          <label style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:0.8, textTransform:"uppercase", display:"block", marginBottom:10 }}>Content Type *</label>
           <div style={{ display:"flex", flexWrap:"wrap", margin:"-4px" }}>
-            {CONTENT_TYPES.map(ct => (
-              <div key={ct} className={`chip${form.content_type===ct?" selected":""}`} onClick={() => set("content_type", ct)}>{ct}</div>
-            ))}
+            {CONTENT_TYPES.map(ct => <div key={ct} className={`chip${form.content_type===ct?" sel":""}`} onClick={()=>set("content_type",ct)}>{ct}</div>)}
           </div>
         </div>
 
-        {/* Follower count chips */}
         <div style={{ marginBottom:22 }}>
-          <label style={{ color:"rgba(255,255,255,0.6)", fontSize:12, fontWeight:600, letterSpacing:0.5, display:"block", marginBottom:10, textTransform:"uppercase" }}>Current Audience Size</label>
+          <label style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:0.8, textTransform:"uppercase", display:"block", marginBottom:10 }}>Your Audience Size</label>
           <div style={{ display:"flex", flexWrap:"wrap", margin:"-4px" }}>
-            {FOLLOWER_OPTIONS.map(fo => (
-              <div key={fo} className={`chip${form.follower_count===fo?" selected":""}`} onClick={() => set("follower_count", fo)}>{fo}</div>
-            ))}
+            {FOLLOWER_OPTIONS.map(fo => <div key={fo} className={`chip${form.follower_count===fo?" sel":""}`} onClick={()=>set("follower_count",fo)}>{fo}</div>)}
           </div>
         </div>
 
-        {/* Text areas */}
         <div style={{ marginBottom:20 }}>
-          <label style={{ color:"rgba(255,255,255,0.6)", fontSize:12, fontWeight:600, letterSpacing:0.5, display:"block", marginBottom:8, textTransform:"uppercase" }}>Why Sachi? *</label>
-          <textarea value={form.why_sachi} placeholder="What made you want to be a Founding Creator? What frustrates you about existing platforms?" onChange={e => set("why_sachi", e.target.value)}
-            className="input-field" style={{ height:110, resize:"vertical", lineHeight:1.6 }} />
+          <label style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:0.8, textTransform:"uppercase", display:"block", marginBottom:8 }}>Why Sachi? *</label>
+          <textarea value={form.why_sachi} placeholder="What frustrates you about existing platforms? Why do you want to be here from day one?" onChange={e=>set("why_sachi",e.target.value)} className="input-f" style={{ height:110, resize:"vertical", lineHeight:1.65 }} />
         </div>
 
         <div style={{ marginBottom:32 }}>
-          <label style={{ color:"rgba(255,255,255,0.6)", fontSize:12, fontWeight:600, letterSpacing:0.5, display:"block", marginBottom:8, textTransform:"uppercase" }}>Tell us about your content</label>
-          <textarea value={form.content_description} placeholder="What kind of content do you create? What's your style? What topics do you cover?" onChange={e => set("content_description", e.target.value)}
-            className="input-field" style={{ height:90, resize:"vertical", lineHeight:1.6 }} />
+          <label style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:0.8, textTransform:"uppercase", display:"block", marginBottom:8 }}>About your content</label>
+          <textarea value={form.content_description} placeholder="What do you create? Your style, topics, vibe..." onChange={e=>set("content_description",e.target.value)} className="input-f" style={{ height:90, resize:"vertical", lineHeight:1.65 }} />
         </div>
 
-        {error && (
-          <div style={{ background:"rgba(229,57,53,0.12)", border:"1px solid rgba(229,57,53,0.3)", borderRadius:12, padding:"12px 16px", color:"#ff7070", fontSize:14, marginBottom:20 }}>
-            {error}
-          </div>
-        )}
+        {error && <div style={{ background:"rgba(220,50,50,0.1)", border:"1px solid rgba(220,50,50,0.3)", borderRadius:12, padding:"12px 16px", color:"#ff8080", fontSize:14, marginBottom:20 }}>{error}</div>}
 
-        <button onClick={submit} disabled={loading} className="cta-main">
-          {loading ? "Submitting..." : "🌸 Submit Application"}
+        <button onClick={submit} disabled={loading} className="btn-gold">
+          {loading ? "Submitting..." : "🌸  Submit My Application"}
         </button>
-
-        <div style={{ textAlign:"center", marginTop:16, color:"rgba(255,255,255,0.2)", fontSize:12 }}>
-          We review every application personally within 48 hours.
-        </div>
+        <div style={{ textAlign:"center", marginTop:14, color:"rgba(255,255,255,0.18)", fontSize:12 }}>We review every application personally · Reply within 48 hours</div>
       </div>
     </div>
   );
 
-  // ── LANDING / HERO ────────────────────────────────────────────────────────
+  // ── HERO LANDING ──────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight:"100dvh", background:"radial-gradient(ellipse at 50% 0%,#1e1645 0%,#0B0C1A 55%,#07080f 100%)", fontFamily:"Inter,-apple-system,sans-serif", overflowX:"hidden" }}>
+    <div style={{
+      minHeight:"100dvh",
+      background:"radial-gradient(ellipse at 50% -10%, #2d1f60 0%, #1a1035 30%, #0D0B1A 65%, #080910 100%)",
+      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+      overflowX:"hidden",
+    }}>
       <style>{css}</style>
 
-      {/* Petals */}
-      {PETALS.map(p => (
-        <div key={p.id} style={{ position:"fixed", top:-20, left:p.left, pointerEvents:"none", zIndex:0, animation:`petalFall ${p.dur} ${p.delay} linear infinite` }}>
-          <div style={{ width:p.size, height:p.size, background:"radial-gradient(circle at 35%,#FFB8CC,rgba(255,80,120,0.35))", borderRadius:"50% 10% 50% 10%", transform:`rotate(${p.rot}deg)` }} />
+      {/* Floating petals */}
+      {PETALS.map(p=>(
+        <div key={p.id} style={{ position:"fixed",top:-30,left:p.left,pointerEvents:"none",zIndex:0,animation:`petalFall ${p.dur} ${p.delay} ease-in infinite` }}>
+          <div style={{ width:p.size,height:p.size,background:"radial-gradient(circle at 35%,rgba(255,180,200,0.8),rgba(255,100,140,0.3))",borderRadius:"50% 12% 50% 12%",transform:`rotate(${p.rot}deg)` }} />
         </div>
       ))}
 
+      {/* Soft gradient orbs */}
+      <div style={{ position:"fixed", top:"-15%", left:"50%", transform:"translateX(-50%)", width:"900px", height:"500px", background:"radial-gradient(ellipse,rgba(120,60,220,0.18) 0%,transparent 70%)", pointerEvents:"none", zIndex:0 }} />
+      <div style={{ position:"fixed", bottom:"10%", right:"-10%", width:"400px", height:"400px", background:"radial-gradient(circle,rgba(245,168,66,0.07) 0%,transparent 65%)", pointerEvents:"none", zIndex:0 }} />
+
       {/* Nav */}
-      <div style={{ position:"sticky", top:0, zIndex:100, background:"rgba(11,12,26,0.85)", backdropFilter:"blur(16px)", borderBottom:"1px solid rgba(255,255,255,0.05)", padding:"14px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }} onClick={onBack}>
-          <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:32, height:32, borderRadius:9 }} />
-          <span style={{ fontSize:20, fontWeight:900, background:"linear-gradient(135deg,#F5C842,#FFB020)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
-          <span style={{ fontSize:11, color:"#F5C842", fontWeight:700 }}>™</span>
+      <nav style={{ position:"sticky",top:0,zIndex:100,background:"rgba(13,11,26,0.8)",backdropFilter:"blur(18px)",borderBottom:"1px solid rgba(255,255,255,0.06)",padding:"12px 24px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+        <div style={{ display:"flex",alignItems:"center",gap:9,cursor:"pointer" }} onClick={onBack}>
+          <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:34,height:34,borderRadius:10,filter:"drop-shadow(0 0 8px rgba(245,200,66,0.4))" }} />
+          <span style={{ fontSize:21,fontWeight:900,background:"linear-gradient(135deg,#F5C842,#FFB020)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent" }}>Sachi</span>
+          <span style={{ fontSize:11,color:"rgba(245,200,66,0.7)",fontWeight:700 }}>™</span>
         </div>
-        <button onClick={() => setStep(2)} style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.3)", color:"#F5C842", borderRadius:99, padding:"8px 18px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+        <button onClick={()=>setStep(2)} style={{ background:"linear-gradient(135deg,#F5C842,#F5A623)",color:"#1a0f00",border:"none",borderRadius:99,padding:"9px 20px",fontSize:14,fontWeight:800,cursor:"pointer" }}>
           Apply Now →
         </button>
-      </div>
+      </nav>
 
-      <div style={{ maxWidth:540, margin:"0 auto", padding:"0 22px", position:"relative", zIndex:1 }}>
+      <div style={{ maxWidth:580,margin:"0 auto",padding:"0 22px",position:"relative",zIndex:1 }}>
 
-        {/* HERO */}
-        <div style={{ textAlign:"center", paddingTop:56, paddingBottom:48 }}>
+        {/* ── HERO ─────────────────────────────────────────── */}
+        <section style={{ textAlign:"center",paddingTop:60,paddingBottom:52 }}>
 
-          {/* Floating logo */}
-          <div className="hero-logo fade-1" style={{ marginBottom:28, display:"inline-block", position:"relative" }}>
-            <div style={{ position:"absolute", inset:"-16px", borderRadius:"50%", border:"1.5px solid rgba(245,200,66,0.2)", animation:"ringExpand 3s ease-out 1s infinite" }} />
-            <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:100, height:100, borderRadius:28, display:"block", filter:"drop-shadow(0 0 30px rgba(245,200,66,0.5))" }} />
+          {/* Logo */}
+          <div className="float-logo f1" style={{ display:"flex",alignItems:"center",justifyContent:"center",marginBottom:30,position:"relative" }}>
+            <div style={{ position:"absolute",inset:"-18px",borderRadius:"50%",border:"1.5px solid rgba(245,200,66,0.18)",animation:"ringOut 3.5s ease-out 0.8s infinite" }} />
+            <div style={{ position:"absolute",inset:"-18px",borderRadius:"50%",border:"1.5px solid rgba(245,200,66,0.12)",animation:"ringOut 3.5s ease-out 2.1s infinite" }} />
+            <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:108,height:108,borderRadius:30,display:"block",filter:"drop-shadow(0 4px 24px rgba(245,200,66,0.45)) drop-shadow(0 0 60px rgba(120,60,200,0.3))" }} />
           </div>
 
-          {/* Eyebrow */}
-          <div className="fade-2" style={{ display:"inline-flex", alignItems:"center", gap:6, background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.25)", borderRadius:99, padding:"5px 14px", marginBottom:22 }}>
-            <span style={{ fontSize:10 }}>🌸</span>
-            <span style={{ color:"#F5C842", fontSize:12, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase" }}>Founding Creator Program</span>
+          {/* Badge pill */}
+          <div className="f2" style={{ display:"inline-flex",alignItems:"center",gap:7,background:"rgba(245,200,66,0.1)",border:"1px solid rgba(245,200,66,0.2)",borderRadius:99,padding:"6px 16px",marginBottom:24 }}>
+            <span style={{ fontSize:12 }}>🌸</span>
+            <span style={{ color:"#F5C842",fontSize:12,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase" }}>Founding Creator Program</span>
           </div>
 
           {/* Headline */}
-          <h1 className="fade-3" style={{
-            fontSize:"clamp(34px,8vw,52px)", fontWeight:900, lineHeight:1.1,
-            letterSpacing:"-1.5px", color:"#fff", marginBottom:18,
-          }}>
-            Be the First Voice<br/>
-            <span style={{
-              background:"linear-gradient(135deg,#F5C842 0%,#FFE090 50%,#FFB020 100%)",
-              backgroundSize:"300% auto",
-              WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
-              animation:"shimmer 4s linear 0.5s infinite",
-            }}>on Sachi</span>
+          <h1 className="f3" style={{ fontSize:"clamp(36px,8vw,58px)",fontWeight:900,lineHeight:1.08,letterSpacing:"-2px",color:"#fff",marginBottom:20 }}>
+            The platform that<br/>
+            <span className="shimmer-text">actually wants you</span>
           </h1>
 
-          {/* Sub */}
-          <p className="fade-4" style={{ color:"rgba(255,255,255,0.5)", fontSize:16, lineHeight:1.75, maxWidth:400, margin:"0 auto 32px" }}>
-            We're looking for <strong style={{color:"rgba(255,255,255,0.85)"}}>50 founding creators</strong> to launch the most authentic short-video platform on the internet. Zero censorship. Zero shadowbanning. 100% real.
+          {/* Subheadline */}
+          <p className="f4" style={{ color:"rgba(255,255,255,0.55)",fontSize:17,lineHeight:1.8,maxWidth:420,margin:"0 auto 34px" }}>
+            Sachi is building the anti-TikTok — where real creators get real reach. 
+            We're inviting <strong style={{color:"rgba(255,255,255,0.85)"}}>50 founding creators</strong> to shape it with us.
           </p>
 
-          {/* Spots counter */}
-          <div className="fade-4" style={{ marginBottom:32 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:10 }}>
-              <div style={{ background:"rgba(229,57,53,0.15)", border:"1px solid rgba(229,57,53,0.3)", borderRadius:99, padding:"4px 12px", display:"flex", alignItems:"center", gap:5 }}>
-                <div style={{ width:7, height:7, borderRadius:"50%", background:"#e53935", animation:"pulse 1.5s ease-in-out infinite" }} />
-                <span style={{ color:"#ff7070", fontSize:12, fontWeight:700 }}>LIVE APPLICATION</span>
-              </div>
+          {/* Urgency bar */}
+          <div className="f5" style={{ display:"inline-flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:36,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,padding:"16px 28px" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <div style={{ width:8,height:8,borderRadius:"50%",background:"#ef4444",animation:"softBreathe 1.5s ease-in-out infinite",flexShrink:0 }} />
+              <span style={{ color:"rgba(255,255,255,0.45)",fontSize:13,fontWeight:600 }}>Applications open now</span>
             </div>
-            <div style={{ color:"rgba(255,255,255,0.3)", fontSize:13 }}>
-              <span style={{ color:"#F5C842", fontWeight:800, fontSize:22 }}>{spotsLeft}</span> spots remaining out of 50
+            <div style={{ fontSize:13,color:"rgba(255,255,255,0.35)" }}>
+              <span style={{ color:"#F5C842",fontWeight:800,fontSize:26 }}>{spotsLeft}</span>
+              <span> of 50 spots remaining</span>
             </div>
-            <div style={{ marginTop:10, background:"rgba(255,255,255,0.07)", borderRadius:99, height:6, maxWidth:220, margin:"10px auto 0", overflow:"hidden" }}>
-              <div style={{ height:"100%", width:`${pctFilled}%`, background:"linear-gradient(90deg,#F5C842,#FFB020)", borderRadius:99, transition:"width 1s ease" }} />
+            <div style={{ width:"100%",background:"rgba(255,255,255,0.08)",borderRadius:99,height:5,overflow:"hidden" }}>
+              <div style={{ height:"100%",width:`${pctFilled}%`,background:"linear-gradient(90deg,#F5C842,#F5A623)",borderRadius:99,transition:"width 1s ease" }} />
             </div>
           </div>
 
-          <button className="cta-main fade-5" onClick={() => setStep(2)} style={{ maxWidth:340 }}>
-            🌸 Apply for Founding Creator →
-          </button>
-
-          <div className="fade-6" style={{ marginTop:14, color:"rgba(255,255,255,0.2)", fontSize:12 }}>
-            Free forever · 3-minute application · We reply within 48 hours
+          {/* CTA */}
+          <div className="f6" style={{ maxWidth:360,margin:"0 auto 14px" }}>
+            <button className="btn-gold" onClick={()=>setStep(2)}>
+              🌸  Apply for Founding Creator
+            </button>
           </div>
-        </div>
-
-        {/* PERKS */}
-        <div style={{ paddingBottom:24 }}>
-          <div style={{ textAlign:"center", marginBottom:28 }}>
-            <div style={{ color:"rgba(255,255,255,0.3)", fontSize:11, letterSpacing:3, textTransform:"uppercase", marginBottom:8 }}>What You Get</div>
-            <h2 style={{ color:"#fff", fontSize:26, fontWeight:800, letterSpacing:"-0.5px" }}>Founding Creator Perks</h2>
+          <div className="f7" style={{ color:"rgba(255,255,255,0.2)",fontSize:12 }}>
+            Free · 3-minute application · We reply within 48 hours
           </div>
+        </section>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            {PERKS.map((p,i) => (
-              <div key={i} className="perk-card fade-1">
-                <div style={{ fontSize:26, marginBottom:10 }}>{p.icon}</div>
-                <div style={{ color:p.color, fontWeight:700, fontSize:13, marginBottom:6 }}>{p.title}</div>
-                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, lineHeight:1.6 }}>{p.desc}</div>
+        {/* ── SOCIAL PROOF ─────────────────────────────────── */}
+        <section style={{ paddingBottom:44 }}>
+          <div style={{ textAlign:"center",marginBottom:20 }}>
+            <div style={{ color:"rgba(255,255,255,0.25)",fontSize:11,letterSpacing:3,textTransform:"uppercase" }}>What creators are saying</div>
+          </div>
+          <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+            {TESTIMONIALS.map((t,i)=>(
+              <div key={i} className="tcard">
+                <div style={{ color:"rgba(255,255,255,0.65)",fontSize:15,lineHeight:1.65,fontStyle:"italic",marginBottom:10 }}>"{t.quote}"</div>
+                <div style={{ color:"rgba(245,200,66,0.6)",fontSize:12,fontWeight:600 }}>— {t.name}</div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* WHY SACHI */}
-        <div style={{ margin:"40px 0", padding:"28px 24px", background:"rgba(255,255,255,0.03)", border:"1px solid rgba(245,200,66,0.1)", borderRadius:20 }}>
-          <div style={{ textAlign:"center", marginBottom:20 }}>
-            <div style={{ fontSize:32, marginBottom:10 }}>🌸</div>
-            <h2 style={{ color:"#F5C842", fontSize:22, fontWeight:800, marginBottom:10 }}>Sachi means Truth</h2>
-            <p style={{ color:"rgba(255,255,255,0.45)", fontSize:14, lineHeight:1.75, maxWidth:360, margin:"0 auto" }}>
-              We built Sachi because creators deserve a platform that doesn't punish authenticity. No algorithm that buries your content. No arbitrary bans. Just you and your audience.
-            </p>
+        {/* ── PERKS GRID ───────────────────────────────────── */}
+        <section style={{ paddingBottom:48 }}>
+          <div style={{ textAlign:"center",marginBottom:28 }}>
+            <div style={{ color:"rgba(255,255,255,0.25)",fontSize:11,letterSpacing:3,textTransform:"uppercase",marginBottom:10 }}>What you unlock</div>
+            <h2 style={{ color:"#fff",fontSize:28,fontWeight:800,letterSpacing:"-0.5px" }}>Founding Creator Perks</h2>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginTop:24 }}>
-            {[
-              { val:"🚫", label:"No Shadowbanning" },
-              { val:"✅", label:"Real Reach" },
-              { val:"🔒", label:"Your Content, Your Rules" },
-            ].map((s,i) => (
-              <div key={i} style={{ textAlign:"center", padding:"16px 8px", background:"rgba(245,200,66,0.05)", borderRadius:14, border:"1px solid rgba(245,200,66,0.1)" }}>
-                <div style={{ fontSize:22, marginBottom:6 }}>{s.val}</div>
-                <div style={{ color:"rgba(255,255,255,0.55)", fontSize:11, fontWeight:600 }}>{s.label}</div>
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+            {PERKS.map((p,i)=>(
+              <div key={i} className="perk-card">
+                <div style={{ fontSize:28,marginBottom:10 }}>{p.icon}</div>
+                <div style={{ color:p.color,fontWeight:700,fontSize:13,marginBottom:6,lineHeight:1.3 }}>{p.title}</div>
+                <div style={{ color:"rgba(255,255,255,0.38)",fontSize:12,lineHeight:1.65 }}>{p.desc}</div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* FINAL CTA */}
-        <div style={{ textAlign:"center", paddingBottom:64 }}>
-          <h2 style={{ color:"#fff", fontSize:26, fontWeight:800, marginBottom:12, letterSpacing:"-0.5px" }}>
-            Ready to be part of<br/>
-            <span style={{ color:"#F5C842" }}>something real?</span>
+        {/* ── MANIFESTO ────────────────────────────────────── */}
+        <section style={{ marginBottom:48,background:"linear-gradient(135deg,rgba(120,60,200,0.1),rgba(245,168,66,0.05))",border:"1px solid rgba(245,200,66,0.12)",borderRadius:24,padding:"32px 24px",textAlign:"center" }}>
+          <div style={{ fontSize:44,marginBottom:14 }}>🌸</div>
+          <h2 style={{ color:"#F5C842",fontSize:24,fontWeight:900,marginBottom:14,letterSpacing:"-0.5px" }}>Sachi means Truth</h2>
+          <p style={{ color:"rgba(255,255,255,0.5)",fontSize:15,lineHeight:1.85,maxWidth:380,margin:"0 auto 24px" }}>
+            We built Sachi because creators deserve a platform that doesn't punish honesty. 
+            No algorithm that buries your content. No arbitrary bans. 
+            Just you, your story, and people who want to hear it.
+          </p>
+          <div style={{ display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap" }}>
+            {["🚫 No Shadowbanning","✅ Real Reach","🔒 Your Rules","🎙️ Every Voice Matters"].map(tag=>(
+              <div key={tag} style={{ background:"rgba(245,200,66,0.08)",border:"1px solid rgba(245,200,66,0.15)",borderRadius:99,padding:"6px 14px",color:"rgba(255,255,255,0.55)",fontSize:12,fontWeight:600 }}>{tag}</div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FINAL CTA ─────────────────────────────────────── */}
+        <section style={{ textAlign:"center",paddingBottom:72 }}>
+          <h2 style={{ color:"#fff",fontSize:30,fontWeight:900,letterSpacing:"-1px",marginBottom:12 }}>
+            Ready to join us?
           </h2>
-          <p style={{ color:"rgba(255,255,255,0.35)", fontSize:14, marginBottom:28, lineHeight:1.6 }}>
-            50 spots. Lifetime perks. Zero cost.
+          <p style={{ color:"rgba(255,255,255,0.35)",fontSize:15,marginBottom:30,lineHeight:1.65 }}>
+            50 spots. Lifetime perks. Zero cost.<br/>This offer won't last.
           </p>
-          <button className="cta-main" onClick={() => setStep(2)}>
-            🌸 Apply for Founding Creator →
-          </button>
-          <div style={{ marginTop:16, color:"rgba(255,255,255,0.2)", fontSize:12 }}>
-            sachistream.com · &copy; 2026 Sachi™
+          <div style={{ maxWidth:360,margin:"0 auto 18px" }}>
+            <button className="btn-gold" onClick={()=>setStep(2)}>
+              🌸  Apply for Founding Creator
+            </button>
           </div>
-        </div>
+          <div style={{ color:"rgba(255,255,255,0.15)",fontSize:12 }}>sachistream.com · © 2026 Sachi™</div>
+        </section>
 
       </div>
     </div>
