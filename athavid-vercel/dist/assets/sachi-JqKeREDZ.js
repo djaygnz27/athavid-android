@@ -303,7 +303,7 @@ react_production_min.version = "18.3.1";
   react.exports = react_production_min;
 }
 var reactExports = react.exports;
-const React$1 = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
+const React = /* @__PURE__ */ getDefaultExportFromCjs(reactExports);
 /**
  * @license React
  * react-jsx-runtime.production.min.js
@@ -7004,98 +7004,235 @@ var m = reactDomExports;
   client.hydrateRoot = m.hydrateRoot;
 }
 function Landing({ onEnter }) {
-  const [phase, setPhase] = reactExports.useState("in");
+  const [phase, setPhase] = reactExports.useState("idle");
+  const [leaving, setLeaving] = reactExports.useState(false);
+  const [petals] = reactExports.useState(
+    () => Array.from({ length: 16 }, (_, i) => ({
+      id: i,
+      left: `${5 + Math.random() * 90}%`,
+      delay: `${Math.random() * 6}s`,
+      duration: `${6 + Math.random() * 5}s`,
+      size: 7 + Math.random() * 9,
+      rotation: Math.random() * 360
+    }))
+  );
   reactExports.useEffect(() => {
-    const t1 = setTimeout(() => setPhase("out"), 2800);
-    const t2 = setTimeout(() => onEnter(), 3500);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    const t2 = setTimeout(() => setPhase("in"), 80);
+    return () => clearTimeout(t2);
   }, []);
+  const handleEnter = () => {
+    setLeaving(true);
+    setTimeout(() => onEnter(), 600);
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
     position: "fixed",
     inset: 0,
     zIndex: 9999,
-    background: "#0B0C1A",
+    background: "radial-gradient(ellipse at 50% 25%, #161830 0%, #0B0C1A 65%)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    transition: "opacity 0.7s ease",
-    opacity: phase === "out" ? 0 : 1
+    overflow: "hidden",
+    transition: "opacity 0.6s ease",
+    opacity: leaving ? 0 : 1
   }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
-        @keyframes starRise {
-          from { opacity:0; transform:scale(0.5) rotate(-15deg); }
-          to   { opacity:1; transform:scale(1) rotate(0deg); }
+        @keyframes petalFall {
+          0%   { transform: translateY(-30px) rotate(0deg); opacity: 0; }
+          8%   { opacity: 0.65; }
+          92%  { opacity: 0.35; }
+          100% { transform: translateY(105vh) rotate(600deg); opacity: 0; }
+        }
+        @keyframes petalSway {
+          0%, 100% { margin-left: 0; }
+          30%  { margin-left: 18px; }
+          70%  { margin-left: -18px; }
+        }
+        @keyframes logoBloom {
+          0%   { transform: scale(0.2) rotate(-25deg); opacity: 0; filter: drop-shadow(0 0 0px #F5C842); }
+          55%  { transform: scale(1.15) rotate(4deg); opacity: 1; filter: drop-shadow(0 0 50px rgba(245,200,66,0.9)); }
+          75%  { transform: scale(0.95) rotate(-2deg); }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 22px rgba(245,200,66,0.55)); }
+        }
+        @keyframes goldPulse {
+          0%, 100% { filter: drop-shadow(0 0 18px rgba(245,200,66,0.3)); }
+          50%       { filter: drop-shadow(0 0 50px rgba(245,200,66,0.7)); }
         }
         @keyframes wordIn {
-          from { opacity:0; transform:translateY(20px); letter-spacing: 8px; }
-          to   { opacity:1; transform:translateY(0); letter-spacing: -1px; }
+          0%   { opacity: 0; transform: translateY(24px); letter-spacing: 10px; }
+          100% { opacity: 1; transform: translateY(0); letter-spacing: -1px; }
         }
-        @keyframes tagIn {
-          from { opacity:0; }
-          to   { opacity:0.5; }
-        }
-        @keyframes glowRing {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(245,200,66,0.0), 0 0 40px rgba(245,200,66,0.15); }
-          50%       { box-shadow: 0 0 0 18px rgba(245,200,66,0.0), 0 0 80px rgba(245,200,66,0.3); }
+        @keyframes fadeUp {
+          0%   { opacity: 0; transform: translateY(14px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
         @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
+          0%   { background-position: -300% center; }
+          100% { background-position: 300% center; }
         }
-        .sachi-logo-icon {
-          animation: starRise 0.8s cubic-bezier(0.34,1.56,0.64,1) both, glowRing 2.5s ease-in-out 0.8s infinite;
+        @keyframes ctaPulse {
+          0%, 100% { box-shadow: 0 4px 20px rgba(245,200,66,0.25); }
+          50%       { box-shadow: 0 4px 36px rgba(245,200,66,0.6), 0 0 0 6px rgba(245,200,66,0.06); }
         }
-        .sachi-word {
-          animation: wordIn 0.7s cubic-bezier(0.16,1,0.3,1) 0.4s both;
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.12; }
+          50%       { opacity: 0.55; }
         }
-        .sachi-tag {
-          animation: tagIn 1s ease 1.2s both;
+        .logo-img {
+          animation: logoBloom 1.1s cubic-bezier(0.34,1.56,0.64,1) 0.15s both, goldPulse 3s ease-in-out 1.4s infinite;
         }
+        .word-in {
+          animation: wordIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.75s both;
+        }
+        .fade-1 { animation: fadeUp 0.7s ease 1.1s both; }
+        .fade-2 { animation: fadeUp 0.7s ease 1.4s both; }
+        .fade-3 { animation: fadeUp 0.7s ease 1.7s both; }
+        .fade-4 { animation: fadeUp 0.7s ease 2.0s both; }
+        .fade-5 { animation: fadeUp 0.7s ease 2.3s both; }
+        .cta-btn {
+          animation: fadeUp 0.7s ease 2.0s both, ctaPulse 2.8s ease-in-out 2.8s infinite;
+          transition: transform 0.15s ease, background 0.2s ease;
+        }
+        .cta-btn:hover { transform: scale(1.05); background: linear-gradient(135deg,#FFD060,#F5A020) !important; }
+        .cta-btn:active { transform: scale(0.96); }
       ` }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "img",
-      {
-        className: "sachi-logo-icon",
-        src: "/sachi-icon-v4.png",
-        alt: "Sachi",
-        style: {
-          width: 96,
-          height: 96,
-          borderRadius: 28,
-          marginBottom: 32,
-          filter: "drop-shadow(0 0 20px rgba(245,200,66,0.4))"
+    Array.from({ length: 38 }, (_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      width: 1 + Math.random() * 2,
+      height: 1 + Math.random() * 2,
+      borderRadius: "50%",
+      background: "#fff",
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animation: `twinkle ${2 + Math.random() * 3}s ease-in-out ${Math.random() * 4}s infinite`,
+      pointerEvents: "none"
+    } }, i)),
+    petals.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      top: -20,
+      left: p2.left,
+      pointerEvents: "none",
+      animation: `petalFall ${p2.duration} ${p2.delay} linear infinite, petalSway ${p2.duration} ${p2.delay} ease-in-out infinite`
+    }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      width: p2.size,
+      height: p2.size,
+      background: "radial-gradient(circle at 35% 35%, #FFD0DC, #FF6B8A55)",
+      borderRadius: "50% 10% 50% 10%",
+      transform: `rotate(${p2.rotation}deg)`
+    } }) }, p2.id)),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      width: 500,
+      height: 500,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, rgba(245,200,66,0.07) 0%, transparent 70%)",
+      pointerEvents: "none"
+    } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      zIndex: 10,
+      padding: "0 24px",
+      textAlign: "center"
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "img",
+        {
+          className: "logo-img",
+          src: "/sachi-icon-v4.png",
+          alt: "Sachi",
+          style: { width: 108, height: 108, borderRadius: 28, marginBottom: 24 }
         }
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sachi-word", style: { textAlign: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      fontSize: 62,
-      fontWeight: 900,
-      lineHeight: 1,
-      background: "linear-gradient(135deg, #F5C842 0%, #FFD580 40%, #FF9500 100%)",
-      backgroundSize: "200% auto",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      letterSpacing: -1,
-      animation: "shimmer 3s linear 1s infinite"
-    }, children: "sachi" }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sachi-tag", style: {
-      marginTop: 18,
-      color: "rgba(255,255,255,0.4)",
-      fontSize: 13,
-      letterSpacing: 3,
-      textTransform: "uppercase",
-      fontWeight: 500
-    }, children: "Share Everything" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "sachi-tag", style: { position: "absolute", bottom: 48, display: "flex", gap: 6 }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      width: i === 0 ? 20 : 6,
-      height: 6,
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "word-in", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        fontSize: 64,
+        fontWeight: 900,
+        lineHeight: 1,
+        background: "linear-gradient(135deg, #F5C842 0%, #FFE090 50%, #F5A623 100%)",
+        backgroundSize: "300% auto",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        animation: "shimmer 4s linear 1.5s infinite"
+      }, children: "sachi" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fade-1", style: {
+        fontSize: 10,
+        color: "rgba(255,255,255,0.3)",
+        letterSpacing: 4,
+        textTransform: "uppercase",
+        marginTop: 2,
+        fontWeight: 600
+      }, children: "™" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fade-2", style: {
+        marginTop: 14,
+        color: "rgba(255,255,255,0.5)",
+        fontSize: 14,
+        letterSpacing: 2.5,
+        textTransform: "uppercase",
+        fontWeight: 500
+      }, children: "Sachi means Truth" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fade-3", style: {
+        marginTop: 18,
+        width: 44,
+        height: 1,
+        background: "linear-gradient(90deg, transparent, rgba(245,200,66,0.55), transparent)"
+      } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fade-3", style: {
+        marginTop: 14,
+        color: "rgba(255,255,255,0.28)",
+        fontSize: 13,
+        letterSpacing: 0.3,
+        lineHeight: 1.7,
+        maxWidth: 240
+      }, children: "Real moments. Real people. No filters." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          className: "cta-btn",
+          onClick: handleEnter,
+          style: {
+            marginTop: 32,
+            padding: "15px 48px",
+            fontSize: 15,
+            fontWeight: 700,
+            color: "#0B0C1A",
+            background: "linear-gradient(135deg, #F5C842, #F5A623)",
+            border: "none",
+            borderRadius: 50,
+            cursor: "pointer",
+            letterSpacing: 0.4
+          },
+          children: "Enter Sachi ✦"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          className: "fade-5",
+          onClick: handleEnter,
+          style: {
+            marginTop: 14,
+            fontSize: 12,
+            color: "rgba(255,255,255,0.22)",
+            cursor: "pointer",
+            letterSpacing: 0.2
+          },
+          children: "already a member? sign in →"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fade-5", style: {
+      position: "absolute",
+      bottom: 30,
+      display: "flex",
+      gap: 7,
+      alignItems: "center"
+    }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      width: i === 0 ? 22 : 7,
+      height: 7,
       borderRadius: 99,
-      background: i === 0 ? "#F5C842" : "rgba(255,255,255,0.15)",
-      transition: "all 0.3s"
+      background: i === 0 ? "#F5C842" : "rgba(255,255,255,0.12)"
     } }, i)) })
   ] });
 }
@@ -11121,7 +11258,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       setShowUI(true);
     }
   };
-  const likeLockedRef = React$1.useRef(false);
+  const likeLockedRef = React.useRef(false);
   const doLike = async () => {
     var _a2;
     if (!currentUser) {
@@ -12373,12 +12510,12 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   ] });
 }
 function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username }) {
-  const [idx, setIdx] = React$1.useState(startIndex || 0);
-  const [muted, setMuted] = React$1.useState(false);
-  const videoRef = React$1.useRef(null);
-  const touchStartY = React$1.useRef(null);
+  const [idx, setIdx] = React.useState(startIndex || 0);
+  const [muted, setMuted] = React.useState(false);
+  const videoRef = React.useRef(null);
+  const touchStartY = React.useRef(null);
   const v2 = vids[idx];
-  React$1.useEffect(() => {
+  React.useEffect(() => {
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {
@@ -12570,14 +12707,14 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
   );
 }
 function UserProfileSheet({ userId, username, currentUser, onClose }) {
-  const [profile, setProfile] = React$1.useState(null);
-  const [userVideos, setUserVideos] = React$1.useState([]);
-  const [loading, setLoading] = React$1.useState(true);
-  const [followRecord, setFollowRecord] = React$1.useState(null);
-  const [followLoading, setFollowLoading] = React$1.useState(false);
-  const [playerIndex, setPlayerIndex] = React$1.useState(null);
+  const [profile, setProfile] = React.useState(null);
+  const [userVideos, setUserVideos] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [followRecord, setFollowRecord] = React.useState(null);
+  const [followLoading, setFollowLoading] = React.useState(false);
+  const [playerIndex, setPlayerIndex] = React.useState(null);
   const isOwnProfile = currentUser && currentUser.id === userId;
-  React$1.useEffect(() => {
+  React.useEffect(() => {
     setLoading(true);
     Promise.all([
       request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
@@ -12760,11 +12897,11 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   ] });
 }
 function VideoManageGrid({ videos: vids, onRefresh }) {
-  const [menuVideo, setMenuVideo] = React$1.useState(null);
-  const [editVideo, setEditVideo] = React$1.useState(null);
-  const [editCaption, setEditCaption] = React$1.useState("");
-  const [saving, setSaving] = React$1.useState(false);
-  const [confirmDelete, setConfirmDelete] = React$1.useState(null);
+  const [menuVideo, setMenuVideo] = React.useState(null);
+  const [editVideo, setEditVideo] = React.useState(null);
+  const [editCaption, setEditCaption] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(null);
   const handleDelete = async () => {
     try {
       setSaving(true);
@@ -13478,7 +13615,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             return url;
           };
           const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
-          const [showPlayer, setShowPlayer] = React$1.useState(false);
+          const [showPlayer, setShowPlayer] = React.useState(false);
           return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
@@ -14677,7 +14814,7 @@ function App() {
   (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
   const feedContainerRef = reactExports.useRef(null);
-  const [feedKey, setFeedKey] = React$1.useState(0);
+  const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = reactExports.useState(true);
   const [activeTab, setActiveTab] = reactExports.useState("feed");
   const [showAdmin, setShowAdmin] = reactExports.useState(false);
@@ -14689,7 +14826,7 @@ function App() {
   const [feedTab, setFeedTab] = reactExports.useState("forYou");
   const [followingVideos, setFollowingVideos] = reactExports.useState([]);
   const [followedUserIds, setFollowedUserIds] = reactExports.useState(/* @__PURE__ */ new Set());
-  React$1.useEffect(() => {
+  React.useEffect(() => {
     if (!currentUser) {
       setFollowedUserIds(/* @__PURE__ */ new Set());
       return;
@@ -14939,7 +15076,7 @@ function App() {
       })();
     }
   }, [activeTab, currentUser]);
-  const handleLike = React$1.useCallback((videoId, delta) => {
+  const handleLike = React.useCallback((videoId, delta) => {
     const feedEl = feedContainerRef.current;
     const savedScroll = feedEl ? feedEl.scrollTop : 0;
     setVideoList((vs) => {
@@ -15959,7 +16096,7 @@ function App() {
     }, onClose: () => setShowAvatarPicker(false) })
   ] });
 }
-class ErrorBoundary extends React$1.Component {
+class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { error: null };
