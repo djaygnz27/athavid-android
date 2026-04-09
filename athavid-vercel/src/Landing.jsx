@@ -16,7 +16,9 @@ export default function Landing({ onEnter }) {
 
   useEffect(() => {
     const t = setTimeout(() => setPhase("in"), 80);
-    return () => clearTimeout(t);
+    // Auto-advance to feed after 5 seconds
+    const autoEnter = setTimeout(() => handleEnter(), 5000);
+    return () => { clearTimeout(t); clearTimeout(autoEnter); };
   }, []);
 
   const handleEnter = () => {
