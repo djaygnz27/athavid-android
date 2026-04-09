@@ -3857,10 +3857,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
   const LIVE_NEWS_CHANNELS = [
     { id:"ctv",   name:"CTV News",      emoji:"🍁", desc:"Canada's #1 news network",     color:"linear-gradient(135deg,#c62828,#b71c1c)", url:"https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1" },
-    { id:"abc",   name:"ABC News",      emoji:"🇺🇸", desc:"Live U.S. news coverage",      color:"linear-gradient(135deg,#1565c0,#0d47a1)", url:"https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1" },
+    { id:"dn",    name:"Democracy Now", emoji:"✊", desc:"Independent global news",      color:"linear-gradient(135deg,#4a148c,#1a237e)", url:"https://www.youtube.com/embed/live_stream?channel=UC3KEoMzNz8eYnwBC34RaKCQ&autoplay=1" },
     { id:"bbc",   name:"BBC News",      emoji:"🇬🇧", desc:"Global news from London",      color:"linear-gradient(135deg,#b71c1c,#880e4f)", url:"https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA&autoplay=1" },
     { id:"aljaz", name:"Al Jazeera",    emoji:"🌍", desc:"Breaking news worldwide",       color:"linear-gradient(135deg,#1b5e20,#004d40)", url:"https://www.youtube.com/embed/live_stream?channel=UCNye-wNBqNL5ZzHSJj3l8Bg&autoplay=1" },
-    { id:"cnn",   name:"CNN",           emoji:"📡", desc:"24/7 breaking news",            color:"linear-gradient(135deg,#c62828,#4a148c)", url:"https://www.youtube.com/embed/live_stream?channel=UCupvZG-5ko_eiXAupbDfxWw&autoplay=1" },
     { id:"sky",   name:"Sky News",      emoji:"🌐", desc:"Live from the UK",              color:"linear-gradient(135deg,#0277bd,#01579b)", url:"https://www.youtube.com/embed/live_stream?channel=UCiU6U_f2KO7P6LFID9eQ4bA&autoplay=1" },
     { id:"dw",    name:"DW News",       emoji:"🇩🇪", desc:"International news in English", color:"linear-gradient(135deg,#37474f,#263238)", url:"https://www.youtube.com/embed/live_stream?channel=UCknLrEdhRCp1aegoMqRaCZg&autoplay=1" },
     { id:"france",name:"France 24",     emoji:"🇫🇷", desc:"Global news in English",       color:"linear-gradient(135deg,#1565c0,#e53935)", url:"https://www.youtube.com/embed/live_stream?channel=UCQfwfsi5VrQ8yKZ-UWmAoBw&autoplay=1" },
