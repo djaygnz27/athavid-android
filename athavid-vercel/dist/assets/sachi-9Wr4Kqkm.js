@@ -7040,7 +7040,7 @@ function Landing({ onEnter }) {
     position: "fixed",
     inset: 0,
     zIndex: 9999,
-    background: "radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0B0C1A 60%, #060710 100%)",
+    background: "radial-gradient(ellipse at 50% 20%, #3b1f6e 0%, #1e0d45 35%, #120830 65%, #0a0518 100%)",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -7092,9 +7092,9 @@ function Landing({ onEnter }) {
           0%,100%{ opacity:0.2; transform:scale(0.75); }
           50%    { opacity:1;   transform:scale(1.3); }
         }
-        @keyframes glowRing {
-          0%,100%{ box-shadow:0 0 0 0 rgba(245,200,66,0.15), inset 0 0 0 0 rgba(245,200,66,0.05); }
-          50%    { box-shadow:0 0 0 18px rgba(245,200,66,0.0), inset 0 0 30px rgba(245,200,66,0.08); }
+        @keyframes purpleGlow {
+          0%,100%{ opacity:0.4; transform:scale(1); }
+          50%    { opacity:0.7; transform:scale(1.08); }
         }
         .logo-bloom {
           animation: logoBloom 1.2s cubic-bezier(0.34,1.56,0.64,1) 0.1s both,
@@ -7112,6 +7112,29 @@ function Landing({ onEnter }) {
           animation: ringPulse 2.2s ease-out 1.3s infinite;
         }
       ` }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      width: 500,
+      height: 500,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, rgba(120,60,200,0.18) 0%, transparent 70%)",
+      top: "-80px",
+      left: "50%",
+      transform: "translateX(-50%)",
+      animation: "purpleGlow 5s ease-in-out infinite",
+      pointerEvents: "none"
+    } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      width: 350,
+      height: 350,
+      borderRadius: "50%",
+      background: "radial-gradient(circle, rgba(160,40,220,0.12) 0%, transparent 70%)",
+      bottom: "10%",
+      right: "5%",
+      animation: "purpleGlow 6s ease-in-out 1.5s infinite",
+      pointerEvents: "none"
+    } }),
     STARS.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
       position: "absolute",
       borderRadius: "50%",
@@ -7133,17 +7156,17 @@ function Landing({ onEnter }) {
     }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
       width: p2.size,
       height: p2.size,
-      background: "radial-gradient(circle at 35% 30%, #FFB8CC, rgba(255,80,120,0.4))",
+      background: "radial-gradient(circle at 35% 30%, #e0aaff, rgba(180,80,220,0.4))",
       borderRadius: "50% 12% 50% 12%",
       transform: `rotate(${p2.rotation}deg)`,
-      boxShadow: `0 0 ${p2.size / 2}px rgba(255,100,140,0.3)`
+      boxShadow: `0 0 ${p2.size / 2}px rgba(180,100,255,0.35)`
     } }) }, p2.id)),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
       position: "absolute",
       width: 700,
       height: 700,
       borderRadius: "50%",
-      background: "radial-gradient(circle, rgba(245,200,66,0.06) 0%, transparent 65%)",
+      background: "radial-gradient(circle, rgba(245,200,66,0.05) 0%, transparent 65%)",
       pointerEvents: "none"
     } }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10, padding: "0 28px", textAlign: "center" }, children: [
@@ -7184,7 +7207,7 @@ function Landing({ onEnter }) {
         letterSpacing: 3.5,
         textTransform: "uppercase",
         fontWeight: 600,
-        color: "rgba(255,255,255,0.45)"
+        color: "rgba(220,180,255,0.6)"
       }, children: "Sachi means Truth" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f3", style: {
         marginTop: 20,
@@ -7196,7 +7219,7 @@ function Landing({ onEnter }) {
         marginTop: 16,
         fontSize: 14,
         lineHeight: 1.75,
-        color: "rgba(255,255,255,0.3)",
+        color: "rgba(220,180,255,0.4)",
         maxWidth: 250
       }, children: [
         "Real moments. Real people.",
@@ -7213,7 +7236,7 @@ function Landing({ onEnter }) {
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f5", style: { position: "absolute", bottom: 0, left: 0, right: 0, height: 3 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
       height: "100%",
-      background: "linear-gradient(90deg,transparent,#F5C842,#FFB020)",
+      background: "linear-gradient(90deg,#7b2ff7,#F5C842,#FFB020)",
       animation: "shimmer 5.2s linear forwards",
       backgroundSize: "200% 100%"
     } }) })
@@ -8174,7 +8197,7 @@ const PERKS = [
   { icon: "💬", title: "Direct Line to the Founders", desc: "Your ideas shape the platform. We actually pick up the phone.", color: "#f97316" }
 ];
 const TESTIMONIALS = [
-  { name: "TikTok creator, 250K followers", quote: "I've been shadowbanned 4 times this year. Done with it." },
+  { name: "Content Creator, 250K followers", quote: "I finally have a platform where my voice reaches my audience — no games, no politics." },
   { name: "Independent podcaster", quote: "A platform that doesn't punish you for having an opinion? I'm in." },
   { name: "Sports commentator", quote: "Finally somewhere that values real content over viral garbage." }
 ];
@@ -8407,7 +8430,7 @@ function FoundingCreatorPage({ onBack }) {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", display: "block", marginBottom: 8 }, children: "Why Sachi? *" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { value: form.why_sachi, placeholder: "What frustrates you about existing platforms? Why do you want to be here from day one?", onChange: (e) => set("why_sachi", e.target.value), className: "input-f", style: { height: 110, resize: "vertical", lineHeight: 1.65 } })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { value: form.why_sachi, placeholder: "What drives your content? Why do you want to be a Sachi Founding Creator?", onChange: (e) => set("why_sachi", e.target.value), className: "input-f", style: { height: 110, resize: "vertical", lineHeight: 1.65 } })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 32 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", display: "block", marginBottom: 8 }, children: "About your content" }),
@@ -8453,7 +8476,7 @@ function FoundingCreatorPage({ onBack }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "shimmer-text", children: "actually wants you" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "f4", style: { color: "rgba(255,255,255,0.55)", fontSize: 17, lineHeight: 1.8, maxWidth: 420, margin: "0 auto 34px" }, children: [
-          "Sachi is building the anti-TikTok — where real creators get real reach. We're inviting ",
+          "Sachi is the platform built for creators who take their craft seriously. We're inviting ",
           /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "rgba(255,255,255,0.85)" }, children: "50 founding creators" }),
           " to shape it with us."
         ] }),
