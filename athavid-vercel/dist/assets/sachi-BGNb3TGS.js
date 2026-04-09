@@ -7201,7 +7201,7 @@ function Landing({ onEnter }) {
       background: "radial-gradient(circle, rgba(245,200,66,0.05) 0%, transparent 65%)",
       pointerEvents: "none"
     } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10, padding: "0 28px", textAlign: "center" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10, padding: "0 28px", textAlign: "center", width: "100%", maxWidth: 400 }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", marginBottom: 26 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ring-pulse", style: { width: 130, height: 130, top: "-10px", left: "-10px" } }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ring-pulse", style: { width: 130, height: 130, top: "-10px", left: "-10px", animationDelay: "3.3s" } }),
