@@ -117,12 +117,36 @@ function getStateAbbr(state, countryCode) {
   return state; // Return full state name for others
 }
 
-// Country code -> emoji flag
+// Country name or code -> emoji flag
 function countryFlag(code) {
-  if (!code || code.length !== 2) return "";
-  return code.toUpperCase().replace(/./g, c =>
-    String.fromCodePoint(127397 + c.charCodeAt(0))
-  );
+  if (!code) return "";
+  // Map full country names to codes
+  const nameToCode = {
+    "australia": "AU", "united states": "US", "usa": "US", "us": "US",
+    "sri lanka": "LK", "new zealand": "NZ", "india": "IN", "canada": "CA",
+    "united kingdom": "GB", "uk": "GB", "germany": "DE", "france": "FR",
+    "japan": "JP", "china": "CN", "brazil": "BR", "mexico": "MX",
+    "singapore": "SG", "malaysia": "MY", "philippines": "PH",
+    "indonesia": "ID", "thailand": "TH", "south africa": "ZA",
+    "nigeria": "NG", "kenya": "KE", "pakistan": "PK", "bangladesh": "BD",
+    "united arab emirates": "AE", "uae": "AE", "saudi arabia": "SA",
+    "italy": "IT", "spain": "ES", "netherlands": "NL", "sweden": "SE",
+    "norway": "NO", "denmark": "DK", "finland": "FI", "switzerland": "CH",
+    "austria": "AT", "portugal": "PT", "poland": "PL", "russia": "RU",
+    "south korea": "KR", "korea": "KR", "taiwan": "TW", "hong kong": "HK",
+    "ireland": "IE", "belgium": "BE", "greece": "GR", "turkey": "TR",
+    "argentina": "AR", "colombia": "CO", "chile": "CL", "peru": "PE",
+    "egypt": "EG", "israel": "IL", "iran": "IR", "iraq": "IQ",
+    "myanmar": "MM", "vietnam": "VN", "cambodia": "KH",
+  };
+  try {
+    const lower = code.toLowerCase().trim();
+    const iso = nameToCode[lower] || (code.length === 2 ? code.toUpperCase() : null);
+    if (!iso || iso.length !== 2) return "🌍";
+    return iso.toUpperCase().replace(/./g, c =>
+      String.fromCodePoint(127397 + c.charCodeAt(0))
+    );
+  } catch(e) { return "🌍"; }
 }
 
 
