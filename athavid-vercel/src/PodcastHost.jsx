@@ -44,6 +44,9 @@ export default function PodcastHost() {
   const [rtmpUrl, setRtmpUrl] = useState(null);
   const [loadingKey, setLoadingKey] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverInputRef = useRef(null);
   const googleLoaded = useRef(false);
 
   const showToast = (msg, type="success") => {
@@ -122,6 +125,29 @@ export default function PodcastHost() {
     } catch(e) {}
   };
 
+  const uploadCoverImage = async (file) => {
+    setUploadingCover(true);
+    try {
+      const token = localStorage.getItem("sachi_token");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${API}/apps/${APP_ID}/files/upload`, {
+        method: "POST",
+        headers: { ...(token ? { "Authorization": "Bearer " + token } : {}) },
+        body: formData,
+      });
+      const data = await res.json();
+      const url = data.url || data.file_url || data.public_url;
+      if (url) {
+        setCoverImageUrl(url);
+        showToast("✅ Cover image uploaded!", "success");
+      } else {
+        showToast("Upload failed, try again", "error");
+      }
+    } catch(e) { showToast("Upload failed", "error"); }
+    setUploadingCover(false);
+  };
+
   const handleRegister = async () => {
     if (!regForm.title || !regForm.host_name) return showToast("Show name and host name are required", "error");
     setRegistering(true);
@@ -134,6 +160,7 @@ export default function PodcastHost() {
         category: regForm.category,
         cover_color: cover.bg,
         cover_emoji: cover.emoji,
+        cover_image_url: coverImageUrl || "",
         status: "Active",
         is_live: false,
         listener_count: 0,
@@ -149,6 +176,7 @@ export default function PodcastHost() {
       }).catch(()=>{});
       showToast("🎙️ Podcast registered! You're on Sachi.", "success");
       setRegForm({ title:"", host_name:"", description:"", category:"Business", coverIdx:0 });
+      setCoverImageUrl(null);
       await loadMyShows();
       setView("shows");
     } catch(e) { showToast("Something went wrong. Try again.", "error"); }
@@ -384,14 +412,44 @@ export default function PodcastHost() {
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
 
-            <label style={s.label}>Cover Style</label>
-            <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
-              {COVER_COLORS.map((c,i) => (
-                <div key={i} onClick={() => setRegForm(f => ({...f, coverIdx:i}))} style={{ width:52, height:52, borderRadius:14, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, cursor:"pointer", border: regForm.coverIdx===i ? "3px solid #F5C842" : "3px solid transparent" }}>
-                  {c.emoji}
+            <label style={s.label}>Show Cover</label>
+
+            {/* Upload custom image */}
+            <div style={{ marginBottom:14 }}>
+              <input ref={coverInputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e => { if(e.target.files[0]) uploadCoverImage(e.target.files[0]); }} />
+              {coverImageUrl ? (
+                <div style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(74,222,128,0.07)", border:"1px solid rgba(74,222,128,0.25)", borderRadius:12, padding:"10px 14px" }}>
+                  <img src={coverImageUrl} alt="cover" style={{ width:52, height:52, borderRadius:10, objectFit:"cover", flexShrink:0 }} />
+                  <div style={{ flex:1 }}>
+                    <div style={{ color:"#4ade80", fontWeight:600, fontSize:13 }}>✅ Custom cover uploaded</div>
+                    <div style={{ color:"rgba(255,255,255,0.35)", fontSize:11, marginTop:2 }}>This will be your show's cover image</div>
+                  </div>
+                  <button onClick={() => { setCoverImageUrl(null); if(coverInputRef.current) coverInputRef.current.value=""; }}
+                    style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:8, color:"rgba(255,255,255,0.4)", fontSize:11, padding:"5px 10px", cursor:"pointer" }}>
+                    Remove
+                  </button>
                 </div>
-              ))}
+              ) : (
+                <button onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}
+                  style={{ width:"100%", background:"rgba(108,60,247,0.12)", border:"1px dashed rgba(108,60,247,0.4)", borderRadius:12, color:"#a78bfa", fontSize:13, fontWeight:600, padding:"14px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  {uploadingCover ? "Uploading..." : "📷 Upload Your Own Cover Image"}
+                </button>
+              )}
             </div>
+
+            {/* OR pick a generic */}
+            {!coverImageUrl && (
+              <>
+                <div style={{ color:"rgba(255,255,255,0.3)", fontSize:11, textAlign:"center", marginBottom:10 }}>— or pick a style below —</div>
+                <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
+                  {COVER_COLORS.map((c,i) => (
+                    <div key={i} onClick={() => setRegForm(f => ({...f, coverIdx:i}))} style={{ width:52, height:52, borderRadius:14, background:c.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, cursor:"pointer", border: regForm.coverIdx===i ? "3px solid #F5C842" : "3px solid transparent" }}>
+                      {c.emoji}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* How Broadcasting Works */}
             <div style={{ background:"rgba(108,60,247,0.1)", border:"1px solid rgba(108,60,247,0.3)", borderRadius:14, padding:"16px 18px", marginBottom:20 }}>
