@@ -1,221 +1,228 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+
+const PETALS = Array.from({ length: 22 }, (_, i) => ({
+  id: i,
+  left: `${3 + Math.random() * 94}%`,
+  delay: `${Math.random() * 8}s`,
+  duration: `${7 + Math.random() * 6}s`,
+  size: 6 + Math.random() * 10,
+  rotation: Math.random() * 360,
+  drift: (Math.random() - 0.5) * 40,
+}));
+
+const STARS = Array.from({ length: 55 }, (_, i) => ({
+  id: i,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  size: 0.8 + Math.random() * 1.8,
+  dur: 1.8 + Math.random() * 3.5,
+  delay: Math.random() * 5,
+}));
 
 export default function Landing({ onEnter }) {
   const [phase, setPhase] = useState("idle");
   const [leaving, setLeaving] = useState(false);
-  const [petals] = useState(() =>
-    Array.from({ length: 16 }, (_, i) => ({
-      id: i,
-      left: `${5 + Math.random() * 90}%`,
-      delay: `${Math.random() * 6}s`,
-      duration: `${6 + Math.random() * 5}s`,
-      size: 7 + Math.random() * 9,
-      rotation: Math.random() * 360,
-    }))
-  );
 
   useEffect(() => {
-    const t = setTimeout(() => setPhase("in"), 80);
-    // Auto-advance to feed after 5 seconds
-    const autoEnter = setTimeout(() => handleEnter(), 5000);
-    return () => { clearTimeout(t); clearTimeout(autoEnter); };
+    const t1 = setTimeout(() => setPhase("in"), 60);
+    const t2 = setTimeout(() => handleEnter(), 5200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   const handleEnter = () => {
+    if (leaving) return;
     setLeaving(true);
-    setTimeout(() => onEnter(), 600);
+    setTimeout(() => onEnter(), 700);
   };
 
   return (
-    <div style={{
+    <div onClick={handleEnter} style={{
       position: "fixed", inset: 0, zIndex: 9999,
-      background: "radial-gradient(ellipse at 50% 25%, #161830 0%, #0B0C1A 65%)",
+      background: "radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0B0C1A 60%, #060710 100%)",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
-      overflow: "hidden",
-      transition: "opacity 0.6s ease",
+      overflow: "hidden", cursor: "pointer",
       opacity: leaving ? 0 : 1,
+      transition: "opacity 0.7s cubic-bezier(0.4,0,0.2,1)",
     }}>
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.2; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1.2); }
-        }
         @keyframes petalFall {
-          0%   { transform: translateY(-30px) rotate(0deg); opacity: 0; }
-          8%   { opacity: 0.65; }
-          92%  { opacity: 0.35; }
-          100% { transform: translateY(105vh) rotate(600deg); opacity: 0; }
-        }
-        @keyframes petalSway {
-          0%, 100% { margin-left: 0; }
-          30%  { margin-left: 18px; }
-          70%  { margin-left: -18px; }
-        }
-        @keyframes logoBloom {
-          0%   { transform: scale(0.2) rotate(-25deg); opacity: 0; filter: drop-shadow(0 0 0px #F5C842); }
-          55%  { transform: scale(1.15) rotate(4deg); opacity: 1; filter: drop-shadow(0 0 50px rgba(245,200,66,0.9)); }
-          75%  { transform: scale(0.95) rotate(-2deg); }
-          100% { transform: scale(1) rotate(0deg); opacity: 1; filter: drop-shadow(0 0 22px rgba(245,200,66,0.55)); }
-        }
-        @keyframes goldPulse {
-          0%, 100% { filter: drop-shadow(0 0 18px rgba(245,200,66,0.3)); }
-          50%       { filter: drop-shadow(0 0 50px rgba(245,200,66,0.7)); }
-        }
-        @keyframes wordIn {
-          0%   { opacity: 0; transform: translateY(24px); letter-spacing: 10px; }
-          100% { opacity: 1; transform: translateY(0); letter-spacing: -1px; }
-        }
-        @keyframes fadeUp {
-          0%   { opacity: 0; transform: translateY(14px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes shimmer {
-          0%   { background-position: -300% center; }
-          100% { background-position: 300% center; }
-        }
-        @keyframes ctaPulse {
-          0%, 100% { box-shadow: 0 4px 20px rgba(245,200,66,0.25); }
-          50%       { box-shadow: 0 4px 36px rgba(245,200,66,0.6), 0 0 0 6px rgba(245,200,66,0.06); }
+          0%   { transform: translateY(-40px) rotate(0deg) translateX(0); opacity:0; }
+          6%   { opacity:0.7; }
+          90%  { opacity:0.3; }
+          100% { transform: translateY(108vh) rotate(720deg) translateX(var(--drift)); opacity:0; }
         }
         @keyframes twinkle {
-          0%, 100% { opacity: 0.12; }
-          50%       { opacity: 0.55; }
+          0%,100%{ opacity:0.08; transform:scale(0.8); }
+          50%    { opacity:0.7;  transform:scale(1.3); }
         }
-        .logo-img {
-          animation: logoBloom 1.1s cubic-bezier(0.34,1.56,0.64,1) 0.15s both, goldPulse 3s ease-in-out 1.4s infinite;
+        @keyframes logoBloom {
+          0%   { transform:scale(0.1) rotate(-30deg); opacity:0; filter:drop-shadow(0 0 0 #F5C842); }
+          50%  { transform:scale(1.2) rotate(5deg);  opacity:1; filter:drop-shadow(0 0 60px rgba(245,200,66,1)); }
+          70%  { transform:scale(0.93) rotate(-2deg); }
+          85%  { transform:scale(1.04); }
+          100% { transform:scale(1) rotate(0deg); opacity:1; filter:drop-shadow(0 0 28px rgba(245,200,66,0.6)); }
         }
-        .word-in {
-          animation: wordIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.75s both;
+        @keyframes goldPulse {
+          0%,100%{ filter:drop-shadow(0 0 20px rgba(245,200,66,0.35)); }
+          50%    { filter:drop-shadow(0 0 55px rgba(245,200,66,0.75)); }
         }
-        .fade-1 { animation: fadeUp 0.7s ease 1.1s both; }
-        .fade-2 { animation: fadeUp 0.7s ease 1.4s both; }
-        .fade-3 { animation: fadeUp 0.7s ease 1.7s both; }
-        .fade-4 { animation: fadeUp 0.7s ease 2.0s both; }
-        .fade-5 { animation: fadeUp 0.7s ease 2.3s both; }
-        .cta-btn {
-          animation: fadeUp 0.7s ease 2.0s both, ctaPulse 2.8s ease-in-out 2.8s infinite;
-          transition: transform 0.15s ease, background 0.2s ease;
+        @keyframes nameIn {
+          0%   { opacity:0; transform:translateY(30px) scaleX(0.85); letter-spacing:18px; }
+          100% { opacity:1; transform:translateY(0)    scaleX(1);    letter-spacing:-2px; }
         }
-        .cta-btn:hover { transform: scale(1.05); background: linear-gradient(135deg,#FFD060,#F5A020) !important; }
-        .cta-btn:active { transform: scale(0.96); }
+        @keyframes shimmer {
+          0%   { background-position:-400% center; }
+          100% { background-position:400% center; }
+        }
+        @keyframes fadeSlideUp {
+          0%   { opacity:0; transform:translateY(18px); }
+          100% { opacity:1; transform:translateY(0); }
+        }
+        @keyframes ringPulse {
+          0%   { transform:scale(0.7); opacity:0.6; }
+          100% { transform:scale(2.2); opacity:0; }
+        }
+        @keyframes dotBlink {
+          0%,100%{ opacity:0.2; transform:scale(0.75); }
+          50%    { opacity:1;   transform:scale(1.3); }
+        }
+        @keyframes glowRing {
+          0%,100%{ box-shadow:0 0 0 0 rgba(245,200,66,0.15), inset 0 0 0 0 rgba(245,200,66,0.05); }
+          50%    { box-shadow:0 0 0 18px rgba(245,200,66,0.0), inset 0 0 30px rgba(245,200,66,0.08); }
+        }
+        .logo-bloom {
+          animation: logoBloom 1.2s cubic-bezier(0.34,1.56,0.64,1) 0.1s both,
+                     goldPulse 3.5s ease-in-out 1.5s infinite;
+        }
+        .name-in    { animation: nameIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.7s both; }
+        .f1 { animation: fadeSlideUp 0.7s ease 1.15s both; }
+        .f2 { animation: fadeSlideUp 0.7s ease 1.45s both; }
+        .f3 { animation: fadeSlideUp 0.7s ease 1.75s both; }
+        .f4 { animation: fadeSlideUp 0.7s ease 2.05s both; }
+        .f5 { animation: fadeSlideUp 0.7s ease 2.35s both; }
+        .ring-pulse {
+          position:absolute; border-radius:50%;
+          border:1.5px solid rgba(245,200,66,0.35);
+          animation: ringPulse 2.2s ease-out 1.3s infinite;
+        }
       `}</style>
 
-      {/* Twinkling stars */}
-      {Array.from({ length: 38 }, (_, i) => (
-        <div key={i} style={{
-          position: "absolute",
-          width: 1 + Math.random() * 2,
-          height: 1 + Math.random() * 2,
-          borderRadius: "50%",
-          background: "#fff",
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-          animation: `twinkle ${2 + Math.random() * 3}s ease-in-out ${Math.random() * 4}s infinite`,
-          pointerEvents: "none",
+      {/* Stars */}
+      {STARS.map(s => (
+        <div key={s.id} style={{
+          position:"absolute", borderRadius:"50%", background:"#fff",
+          width:s.size, height:s.size,
+          left:`${s.x}%`, top:`${s.y}%`,
+          animation:`twinkle ${s.dur}s ease-in-out ${s.delay}s infinite`,
+          pointerEvents:"none",
         }} />
       ))}
 
-      {/* Sakura petals */}
-      {petals.map(p => (
+      {/* Petals */}
+      {PETALS.map(p => (
         <div key={p.id} style={{
-          position: "absolute", top: -20, left: p.left, pointerEvents: "none",
-          animation: `petalFall ${p.duration} ${p.delay} linear infinite, petalSway ${p.duration} ${p.delay} ease-in-out infinite`,
+          position:"absolute", top:-30, left:p.left, pointerEvents:"none",
+          "--drift": `${p.drift}px`,
+          animation:`petalFall ${p.duration} ${p.delay} ease-in infinite`,
         }}>
           <div style={{
-            width: p.size, height: p.size,
-            background: "radial-gradient(circle at 35% 35%, #FFD0DC, #FF6B8A55)",
-            borderRadius: "50% 10% 50% 10%",
-            transform: `rotate(${p.rotation}deg)`,
+            width:p.size, height:p.size,
+            background:"radial-gradient(circle at 35% 30%, #FFB8CC, rgba(255,80,120,0.4))",
+            borderRadius:"50% 12% 50% 12%",
+            transform:`rotate(${p.rotation}deg)`,
+            boxShadow:`0 0 ${p.size/2}px rgba(255,100,140,0.3)`,
           }} />
         </div>
       ))}
 
-      {/* Ambient glow */}
+      {/* Deep glow bg */}
       <div style={{
-        position: "absolute", width: 500, height: 500, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(245,200,66,0.07) 0%, transparent 70%)",
-        pointerEvents: "none",
+        position:"absolute", width:700, height:700, borderRadius:"50%",
+        background:"radial-gradient(circle, rgba(245,200,66,0.06) 0%, transparent 65%)",
+        pointerEvents:"none",
       }} />
 
-      {/* Content stack */}
-      <div style={{
-        display: "flex", flexDirection: "column", alignItems: "center",
-        zIndex: 10, padding: "0 24px", textAlign: "center",
-      }}>
+      {/* Content */}
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", zIndex:10, padding:"0 28px", textAlign:"center" }}>
 
-        {/* Logo */}
-        <img
-          className="logo-img"
-          src="/sachi-icon-v4.png"
-          alt="Sachi"
-          style={{ width: 108, height: 108, borderRadius: 28, marginBottom: 24 }}
-        />
+        {/* Logo with pulse rings */}
+        <div style={{ position:"relative", marginBottom:26 }}>
+          <div className="ring-pulse" style={{ width:130, height:130, top:"-10px", left:"-10px" }} />
+          <div className="ring-pulse" style={{ width:130, height:130, top:"-10px", left:"-10px", animationDelay:"3.3s" }} />
+          <img
+            className="logo-bloom"
+            src="/sachi-icon-v4.png"
+            alt="Sachi"
+            style={{
+              width:110, height:110, borderRadius:30,
+              display:"block",
+              animation:"logoBloom 1.2s cubic-bezier(0.34,1.56,0.64,1) 0.1s both, goldPulse 3.5s ease-in-out 1.5s infinite",
+            }}
+          />
+        </div>
 
-        {/* Wordmark */}
-        <div className="word-in">
+        {/* Name */}
+        <div className="name-in">
           <div style={{
-            fontSize: 64, fontWeight: 900, lineHeight: 1,
-            background: "linear-gradient(135deg, #F5C842 0%, #FFE090 50%, #F5A623 100%)",
-            backgroundSize: "300% auto",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            animation: "shimmer 4s linear 1.5s infinite",
+            fontSize:72, fontWeight:900, lineHeight:1,
+            background:"linear-gradient(135deg,#FFE070 0%,#F5C842 40%,#FFB020 70%,#FFE090 100%)",
+            backgroundSize:"400% auto",
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+            animation:"shimmer 4.5s linear 1.5s infinite",
+            fontFamily:"system-ui, -apple-system, sans-serif",
           }}>
             sachi
           </div>
         </div>
 
-        {/* TM */}
-        <div className="fade-1" style={{
-          fontSize: 10, color: "rgba(255,255,255,0.3)",
-          letterSpacing: 4, textTransform: "uppercase", marginTop: 2, fontWeight: 600,
-        }}>
-          ™
-        </div>
+        {/* TM badge */}
+        <div className="f1" style={{ fontSize:9, color:"rgba(245,200,66,0.45)", letterSpacing:5, fontWeight:700, marginTop:3, textTransform:"uppercase" }}>™</div>
 
         {/* Tagline */}
-        <div className="fade-2" style={{
-          marginTop: 14, color: "rgba(255,255,255,0.5)",
-          fontSize: 14, letterSpacing: 2.5,
-          textTransform: "uppercase", fontWeight: 500,
+        <div className="f2" style={{
+          marginTop:16, fontSize:13, letterSpacing:3.5,
+          textTransform:"uppercase", fontWeight:600,
+          color:"rgba(255,255,255,0.45)",
         }}>
           Sachi means Truth
         </div>
 
         {/* Divider */}
-        <div className="fade-3" style={{
-          marginTop: 18, width: 44, height: 1,
-          background: "linear-gradient(90deg, transparent, rgba(245,200,66,0.55), transparent)",
+        <div className="f3" style={{
+          marginTop:20, width:60, height:1.5,
+          background:"linear-gradient(90deg,transparent,rgba(245,200,66,0.6),transparent)",
         }} />
 
         {/* Sub tagline */}
-        <div className="fade-3" style={{
-          marginTop: 14, color: "rgba(255,255,255,0.28)",
-          fontSize: 13, letterSpacing: 0.3, lineHeight: 1.7, maxWidth: 240,
+        <div className="f3" style={{
+          marginTop:16, fontSize:14, lineHeight:1.75,
+          color:"rgba(255,255,255,0.3)", maxWidth:250,
         }}>
-          Real moments. Real people. No filters.
+          Real moments. Real people.<br/>No filters.
         </div>
 
-        {/* Auto-advancing — no button needed */}
-        <div style={{ marginTop: 32, display: "flex", gap: 8, alignItems: "center", opacity: 0.35 }}>
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out infinite" }} />
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out 0.4s infinite" }} />
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out 0.8s infinite" }} />
+        {/* Pulsing dots loader */}
+        <div className="f4" style={{ marginTop:36, display:"flex", gap:9, alignItems:"center" }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              width:7, height:7, borderRadius:"50%",
+              background:`rgba(245,200,66,${0.6 - i*0.1})`,
+              animation:`dotBlink 1.3s ease-in-out ${i*0.28}s infinite`,
+            }} />
+          ))}
         </div>
 
       </div>
 
-      {/* Bottom dots */}
-      <div className="fade-5" style={{
-        position: "absolute", bottom: 30,
-        display: "flex", gap: 7, alignItems: "center",
-      }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{
-            width: i === 0 ? 22 : 7, height: 7, borderRadius: 99,
-            background: i === 0 ? "#F5C842" : "rgba(255,255,255,0.12)",
-          }} />
-        ))}
+      {/* Bottom progress bar */}
+      <div className="f5" style={{ position:"absolute", bottom:0, left:0, right:0, height:3 }}>
+        <div style={{
+          height:"100%",
+          background:"linear-gradient(90deg,transparent,#F5C842,#FFB020)",
+          animation:"shimmer 5.2s linear forwards",
+          backgroundSize:"200% 100%",
+        }} />
       </div>
 
     </div>
