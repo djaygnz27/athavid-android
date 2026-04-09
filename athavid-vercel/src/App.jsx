@@ -245,7 +245,41 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     finally { setPosting(false); }
   };
 
-  const reactToComment = (id, reaction, isReply, parentId) => {
+  const reactToComment = async (id, reaction, isReply, parentId, emoji=null) => {
+    // Find the target comment
+    const findComment = (lst, cid) => lst.find(x => x.id === cid);
+    const targetId = id;
+
+    if (reaction === "emojiReactions" && emoji) {
+      // Update local state first for instant feedback
+      const updateItem = (item) => {
+        const existing = item.emojiReactions || {};
+        return { ...item, emojiReactions: { ...existing, [emoji]: (existing[emoji] || 0) + 1 } };
+      };
+      if (isReply) {
+        setList(prev => prev.map(x =>
+          x.id === parentId
+            ? { ...x, replies: (x.replies||[]).map(r => r.id === id ? updateItem(r) : r) }
+            : x
+        ));
+      } else {
+        setList(prev => prev.map(x => x.id === id ? updateItem(x) : x));
+      }
+      // Persist to DB
+      try {
+        const current = list.find(x => isReply ? x.id === parentId : x.id === id);
+        const commentToUpdate = isReply
+          ? (current?.replies||[]).find(r => r.id === id)
+          : current;
+        if (commentToUpdate) {
+          const existing = commentToUpdate.emojiReactions || {};
+          await comments.update(id, { emojiReactions: { ...existing, [emoji]: (existing[emoji]||0)+1 } });
+        }
+      } catch(e) { console.error("Emoji reaction save failed:", e); }
+      return;
+    }
+
+    // thumbsUp / hearts / thumbsDown
     if (isReply) {
       setList(prev => prev.map(x => x.id === parentId ? {
         ...x, replies: (x.replies||[]).map(r => r.id === id ? {...r, [reaction]: (r[reaction]||0)+1} : r)
@@ -253,6 +287,14 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     } else {
       setList(prev => prev.map(x => x.id === id ? {...x, [reaction]: (x[reaction]||0)+1} : x));
     }
+    // Persist to DB
+    try {
+      const current = list.find(x => isReply ? x.id === parentId : x.id === id);
+      const commentToUpdate = isReply ? (current?.replies||[]).find(r => r.id === id) : current;
+      if (commentToUpdate) {
+        await comments.update(id, { [reaction]: (commentToUpdate[reaction]||0)+1 });
+      }
+    } catch(e) { console.error("Reaction save failed:", e); }
   };
 
   const QUICK_EMOJIS = ["😂","🤣","😭","💀","🔥","🤯","😍","🥰","😎","🙌","💯","🫡","😤","🫣","👀","🤌","💪","🥹","😅","🤦","🤷","🙏","💥","✨","🎉","👏","😬","😱","🥲","😏"];
