@@ -234,34 +234,34 @@ export default function Landing({ onEnter }) {
 
         {/* Sub tagline */}
         <div className="f3" style={{
-          marginTop:16, fontSize:26, lineHeight:1.75,
-          color:"rgba(220,180,255,0.4)", maxWidth:250,
+          marginTop:16, fontSize:28, lineHeight:1.75,
+          color:"rgba(220,180,255,0.7)", maxWidth:300, fontWeight:600,
         }}>
           Real moments. Real people.<br/>No filters.
         </div>
 
         {/* Founding creator sentence */}
         <div className="f4" style={{
-          marginTop:18, fontSize:30, lineHeight:1.7,
-          color:"rgba(245,200,66,0.85)", maxWidth:320, letterSpacing:0.3,
-          fontWeight:700, textAlign:"center",
+          marginTop:20, fontSize:32, lineHeight:1.7,
+          color:"#F5C842", maxWidth:340, letterSpacing:0.3,
+          fontWeight:800, textAlign:"center",
         }}>
           We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE.
         </div>
 
         {/* CTA hint */}
         <div className="f4" style={{
-          marginTop:12, fontSize:24, lineHeight:1.6,
-          color:"rgba(220,180,255,0.75)", maxWidth:300, letterSpacing:0.3,
-          fontWeight:500, textAlign:"center",
+          marginTop:14, fontSize:26, lineHeight:1.6,
+          color:"rgba(220,180,255,0.9)", maxWidth:300, letterSpacing:0.3,
+          fontWeight:600, textAlign:"center",
         }}>
           👆 Click top right to apply!
         </div>
 
         {/* Creator credit */}
         <div className="f5" style={{
-          marginTop:10, fontSize:18, letterSpacing:1.5,
-          color:"rgba(245,200,66,0.35)", fontWeight:500,
+          marginTop:12, fontSize:20, letterSpacing:1.5,
+          color:"rgba(245,200,66,0.6)", fontWeight:600,
           textTransform:"uppercase",
         }}>
           — Jaya Gunaratne, Creator
