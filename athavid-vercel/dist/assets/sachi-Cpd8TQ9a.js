@@ -19611,6 +19611,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 						!isHost && currentUser && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 							style: { marginBottom: 16 },
 							children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+								const streamUrl = selectedPodcast.live_stream_url;
+								const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
 								const getEmbedUrl = (url) => {
 									if (!url) return null;
 									if (url.includes("rumble.com/c/")) return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "")}`;
@@ -19626,7 +19628,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 									if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
 									return url;
 								};
-								const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
+								const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
 								const [showPlayer, setShowPlayer] = import_react.useState(false);
 								return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 									style: { marginBottom: 16 },
@@ -19687,9 +19689,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 												marginBottom: 12,
 												boxShadow: "0 4px 20px rgba(229,57,53,0.35)"
 											},
-											children: "🎧 Watch Live Now"
+											children: isCloudflare ? "📡 Watch Live on Sachi" : "🎧 Watch Live Now"
 										}),
-										showPlayer && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+										showPlayer && (isCloudflare ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HlsLivePlayer, {
+											src: streamUrl,
+											title: selectedPodcast.title,
+											onClose: () => setShowPlayer(false)
+										}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 											style: {
 												position: "fixed",
 												top: 0,
@@ -19776,7 +19782,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 													})
 												})
 											]
-										})
+										}))
 									]
 								});
 							})() : !selectedPodcast.is_live ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
@@ -19803,6 +19809,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 						!isHost && !currentUser && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 							style: { marginBottom: 16 },
 							children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+								const streamUrl = selectedPodcast.live_stream_url;
+								const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
 								const getEmbedUrl = (url) => {
 									if (!url) return null;
 									if (url.includes("rumble.com/c/")) return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "")}`;
@@ -19818,8 +19826,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 									if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
 									return url;
 								};
-								const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
-								return embedUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
+								const [showGuestPlayer, setShowGuestPlayer] = import_react.useState(false);
+								return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 									style: { marginBottom: 16 },
 									children: [
 										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -19845,7 +19854,31 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 												children: "LIVE NOW"
 											})]
 										}),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+										isCloudflare ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+											onClick: () => setShowGuestPlayer(true),
+											style: {
+												width: "100%",
+												padding: "16px 0",
+												background: "linear-gradient(135deg,#e53935,#b71c1c)",
+												border: "none",
+												borderRadius: 16,
+												color: "#fff",
+												fontWeight: 800,
+												fontSize: 17,
+												cursor: "pointer",
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "center",
+												gap: 10,
+												marginBottom: 12,
+												boxShadow: "0 4px 20px rgba(229,57,53,0.35)"
+											},
+											children: "📡 Watch Live on Sachi"
+										}), showGuestPlayer && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HlsLivePlayer, {
+											src: streamUrl,
+											title: selectedPodcast.title,
+											onClose: () => setShowGuestPlayer(false)
+										})] }) : embedUrl ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 											style: {
 												position: "relative",
 												width: "100%",
@@ -19869,7 +19902,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 												allowFullScreen: true,
 												title: selectedPodcast.title
 											})
-										}),
+										}) : null,
 										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 											onClick: onNeedAuth,
 											style: {
@@ -19887,7 +19920,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 											children: "Sign in to Follow this Podcast"
 										})
 									]
-								}) : null;
+								});
 							})() : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								onClick: onNeedAuth,
 								style: {
@@ -23023,6 +23056,243 @@ function AdminPanel({ currentUser }) {
 					})]
 				}, video.id))
 			})] })
+		]
+	});
+}
+function HlsLivePlayer({ src, title, onClose }) {
+	const videoRef = import_react.useRef(null);
+	const [status, setStatus] = import_react.useState("loading");
+	import_react.useEffect(() => {
+		if (!src || !videoRef.current) return;
+		const video = videoRef.current;
+		if (video.canPlayType("application/vnd.apple.mpegurl")) {
+			video.src = src;
+			video.play().catch(() => {});
+			setStatus("live");
+			return;
+		}
+		if (window.Hls) {
+			attachHls(video, src);
+			return;
+		}
+		const script = document.createElement("script");
+		script.src = "https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js";
+		script.onload = () => attachHls(video, src);
+		script.onerror = () => setStatus("error");
+		document.head.appendChild(script);
+		function attachHls(video, src) {
+			if (!window.Hls || !window.Hls.isSupported()) {
+				setStatus("error");
+				return;
+			}
+			const hls = new window.Hls({
+				liveSyncDurationCount: 3,
+				liveMaxLatencyDurationCount: 6
+			});
+			hls.loadSource(src);
+			hls.attachMedia(video);
+			hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+				video.play().catch(() => {});
+				setStatus("live");
+			});
+			hls.on(window.Hls.Events.ERROR, (e, data) => {
+				if (data.fatal) setStatus("error");
+			});
+			video._hls = hls;
+		}
+		return () => {
+			if (video._hls) {
+				video._hls.destroy();
+				video._hls = null;
+			}
+		};
+	}, [src]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+		style: {
+			position: "fixed",
+			top: 0,
+			left: 0,
+			width: "100vw",
+			height: "100vh",
+			background: "#000",
+			zIndex: 9999,
+			display: "flex",
+			flexDirection: "column"
+		},
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				style: {
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "space-between",
+					padding: "12px 16px",
+					background: "rgba(0,0,0,0.85)",
+					flexShrink: 0,
+					zIndex: 1
+				},
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					style: {
+						display: "flex",
+						alignItems: "center",
+						gap: 10
+					},
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: {
+							width: 10,
+							height: 10,
+							background: "#e53935",
+							borderRadius: "50%",
+							animation: "pulse 1.2s infinite"
+						} }),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							style: {
+								color: "#fff",
+								fontWeight: 800,
+								fontSize: 15
+							},
+							children: title
+						}),
+						status === "live" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							style: {
+								background: "#e53935",
+								color: "#fff",
+								fontSize: 10,
+								fontWeight: 700,
+								padding: "2px 7px",
+								borderRadius: 6,
+								letterSpacing: 1
+							},
+							children: "LIVE"
+						})
+					]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					onClick: onClose,
+					style: {
+						background: "rgba(255,255,255,0.15)",
+						border: "none",
+						color: "#fff",
+						borderRadius: "50%",
+						width: 34,
+						height: 34,
+						fontSize: 18,
+						cursor: "pointer",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center"
+					},
+					children: "✕"
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				style: {
+					flex: 1,
+					position: "relative",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center"
+				},
+				children: [
+					status === "loading" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						style: {
+							position: "absolute",
+							zIndex: 2,
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							gap: 12
+						},
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: {
+							width: 44,
+							height: 44,
+							border: "4px solid rgba(255,255,255,0.15)",
+							borderTopColor: "#F5C842",
+							borderRadius: "50%",
+							animation: "spin 0.9s linear infinite"
+						} }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							style: {
+								color: "rgba(255,255,255,0.5)",
+								fontSize: 13
+							},
+							children: "Connecting to stream…"
+						})]
+					}),
+					status === "error" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						style: {
+							position: "absolute",
+							zIndex: 2,
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							gap: 12,
+							padding: 24,
+							textAlign: "center"
+						},
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								style: { fontSize: 36 },
+								children: "📡"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								style: {
+									color: "#fff",
+									fontWeight: 700,
+									fontSize: 16
+								},
+								children: "Stream not active yet"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								style: {
+									color: "rgba(255,255,255,0.45)",
+									fontSize: 13
+								},
+								children: "The host may not be live yet. Try again in a moment."
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								onClick: onClose,
+								style: {
+									marginTop: 8,
+									padding: "10px 24px",
+									background: "rgba(245,200,66,0.15)",
+									border: "1px solid #F5C842",
+									borderRadius: 12,
+									color: "#F5C842",
+									fontWeight: 700,
+									fontSize: 14,
+									cursor: "pointer"
+								},
+								children: "Close"
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", {
+						ref: videoRef,
+						controls: true,
+						autoPlay: true,
+						playsInline: true,
+						style: {
+							width: "100%",
+							height: "100%",
+							objectFit: "contain",
+							display: status === "error" ? "none" : "block"
+						}
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				style: {
+					padding: "10px 16px",
+					background: "rgba(0,0,0,0.85)",
+					textAlign: "center",
+					flexShrink: 0
+				},
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+					style: {
+						color: "rgba(255,255,255,0.3)",
+						fontSize: 11
+					},
+					children: "🌸 Streaming live on Sachi · sachistream.com"
+				})
+			})
 		]
 	});
 }

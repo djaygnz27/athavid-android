@@ -4252,33 +4252,20 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           {!isHost && currentUser && (
             <div style={{ marginBottom:16 }}>
               {selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
-                // Convert any YouTube URL to embed format
+                const streamUrl = selectedPodcast.live_stream_url;
+                const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
                 const getEmbedUrl = (url) => {
                   if (!url) return null;
-                  // Rumble channel live feed
-                  if (url.includes("rumble.com/c/")) {
-                    const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
-                    return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`;
-                  }
-                  // Rumble video page e.g. rumble.com/vXXXXX-title.html
-                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
-                  if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
-                  // Rumble embed already
+                  if (url.includes("rumble.com/c/")) { const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, ""); return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`; }
+                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/); if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
                   if (url.includes("rumble.com/embed/")) return url;
-                  // YouTube embed already
                   if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
-                  // youtube.com/watch?v=ID
-                  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
-                  if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
-                  // youtu.be/ID
-                  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-                  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
-                  // youtube.com/live/ID
-                  const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
-                  if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-                  return url; // fallback: try direct
+                  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/); if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+                  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/); if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+                  const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/); if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+                  return url;
                 };
-                const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
+                const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
                 const [showPlayer, setShowPlayer] = React.useState(false);
                 return (
                   <div style={{ marginBottom:16 }}>
@@ -4289,28 +4276,26 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     </div>
                     <button onClick={() => setShowPlayer(true)}
                       style={{ display:"flex", width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12, boxShadow:"0 4px 20px rgba(229,57,53,0.35)" }}>
-                      🎧 Watch Live Now
+                      {isCloudflare ? "📡 Watch Live on Sachi" : "🎧 Watch Live Now"}
                     </button>
                     {showPlayer && (
-                      <div style={{ position:"fixed", top:0, left:0, width:"100vw", height:"100vh", background:"#000", zIndex:9999, display:"flex", flexDirection:"column" }}>
-                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:"rgba(0,0,0,0.85)", flexShrink:0 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                            <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
-                            <span style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{selectedPodcast.title}</span>
+                      isCloudflare
+                        ? <HlsLivePlayer src={streamUrl} title={selectedPodcast.title} onClose={() => setShowPlayer(false)} />
+                        : (
+                          <div style={{ position:"fixed", top:0, left:0, width:"100vw", height:"100vh", background:"#000", zIndex:9999, display:"flex", flexDirection:"column" }}>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:"rgba(0,0,0,0.85)", flexShrink:0 }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                                <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
+                                <span style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{selectedPodcast.title}</span>
+                              </div>
+                              <button onClick={() => setShowPlayer(false)} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:34, height:34, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                            </div>
+                            <iframe src={embedUrl} style={{ flex:1, width:"100%", border:"none" }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen title={selectedPodcast.title} />
+                            <div style={{ padding:"10px 16px", background:"rgba(0,0,0,0.85)", textAlign:"center", flexShrink:0 }}>
+                              <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Streaming via Sachi · sachistream.com</span>
+                            </div>
                           </div>
-                          <button onClick={() => setShowPlayer(false)} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:34, height:34, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-                        </div>
-                        <iframe
-                          src={embedUrl}
-                          style={{ flex:1, width:"100%", border:"none" }}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                          allowFullScreen
-                          title={selectedPodcast.title}
-                        />
-                        <div style={{ padding:"10px 16px", background:"rgba(0,0,0,0.85)", textAlign:"center", flexShrink:0 }}>
-                          <span style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Streaming via Sachi · sachistream.com</span>
-                        </div>
-                      </div>
+                        )
                     )}
                   </div>
                 );
@@ -4326,52 +4311,45 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           {!isHost && !currentUser && (
             <div style={{ marginBottom:16 }}>
               {selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+                const streamUrl = selectedPodcast.live_stream_url;
+                const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
                 const getEmbedUrl = (url) => {
                   if (!url) return null;
-                  // Rumble channel live feed
-                  if (url.includes("rumble.com/c/")) {
-                    const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
-                    return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`;
-                  }
-                  // Rumble video page e.g. rumble.com/vXXXXX-title.html
-                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
-                  if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
-                  // Rumble embed already
+                  if (url.includes("rumble.com/c/")) { const ch = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, ""); return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch}`; }
+                  const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/); if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
                   if (url.includes("rumble.com/embed/")) return url;
-                  // YouTube embed already
                   if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
-                  // youtube.com/watch?v=ID
-                  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
-                  if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
-                  // youtu.be/ID
-                  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-                  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
-                  // youtube.com/live/ID
-                  const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
-                  if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-                  return url; // fallback: try direct
+                  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/); if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+                  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/); if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+                  const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/); if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+                  return url;
                 };
-                const embedUrl = getEmbedUrl(selectedPodcast.live_stream_url);
-                return embedUrl ? (
+                const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
+                const [showGuestPlayer, setShowGuestPlayer] = React.useState(false);
+                return (
                   <div style={{ marginBottom:16 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
                       <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
                       <span style={{ color:"#e53935", fontWeight:800, fontSize:13, letterSpacing:1 }}>LIVE NOW</span>
                     </div>
-                    <div style={{ position:"relative", width:"100%", paddingBottom:"56.25%", borderRadius:14, overflow:"hidden", background:"#000", boxShadow:"0 4px 24px rgba(229,57,53,0.25)" }}>
-                      <iframe
-                        src={embedUrl}
-                        style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        title={selectedPodcast.title}
-                      />
-                    </div>
+                    {isCloudflare ? (
+                      <>
+                        <button onClick={() => setShowGuestPlayer(true)}
+                          style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#e53935,#b71c1c)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:12, boxShadow:"0 4px 20px rgba(229,57,53,0.35)" }}>
+                          📡 Watch Live on Sachi
+                        </button>
+                        {showGuestPlayer && <HlsLivePlayer src={streamUrl} title={selectedPodcast.title} onClose={() => setShowGuestPlayer(false)} />}
+                      </>
+                    ) : embedUrl ? (
+                      <div style={{ position:"relative", width:"100%", paddingBottom:"56.25%", borderRadius:14, overflow:"hidden", background:"#000", boxShadow:"0 4px 24px rgba(229,57,53,0.25)" }}>
+                        <iframe src={embedUrl} style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={selectedPodcast.title} />
+                      </div>
+                    ) : null}
                     <button onClick={onNeedAuth} style={{ width:"100%", marginTop:12, padding:"13px 0", background:"rgba(108,60,247,0.15)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:14, color:"#a78bfa", fontWeight:700, fontSize:15, cursor:"pointer" }}>
                       Sign in to Follow this Podcast
                     </button>
                   </div>
-                ) : null;
+                );
               })() : (
                 <button onClick={onNeedAuth} style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer", marginBottom:16 }}>
                   Sign in to Follow
@@ -5378,6 +5356,99 @@ function AdminPanel({ currentUser }) {
     </div>
   );
 }
+
+
+// ── HLS Live Player (Cloudflare Stream native) ──────────────────────────────
+function HlsLivePlayer({ src, title, onClose }) {
+  const videoRef = React.useRef(null);
+  const [status, setStatus] = React.useState("loading"); // loading | live | error
+
+  React.useEffect(() => {
+    if (!src || !videoRef.current) return;
+    const video = videoRef.current;
+
+    // Native HLS (Safari / iOS)
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src;
+      video.play().catch(() => {});
+      setStatus("live");
+      return;
+    }
+
+    // Load hls.js from CDN dynamically
+    if (window.Hls) {
+      attachHls(video, src);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js";
+    script.onload = () => attachHls(video, src);
+    script.onerror = () => setStatus("error");
+    document.head.appendChild(script);
+
+    function attachHls(video, src) {
+      if (!window.Hls || !window.Hls.isSupported()) { setStatus("error"); return; }
+      const hls = new window.Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 6 });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {});
+        setStatus("live");
+      });
+      hls.on(window.Hls.Events.ERROR, (e, data) => {
+        if (data.fatal) setStatus("error");
+      });
+      video._hls = hls;
+    }
+
+    return () => { if (video._hls) { video._hls.destroy(); video._hls = null; } };
+  }, [src]);
+
+  return (
+    <div style={{ position:"fixed", top:0, left:0, width:"100vw", height:"100vh", background:"#000", zIndex:9999, display:"flex", flexDirection:"column" }}>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:"rgba(0,0,0,0.85)", flexShrink:0, zIndex:1 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:10, height:10, background:"#e53935", borderRadius:"50%", animation:"pulse 1.2s infinite" }}/>
+          <span style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{title}</span>
+          {status === "live" && <span style={{ background:"#e53935", color:"#fff", fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:6, letterSpacing:1 }}>LIVE</span>}
+        </div>
+        <button onClick={onClose} style={{ background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:34, height:34, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+      </div>
+
+      {/* Player area */}
+      <div style={{ flex:1, position:"relative", display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {status === "loading" && (
+          <div style={{ position:"absolute", zIndex:2, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
+            <div style={{ width:44, height:44, border:"4px solid rgba(255,255,255,0.15)", borderTopColor:"#F5C842", borderRadius:"50%", animation:"spin 0.9s linear infinite" }}/>
+            <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13 }}>Connecting to stream…</div>
+          </div>
+        )}
+        {status === "error" && (
+          <div style={{ position:"absolute", zIndex:2, display:"flex", flexDirection:"column", alignItems:"center", gap:12, padding:24, textAlign:"center" }}>
+            <div style={{ fontSize:36 }}>📡</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>Stream not active yet</div>
+            <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13 }}>The host may not be live yet. Try again in a moment.</div>
+            <button onClick={onClose} style={{ marginTop:8, padding:"10px 24px", background:"rgba(245,200,66,0.15)", border:"1px solid #F5C842", borderRadius:12, color:"#F5C842", fontWeight:700, fontSize:14, cursor:"pointer" }}>Close</button>
+          </div>
+        )}
+        <video
+          ref={videoRef}
+          controls
+          autoPlay
+          playsInline
+          style={{ width:"100%", height:"100%", objectFit:"contain", display: status === "error" ? "none" : "block" }}
+        />
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding:"10px 16px", background:"rgba(0,0,0,0.85)", textAlign:"center", flexShrink:0 }}>
+        <span style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>🌸 Streaming live on Sachi · sachistream.com</span>
+      </div>
+    </div>
+  );
+}
+// ────────────────────────────────────────────────────────────────────────────
 
 function App() {
   // Simple client-side routing for terms/privacy pages
