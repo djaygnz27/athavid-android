@@ -7368,8 +7368,8 @@ var require_jsx_runtime = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 }));
 //#endregion
 //#region src/Landing.jsx
-var import_client = /* @__PURE__ */ __toESM(require_client(), 1);
-var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
+var import_client = /* @__PURE__ */ __toESM(require_client());
+var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function Landing({ onEnter }) {
 	const [phase, setPhase] = (0, import_react.useState)("idle");
@@ -19485,7 +19485,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 											if (loadingStreamKey) return;
 											setLoadingStreamKey(true);
 											try {
-												const cfData = await (await fetch("/api/create-stream", {
+												const cfData = await (await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
 													method: "POST",
 													headers: { "Content-Type": "application/json" },
 													body: JSON.stringify({
@@ -19495,19 +19495,15 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 													})
 												})).json();
 												if (cfData.success) {
-													await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, {
-														stream_key: cfData.stream_key,
-														cf_input_id: cfData.cf_input_id,
-														live_stream_url: cfData.playback_url
-													});
 													setSelectedPodcast((p) => ({
 														...p,
 														stream_key: cfData.stream_key,
 														cf_input_id: cfData.cf_input_id,
-														live_stream_url: cfData.playback_url
+														live_stream_url: cfData.playback_url,
+														rtmp_url: cfData.rtmp_url
 													}));
 													showToast("🎙️ Stream key generated!", "success");
-												} else showToast("Failed: " + (cfData.error || "check token"), "error");
+												} else showToast("Failed: " + (cfData.error || "Unknown error"), "error");
 											} catch (e) {
 												showToast("Error creating stream", "error");
 											}
