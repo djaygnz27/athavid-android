@@ -2583,12 +2583,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               muted={muted || !!video.sound_url}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
+                window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
                 if (soundRef.current && video.sound_url && !muted) {
                   soundRef.current.play().catch(() => {});
                 }
               }}
               onPause={() => {
                 setPlaying(false);
+                window.dispatchEvent(new CustomEvent("sachiVideoPause"));
                 if (soundRef.current) soundRef.current.pause();
               }}
               style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
@@ -5453,6 +5455,17 @@ function App() {
   if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
 
   const [hasEntered, setHasEntered] = useState(false);
+  const [globalIsPlaying, setGlobalIsPlaying] = useState(false);
+  useEffect(() => {
+    const onPlay = () => setGlobalIsPlaying(true);
+    const onPause = () => setGlobalIsPlaying(false);
+    window.addEventListener("sachiVideoPlay", onPlay);
+    window.addEventListener("sachiVideoPause", onPause);
+    return () => {
+      window.removeEventListener("sachiVideoPlay", onPlay);
+      window.removeEventListener("sachiVideoPause", onPause);
+    };
+  }, []);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
 
   // ── Handle Google OAuth redirect callback (runs on every page load) ──
@@ -6087,7 +6100,7 @@ function App() {
       )}
 
       {/* Bottom Nav — Sachi original style: floating pill */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none", opacity: activeTab==="feed" && isPlaying ? 0.25 : 1, transition:"opacity 0.4s ease" }}>
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none", opacity: activeTab==="feed" && globalIsPlaying ? 0.25 : 1, transition:"opacity 0.4s ease" }}>
         <div style={{ pointerEvents:"auto", margin:"0 16px 8px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
 
           {/* Home */}
