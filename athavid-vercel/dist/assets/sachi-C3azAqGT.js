@@ -7267,7 +7267,7 @@ function Landing({ onEnter }) {
         maxWidth: 340,
         letterSpacing: 0.3,
         fontWeight: 800,
-        textAlign: "center"
+        textAlign: "right"
       }, children: "We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE." }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
         marginTop: 14,
@@ -7277,16 +7277,8 @@ function Landing({ onEnter }) {
         maxWidth: 300,
         letterSpacing: 0.3,
         fontWeight: 600,
-        textAlign: "center"
-      }, children: "👆 Click top right to apply!" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f5", style: {
-        marginTop: 12,
-        fontSize: 20,
-        letterSpacing: 1.5,
-        color: "rgba(245,200,66,0.6)",
-        fontWeight: 600,
-        textTransform: "uppercase"
-      }, children: "— Jaya Gunaratne, Creator" }),
+        textAlign: "right"
+      }, children: "Click top right to apply!" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: { marginTop: 36, display: "flex", gap: 9, alignItems: "center" }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         width: 7,
         height: 7,
@@ -8782,15 +8774,15 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
         ] }),
         !loading && !searching && tracks.map((track) => {
           var _a, _b;
-          const isPlaying = playing === track.id;
+          const isPlaying2 = playing === track.id;
           const artwork = (_a = track.artwork) == null ? void 0 : _a["150x150"];
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: isPlaying ? "rgba(245,200,66,0.06)" : "transparent" }, children: [
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: isPlaying2 ? "rgba(245,200,66,0.06)" : "transparent" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: 48, height: 48, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }, children: [
               artwork ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: artwork, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 20 }, children: "🎵" }),
-              isPlaying && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontSize: 18 }, children: "▶" }) })
+              isPlaying2 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontSize: 18 }, children: "▶" }) })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isPlaying ? "#F5C842" : "#fff", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: track.title }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isPlaying2 ? "#F5C842" : "#fff", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: track.title }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12 }, children: [
                 (_b = track.user) == null ? void 0 : _b.name,
                 " · ",
@@ -8803,7 +8795,7 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
               ] })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, flexShrink: 0 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => previewTrack(track), style: { background: isPlaying ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 34, height: 34, cursor: "pointer", color: isPlaying ? "#F5C842" : "#ccc", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }, children: isPlaying ? "⏸" : "▶" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => previewTrack(track), style: { background: isPlaying2 ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 34, height: 34, cursor: "pointer", color: isPlaying2 ? "#F5C842" : "#ccc", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }, children: isPlaying2 ? "⏸" : "▶" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => selectAudiusTrack(track), style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 8, padding: "0 12px", height: 34, cursor: "pointer", color: "#F5C842", fontSize: 12, fontWeight: 700 }, children: "Use" })
             ] })
           ] }, track.id);
@@ -9725,7 +9717,7 @@ function VideoEditor({ file, onDone, onSkip }) {
   const [textColor, setTextColor] = reactExports.useState("#ffffff");
   const [textBg, setTextBg] = reactExports.useState("none");
   const [textSize, setTextSize] = reactExports.useState(22);
-  const [isPlaying, setIsPlaying] = reactExports.useState(true);
+  const [isPlaying2, setIsPlaying] = reactExports.useState(true);
   const previewUrl = reactExports.useMemo(() => URL.createObjectURL(file), [file]);
   reactExports.useEffect(() => {
     return () => URL.revokeObjectURL(previewUrl);
@@ -9877,7 +9869,7 @@ function VideoEditor({ file, onDone, onSkip }) {
         },
         ov.id
       )),
-      !isPlaying && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 70, height: 70, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }, children: "▶" }) })
+      !isPlaying2 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 70, height: 70, borderRadius: "50%", background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }, children: "▶" }) })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 20, zIndex: 10 }, children: [
       { icon: "T", label: "Text", mode: "text" },
@@ -16097,7 +16089,7 @@ function App() {
     ] }),
     activeTab === "podcast" && /* @__PURE__ */ jsxRuntimeExports.jsx(PodcastPage, { currentUser, onNeedAuth: () => setShowAuth(true) }),
     activeTab === "admin" && /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPanel, { currentUser }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,8px)", paddingTop: 0, display: "flex", justifyContent: "center", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { pointerEvents: "auto", margin: "0 16px 8px", background: "rgba(14,14,28,0.96)", backdropFilter: "blur(30px)", borderRadius: 40, border: "1px solid rgba(245,200,66,0.15)", display: "flex", alignItems: "center", padding: "6px 8px", gap: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,8px)", paddingTop: 0, display: "flex", justifyContent: "center", pointerEvents: "none", opacity: activeTab === "feed" && isPlaying ? 0.25 : 1, transition: "opacity 0.4s ease" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { pointerEvents: "auto", margin: "0 16px 8px", background: "rgba(14,14,28,0.96)", backdropFilter: "blur(30px)", borderRadius: 40, border: "1px solid rgba(245,200,66,0.15)", display: "flex", alignItems: "center", padding: "6px 8px", gap: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
