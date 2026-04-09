@@ -4196,18 +4196,17 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                           setLoadingStreamKey(true);
                           try {
                             // Route through Vercel serverless proxy to avoid CORS
-                            const cfRes = await fetch("/api/create-stream", {
+                            const cfRes = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
                               method:"POST",
                               headers:{"Content-Type":"application/json"},
                               body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_username: selectedPodcast.host_username || currentUser?.username })
                             });
                             const cfData = await cfRes.json();
                             if (cfData.success) {
-                              await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { stream_key: cfData.stream_key, cf_input_id: cfData.cf_input_id, live_stream_url: cfData.playback_url });
-                              setSelectedPodcast(p => ({...p, stream_key: cfData.stream_key, cf_input_id: cfData.cf_input_id, live_stream_url: cfData.playback_url}));
+                              setSelectedPodcast(p => ({...p, stream_key: cfData.stream_key, cf_input_id: cfData.cf_input_id, live_stream_url: cfData.playback_url, rtmp_url: cfData.rtmp_url}));
                               showToast("🎙️ Stream key generated!", "success");
                             } else {
-                              showToast("Failed: " + (cfData.error || "check token"), "error");
+                              showToast("Failed: " + (cfData.error || "Unknown error"), "error");
                             }
                           } catch(e) { showToast("Error creating stream", "error"); }
                           setLoadingStreamKey(false);
