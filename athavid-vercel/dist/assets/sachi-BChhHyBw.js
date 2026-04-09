@@ -7235,6 +7235,18 @@ function Landing({ onEnter }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f1", style: { fontSize: 9, color: "rgba(245,200,66,0.45)", letterSpacing: 5, fontWeight: 700, marginTop: 3, textTransform: "uppercase" }, children: "™" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f2", style: {
         marginTop: 16,
+        background: "rgba(245,200,66,0.08)",
+        border: "1px solid rgba(245,200,66,0.25)",
+        borderRadius: 50,
+        padding: "5px 14px",
+        fontSize: 11,
+        letterSpacing: 1.5,
+        color: "rgba(245,200,66,0.7)",
+        fontWeight: 700,
+        textTransform: "uppercase"
+      }, children: "The Anti-TikTok" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f2", style: {
+        marginTop: 12,
         fontSize: 13,
         letterSpacing: 3.5,
         textTransform: "uppercase",
