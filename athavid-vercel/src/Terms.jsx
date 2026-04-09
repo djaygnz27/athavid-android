@@ -1,3 +1,4 @@
+import React from "react";
 export default function Terms() {
   return (
     <div style={{ background:"#0f0f1a", minHeight:"100vh", padding:"32px 20px", color:"#ddd", fontFamily:"sans-serif", maxWidth:700, margin:"0 auto" }}>
