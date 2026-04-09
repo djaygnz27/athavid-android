@@ -10787,9 +10787,9 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 					username,
 					avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
 					comment_text: text.trim(),
-					thumbsUp: 0,
+					thumbs_up: 0,
 					hearts: 0,
-					thumbsDown: 0
+					thumbs_down: 0
 				};
 				setList((prev) => prev.map((x) => x.id === replyingTo.id ? {
 					...x,
@@ -10823,12 +10823,12 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 		}
 	};
 	const reactToComment = async (id, reaction, isReply, parentId, emoji = null) => {
-		if (reaction === "emojiReactions" && emoji) {
+		if (reaction === "emoji_reactions" && emoji) {
 			const updateItem = (item) => {
-				const existing = item.emojiReactions || {};
+				const existing = item.emoji_reactions || {};
 				return {
 					...item,
-					emojiReactions: {
+					emoji_reactions: {
 						...existing,
 						[emoji]: (existing[emoji] || 0) + 1
 					}
@@ -10843,8 +10843,8 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 				const current = list.find((x) => isReply ? x.id === parentId : x.id === id);
 				const commentToUpdate = isReply ? (current?.replies || []).find((r) => r.id === id) : current;
 				if (commentToUpdate) {
-					const existing = commentToUpdate.emojiReactions || {};
-					await comments.update(id, { emojiReactions: {
+					const existing = commentToUpdate.emoji_reactions || {};
+					await comments.update(id, { emoji_reactions: {
 						...existing,
 						[emoji]: (existing[emoji] || 0) + 1
 					} });
@@ -10942,15 +10942,15 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 						},
 						children: c.comment_text
 					}),
-					c.emojiReactions && Object.keys(c.emojiReactions).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					c.emoji_reactions && Object.keys(c.emoji_reactions).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						style: {
 							display: "flex",
 							gap: 6,
 							flexWrap: "wrap",
 							marginBottom: 6
 						},
-						children: Object.entries(c.emojiReactions).map(([em, count]) => count > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-							onClick: () => reactToComment(c.id, "emojiReactions", isReply, parentId, em),
+						children: Object.entries(c.emoji_reactions).map(([em, count]) => count > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+							onClick: () => reactToComment(c.id, "emoji_reactions", isReply, parentId, em),
 							style: {
 								background: "rgba(255,255,255,0.08)",
 								borderRadius: 20,
@@ -10984,7 +10984,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 						},
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-								onClick: () => reactToComment(c.id, "thumbsUp", isReply, parentId),
+								onClick: () => reactToComment(c.id, "thumbs_up", isReply, parentId),
 								style: {
 									background: "none",
 									border: "none",
@@ -10992,13 +10992,13 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 									display: "flex",
 									alignItems: "center",
 									gap: 2,
-									color: c.thumbsUp ? "#6bff9a" : "#666",
+									color: c.thumbs_up ? "#6bff9a" : "#666",
 									fontSize: 12,
 									padding: 0
 								},
 								children: ["👍 ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 									style: { fontSize: 10 },
-									children: c.thumbsUp || 0
+									children: c.thumbs_up || 0
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
@@ -11020,7 +11020,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-								onClick: () => reactToComment(c.id, "thumbsDown", isReply, parentId),
+								onClick: () => reactToComment(c.id, "thumbs_down", isReply, parentId),
 								style: {
 									background: "none",
 									border: "none",
@@ -11028,13 +11028,13 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 									display: "flex",
 									alignItems: "center",
 									gap: 2,
-									color: c.thumbsDown ? "#ff8e53" : "#666",
+									color: c.thumbs_down ? "#ff8e53" : "#666",
 									fontSize: 12,
 									padding: 0
 								},
 								children: ["👎 ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 									style: { fontSize: 10 },
-									children: c.thumbsDown || 0
+									children: c.thumbs_down || 0
 								})]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
@@ -11134,7 +11134,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 									},
 									children: QUICK_EMOJIS.map((em) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 										onClick: () => {
-											reactToComment(c.id, "emojiReactions", isReply, parentId, em);
+											reactToComment(c.id, "emoji_reactions", isReply, parentId, em);
 											setPickerOpen(false);
 										},
 										style: {

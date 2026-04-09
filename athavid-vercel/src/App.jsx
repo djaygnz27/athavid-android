@@ -223,7 +223,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       if (replyingTo) {
         // Post as a reply stored locally under the parent comment
-        const reply = { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
+        const reply = { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: text.trim(), thumbs_up:0, hearts:0, thumbs_down:0 };
         setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
@@ -250,11 +250,11 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     const findComment = (lst, cid) => lst.find(x => x.id === cid);
     const targetId = id;
 
-    if (reaction === "emojiReactions" && emoji) {
+    if (reaction === "emoji_reactions" && emoji) {
       // Update local state first for instant feedback
       const updateItem = (item) => {
-        const existing = item.emojiReactions || {};
-        return { ...item, emojiReactions: { ...existing, [emoji]: (existing[emoji] || 0) + 1 } };
+        const existing = item.emoji_reactions || {};
+        return { ...item, emoji_reactions: { ...existing, [emoji]: (existing[emoji] || 0) + 1 } };
       };
       if (isReply) {
         setList(prev => prev.map(x =>
@@ -272,14 +272,14 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           ? (current?.replies||[]).find(r => r.id === id)
           : current;
         if (commentToUpdate) {
-          const existing = commentToUpdate.emojiReactions || {};
-          await comments.update(id, { emojiReactions: { ...existing, [emoji]: (existing[emoji]||0)+1 } });
+          const existing = commentToUpdate.emoji_reactions || {};
+          await comments.update(id, { emoji_reactions: { ...existing, [emoji]: (existing[emoji]||0)+1 } });
         }
       } catch(e) { console.error("Emoji reaction save failed:", e); }
       return;
     }
 
-    // thumbsUp / hearts / thumbsDown
+    // thumbs_up / hearts / thumbs_down
     if (isReply) {
       setList(prev => prev.map(x => x.id === parentId ? {
         ...x, replies: (x.replies||[]).map(r => r.id === id ? {...r, [reaction]: (r[reaction]||0)+1} : r)
@@ -308,10 +308,10 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
         <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
         {/* Emoji reaction bubbles */}
-        {c.emojiReactions && Object.keys(c.emojiReactions).length > 0 && (
+        {c.emoji_reactions && Object.keys(c.emoji_reactions).length > 0 && (
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-            {Object.entries(c.emojiReactions).map(([em, count]) => count > 0 && (
-              <span key={em} onClick={() => reactToComment(c.id, "emojiReactions", isReply, parentId, em)}
+            {Object.entries(c.emoji_reactions).map(([em, count]) => count > 0 && (
+              <span key={em} onClick={() => reactToComment(c.id, "emoji_reactions", isReply, parentId, em)}
                 style={{ background:"rgba(255,255,255,0.08)", borderRadius:20, padding:"2px 8px", fontSize:14, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:3, lineHeight:1.6 }}>
                 <span style={{ fontFamily:"Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" }}>{em}</span>
                 <span style={{ fontSize:10, color:"#aaa" }}>{count}</span>
@@ -320,17 +320,17 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           </div>
         )}
         <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", position:"relative" }}>
-          <button onClick={() => reactToComment(c.id, "thumbsUp", isReply, parentId)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsUp ? "#6bff9a" : "#666", fontSize:12, padding:0 }}>
-            👍 <span style={{ fontSize:10 }}>{c.thumbsUp || 0}</span>
+          <button onClick={() => reactToComment(c.id, "thumbs_up", isReply, parentId)}
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbs_up ? "#6bff9a" : "#666", fontSize:12, padding:0 }}>
+            👍 <span style={{ fontSize:10 }}>{c.thumbs_up || 0}</span>
           </button>
           <button onClick={() => reactToComment(c.id, "hearts", isReply, parentId)}
             style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.hearts ? "#ff6b6b" : "#666", fontSize:12, padding:0 }}>
             ❤️ <span style={{ fontSize:10 }}>{c.hearts || 0}</span>
           </button>
-          <button onClick={() => reactToComment(c.id, "thumbsDown", isReply, parentId)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:12, padding:0 }}>
-            👎 <span style={{ fontSize:10 }}>{c.thumbsDown || 0}</span>
+          <button onClick={() => reactToComment(c.id, "thumbs_down", isReply, parentId)}
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbs_down ? "#ff8e53" : "#666", fontSize:12, padding:0 }}>
+            👎 <span style={{ fontSize:10 }}>{c.thumbs_down || 0}</span>
           </button>
           {/* Emoji picker button */}
           <button onClick={() => setPickerOpen(p => !p)}
@@ -359,7 +359,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
               <div style={{ display:"grid", gridTemplateColumns:"repeat(6, 1fr)", gap:6 }}>
                 {QUICK_EMOJIS.map(em => (
                   <button key={em}
-                    onClick={() => { reactToComment(c.id, "emojiReactions", isReply, parentId, em); setPickerOpen(false); }}
+                    onClick={() => { reactToComment(c.id, "emoji_reactions", isReply, parentId, em); setPickerOpen(false); }}
                     style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, padding:"8px 4px", fontSize:22, cursor:"pointer", fontFamily:"Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif", lineHeight:1, textAlign:"center" }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(245,200,66,0.2)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}>
