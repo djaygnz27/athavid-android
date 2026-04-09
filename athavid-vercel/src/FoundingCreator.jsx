@@ -24,6 +24,7 @@ const TESTIMONIALS = [
 ];
 
 const SPOTS_TOTAL = 50;
+const ALREADY_TAKEN = 14; // existing beta testers already counted
 
 export default function FoundingCreatorPage({ onBack }) {
   const [step, setStep] = useState(1);
@@ -43,8 +44,8 @@ export default function FoundingCreatorPage({ onBack }) {
   }, []);
 
   const set = (k, v) => setForm(f => ({...f, [k]: v}));
-  const spotsLeft = count !== null ? Math.max(0, SPOTS_TOTAL - count) : SPOTS_TOTAL;
-  const pctFilled = count !== null ? Math.min(100, (count / SPOTS_TOTAL) * 100) : 0;
+  const spotsLeft = count !== null ? Math.max(0, SPOTS_TOTAL - ALREADY_TAKEN - count) : (SPOTS_TOTAL - ALREADY_TAKEN);
+  const pctFilled = count !== null ? Math.min(100, ((count + ALREADY_TAKEN) / SPOTS_TOTAL) * 100) : Math.min(100, (ALREADY_TAKEN / SPOTS_TOTAL) * 100);
 
   const submit = async () => {
     if (!form.full_name.trim() || !form.email.trim() || !form.content_type || !form.why_sachi.trim()) {
@@ -343,7 +344,7 @@ export default function FoundingCreatorPage({ onBack }) {
             </div>
             <div style={{ fontSize:13,color:"rgba(255,255,255,0.35)" }}>
               <span style={{ color:"#F5C842",fontWeight:800,fontSize:26 }}>{spotsLeft}</span>
-              <span> of 50 spots remaining</span>
+              <span> of 36 spots remaining</span>
             </div>
             <div style={{ width:"100%",background:"rgba(255,255,255,0.08)",borderRadius:99,height:5,overflow:"hidden" }}>
               <div style={{ height:"100%",width:`${pctFilled}%`,background:"linear-gradient(90deg,#F5C842,#F5A623)",borderRadius:99,transition:"width 1s ease" }} />
@@ -415,7 +416,7 @@ export default function FoundingCreatorPage({ onBack }) {
             Ready to join us?
           </h2>
           <p style={{ color:"rgba(255,255,255,0.35)",fontSize:15,marginBottom:30,lineHeight:1.65 }}>
-            50 spots. Lifetime perks. Zero cost.<br/>This offer won't last.
+            36 spots left. Lifetime perks. Zero cost.<br/>This offer won't last.
           </p>
           <div style={{ maxWidth:360,margin:"0 auto 18px" }}>
             <button className="btn-gold" onClick={()=>setStep(2)}>
