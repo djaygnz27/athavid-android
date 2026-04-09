@@ -19493,39 +19493,29 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 											if (loadingStreamKey) return;
 											setLoadingStreamKey(true);
 											try {
-												const cfData = await (await fetch(`https://api.cloudflare.com/client/v4/accounts/a346b1c78fc48549d2de3de99a789a2d/stream/live_inputs`, {
+												const cfData = await (await fetch("/api/create-stream", {
 													method: "POST",
-													headers: {
-														"Authorization": "Bearer cfut_WBRlGeCzjayXrqMz3zas4SivKZLOVavDMvV6hmQ91093a97c",
-														"Content-Type": "application/json"
-													},
+													headers: { "Content-Type": "application/json" },
 													body: JSON.stringify({
-														meta: { name: `${selectedPodcast.title} - ${selectedPodcast.host_username || currentUser?.username || "host"}` },
-														recording: {
-															mode: "automatic",
-															timeoutSeconds: 10
-														},
-														deleteRecordingAfterDays: 30
+														podcast_id: selectedPodcast.id,
+														podcast_title: selectedPodcast.title,
+														host_username: selectedPodcast.host_username || currentUser?.username
 													})
 												})).json();
 												if (cfData.success) {
-													const inp = cfData.result;
-													const newKey = inp.rtmps?.streamKey;
-													const cfId = inp.uid;
-													const pbUrl = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${cfId}/manifest/video.m3u8`;
 													await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, {
-														stream_key: newKey,
-														cf_input_id: cfId,
-														live_stream_url: pbUrl
+														stream_key: cfData.stream_key,
+														cf_input_id: cfData.cf_input_id,
+														live_stream_url: cfData.playback_url
 													});
 													setSelectedPodcast((p) => ({
 														...p,
-														stream_key: newKey,
-														cf_input_id: cfId,
-														live_stream_url: pbUrl
+														stream_key: cfData.stream_key,
+														cf_input_id: cfData.cf_input_id,
+														live_stream_url: cfData.playback_url
 													}));
 													showToast("🎙️ Stream key generated!", "success");
-												} else showToast("Failed to create stream. Try again.", "error");
+												} else showToast("Failed: " + (cfData.error || "check token"), "error");
 											} catch (e) {
 												showToast("Error creating stream", "error");
 											}
