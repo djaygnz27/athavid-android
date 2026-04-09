@@ -7025,7 +7025,7 @@ function Landing({ onEnter }) {
   const [leaving, setLeaving] = reactExports.useState(false);
   reactExports.useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
-    const t2 = setTimeout(() => handleEnter(), 5200);
+    const t2 = setTimeout(() => handleEnter(), 8e3);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -7235,7 +7235,7 @@ function Landing({ onEnter }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f1", style: { fontSize: 9, color: "rgba(245,200,66,0.45)", letterSpacing: 5, fontWeight: 700, marginTop: 3, textTransform: "uppercase" }, children: "™" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f2", style: {
         marginTop: 16,
-        fontSize: 13,
+        fontSize: 24,
         letterSpacing: 3.5,
         textTransform: "uppercase",
         fontWeight: 600,
@@ -7249,7 +7249,7 @@ function Landing({ onEnter }) {
       } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f3", style: {
         marginTop: 16,
-        fontSize: 14,
+        fontSize: 26,
         lineHeight: 1.75,
         color: "rgba(220,180,255,0.4)",
         maxWidth: 250
@@ -7258,18 +7258,34 @@ function Landing({ onEnter }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
         "No filters."
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f4", style: {
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
         marginTop: 18,
-        fontSize: 12,
+        fontSize: 30,
+        lineHeight: 1.7,
+        color: "rgba(245,200,66,0.85)",
+        maxWidth: 320,
+        letterSpacing: 0.3,
+        fontWeight: 700,
+        textAlign: "center"
+      }, children: "We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
+        marginTop: 12,
+        fontSize: 24,
         lineHeight: 1.6,
-        color: "rgba(245,200,66,0.55)",
-        maxWidth: 240,
-        letterSpacing: 0.3
-      }, children: [
-        "We're looking for 50 Founding Creators",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-        "to shape Sachi from day one."
-      ] }),
+        color: "rgba(220,180,255,0.75)",
+        maxWidth: 300,
+        letterSpacing: 0.3,
+        fontWeight: 500,
+        textAlign: "center"
+      }, children: "👆 Click top right to apply!" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f5", style: {
+        marginTop: 10,
+        fontSize: 18,
+        letterSpacing: 1.5,
+        color: "rgba(245,200,66,0.35)",
+        fontWeight: 500,
+        textTransform: "uppercase"
+      }, children: "— Jaya Gunaratne, Creator" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: { marginTop: 36, display: "flex", gap: 9, alignItems: "center" }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         width: 7,
         height: 7,
