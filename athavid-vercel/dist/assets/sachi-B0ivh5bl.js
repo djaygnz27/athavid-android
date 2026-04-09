@@ -7141,7 +7141,7 @@ function Landing({ onEnter }) {
           gap: 6,
           whiteSpace: "nowrap"
         },
-        children: "🌸 Apply — 36 Spots Left"
+        children: "🌸 Apply — 36/50 Spots Left"
       }
     ) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
@@ -16628,6 +16628,9 @@ function PodcastHost() {
   const [rtmpUrl, setRtmpUrl] = reactExports.useState(null);
   const [loadingKey, setLoadingKey] = reactExports.useState(false);
   const [showKey, setShowKey] = reactExports.useState(false);
+  const [coverImageUrl, setCoverImageUrl] = reactExports.useState(null);
+  const [uploadingCover, setUploadingCover] = reactExports.useState(false);
+  const coverInputRef = reactExports.useRef(null);
   const googleLoaded = reactExports.useRef(false);
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -16704,6 +16707,30 @@ function PodcastHost() {
     } catch (e) {
     }
   };
+  const uploadCoverImage = async (file) => {
+    setUploadingCover(true);
+    try {
+      const token = localStorage.getItem("sachi_token");
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${API}/apps/${APP_ID}/files/upload`, {
+        method: "POST",
+        headers: { ...token ? { "Authorization": "Bearer " + token } : {} },
+        body: formData
+      });
+      const data = await res.json();
+      const url = data.url || data.file_url || data.public_url;
+      if (url) {
+        setCoverImageUrl(url);
+        showToast("✅ Cover image uploaded!", "success");
+      } else {
+        showToast("Upload failed, try again", "error");
+      }
+    } catch (e) {
+      showToast("Upload failed", "error");
+    }
+    setUploadingCover(false);
+  };
   const handleRegister = async () => {
     var _a;
     if (!regForm.title || !regForm.host_name) return showToast("Show name and host name are required", "error");
@@ -16717,6 +16744,7 @@ function PodcastHost() {
         category: regForm.category,
         cover_color: cover.bg,
         cover_emoji: cover.emoji,
+        cover_image_url: coverImageUrl || "",
         status: "Active",
         is_live: false,
         listener_count: 0,
@@ -16734,6 +16762,7 @@ function PodcastHost() {
       });
       showToast("🎙️ Podcast registered! You're on Sachi.", "success");
       setRegForm({ title: "", host_name: "", description: "", category: "Business", coverIdx: 0 });
+      setCoverImageUrl(null);
       await loadMyShows();
       setView("shows");
     } catch (e) {
@@ -16742,7 +16771,7 @@ function PodcastHost() {
     setRegistering(false);
   };
   const goLive = async () => {
-    if (!selectedShow.live_stream_url) return showToast("Add a stream URL first", "error");
+    if (!selectedShow.cf_input_id && !selectedShow.stream_key) return showToast("Get your stream key first, then start OBS before going live", "error");
     setGoingLive(true);
     try {
       await fetch(`${SACHI_FN}/podcastGoLiveNotify`, {
@@ -16913,7 +16942,8 @@ function PodcastHost() {
         ] }, show.id))
       ] }),
       view === "register" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 20, fontWeight: 800, marginBottom: 20 }, children: "Register a New Show" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 20, fontWeight: 800, marginBottom: 6 }, children: "Register a New Show" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 20 }, children: "Fill in your show details below. Once registered, you'll get your personal OBS stream key to broadcast directly on Sachi." }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Show Name *" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("input", { style: s.input, placeholder: "e.g. The Daily Breakdown", value: regForm.title, onChange: (e) => setRegForm((f2) => ({ ...f2, title: e.target.value })) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Your Name *" }),
@@ -16922,8 +16952,91 @@ function PodcastHost() {
         /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { style: { ...s.input, height: 90, resize: "vertical" }, placeholder: "What's your show about?", value: regForm.description, onChange: (e) => setRegForm((f2) => ({ ...f2, description: e.target.value })) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Category" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("select", { style: s.input, value: regForm.category, onChange: (e) => setRegForm((f2) => ({ ...f2, category: e.target.value })), children: CATEGORIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: c }, c)) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Cover Style" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }, children: COVER_COLORS.map((c, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: () => setRegForm((f2) => ({ ...f2, coverIdx: i })), style: { width: 52, height: 52, borderRadius: 14, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer", border: regForm.coverIdx === i ? "3px solid #F5C842" : "3px solid transparent" }, children: c.emoji }, i)) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Show Cover" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: coverInputRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: (e) => {
+            if (e.target.files[0]) uploadCoverImage(e.target.files[0]);
+          } }),
+          coverImageUrl ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, background: "rgba(74,222,128,0.07)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 12, padding: "10px 14px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: coverImageUrl, alt: "cover", style: { width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 } }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#4ade80", fontWeight: 600, fontSize: 13 }, children: "✅ Custom cover uploaded" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2 }, children: "This will be your show's cover image" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => {
+                  setCoverImageUrl(null);
+                  if (coverInputRef.current) coverInputRef.current.value = "";
+                },
+                style: { background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 8, color: "rgba(255,255,255,0.4)", fontSize: 11, padding: "5px 10px", cursor: "pointer" },
+                children: "Remove"
+              }
+            )
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                var _a;
+                return (_a = coverInputRef.current) == null ? void 0 : _a.click();
+              },
+              disabled: uploadingCover,
+              style: { width: "100%", background: "rgba(108,60,247,0.12)", border: "1px dashed rgba(108,60,247,0.4)", borderRadius: 12, color: "#a78bfa", fontSize: 13, fontWeight: 600, padding: "14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
+              children: uploadingCover ? "Uploading..." : "📷 Upload Your Own Cover Image"
+            }
+          )
+        ] }),
+        !coverImageUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11, textAlign: "center", marginBottom: 10 }, children: "— or pick a style below —" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }, children: COVER_COLORS.map((c, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: () => setRegForm((f2) => ({ ...f2, coverIdx: i })), style: { width: 52, height: 52, borderRadius: 14, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer", border: regForm.coverIdx === i ? "3px solid #F5C842" : "3px solid transparent" }, children: c.emoji }, i)) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(108,60,247,0.1)", border: "1px solid rgba(108,60,247,0.3)", borderRadius: 14, padding: "16px 18px", marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 700, fontSize: 14, color: "#a78bfa", marginBottom: 12 }, children: "📡 How Broadcasting Works on Sachi" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, alignItems: "flex-start" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(245,200,66,0.15)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, color: "#F5C842", flexShrink: 0 }, children: "1" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, fontSize: 13, color: "rgba(255,255,255,0.9)" }, children: "Register your show" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }, children: "Fill in the details above and hit Register. Your show goes live on Sachi instantly." })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, alignItems: "flex-start" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(245,200,66,0.15)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, color: "#F5C842", flexShrink: 0 }, children: "2" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, fontSize: 13, color: "rgba(255,255,255,0.9)" }, children: "Get your personal stream key" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }, children: `From your show dashboard, click "Get Stream Key." You'll receive a private RTMP server URL and stream key — these stay the same every session.` })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, alignItems: "flex-start" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(245,200,66,0.15)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, color: "#F5C842", flexShrink: 0 }, children: "3" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, fontSize: 13, color: "rgba(255,255,255,0.9)" }, children: "Set up OBS Studio (free)" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }, children: 'Download OBS, paste your stream key, and hit "Start Streaming." OBS is free, works on Mac, Windows, and Linux.' })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, alignItems: "flex-start" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(245,200,66,0.15)", borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, color: "#F5C842", flexShrink: 0 }, children: "4" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, fontSize: 13, color: "rgba(255,255,255,0.9)" }, children: "Go Live on Sachi" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }, children: 'Once OBS is streaming, tap "Go Live Now" in your dashboard. Your audience sees your stream in real time on Sachi.' })
+              ] })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(108,60,247,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: "Need a step-by-step walkthrough?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "a",
+              {
+                href: "https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/files/mp/public/69b2ee18a8e6fb58c7f0261c/bbc3469b5_Sachi_OBS_Setup_Guide.pdf",
+                target: "_blank",
+                rel: "noopener noreferrer",
+                style: { display: "flex", alignItems: "center", gap: 6, background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 8, padding: "7px 14px", color: "#F5C842", fontSize: 12, fontWeight: 700, textDecoration: "none" },
+                children: "📄 Download OBS Setup Guide"
+              }
+            )
+          ] })
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleRegister, disabled: registering, style: s.btn("linear-gradient(135deg,#F5C842,#F5A623)", "#0B0C1A"), children: registering ? "Registering..." : "Register Show 🎙️" })
       ] }),
       view === "manage" && selectedShow && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
@@ -17008,8 +17121,8 @@ function PodcastHost() {
               )
             ] })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: goLive, disabled: goingLive || !selectedShow.live_stream_url, style: { ...s.btn(selectedShow.live_stream_url ? "linear-gradient(135deg,#e53935,#c62828)" : "rgba(255,255,255,0.06)"), opacity: selectedShow.live_stream_url ? 1 : 0.4 }, children: goingLive ? "Going Live..." : "🔴 Go Live Now" }),
-          !selectedShow.live_stream_url && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", marginTop: -6 }, children: 'Click "Get Stream Key" above, then start streaming in OBS first' })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: goLive, disabled: goingLive || !selectedShow.cf_input_id && !selectedShow.stream_key, style: { ...s.btn(selectedShow.cf_input_id || selectedShow.stream_key ? "linear-gradient(135deg,#e53935,#c62828)" : "rgba(255,255,255,0.06)"), opacity: selectedShow.cf_input_id || selectedShow.stream_key ? 1 : 0.4 }, children: goingLive ? "Going Live..." : "🔴 Go Live Now" }),
+          !selectedShow.cf_input_id && !selectedShow.stream_key && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", marginTop: -6 }, children: "Get your stream key first, then start OBS before going live" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 8 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }, children: [
