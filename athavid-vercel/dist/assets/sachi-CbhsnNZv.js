@@ -7042,6 +7042,10 @@ function Landing({ onEnter }) {
     opacity: leaving ? 0 : 1
   }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
+        @keyframes pulse {
+          0%, 100% { opacity: 0.2; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
         @keyframes petalFall {
           0%   { transform: translateY(-30px) rotate(0deg); opacity: 0; }
           8%   { opacity: 0.65; }
@@ -7190,41 +7194,11 @@ function Landing({ onEnter }) {
         lineHeight: 1.7,
         maxWidth: 240
       }, children: "Real moments. Real people. No filters." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          className: "cta-btn",
-          onClick: handleEnter,
-          style: {
-            marginTop: 32,
-            padding: "15px 48px",
-            fontSize: 15,
-            fontWeight: 700,
-            color: "#0B0C1A",
-            background: "linear-gradient(135deg, #F5C842, #F5A623)",
-            border: "none",
-            borderRadius: 50,
-            cursor: "pointer",
-            letterSpacing: 0.4
-          },
-          children: "Enter Sachi ✦"
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          className: "fade-5",
-          onClick: handleEnter,
-          style: {
-            marginTop: 14,
-            fontSize: 12,
-            color: "rgba(255,255,255,0.22)",
-            cursor: "pointer",
-            letterSpacing: 0.2
-          },
-          children: "already a member? sign in →"
-        }
-      )
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 32, display: "flex", gap: 8, alignItems: "center", opacity: 0.35 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out infinite" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out 0.4s infinite" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out 0.8s infinite" } })
+      ] })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fade-5", style: {
       position: "absolute",

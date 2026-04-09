@@ -37,6 +37,10 @@ export default function Landing({ onEnter }) {
       opacity: leaving ? 0 : 1,
     }}>
       <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.2; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
         @keyframes petalFall {
           0%   { transform: translateY(-30px) rotate(0deg); opacity: 0; }
           8%   { opacity: 0.65; }
@@ -192,32 +196,11 @@ export default function Landing({ onEnter }) {
           Real moments. Real people. No filters.
         </div>
 
-        {/* CTA */}
-        <button
-          className="cta-btn"
-          onClick={handleEnter}
-          style={{
-            marginTop: 32, padding: "15px 48px",
-            fontSize: 15, fontWeight: 700,
-            color: "#0B0C1A",
-            background: "linear-gradient(135deg, #F5C842, #F5A623)",
-            border: "none", borderRadius: 50,
-            cursor: "pointer", letterSpacing: 0.4,
-          }}
-        >
-          Enter Sachi ✦
-        </button>
-
-        {/* Sign in hint */}
-        <div className="fade-5"
-          onClick={handleEnter}
-          style={{
-            marginTop: 14, fontSize: 12,
-            color: "rgba(255,255,255,0.22)",
-            cursor: "pointer", letterSpacing: 0.2,
-          }}
-        >
-          already a member? sign in →
+        {/* Auto-advancing — no button needed */}
+        <div style={{ marginTop: 32, display: "flex", gap: 8, alignItems: "center", opacity: 0.35 }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out infinite" }} />
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out 0.4s infinite" }} />
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#F5C842", animation: "pulse 1.2s ease-in-out 0.8s infinite" }} />
         </div>
 
       </div>
