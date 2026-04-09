@@ -244,3 +244,4 @@ export default function Landing({ onEnter }) {
     </div>
   );
 }
+/* purple splash */
