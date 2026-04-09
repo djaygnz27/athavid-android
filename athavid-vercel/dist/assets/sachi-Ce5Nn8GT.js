@@ -10903,7 +10903,9 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 		"😬",
 		"😱",
 		"🥲",
-		"😏"
+		"😏",
+		"LOL",
+		"LMAO"
 	];
 	const CommentRow = ({ c, isReply = false, parentId = null }) => {
 		const [pickerOpen, setPickerOpen] = import_react.useState(false);
@@ -11132,26 +11134,31 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 										gridTemplateColumns: "repeat(6, 1fr)",
 										gap: 6
 									},
-									children: QUICK_EMOJIS.map((em) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-										onClick: () => {
-											reactToComment(c.id, "emoji_reactions", isReply, parentId, em);
-											setPickerOpen(false);
-										},
-										style: {
-											background: "rgba(255,255,255,0.06)",
-											border: "none",
-											borderRadius: 10,
-											padding: "8px 4px",
-											fontSize: 22,
-											cursor: "pointer",
-											fontFamily: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif",
-											lineHeight: 1,
-											textAlign: "center"
-										},
-										onMouseEnter: (e) => e.currentTarget.style.background = "rgba(245,200,66,0.2)",
-										onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.06)",
-										children: em
-									}, em))
+									children: QUICK_EMOJIS.map((em) => {
+										const isText = em === "LOL" || em === "LMAO";
+										return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+											onClick: () => {
+												reactToComment(c.id, "emoji_reactions", isReply, parentId, em);
+												setPickerOpen(false);
+											},
+											style: {
+												background: "rgba(255,255,255,0.06)",
+												border: "none",
+												borderRadius: 10,
+												padding: isText ? "6px 4px" : "8px 4px",
+												fontSize: isText ? 10 : 22,
+												fontWeight: isText ? 700 : "normal",
+												cursor: "pointer",
+												fontFamily: isText ? "sans-serif" : "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif",
+												lineHeight: 1,
+												textAlign: "center",
+												color: isText ? "#F5C842" : "inherit"
+											},
+											onMouseEnter: (e) => e.currentTarget.style.background = "rgba(245,200,66,0.2)",
+											onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.06)",
+											children: em
+										}, em);
+									})
 								})]
 							})
 						]
