@@ -7249,41 +7249,42 @@ function Landing({ onEnter }) {
       } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f3", style: {
         marginTop: 16,
-        fontSize: 26,
+        fontSize: 28,
         lineHeight: 1.75,
-        color: "rgba(220,180,255,0.4)",
-        maxWidth: 250
+        color: "rgba(220,180,255,0.7)",
+        maxWidth: 300,
+        fontWeight: 600
       }, children: [
         "Real moments. Real people.",
         /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
         "No filters."
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
-        marginTop: 18,
-        fontSize: 30,
+        marginTop: 20,
+        fontSize: 32,
         lineHeight: 1.7,
-        color: "rgba(245,200,66,0.85)",
-        maxWidth: 320,
+        color: "#F5C842",
+        maxWidth: 340,
         letterSpacing: 0.3,
-        fontWeight: 700,
+        fontWeight: 800,
         textAlign: "center"
       }, children: "We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE." }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
-        marginTop: 12,
-        fontSize: 24,
+        marginTop: 14,
+        fontSize: 26,
         lineHeight: 1.6,
-        color: "rgba(220,180,255,0.75)",
+        color: "rgba(220,180,255,0.9)",
         maxWidth: 300,
         letterSpacing: 0.3,
-        fontWeight: 500,
+        fontWeight: 600,
         textAlign: "center"
       }, children: "👆 Click top right to apply!" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f5", style: {
-        marginTop: 10,
-        fontSize: 18,
+        marginTop: 12,
+        fontSize: 20,
         letterSpacing: 1.5,
-        color: "rgba(245,200,66,0.35)",
-        fontWeight: 500,
+        color: "rgba(245,200,66,0.6)",
+        fontWeight: 600,
         textTransform: "uppercase"
       }, children: "— Jaya Gunaratne, Creator" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: { marginTop: 36, display: "flex", gap: 9, alignItems: "center" }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
