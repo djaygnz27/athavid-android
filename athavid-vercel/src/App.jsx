@@ -192,6 +192,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [loading, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState(null); // { id, username }
   const [expandedReplies, setExpandedReplies] = useState({});
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(null); // comment id
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -254,13 +255,26 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     }
   };
 
+  const QUICK_EMOJIS = ["😂","🤣","😭","💀","🔥","🤯","😍","🥰","😎","🙌","💯","🫡","😤","🫣","👀","🤌","💪","🥹","😅","🤦","🤷","🙏","💥","✨","🎉","👏","😬","😱","🥲","😏"];
+
   const CommentRow = ({ c, isReply=false, parentId=null }) => (
     <div style={{ display:"flex", gap:10, marginBottom:12, paddingLeft: isReply ? 44 : 0 }}>
       <img src={c.avatar_url} style={{ width: isReply?28:36, height: isReply?28:36, borderRadius:"50%", border:`2px solid rgba(108,99,255,${isReply?0.2:0.3})`, flexShrink:0 }} />
       <div style={{ flex:1 }}>
         <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
         <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
-        <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+        {/* Reaction counts row */}
+        {c.emojiReactions && Object.keys(c.emojiReactions).length > 0 && (
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+            {Object.entries(c.emojiReactions).map(([emoji, count]) => count > 0 && (
+              <span key={emoji} onClick={() => reactToComment(c.id, "emojiReactions", isReply, parentId, emoji)}
+                style={{ background:"rgba(255,255,255,0.08)", borderRadius:20, padding:"2px 8px", fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:3 }}>
+                {emoji} <span style={{ fontSize:10, color:"#aaa" }}>{count}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", position:"relative" }}>
           <button onClick={() => reactToComment(c.id, "thumbsUp", isReply, parentId)}
             style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsUp ? "#6bff9a" : "#666", fontSize:12, padding:0 }}>
             👍 <span style={{ fontSize:10 }}>{c.thumbsUp || 0}</span>
@@ -273,9 +287,15 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
             style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:12, padding:0 }}>
             👎 <span style={{ fontSize:10 }}>{c.thumbsDown || 0}</span>
           </button>
+          {/* Emoji Picker trigger */}
+          <button onClick={() => setEmojiPickerOpen(emojiPickerOpen === c.id ? null : c.id)}
+            style={{ background:"none", border:"none", cursor:"pointer", color:"#888", fontSize:14, padding:0, lineHeight:1 }}
+            title="React with emoji">
+            😄
+          </button>
           {!isReply && (
-            <button onClick={() => startReply(c)}
-              style={{ background:"none", border:"none", cursor:"pointer", color:"#888", fontSize:12, padding:0, marginLeft:4 }}>
+            <button onClick={() => { startReply(c); setEmojiPickerOpen(null); }}
+              style={{ background:"none", border:"none", cursor:"pointer", color:"#888", fontSize:12, padding:0, marginLeft:2 }}>
               💬 Reply
             </button>
           )}
@@ -284,6 +304,24 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
               style={{ background:"none", border:"none", cursor:"pointer", color:"#6c63ff", fontSize:12, padding:0 }}>
               {expandedReplies[c.id] ? "▲ Hide" : `▼ ${c.replies.length} repl${c.replies.length===1?"y":"ies"}`}
             </button>
+          )}
+          {/* Emoji Picker popup */}
+          {emojiPickerOpen === c.id && (
+            <div style={{ position:"absolute", bottom:26, left:0, background:"#1e1e2e", border:"1px solid rgba(255,255,255,0.12)", borderRadius:16, padding:"10px 12px", zIndex:999, boxShadow:"0 8px 32px rgba(0,0,0,0.5)", width:240 }}>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginBottom:8, textTransform:"uppercase", letterSpacing:1 }}>React</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {QUICK_EMOJIS.map(emoji => (
+                  <button key={emoji} onClick={() => {
+                    reactToComment(c.id, "emojiReactions", isReply, parentId, emoji);
+                    setEmojiPickerOpen(null);
+                  }} style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, padding:"6px 8px", fontSize:18, cursor:"pointer", transition:"transform 0.1s" }}
+                    onMouseEnter={e => e.target.style.transform="scale(1.3)"}
+                    onMouseLeave={e => e.target.style.transform="scale(1)"}>
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
         {!isReply && expandedReplies[c.id] && (c.replies||[]).map(r => (
