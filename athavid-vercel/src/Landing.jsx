@@ -244,7 +244,7 @@ export default function Landing({ onEnter }) {
         <div className="f4" style={{
           marginTop:20, fontSize:22, lineHeight:1.7,
           color:"#F5C842", maxWidth:340, letterSpacing:0.3,
-          fontWeight:800, textAlign:"center",
+          fontWeight:800, textAlign:"right",
         }}>
           We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE.
         </div>
@@ -253,9 +253,9 @@ export default function Landing({ onEnter }) {
         <div className="f4" style={{
           marginTop:14, fontSize:26, lineHeight:1.6,
           color:"rgba(220,180,255,0.9)", maxWidth:300, letterSpacing:0.3,
-          fontWeight:600, textAlign:"center",
+          fontWeight:600, textAlign:"right",
         }}>
-          👆 Click top right to apply!
+          Click top right to apply! 👆
         </div>
 
         {/* Creator credit */}
