@@ -18,6 +18,24 @@
     },
     "likes_count": {
       "type": "number"
+    },
+    "thumbs_up": {
+      "type": "number"
+    },
+    "hearts": {
+      "type": "number"
+    },
+    "thumbs_down": {
+      "type": "number"
+    },
+    "emoji_reactions": {
+      "type": "object"
+    },
+    "replies": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
     }
   },
   "required": [],
