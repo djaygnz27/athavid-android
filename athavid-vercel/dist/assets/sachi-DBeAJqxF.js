@@ -11048,32 +11048,51 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 							}),
 							pickerOpen && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								style: {
-									position: "absolute",
-									bottom: 28,
-									left: 0,
+									position: "fixed",
+									bottom: 80,
+									left: "50%",
+									transform: "translateX(-50%)",
 									background: "#1a1a2e",
-									border: "1px solid rgba(255,255,255,0.15)",
-									borderRadius: 16,
-									padding: "12px",
-									zIndex: 9999,
-									boxShadow: "0 8px 40px rgba(0,0,0,0.7)",
-									width: 244
+									border: "1px solid rgba(245,200,66,0.3)",
+									borderRadius: 18,
+									padding: "14px",
+									zIndex: 99999,
+									boxShadow: "0 -4px 40px rgba(0,0,0,0.8)",
+									width: 260
 								},
 								onClick: (e) => e.stopPropagation(),
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 									style: {
-										fontSize: 10,
-										color: "rgba(255,255,255,0.35)",
-										marginBottom: 8,
-										textTransform: "uppercase",
-										letterSpacing: 1
+										display: "flex",
+										justifyContent: "space-between",
+										alignItems: "center",
+										marginBottom: 10
 									},
-									children: "Pick a reaction"
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										style: {
+											fontSize: 10,
+											color: "rgba(255,255,255,0.4)",
+											textTransform: "uppercase",
+											letterSpacing: 1
+										},
+										children: "Pick a reaction"
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										onClick: () => setPickerOpen(false),
+										style: {
+											background: "none",
+											border: "none",
+											color: "#aaa",
+											cursor: "pointer",
+											fontSize: 14,
+											padding: 0
+										},
+										children: "✕"
+									})]
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 									style: {
 										display: "grid",
 										gridTemplateColumns: "repeat(6, 1fr)",
-										gap: 4
+										gap: 6
 									},
 									children: QUICK_EMOJIS.map((em) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 										onClick: () => {
@@ -11081,18 +11100,18 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 											setPickerOpen(false);
 										},
 										style: {
-											background: "rgba(255,255,255,0.05)",
+											background: "rgba(255,255,255,0.06)",
 											border: "none",
 											borderRadius: 10,
-											padding: "7px 4px",
-											fontSize: 20,
+											padding: "8px 4px",
+											fontSize: 22,
 											cursor: "pointer",
 											fontFamily: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif",
 											lineHeight: 1,
 											textAlign: "center"
 										},
-										onMouseEnter: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)",
-										onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)",
+										onMouseEnter: (e) => e.currentTarget.style.background = "rgba(245,200,66,0.2)",
+										onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.06)",
 										children: em
 									}, em))
 								})]

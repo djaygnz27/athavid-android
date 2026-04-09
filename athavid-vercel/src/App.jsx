@@ -307,17 +307,20 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
               {expandedReplies[c.id] ? "▲ Hide" : `▼ ${c.replies.length} repl${c.replies.length===1?"y":"ies"}`}
             </button>
           )}
-          {/* Emoji picker popup */}
+          {/* Emoji picker popup - rendered inline below buttons to avoid clipping */}
           {pickerOpen && (
-            <div style={{ position:"absolute", bottom:28, left:0, background:"#1a1a2e", border:"1px solid rgba(255,255,255,0.15)", borderRadius:16, padding:"12px", zIndex:9999, boxShadow:"0 8px 40px rgba(0,0,0,0.7)", width:244 }} onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize:10, color:"rgba(255,255,255,0.35)", marginBottom:8, textTransform:"uppercase", letterSpacing:1 }}>Pick a reaction</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(6, 1fr)", gap:4 }}>
+            <div style={{ position:"fixed", bottom: 80, left:"50%", transform:"translateX(-50%)", background:"#1a1a2e", border:"1px solid rgba(245,200,66,0.3)", borderRadius:18, padding:"14px", zIndex:99999, boxShadow:"0 -4px 40px rgba(0,0,0,0.8)", width:260 }} onClick={e => e.stopPropagation()}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                <span style={{ fontSize:10, color:"rgba(255,255,255,0.4)", textTransform:"uppercase", letterSpacing:1 }}>Pick a reaction</span>
+                <button onClick={() => setPickerOpen(false)} style={{ background:"none", border:"none", color:"#aaa", cursor:"pointer", fontSize:14, padding:0 }}>✕</button>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(6, 1fr)", gap:6 }}>
                 {QUICK_EMOJIS.map(em => (
                   <button key={em}
                     onClick={() => { reactToComment(c.id, "emojiReactions", isReply, parentId, em); setPickerOpen(false); }}
-                    style={{ background:"rgba(255,255,255,0.05)", border:"none", borderRadius:10, padding:"7px 4px", fontSize:20, cursor:"pointer", fontFamily:"Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif", lineHeight:1, textAlign:"center" }}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.15)"}
-                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.05)"}>
+                    style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, padding:"8px 4px", fontSize:22, cursor:"pointer", fontFamily:"Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif", lineHeight:1, textAlign:"center" }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(245,200,66,0.2)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}>
                     {em}
                   </button>
                 ))}
