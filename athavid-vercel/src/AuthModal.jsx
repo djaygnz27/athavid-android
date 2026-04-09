@@ -56,39 +56,21 @@ function decodeJwt(token) {
   } catch { return null; }
 }
 
-// ─── Google OAuth redirect URL builder ───────────────────────────────────────
-function buildGoogleAuthUrl() {
-  const origin = window.location.origin; // https://sachistream.com
-  const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: origin,
-    response_type: "id_token",
-    scope: "openid email profile",
-    nonce: Math.random().toString(36).slice(2),
-    prompt: "select_account",
-  });
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-}
+// ─── Google GSI popup sign-in (works on all browsers incl iOS Safari) ──────────
+export function initGoogleOneTap() {} // legacy no-op
 
-// ─── Handle OAuth redirect return (call this on app boot) ────────────────────
+// ─── No-op redirect handler (redirect flow no longer used) ───────────────────
 export async function handleGoogleRedirectCallback() {
-  // Google returns: https://sachistream.com/#id_token=xxx&token_type=Bearer&expires_in=3599
+  // Check if there is a legacy redirect token in hash (backwards compat)
   const hash = window.location.hash;
   if (!hash || !hash.includes("id_token=")) return null;
-
   const params = new URLSearchParams(hash.replace(/^#/, ""));
   const idToken = params.get("id_token");
   if (!idToken) return null;
-
-  // Clean URL immediately so refresh doesn't re-trigger
   window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-
   const payload = decodeJwt(idToken);
   if (!payload?.email) return null;
-
-  // Store pending so FinishStep can pick up
   localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
-
   const found = await lookupSachiUser(payload.email);
   if (found) {
     const sessionUser = buildSessionUser(found, payload);
@@ -97,12 +79,59 @@ export async function handleGoogleRedirectCallback() {
     localStorage.removeItem("sachi_pending_google");
     return { sessionUser, needsProfile: false };
   }
-
   return { payload, needsProfile: true };
 }
 
-// ─── Legacy no-op for backward compat ────────────────────────────────────────
-export function initGoogleOneTap() {}
+// ─── Load Google GSI script dynamically ──────────────────────────────────────
+function loadGSI() {
+  return new Promise((resolve) => {
+    if (window.google?.accounts?.id) { resolve(window.google); return; }
+    const existing = document.getElementById("google-gsi-script");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.google));
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "google-gsi-script";
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true; s.defer = true;
+    s.onload = () => resolve(window.google);
+    document.head.appendChild(s);
+  });
+}
+
+// ─── Sign in with Google popup — works on all browsers ───────────────────────
+async function signInWithGooglePopup(onSuccess) {
+  const google = await loadGSI();
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: async (response) => {
+      const payload = decodeJwt(response.credential);
+      if (!payload?.email) return;
+      localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+      const found = await lookupSachiUser(payload.email);
+      if (found) {
+        const sessionUser = buildSessionUser(found, payload);
+        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+        localStorage.removeItem("sachi_pending_google");
+        onSuccess({ sessionUser, needsProfile: false });
+      } else {
+        onSuccess({ payload, needsProfile: true });
+      }
+    },
+    ux_mode: "popup",
+    cancel_on_tap_outside: false,
+  });
+  google.accounts.id.prompt((notification) => {
+    // If One Tap is suppressed (e.g. iOS), fall back to renderButton flow
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      // Trigger the button click programmatically via a hidden div
+      const div = document.getElementById("sachi-google-btn-hidden");
+      if (div) google.accounts.id.renderButton(div, { theme:"outline", size:"large" });
+    }
+  });
+}
 
 // ─── Finish Step: new Google users pick username, dob, country ────────────────
 function FinishStep({ googlePayload, onSuccess }) {
@@ -290,10 +319,23 @@ export default function AuthModal({ onClose, onSuccess }) {
   const [googlePayload, setGooglePayload] = useState(pending || null);
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleRedirect = () => {
-    // Save a flag so on return we know to open the modal
-    localStorage.setItem("sachi_auth_intent", "1");
-    window.location.href = buildGoogleAuthUrl();
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signInWithGooglePopup((result) => {
+        if (result.sessionUser) {
+          onSuccess(result.sessionUser);
+          onClose();
+        } else if (result.needsProfile && result.payload) {
+          setGooglePayload(result.payload);
+          setStep("finish");
+        }
+        setLoading(false);
+      });
+    } catch(e) {
+      console.error("Google sign in error:", e);
+      setLoading(false);
+    }
   };
 
   if (step === "finish" && googlePayload) {
@@ -338,7 +380,7 @@ export default function AuthModal({ onClose, onSuccess }) {
 
         {/* Google Sign In Button */}
         <button
-          onClick={handleGoogleRedirect}
+          onClick={handleGoogleSignIn}
           disabled={loading}
           style={{
             display:"flex", alignItems:"center", justifyContent:"center", gap:12,
@@ -373,6 +415,8 @@ export default function AuthModal({ onClose, onSuccess }) {
           &amp;{" "}
           <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
         </div>
+        {/* Hidden div for GSI button fallback on iOS/blocked browsers */}
+        <div id="sachi-google-btn-hidden" style={{ display:"none" }} />
       </div>
     </div>
   );
