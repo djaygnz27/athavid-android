@@ -18,7 +18,7 @@ const PERKS = [
 ];
 
 const TESTIMONIALS = [
-  { name:"TikTok creator, 250K followers", quote:"I've been shadowbanned 4 times this year. Done with it." },
+  { name:"Content Creator, 250K followers", quote:"I finally have a platform where my voice reaches my audience — no games, no politics." },
   { name:"Independent podcaster", quote:"A platform that doesn't punish you for having an opinion? I'm in." },
   { name:"Sports commentator", quote:"Finally somewhere that values real content over viral garbage." },
 ];
@@ -254,7 +254,7 @@ export default function FoundingCreatorPage({ onBack }) {
 
         <div style={{ marginBottom:20 }}>
           <label style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:0.8, textTransform:"uppercase", display:"block", marginBottom:8 }}>Why Sachi? *</label>
-          <textarea value={form.why_sachi} placeholder="What frustrates you about existing platforms? Why do you want to be here from day one?" onChange={e=>set("why_sachi",e.target.value)} className="input-f" style={{ height:110, resize:"vertical", lineHeight:1.65 }} />
+          <textarea value={form.why_sachi} placeholder="What drives your content? Why do you want to be a Sachi Founding Creator?" onChange={e=>set("why_sachi",e.target.value)} className="input-f" style={{ height:110, resize:"vertical", lineHeight:1.65 }} />
         </div>
 
         <div style={{ marginBottom:32 }}>
@@ -331,7 +331,7 @@ export default function FoundingCreatorPage({ onBack }) {
 
           {/* Subheadline */}
           <p className="f4" style={{ color:"rgba(255,255,255,0.55)",fontSize:17,lineHeight:1.8,maxWidth:420,margin:"0 auto 34px" }}>
-            Sachi is building the anti-TikTok — where real creators get real reach. 
+            Sachi is the platform built for creators who take their craft seriously. 
             We're inviting <strong style={{color:"rgba(255,255,255,0.85)"}}>50 founding creators</strong> to shape it with us.
           </p>
 
