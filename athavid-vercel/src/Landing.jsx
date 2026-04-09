@@ -38,7 +38,7 @@ export default function Landing({ onEnter }) {
   return (
     <div onClick={handleEnter} style={{
       position: "fixed", inset: 0, zIndex: 9999,
-      background: "radial-gradient(ellipse at 50% 30%, #1a1535 0%, #0B0C1A 60%, #060710 100%)",
+      background: "radial-gradient(ellipse at 50% 20%, #3b1f6e 0%, #1e0d45 35%, #120830 65%, #0a0518 100%)",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       overflow: "hidden", cursor: "pointer",
@@ -87,9 +87,9 @@ export default function Landing({ onEnter }) {
           0%,100%{ opacity:0.2; transform:scale(0.75); }
           50%    { opacity:1;   transform:scale(1.3); }
         }
-        @keyframes glowRing {
-          0%,100%{ box-shadow:0 0 0 0 rgba(245,200,66,0.15), inset 0 0 0 0 rgba(245,200,66,0.05); }
-          50%    { box-shadow:0 0 0 18px rgba(245,200,66,0.0), inset 0 0 30px rgba(245,200,66,0.08); }
+        @keyframes purpleGlow {
+          0%,100%{ opacity:0.4; transform:scale(1); }
+          50%    { opacity:0.7; transform:scale(1.08); }
         }
         .logo-bloom {
           animation: logoBloom 1.2s cubic-bezier(0.34,1.56,0.64,1) 0.1s both,
@@ -107,6 +107,22 @@ export default function Landing({ onEnter }) {
           animation: ringPulse 2.2s ease-out 1.3s infinite;
         }
       `}</style>
+
+      {/* Purple ambient glow blobs */}
+      <div style={{
+        position:"absolute", width:500, height:500, borderRadius:"50%",
+        background:"radial-gradient(circle, rgba(120,60,200,0.18) 0%, transparent 70%)",
+        top:"-80px", left:"50%", transform:"translateX(-50%)",
+        animation:"purpleGlow 5s ease-in-out infinite",
+        pointerEvents:"none",
+      }} />
+      <div style={{
+        position:"absolute", width:350, height:350, borderRadius:"50%",
+        background:"radial-gradient(circle, rgba(160,40,220,0.12) 0%, transparent 70%)",
+        bottom:"10%", right:"5%",
+        animation:"purpleGlow 6s ease-in-out 1.5s infinite",
+        pointerEvents:"none",
+      }} />
 
       {/* Stars */}
       {STARS.map(s => (
@@ -128,18 +144,18 @@ export default function Landing({ onEnter }) {
         }}>
           <div style={{
             width:p.size, height:p.size,
-            background:"radial-gradient(circle at 35% 30%, #FFB8CC, rgba(255,80,120,0.4))",
+            background:"radial-gradient(circle at 35% 30%, #e0aaff, rgba(180,80,220,0.4))",
             borderRadius:"50% 12% 50% 12%",
             transform:`rotate(${p.rotation}deg)`,
-            boxShadow:`0 0 ${p.size/2}px rgba(255,100,140,0.3)`,
+            boxShadow:`0 0 ${p.size/2}px rgba(180,100,255,0.35)`,
           }} />
         </div>
       ))}
 
-      {/* Deep glow bg */}
+      {/* Deep gold glow bg */}
       <div style={{
         position:"absolute", width:700, height:700, borderRadius:"50%",
-        background:"radial-gradient(circle, rgba(245,200,66,0.06) 0%, transparent 65%)",
+        background:"radial-gradient(circle, rgba(245,200,66,0.05) 0%, transparent 65%)",
         pointerEvents:"none",
       }} />
 
@@ -183,7 +199,7 @@ export default function Landing({ onEnter }) {
         <div className="f2" style={{
           marginTop:16, fontSize:13, letterSpacing:3.5,
           textTransform:"uppercase", fontWeight:600,
-          color:"rgba(255,255,255,0.45)",
+          color:"rgba(220,180,255,0.6)",
         }}>
           Sachi means Truth
         </div>
@@ -197,7 +213,7 @@ export default function Landing({ onEnter }) {
         {/* Sub tagline */}
         <div className="f3" style={{
           marginTop:16, fontSize:14, lineHeight:1.75,
-          color:"rgba(255,255,255,0.3)", maxWidth:250,
+          color:"rgba(220,180,255,0.4)", maxWidth:250,
         }}>
           Real moments. Real people.<br/>No filters.
         </div>
@@ -219,7 +235,7 @@ export default function Landing({ onEnter }) {
       <div className="f5" style={{ position:"absolute", bottom:0, left:0, right:0, height:3 }}>
         <div style={{
           height:"100%",
-          background:"linear-gradient(90deg,transparent,#F5C842,#FFB020)",
+          background:"linear-gradient(90deg,#7b2ff7,#F5C842,#FFB020)",
           animation:"shimmer 5.2s linear forwards",
           backgroundSize:"200% 100%",
         }} />
