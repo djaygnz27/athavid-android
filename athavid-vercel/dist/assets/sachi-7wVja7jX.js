@@ -7141,7 +7141,7 @@ function Landing({ onEnter }) {
           gap: 6,
           whiteSpace: "nowrap"
         },
-        children: "🌸 Apply — 50 Spots"
+        children: "🌸 Apply — 36 Spots Left"
       }
     ) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
@@ -8234,6 +8234,7 @@ const TESTIMONIALS = [
   { name: "Sports commentator", quote: "Finally somewhere that values real content over viral garbage." }
 ];
 const SPOTS_TOTAL = 50;
+const ALREADY_TAKEN = 14;
 function FoundingCreatorPage({ onBack }) {
   const [step, setStep] = reactExports.useState(1);
   const [loading, setLoading] = reactExports.useState(false);
@@ -8257,8 +8258,8 @@ function FoundingCreatorPage({ onBack }) {
     });
   }, []);
   const set = (k2, v2) => setForm((f2) => ({ ...f2, [k2]: v2 }));
-  const spotsLeft = count !== null ? Math.max(0, SPOTS_TOTAL - count) : SPOTS_TOTAL;
-  const pctFilled = count !== null ? Math.min(100, count / SPOTS_TOTAL * 100) : 0;
+  const spotsLeft = count !== null ? Math.max(0, SPOTS_TOTAL - ALREADY_TAKEN - count) : SPOTS_TOTAL - ALREADY_TAKEN;
+  const pctFilled = count !== null ? Math.min(100, (count + ALREADY_TAKEN) / SPOTS_TOTAL * 100) : Math.min(100, ALREADY_TAKEN / SPOTS_TOTAL * 100);
   const submit = async () => {
     if (!form.full_name.trim() || !form.email.trim() || !form.content_type || !form.why_sachi.trim()) {
       setError("Please fill in all required fields marked *");
@@ -8519,7 +8520,7 @@ function FoundingCreatorPage({ onBack }) {
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.35)" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontWeight: 800, fontSize: 26 }, children: spotsLeft }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: " of 50 spots remaining" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: " of 36 spots remaining" })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", background: "rgba(255,255,255,0.08)", borderRadius: 99, height: 5, overflow: "hidden" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "100%", width: `${pctFilled}%`, background: "linear-gradient(90deg,#F5C842,#F5A623)", borderRadius: 99, transition: "width 1s ease" } }) })
         ] }),
@@ -8560,7 +8561,7 @@ function FoundingCreatorPage({ onBack }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs("section", { style: { textAlign: "center", paddingBottom: 72 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: { color: "#fff", fontSize: 30, fontWeight: 900, letterSpacing: "-1px", marginBottom: 12 }, children: "Ready to join us?" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "rgba(255,255,255,0.35)", fontSize: 15, marginBottom: 30, lineHeight: 1.65 }, children: [
-          "50 spots. Lifetime perks. Zero cost.",
+          "36 spots left. Lifetime perks. Zero cost.",
           /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
           "This offer won't last."
         ] }),
