@@ -219,7 +219,7 @@ export default function Landing({ onEnter }) {
 
         {/* Tagline */}
         <div className="f2" style={{
-          marginTop:16, fontSize:18, letterSpacing:3.5,
+          marginTop:16, fontSize:24, letterSpacing:3.5,
           textTransform:"uppercase", fontWeight:600,
           color:"rgba(220,180,255,0.6)",
         }}>
@@ -234,7 +234,7 @@ export default function Landing({ onEnter }) {
 
         {/* Sub tagline */}
         <div className="f3" style={{
-          marginTop:16, fontSize:20, lineHeight:1.75,
+          marginTop:16, fontSize:26, lineHeight:1.75,
           color:"rgba(220,180,255,0.4)", maxWidth:250,
         }}>
           Real moments. Real people.<br/>No filters.
@@ -242,7 +242,7 @@ export default function Landing({ onEnter }) {
 
         {/* Founding creator sentence */}
         <div className="f4" style={{
-          marginTop:18, fontSize:22, lineHeight:1.7,
+          marginTop:18, fontSize:30, lineHeight:1.7,
           color:"rgba(245,200,66,0.85)", maxWidth:320, letterSpacing:0.3,
           fontWeight:700, textAlign:"center",
         }}>
@@ -251,7 +251,7 @@ export default function Landing({ onEnter }) {
 
         {/* CTA hint */}
         <div className="f4" style={{
-          marginTop:12, fontSize:18, lineHeight:1.6,
+          marginTop:12, fontSize:24, lineHeight:1.6,
           color:"rgba(220,180,255,0.75)", maxWidth:300, letterSpacing:0.3,
           fontWeight:500, textAlign:"center",
         }}>
@@ -260,7 +260,7 @@ export default function Landing({ onEnter }) {
 
         {/* Creator credit */}
         <div className="f5" style={{
-          marginTop:10, fontSize:13, letterSpacing:1.5,
+          marginTop:10, fontSize:18, letterSpacing:1.5,
           color:"rgba(245,200,66,0.35)", fontWeight:500,
           textTransform:"uppercase",
         }}>
