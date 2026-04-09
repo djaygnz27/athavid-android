@@ -10867,239 +10867,244 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 		"🥲",
 		"😏"
 	];
-	const CommentRow = ({ c, isReply = false, parentId = null }) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		style: {
-			display: "flex",
-			gap: 10,
-			marginBottom: 12,
-			paddingLeft: isReply ? 44 : 0
-		},
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-			src: c.avatar_url,
+	const CommentRow = ({ c, isReply = false, parentId = null }) => {
+		const [pickerOpen, setPickerOpen] = import_react.useState(false);
+		return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			style: {
-				width: isReply ? 28 : 36,
-				height: isReply ? 28 : 36,
-				borderRadius: "50%",
-				border: `2px solid rgba(108,99,255,${isReply ? .2 : .3})`,
-				flexShrink: 0
-			}
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			style: { flex: 1 },
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					style: {
-						color: "#ff6b6b",
-						fontWeight: 700,
-						fontSize: isReply ? 12 : 13
-					},
-					children: ["@", c.username]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					style: {
-						color: "#ccc",
-						fontSize: isReply ? 13 : 14,
-						marginBottom: 4
-					},
-					children: c.comment_text
-				}),
-				c.emojiReactions && Object.keys(c.emojiReactions).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					style: {
-						display: "flex",
-						gap: 6,
-						flexWrap: "wrap",
-						marginBottom: 6
-					},
-					children: Object.entries(c.emojiReactions).map(([emoji, count]) => count > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						onClick: () => reactToComment(c.id, "emojiReactions", isReply, parentId, emoji),
+				display: "flex",
+				gap: 10,
+				marginBottom: 12,
+				paddingLeft: isReply ? 44 : 0
+			},
+			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+				src: c.avatar_url,
+				style: {
+					width: isReply ? 28 : 36,
+					height: isReply ? 28 : 36,
+					borderRadius: "50%",
+					border: `2px solid rgba(108,99,255,${isReply ? .2 : .3})`,
+					flexShrink: 0
+				}
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				style: { flex: 1 },
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						style: {
-							background: "rgba(255,255,255,0.08)",
-							borderRadius: 20,
-							padding: "2px 8px",
-							fontSize: 13,
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							gap: 3
+							color: "#ff6b6b",
+							fontWeight: 700,
+							fontSize: isReply ? 12 : 13
 						},
-						children: [
-							emoji,
-							" ",
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						children: ["@", c.username]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						style: {
+							color: "#ccc",
+							fontSize: isReply ? 13 : 14,
+							marginBottom: 4
+						},
+						children: c.comment_text
+					}),
+					c.emojiReactions && Object.keys(c.emojiReactions).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						style: {
+							display: "flex",
+							gap: 6,
+							flexWrap: "wrap",
+							marginBottom: 6
+						},
+						children: Object.entries(c.emojiReactions).map(([em, count]) => count > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+							onClick: () => reactToComment(c.id, "emojiReactions", isReply, parentId, em),
+							style: {
+								background: "rgba(255,255,255,0.08)",
+								borderRadius: 20,
+								padding: "2px 8px",
+								fontSize: 14,
+								cursor: "pointer",
+								display: "inline-flex",
+								alignItems: "center",
+								gap: 3,
+								lineHeight: 1.6
+							},
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								style: { fontFamily: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" },
+								children: em
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 								style: {
 									fontSize: 10,
 									color: "#aaa"
 								},
 								children: count
+							})]
+						}, em))
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						style: {
+							display: "flex",
+							gap: 10,
+							alignItems: "center",
+							flexWrap: "wrap",
+							position: "relative"
+						},
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+								onClick: () => reactToComment(c.id, "thumbsUp", isReply, parentId),
+								style: {
+									background: "none",
+									border: "none",
+									cursor: "pointer",
+									display: "flex",
+									alignItems: "center",
+									gap: 2,
+									color: c.thumbsUp ? "#6bff9a" : "#666",
+									fontSize: 12,
+									padding: 0
+								},
+								children: ["👍 ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									style: { fontSize: 10 },
+									children: c.thumbsUp || 0
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+								onClick: () => reactToComment(c.id, "hearts", isReply, parentId),
+								style: {
+									background: "none",
+									border: "none",
+									cursor: "pointer",
+									display: "flex",
+									alignItems: "center",
+									gap: 2,
+									color: c.hearts ? "#ff6b6b" : "#666",
+									fontSize: 12,
+									padding: 0
+								},
+								children: ["❤️ ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									style: { fontSize: 10 },
+									children: c.hearts || 0
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+								onClick: () => reactToComment(c.id, "thumbsDown", isReply, parentId),
+								style: {
+									background: "none",
+									border: "none",
+									cursor: "pointer",
+									display: "flex",
+									alignItems: "center",
+									gap: 2,
+									color: c.thumbsDown ? "#ff8e53" : "#666",
+									fontSize: 12,
+									padding: 0
+								},
+								children: ["👎 ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									style: { fontSize: 10 },
+									children: c.thumbsDown || 0
+								})]
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								onClick: () => setPickerOpen((p) => !p),
+								style: {
+									background: "none",
+									border: "none",
+									cursor: "pointer",
+									fontSize: 15,
+									padding: 0,
+									lineHeight: 1,
+									fontFamily: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif"
+								},
+								children: "😄"
+							}),
+							!isReply && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								onClick: () => {
+									startReply(c);
+									setPickerOpen(false);
+								},
+								style: {
+									background: "none",
+									border: "none",
+									cursor: "pointer",
+									color: "#888",
+									fontSize: 12,
+									padding: 0,
+									marginLeft: 2
+								},
+								children: "💬 Reply"
+							}),
+							!isReply && c.replies?.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								onClick: () => setExpandedReplies((prev) => ({
+									...prev,
+									[c.id]: !prev[c.id]
+								})),
+								style: {
+									background: "none",
+									border: "none",
+									cursor: "pointer",
+									color: "#6c63ff",
+									fontSize: 12,
+									padding: 0
+								},
+								children: expandedReplies[c.id] ? "▲ Hide" : `▼ ${c.replies.length} repl${c.replies.length === 1 ? "y" : "ies"}`
+							}),
+							pickerOpen && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+								style: {
+									position: "absolute",
+									bottom: 28,
+									left: 0,
+									background: "#1a1a2e",
+									border: "1px solid rgba(255,255,255,0.15)",
+									borderRadius: 16,
+									padding: "12px",
+									zIndex: 9999,
+									boxShadow: "0 8px 40px rgba(0,0,0,0.7)",
+									width: 244
+								},
+								onClick: (e) => e.stopPropagation(),
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									style: {
+										fontSize: 10,
+										color: "rgba(255,255,255,0.35)",
+										marginBottom: 8,
+										textTransform: "uppercase",
+										letterSpacing: 1
+									},
+									children: "Pick a reaction"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									style: {
+										display: "grid",
+										gridTemplateColumns: "repeat(6, 1fr)",
+										gap: 4
+									},
+									children: QUICK_EMOJIS.map((em) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										onClick: () => {
+											reactToComment(c.id, "emojiReactions", isReply, parentId, em);
+											setPickerOpen(false);
+										},
+										style: {
+											background: "rgba(255,255,255,0.05)",
+											border: "none",
+											borderRadius: 10,
+											padding: "7px 4px",
+											fontSize: 20,
+											cursor: "pointer",
+											fontFamily: "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif",
+											lineHeight: 1,
+											textAlign: "center"
+										},
+										onMouseEnter: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.15)",
+										onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)",
+										children: em
+									}, em))
+								})]
 							})
 						]
-					}, emoji))
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					style: {
-						display: "flex",
-						gap: 10,
-						alignItems: "center",
-						flexWrap: "wrap",
-						position: "relative"
-					},
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-							onClick: () => reactToComment(c.id, "thumbsUp", isReply, parentId),
-							style: {
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								display: "flex",
-								alignItems: "center",
-								gap: 2,
-								color: c.thumbsUp ? "#6bff9a" : "#666",
-								fontSize: 12,
-								padding: 0
-							},
-							children: ["👍 ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								style: { fontSize: 10 },
-								children: c.thumbsUp || 0
-							})]
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-							onClick: () => reactToComment(c.id, "hearts", isReply, parentId),
-							style: {
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								display: "flex",
-								alignItems: "center",
-								gap: 2,
-								color: c.hearts ? "#ff6b6b" : "#666",
-								fontSize: 12,
-								padding: 0
-							},
-							children: ["❤️ ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								style: { fontSize: 10 },
-								children: c.hearts || 0
-							})]
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-							onClick: () => reactToComment(c.id, "thumbsDown", isReply, parentId),
-							style: {
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								display: "flex",
-								alignItems: "center",
-								gap: 2,
-								color: c.thumbsDown ? "#ff8e53" : "#666",
-								fontSize: 12,
-								padding: 0
-							},
-							children: ["👎 ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								style: { fontSize: 10 },
-								children: c.thumbsDown || 0
-							})]
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-							onClick: () => setEmojiPickerOpen(emojiPickerOpen === c.id ? null : c.id),
-							style: {
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								color: "#888",
-								fontSize: 14,
-								padding: 0,
-								lineHeight: 1
-							},
-							title: "React with emoji",
-							children: "😄"
-						}),
-						!isReply && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-							onClick: () => {
-								startReply(c);
-								setEmojiPickerOpen(null);
-							},
-							style: {
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								color: "#888",
-								fontSize: 12,
-								padding: 0,
-								marginLeft: 2
-							},
-							children: "💬 Reply"
-						}),
-						!isReply && c.replies?.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-							onClick: () => setExpandedReplies((prev) => ({
-								...prev,
-								[c.id]: !prev[c.id]
-							})),
-							style: {
-								background: "none",
-								border: "none",
-								cursor: "pointer",
-								color: "#6c63ff",
-								fontSize: 12,
-								padding: 0
-							},
-							children: expandedReplies[c.id] ? "▲ Hide" : `▼ ${c.replies.length} repl${c.replies.length === 1 ? "y" : "ies"}`
-						}),
-						emojiPickerOpen === c.id && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							style: {
-								position: "absolute",
-								bottom: 26,
-								left: 0,
-								background: "#1e1e2e",
-								border: "1px solid rgba(255,255,255,0.12)",
-								borderRadius: 16,
-								padding: "10px 12px",
-								zIndex: 999,
-								boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-								width: 240
-							},
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								style: {
-									fontSize: 10,
-									color: "rgba(255,255,255,0.3)",
-									marginBottom: 8,
-									textTransform: "uppercase",
-									letterSpacing: 1
-								},
-								children: "React"
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								style: {
-									display: "flex",
-									flexWrap: "wrap",
-									gap: 6
-								},
-								children: QUICK_EMOJIS.map((emoji) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-									onClick: () => {
-										reactToComment(c.id, "emojiReactions", isReply, parentId, emoji);
-										setEmojiPickerOpen(null);
-									},
-									style: {
-										background: "rgba(255,255,255,0.06)",
-										border: "none",
-										borderRadius: 10,
-										padding: "6px 8px",
-										fontSize: 18,
-										cursor: "pointer",
-										transition: "transform 0.1s"
-									},
-									onMouseEnter: (e) => e.target.style.transform = "scale(1.3)",
-									onMouseLeave: (e) => e.target.style.transform = "scale(1)",
-									children: emoji
-								}, emoji))
-							})]
-						})
-					]
-				}),
-				!isReply && expandedReplies[c.id] && (c.replies || []).map((r) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CommentRow, {
-					c: r,
-					isReply: true,
-					parentId: c.id
-				}, r.id))
-			]
-		})]
-	});
+					}),
+					!isReply && expandedReplies[c.id] && (c.replies || []).map((r) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CommentRow, {
+						c: r,
+						isReply: true,
+						parentId: c.id
+					}, r.id))
+				]
+			})]
+		});
+	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		style: {
 			position: "fixed",
