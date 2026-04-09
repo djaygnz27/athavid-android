@@ -7214,7 +7214,7 @@ function Landing({ onEnter }) {
     } }, i)) })
   ] });
 }
-const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
@@ -7229,7 +7229,7 @@ function clearToken() {
   localStorage.removeItem("sachi_token");
   localStorage.removeItem("sachi_user");
 }
-async function request(method, path, body) {
+async function request$1(method, path, body) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -7249,34 +7249,34 @@ async function request(method, path, body) {
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request("POST", `/apps/${APP_ID$1}/auth/login`, { email, password });
+    const data = await request$1("POST", `/apps/${APP_ID$2}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request("POST", `/apps/${APP_ID$1}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `/apps/${APP_ID$2}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request("POST", `/apps/${APP_ID$1}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `/apps/${APP_ID$2}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request("POST", `/apps/${APP_ID$1}/auth/resend-otp`, { email });
+    return request$1("POST", `/apps/${APP_ID$2}/auth/resend-otp`, { email });
   },
   getUser() {
     const u2 = localStorage.getItem("sachi_user");
     return u2 ? JSON.parse(u2) : null;
   },
   async forgotPassword(email) {
-    return request("POST", `/apps/${APP_ID$1}/auth/reset-password-request`, { email });
+    return request$1("POST", `/apps/${APP_ID$2}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request("POST", `/apps/${APP_ID$1}/auth/reset-password`, {
+    return request$1("POST", `/apps/${APP_ID$2}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -7287,20 +7287,20 @@ const auth = {
 };
 const videos = {
   async list(limit = 30, skip = 0) {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request("POST", `/apps/${APP_ID$1}/entities/SachiVideo`, data);
+    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request("PUT", `/apps/${APP_ID$1}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$2}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request("GET", `/apps/${APP_ID$1}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request("GET", `/apps/${APP_ID$1}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen = /* @__PURE__ */ new Set();
@@ -7315,7 +7315,7 @@ const videos = {
     let skip = 0;
     const limit = 100;
     while (true) {
-      const res = await request("GET", `/apps/${APP_ID$1}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
+      const res = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
       all = all.concat(items);
       if (items.length < limit) break;
@@ -7325,21 +7325,21 @@ const videos = {
     return all.filter((v2) => v2.user_id === userId && !v2.is_archived);
   },
   async delete(id2) {
-    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
-    return request("POST", `/apps/${APP_ID$1}/entities/SachiComment`, data);
+    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request("PUT", `/apps/${APP_ID$1}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$2}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file) {
@@ -7364,7 +7364,7 @@ async function uploadFile(file) {
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request("POST", `/apps/${APP_ID$1}/entities/Follow`, {
+    return request$1("POST", `/apps/${APP_ID$2}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -7372,52 +7372,52 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request("DELETE", `/apps/${APP_ID$1}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `/apps/${APP_ID$2}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request("GET", `/apps/${APP_ID$1}/entities/Follow?follower_id=${follower_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request("GET", `/apps/${APP_ID$1}/entities/Follow?following_id=${following_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const reports = {
   async create(data) {
-    return request("POST", `/apps/${APP_ID$1}/entities/SachiReport`, data);
+    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiReport`, data);
   },
   async list() {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiReport?sort=-created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiReport?sort=-created_date&limit=200`);
   },
   async update(id2, data) {
-    return request("PUT", `/apps/${APP_ID$1}/entities/SachiReport/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$2}/entities/SachiReport/${id2}`, data);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request("POST", `/apps/${APP_ID$1}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request("POST", `/apps/${APP_ID$1}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request("GET", `/apps/${APP_ID$1}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `/apps/${APP_ID$2}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -7433,13 +7433,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request("PUT", `/apps/${APP_ID$1}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `/apps/${APP_ID$2}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request("POST", `/apps/${APP_ID$1}/entities/UserInterest`, {
+        await request$1("POST", `/apps/${APP_ID$2}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -7487,7 +7487,7 @@ const interests = {
 };
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    return request("POST", `/apps/${APP_ID$1}/entities/SachiLike`, {
+    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
@@ -7496,13 +7496,13 @@ const likes = {
     });
   },
   async remove(id2) {
-    return request("DELETE", `/apps/${APP_ID$1}/entities/SachiLike/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiLike/${id2}`);
   },
   async getByVideo(video_id) {
-    return request("GET", `/apps/${APP_ID$1}/entities/SachiLike?video_id=${video_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&limit=500`);
   },
   async checkUserLiked(video_id, user_id) {
-    const res = await request("GET", `/apps/${APP_ID$1}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+    const res = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
     const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
     return items.length > 0 ? items[0] : null;
   }
@@ -7617,13 +7617,13 @@ const COUNTRIES = [
   "Yemen",
   "Zimbabwe"
 ];
-const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
+const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL}/apps/${APP_ID$1}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
@@ -7695,7 +7695,7 @@ function loadGSI() {
 async function signInWithGooglePopup(onSuccess) {
   const google = await loadGSI();
   google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
+    client_id: GOOGLE_CLIENT_ID$1,
     callback: async (response) => {
       const payload = decodeJwt(response.credential);
       if (!(payload == null ? void 0 : payload.email)) return;
@@ -7778,7 +7778,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+        `${BASE_URL}/apps/${APP_ID$1}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8202,7 +8202,7 @@ function FoundingCreatorPage({ onBack }) {
     setError("");
     setLoading(true);
     try {
-      await request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator", { ...form, status: "Pending" });
+      await request$1("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator", { ...form, status: "Pending" });
       setStep(3);
     } catch (e) {
       setError("Something went wrong. Please try again.");
@@ -12817,12 +12817,12 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
+      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
       // Live following count: how many people this profile follows
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
+      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = (userRes == null ? void 0 : userRes.items) || userRes || [];
       const u2 = allUsers.find((x2) => x2.id === userId || x2.created_by === userId) || null;
@@ -12861,7 +12861,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         setProfile((p2) => p2 ? { ...p2, followers_count: (p2.followers_count || 0) + 1 } : p2);
       }
       try {
-        const myFollowingRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingRes = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
         const myFollowingCount = ((myFollowingRes == null ? void 0 : myFollowingRes.items) || myFollowingRes || []).length;
         setProfile((p2) => p2 ? { ...p2 } : p2);
         localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
@@ -13335,7 +13335,7 @@ const PODCAST_COVER_COLORS = [
 ];
 function PodcastPage({ currentUser, onNeedAuth }) {
   var _a;
-  const CATEGORIES = ["All", "News & Politics", "Business", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Education"];
+  const CATEGORIES2 = ["All", "News & Politics", "Business", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Education"];
   const [podcasts, setPodcasts] = reactExports.useState([]);
   const [myShows, setMyShows] = reactExports.useState([]);
   const [loadingPodcasts, setLoadingPodcasts] = reactExports.useState(true);
@@ -13378,7 +13378,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     setLoadingPodcasts(true);
     try {
       const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
-      const data = await request("GET", `/apps/${APP_ID2}/entities/SachiPodcast?status=Active`);
+      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast?status=Active`);
       const list = Array.isArray(data) ? data : data.records || data.items || [];
       setPodcasts(list);
     } catch (e) {
@@ -13391,7 +13391,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     if (!currentUser) return;
     try {
       const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
-      const data = await request("GET", `/apps/${APP_ID2}/entities/SachiPodcast`);
+      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast`);
       const all = Array.isArray(data) ? data : data.records || data.items || [];
       const mine = all.filter(
         (p2) => {
@@ -13413,7 +13413,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     setRegistering(true);
     try {
       const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
+      await request$1("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
         title: registerForm.title,
         host_name: registerForm.host_name,
         description: registerForm.description,
@@ -13569,7 +13569,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
                   try {
-                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                     setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
                     setEditingStream(false);
                     showToast("✅ Stream URL saved!", "success");
@@ -13607,7 +13607,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     }).catch(() => {
                     });
                     try {
-                      await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
+                      await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
                     } catch {
                     }
                     setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
@@ -13640,7 +13640,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
                   try {
-                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                     setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
                     setEditingStream(false);
                     showToast("✅ Stream URL saved!", "success");
@@ -13677,7 +13677,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                       body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "", set_live: true, admin_email: currentUser == null ? void 0 : currentUser.email })
                     });
                     try {
-                      await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
+                      await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
                     } catch {
                     }
                     setSelectedPodcast((p2) => ({ ...p2, is_live: true }));
@@ -14054,7 +14054,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           ch2.id
         )) })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES2.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
           onClick: () => setSelectedCat(cat),
@@ -14268,7 +14268,7 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
+      const res = await request$1("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch (e) {
       console.error(e);
@@ -14327,7 +14327,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newMature = !video.is_mature;
-      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, {
+      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, {
         is_mature: newMature,
         mature_reason: newMature ? reason || "other" : null
       });
@@ -14341,7 +14341,7 @@ function AdminPanel({ currentUser }) {
     if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
     setSaving(video.id);
     try {
-      await request("DELETE", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`);
+      await request$1("DELETE", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`);
       setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
     } catch (e) {
       alert("Failed to delete: " + e.message);
@@ -14352,7 +14352,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newFlag = !video.is_ai_detected;
-      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
       setAllVideos((prev) => prev.map((v2) => v2.id === video.id ? { ...v2, is_ai_detected: newFlag } : v2));
     } catch (e) {
       alert("Failed to update: " + e.message);
@@ -14699,7 +14699,7 @@ function AdminPanel({ currentUser }) {
               {
                 onClick: async () => {
                   setSaving(video.id);
-                  await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true });
+                  await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true });
                   setAllVideos((p2) => p2.map((v2) => v2.id === video.id ? { ...v2, is_approved: true } : v2));
                   setSaving(null);
                 },
@@ -14999,7 +14999,7 @@ function App() {
     const loadAvatar = async () => {
       if (currentUser) {
         try {
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : usersData.items || [];
           const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
           if (match && match.avatar_url && !match.avatar_url.startsWith("data:")) {
@@ -15156,8 +15156,8 @@ function App() {
       const myUsername = currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowersCount(unique.length);
@@ -15166,8 +15166,8 @@ function App() {
       })();
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowingCount(unique.length);
@@ -15508,7 +15508,7 @@ function App() {
                 setShowFollowersList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowersList(unique);
@@ -15531,7 +15531,7 @@ function App() {
                 setShowFollowingList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowingList(unique);
@@ -16120,7 +16120,7 @@ function App() {
                       if (!editProfileName.trim()) return;
                       setEditProfileSaving(true);
                       try {
-                        await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                        await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
                         setCurrentUser((u2) => ({ ...u2, full_name: editProfileName.trim() }));
                         setShowEditProfile(false);
                       } catch (e) {
@@ -16160,7 +16160,7 @@ function App() {
       localStorage.setItem("avatar_last", url);
       localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, avatar_url: url }));
       try {
-        const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+        const usersData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
         const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
         const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
         if (match) {
@@ -16176,14 +16176,14 @@ function App() {
         console.warn("User entity update failed:", e);
       }
       try {
-        await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+        await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
       } catch (e) {
         console.warn("Auth avatar update failed (ok for Google users):", e);
       }
       try {
-        const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
+        const vidsData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
         const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
-        await Promise.all(vids.map((v2) => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
+        await Promise.all(vids.map((v2) => request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
         setVideoList((vs) => vs.map(
           (v2) => {
             var _a3;
@@ -16194,6 +16194,400 @@ function App() {
         console.warn("Video avatar sync failed:", e);
       }
     }, onClose: () => setShowAvatarPicker(false) })
+  ] });
+}
+const API = "https://api.base44.app";
+const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const GOOGLE_CLIENT_ID = "742987369203-2in74gg9jdv3g14v8b0eo0g3clptp32gosdt.apps.googleusercontent.com";
+const SACHI_FN = "https://sachi-c7f0261c.base44.app/functions";
+const COVER_COLORS = [
+  { bg: "linear-gradient(135deg,#1a0a2e,#6c3cf7)", emoji: "🎙️" },
+  { bg: "linear-gradient(135deg,#0d2137,#1565C0)", emoji: "🎧" },
+  { bg: "linear-gradient(135deg,#1a0a2e,#e53935)", emoji: "🔴" },
+  { bg: "linear-gradient(135deg,#0a1a0a,#2e7d32)", emoji: "🌿" },
+  { bg: "linear-gradient(135deg,#1a0f0a,#F57C00)", emoji: "🔥" },
+  { bg: "linear-gradient(135deg,#0a0a1a,#F5C842)", emoji: "⭐" }
+];
+const CATEGORIES = ["Business", "Education", "Entertainment", "News & Politics", "Technology", "Health & Wellness", "Sports", "Music", "Comedy", "True Crime", "Society & Culture", "Science"];
+function request(method, path, body) {
+  const token = localStorage.getItem("sachi_token");
+  return fetch(API + path, {
+    method,
+    headers: { "Content-Type": "application/json", ...token ? { "Authorization": "Bearer " + token } : {} },
+    body: body ? JSON.stringify(body) : void 0
+  }).then((r2) => r2.json());
+}
+function PodcastHost() {
+  const [user, setUser] = reactExports.useState(null);
+  const [myShows, setMyShows] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [selectedShow, setSelectedShow] = reactExports.useState(null);
+  const [view, setView] = reactExports.useState("shows");
+  const [goingLive, setGoingLive] = reactExports.useState(false);
+  const [endingLive, setEndingLive] = reactExports.useState(false);
+  const [streamUrl, setStreamUrl] = reactExports.useState("");
+  const [editingUrl, setEditingUrl] = reactExports.useState(false);
+  const [toast, setToast] = reactExports.useState(null);
+  const [regForm, setRegForm] = reactExports.useState({ title: "", host_name: "", description: "", category: "Business", coverIdx: 0 });
+  const [registering, setRegistering] = reactExports.useState(false);
+  const [epForm, setEpForm] = reactExports.useState({ title: "", description: "", video_url: "", episode_number: "" });
+  const [addingEp, setAddingEp] = reactExports.useState(false);
+  const [episodes, setEpisodes] = reactExports.useState([]);
+  const googleLoaded = reactExports.useRef(false);
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+  reactExports.useEffect(() => {
+    if (googleLoaded.current) return;
+    googleLoaded.current = true;
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.onload = () => {
+      var _a;
+      (_a = window.google) == null ? void 0 : _a.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleLogin,
+        ux_mode: "popup"
+      });
+    };
+    document.head.appendChild(script);
+    const token = localStorage.getItem("sachi_token");
+    const saved = localStorage.getItem("sachi_user");
+    if (token && saved) {
+      try {
+        setUser(JSON.parse(saved));
+      } catch {
+      }
+    }
+    setLoading(false);
+  }, []);
+  const handleGoogleLogin = async (resp) => {
+    setLoading(true);
+    try {
+      const res = await fetch(API + `/apps/${APP_ID}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resp.credential })
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem("sachi_token", data.token);
+        localStorage.setItem("sachi_user", JSON.stringify(data.user || data));
+        setUser(data.user || data);
+      }
+    } catch (e) {
+      showToast("Login failed. Try again.", "error");
+    }
+    setLoading(false);
+  };
+  const triggerGoogleLogin = () => {
+    var _a;
+    (_a = window.google) == null ? void 0 : _a.accounts.id.prompt();
+  };
+  reactExports.useEffect(() => {
+    if (user) loadMyShows();
+  }, [user]);
+  const loadMyShows = async () => {
+    setLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast`);
+      const all = res.records || res || [];
+      const mine = all.filter(
+        (p2) => p2.host_user_id === (user == null ? void 0 : user.id) || p2.created_by === (user == null ? void 0 : user.email) || p2.created_by_id === (user == null ? void 0 : user.id)
+      );
+      setMyShows(mine);
+    } catch (e) {
+    }
+    setLoading(false);
+  };
+  const loadEpisodes = async (podcastId) => {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcastEpisode`);
+      const all = res.records || res || [];
+      setEpisodes(all.filter((e) => e.podcast_id === podcastId));
+    } catch (e) {
+    }
+  };
+  const handleRegister = async () => {
+    var _a;
+    if (!regForm.title || !regForm.host_name) return showToast("Show name and host name are required", "error");
+    setRegistering(true);
+    try {
+      const cover = COVER_COLORS[regForm.coverIdx];
+      await request("POST", `/apps/${APP_ID}/entities/SachiPodcast`, {
+        title: regForm.title,
+        host_name: regForm.host_name,
+        description: regForm.description,
+        category: regForm.category,
+        cover_color: cover.bg,
+        cover_emoji: cover.emoji,
+        status: "Active",
+        is_live: false,
+        listener_count: 0,
+        episode_count: 0,
+        follower_count: 0,
+        host_user_id: (user == null ? void 0 : user.id) || "",
+        host_username: (user == null ? void 0 : user.full_name) || ((_a = user == null ? void 0 : user.email) == null ? void 0 : _a.split("@")[0]) || "",
+        live_stream_url: ""
+      });
+      fetch(`${SACHI_FN}/podcastWelcome`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ host_email: user == null ? void 0 : user.email, host_name: regForm.host_name, podcast_title: regForm.title, category: regForm.category })
+      }).catch(() => {
+      });
+      showToast("🎙️ Podcast registered! You're on Sachi.", "success");
+      setRegForm({ title: "", host_name: "", description: "", category: "Business", coverIdx: 0 });
+      await loadMyShows();
+      setView("shows");
+    } catch (e) {
+      showToast("Something went wrong. Try again.", "error");
+    }
+    setRegistering(false);
+  };
+  const goLive = async () => {
+    if (!selectedShow.live_stream_url) return showToast("Add a stream URL first", "error");
+    setGoingLive(true);
+    try {
+      await fetch(`${SACHI_FN}/podcastGoLiveNotify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ podcast_id: selectedShow.id, podcast_title: selectedShow.title, host_name: selectedShow.host_name, live_stream_url: selectedShow.live_stream_url, set_live: true, admin_email: user == null ? void 0 : user.email })
+      });
+      await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { is_live: true });
+      setSelectedShow((s2) => ({ ...s2, is_live: true }));
+      setMyShows((ms) => ms.map((s2) => s2.id === selectedShow.id ? { ...s2, is_live: true } : s2));
+      showToast("🔴 You are LIVE on Sachi!", "live");
+    } catch (e) {
+      showToast("Could not go live. Check your stream URL.", "error");
+    }
+    setGoingLive(false);
+  };
+  const endLive = async () => {
+    setEndingLive(true);
+    try {
+      await fetch(`${SACHI_FN}/podcastGoLiveNotify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ podcast_id: selectedShow.id, set_live: false, admin_email: user == null ? void 0 : user.email })
+      }).catch(() => {
+      });
+      await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { is_live: false, listener_count: 0 });
+      setSelectedShow((s2) => ({ ...s2, is_live: false, listener_count: 0 }));
+      setMyShows((ms) => ms.map((s2) => s2.id === selectedShow.id ? { ...s2, is_live: false } : s2));
+      showToast("⏹️ Live session ended", "success");
+    } catch (e) {
+      showToast("Failed to end session.", "error");
+    }
+    setEndingLive(false);
+  };
+  const saveStreamUrl = async () => {
+    try {
+      await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { live_stream_url: streamUrl });
+      setSelectedShow((s2) => ({ ...s2, live_stream_url: streamUrl }));
+      setMyShows((ms) => ms.map((s2) => s2.id === selectedShow.id ? { ...s2, live_stream_url: streamUrl } : s2));
+      setEditingUrl(false);
+      showToast("✅ Stream URL saved", "success");
+    } catch (e) {
+      showToast("Failed to save URL", "error");
+    }
+  };
+  const addEpisode = async () => {
+    if (!epForm.title || !epForm.video_url) return showToast("Title and video URL are required", "error");
+    setAddingEp(true);
+    try {
+      const epCount = episodes.length + 1;
+      await request("POST", `/apps/${APP_ID}/entities/SachiPodcastEpisode`, {
+        podcast_id: selectedShow.id,
+        title: epForm.title,
+        description: epForm.description,
+        video_url: epForm.video_url,
+        audio_url: epForm.video_url,
+        live_stream_url: epForm.video_url,
+        episode_number: parseInt(epForm.episode_number) || epCount,
+        status: "published",
+        like_count: 0,
+        comment_count: 0,
+        listener_count: 0
+      });
+      await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { episode_count: epCount });
+      await loadEpisodes(selectedShow.id);
+      setEpForm({ title: "", description: "", video_url: "", episode_number: "" });
+      showToast("✅ Episode added!", "success");
+      setView("shows");
+    } catch (e) {
+      showToast("Failed to add episode. Try again.", "error");
+    }
+    setAddingEp(false);
+  };
+  const openShow = (show) => {
+    setSelectedShow(show);
+    setStreamUrl(show.live_stream_url || "");
+    loadEpisodes(show.id);
+    setView("manage");
+  };
+  const s = {
+    page: { minHeight: "100vh", background: "#0B0C1A", color: "#fff", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", padding: "0 0 80px" },
+    header: { background: "rgba(11,12,26,0.95)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 50 },
+    logo: { width: 32, height: 32, borderRadius: 8 },
+    title: { fontSize: 18, fontWeight: 800, color: "#F5C842", letterSpacing: 0.3 },
+    subtitle: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 },
+    body: { maxWidth: 600, margin: "0 auto", padding: "24px 20px" },
+    card: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 20, marginBottom: 14 },
+    liveCard: { background: "rgba(229,57,53,0.08)", border: "2px solid rgba(229,57,53,0.5)", borderRadius: 18, padding: 20, marginBottom: 14 },
+    input: { width: "100%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "12px 16px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box", marginBottom: 12 },
+    label: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 6, display: "block" },
+    btn: (bg2, color = "#fff") => ({ background: bg2, border: "none", borderRadius: 14, padding: "14px 0", width: "100%", color, fontWeight: 700, fontSize: 15, cursor: "pointer", marginBottom: 10 }),
+    smallBtn: (bg2, color = "#fff") => ({ background: bg2, border: "none", borderRadius: 10, padding: "8px 16px", color, fontWeight: 600, fontSize: 13, cursor: "pointer" }),
+    tag: { background: "rgba(245,200,66,0.15)", color: "#F5C842", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700 },
+    liveTag: { background: "rgba(229,57,53,0.2)", color: "#e53935", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 800 }
+  };
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { ...s.page, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: { width: 60, height: 60, borderRadius: 16, marginBottom: 16 } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "Loading..." })
+  ] }) });
+  if (!user) return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { ...s.page, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 32, maxWidth: 360 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: { width: 72, height: 72, borderRadius: 20, marginBottom: 20, boxShadow: "0 0 40px rgba(245,200,66,0.3)" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 26, fontWeight: 800, color: "#F5C842", marginBottom: 8 }, children: "Podcast Host" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 14, lineHeight: 1.7, marginBottom: 32 }, children: "Manage your Sachi podcast, go live, and add episodes — all from one place." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: triggerGoogleLogin, style: { background: "#fff", border: "none", borderRadius: 14, padding: "14px 32px", color: "#1a1a2e", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, margin: "0 auto" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "https://www.google.com/favicon.ico", style: { width: 18, height: 18 } }),
+      "Sign in with Google"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, marginTop: 20 }, children: "Use the same Google account you registered your podcast with" })
+  ] }) });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.page, children: [
+    toast && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#e53935" : toast.type === "live" ? "#e53935" : "#2e7d32", color: "#fff", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600, zIndex: 999, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }, children: toast.msg }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.header, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: s.logo }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.title, children: "Sachi Podcast Host" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.subtitle, children: [
+          "Signed in as ",
+          user.email
+        ] })
+      ] }),
+      view !== "shows" && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setView("shows"), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "7px 14px", color: "rgba(255,255,255,0.6)", fontSize: 13, cursor: "pointer" }, children: "← Back" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.body, children: [
+      view === "shows" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 20, fontWeight: 800 }, children: "My Shows" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setView("register"), style: s.smallBtn("linear-gradient(135deg,#F5C842,#F5A623)", "#0B0C1A"), children: "+ New Show" })
+        ] }),
+        myShows.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "48px 0" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 16 }, children: "🎙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 15, marginBottom: 24 }, children: "You don't have any shows yet." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setView("register"), style: { ...s.btn("linear-gradient(135deg,#F5C842,#F5A623)", "#0B0C1A"), width: "auto", padding: "14px 32px" }, children: "Register Your First Show" })
+        ] }) : myShows.map((show) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => openShow(show), style: { ...s.card, cursor: "pointer", display: "flex", alignItems: "center", gap: 16 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 56, height: 56, borderRadius: 14, background: show.cover_color || "linear-gradient(135deg,#1a0a2e,#6c3cf7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: show.cover_emoji || "🎙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 700, fontSize: 16, marginBottom: 4 }, children: show.title }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 13 }, children: [
+              show.category,
+              " · ",
+              show.episode_count || 0,
+              " episodes"
+            ] })
+          ] }),
+          show.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.liveTag, children: "🔴 LIVE" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 18 }, children: "›" })
+        ] }, show.id))
+      ] }),
+      view === "register" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 20, fontWeight: 800, marginBottom: 20 }, children: "Register a New Show" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Show Name *" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { style: s.input, placeholder: "e.g. The Daily Breakdown", value: regForm.title, onChange: (e) => setRegForm((f2) => ({ ...f2, title: e.target.value })) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Your Name *" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { style: s.input, placeholder: "e.g. John Smith", value: regForm.host_name, onChange: (e) => setRegForm((f2) => ({ ...f2, host_name: e.target.value })) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Description" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { style: { ...s.input, height: 90, resize: "vertical" }, placeholder: "What's your show about?", value: regForm.description, onChange: (e) => setRegForm((f2) => ({ ...f2, description: e.target.value })) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Category" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("select", { style: s.input, value: regForm.category, onChange: (e) => setRegForm((f2) => ({ ...f2, category: e.target.value })), children: CATEGORIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { children: c }, c)) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Cover Style" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }, children: COVER_COLORS.map((c, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: () => setRegForm((f2) => ({ ...f2, coverIdx: i })), style: { width: 52, height: 52, borderRadius: 14, background: c.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, cursor: "pointer", border: regForm.coverIdx === i ? "3px solid #F5C842" : "3px solid transparent" }, children: c.emoji }, i)) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleRegister, disabled: registering, style: s.btn("linear-gradient(135deg,#F5C842,#F5A623)", "#0B0C1A"), children: registering ? "Registering..." : "Register Show 🎙️" })
+      ] }),
+      view === "manage" && selectedShow && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 64, borderRadius: 16, background: selectedShow.cover_color || "linear-gradient(135deg,#1a0a2e,#6c3cf7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }, children: selectedShow.cover_emoji || "🎙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 20, fontWeight: 800 }, children: selectedShow.title }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 13 }, children: [
+              selectedShow.category,
+              " · ",
+              selectedShow.host_name
+            ] })
+          ] })
+        ] }),
+        selectedShow.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.liveCard, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 16 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 4 }, children: "🔴" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#e53935", fontWeight: 800, fontSize: 18 }, children: "YOU ARE LIVE" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 4 }, children: [
+              selectedShow.listener_count || 0,
+              " listeners tuned in"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: endLive, disabled: endingLive, style: s.btn("rgba(229,57,53,0.15)", "#e53935"), children: endingLive ? "Ending..." : "⏹️ End Live Session" })
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.card, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 700, fontSize: 15, marginBottom: 14 }, children: "🔴 Go Live" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Your Stream URL (YouTube Live, Rumble, Twitch...)" }),
+          editingUrl ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, marginBottom: 12 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("input", { style: { ...s.input, marginBottom: 0, flex: 1 }, placeholder: "https://youtube.com/live/...", value: streamUrl, onChange: (e) => setStreamUrl(e.target.value) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: saveStreamUrl, style: s.smallBtn("#6c3cf7"), children: "Save" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingUrl(false), style: s.smallBtn("rgba(255,255,255,0.08)", "rgba(255,255,255,0.6)"), children: "✕" })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "10px 14px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedShow.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }, children: selectedShow.live_stream_url || "No stream URL set yet" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+              setStreamUrl(selectedShow.live_stream_url || "");
+              setEditingUrl(true);
+            }, style: s.smallBtn("rgba(108,60,247,0.25)", "#a78bfa"), children: selectedShow.live_stream_url ? "Edit" : "Add URL" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: goLive, disabled: goingLive || !selectedShow.live_stream_url, style: { ...s.btn(selectedShow.live_stream_url ? "linear-gradient(135deg,#e53935,#c62828)" : "rgba(255,255,255,0.06)"), opacity: selectedShow.live_stream_url ? 1 : 0.4 }, children: goingLive ? "Going Live..." : "🔴 Go Live Now" }),
+          !selectedShow.live_stream_url && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", marginTop: -6 }, children: "Add a stream URL above to enable Go Live" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 8 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontWeight: 700, fontSize: 16 }, children: [
+              "📺 Episodes (",
+              episodes.length,
+              ")"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setView("episode"), style: s.smallBtn("rgba(108,60,247,0.3)", "#a78bfa"), children: "+ Add Episode" })
+          ] }),
+          episodes.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { ...s.card, textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 14 }, children: "No episodes yet. Add your first one!" }) : episodes.sort((a, b) => b.episode_number - a.episode_number).map((ep) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.card, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 36, height: 36, borderRadius: 10, background: "rgba(108,60,247,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a78bfa", fontWeight: 800, fontSize: 14, flexShrink: 0 }, children: ep.episode_number || "—" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: ep.title }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12, marginTop: 2 }, children: [
+                ep.status,
+                " · ",
+                ep.listener_count || 0,
+                " plays"
+              ] })
+            ] })
+          ] }) }, ep.id))
+        ] })
+      ] }),
+      view === "episode" && selectedShow && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 20, fontWeight: 800, marginBottom: 20 }, children: "Add an Episode" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 20 }, children: [
+          "Adding to: ",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842" }, children: selectedShow.title })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Episode Title *" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { style: s.input, placeholder: "e.g. The Future of AI", value: epForm.title, onChange: (e) => setEpForm((f2) => ({ ...f2, title: e.target.value })) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Description" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("textarea", { style: { ...s.input, height: 80, resize: "vertical" }, placeholder: "What's this episode about?", value: epForm.description, onChange: (e) => setEpForm((f2) => ({ ...f2, description: e.target.value })) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Video / Audio URL * (YouTube, Rumble, Spotify...)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { style: s.input, placeholder: "https://youtube.com/watch?v=...", value: epForm.video_url, onChange: (e) => setEpForm((f2) => ({ ...f2, video_url: e.target.value })) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("label", { style: s.label, children: "Episode Number" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("input", { style: s.input, type: "number", placeholder: `${episodes.length + 1}`, value: epForm.episode_number, onChange: (e) => setEpForm((f2) => ({ ...f2, episode_number: e.target.value })) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: addEpisode, disabled: addingEp, style: s.btn("linear-gradient(135deg,#6c3cf7,#a78bfa)"), children: addingEp ? "Adding..." : "Add Episode ✅" })
+      ] })
+    ] })
   ] });
 }
 class ErrorBoundary extends React.Component {
@@ -16226,9 +16620,8 @@ class ErrorBoundary extends React.Component {
 }
 function Root() {
   const path = window.location.pathname;
-  if (path === "/privacy" || path === "/privacy/") {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
-  }
+  if (path === "/privacy" || path === "/privacy/") return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
+  if (path === "/podcast-host" || path === "/podcast-host/") return /* @__PURE__ */ jsxRuntimeExports.jsx(PodcastHost, {});
   return /* @__PURE__ */ jsxRuntimeExports.jsx(App, {});
 }
 client.createRoot(document.getElementById("root")).render(
