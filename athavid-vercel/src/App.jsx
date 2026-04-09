@@ -6087,7 +6087,7 @@ function App() {
       )}
 
       {/* Bottom Nav — Sachi original style: floating pill */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none", opacity: activeTab==="feed" && isPlaying ? 0.08 : 1, transition:"opacity 0.4s ease" }}>
         <div style={{ pointerEvents:"auto", margin:"0 16px 8px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
 
           {/* Home */}
