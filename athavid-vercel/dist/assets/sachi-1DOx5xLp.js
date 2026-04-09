@@ -7570,26 +7570,76 @@ const interests = {
     return scored;
   }
 };
+const LIKES_CACHE_KEY = "sachi_liked_videos";
+function getLikesCache() {
+  try {
+    return JSON.parse(localStorage.getItem(LIKES_CACHE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+function setLikesCache(cache) {
+  localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(cache));
+}
+function getCacheKey(video_id, user_id) {
+  return `${user_id}__${video_id}`;
+}
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiLike`, {
+    const rec = await request$1("POST", `/apps/${APP_ID$2}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
       display_name,
       avatar_url
     });
+    const cache = getLikesCache();
+    cache[getCacheKey(video_id, user_id)] = rec.id || "liked";
+    setLikesCache(cache);
+    return rec;
   },
-  async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiLike/${id2}`);
+  async remove(id2, video_id, user_id) {
+    await request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiLike/${id2}`);
+    const cache = getLikesCache();
+    delete cache[getCacheKey(video_id, user_id)];
+    setLikesCache(cache);
   },
   async getByVideo(video_id) {
     return request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&limit=500`);
   },
   async checkUserLiked(video_id, user_id) {
-    const res = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
-    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
-    return items.length > 0 ? items[0] : null;
+    const cache = getLikesCache();
+    const cacheKey = getCacheKey(video_id, user_id);
+    if (cache[cacheKey]) {
+      return { id: cache[cacheKey], video_id, user_id, _fromCache: true };
+    }
+    try {
+      const res = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+      if (items.length > 0) {
+        cache[cacheKey] = items[0].id;
+        setLikesCache(cache);
+        return items[0];
+      }
+    } catch (e) {
+    }
+    try {
+      const storedUser = localStorage.getItem("sachi_user");
+      if (storedUser) {
+        const u2 = JSON.parse(storedUser);
+        if (u2.username) {
+          const res2 = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
+          const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.records) || (res2 == null ? void 0 : res2.items) || [];
+          if (items2.length > 0) {
+            cache[cacheKey] = items2[0].id;
+            setLikesCache(cache);
+            return items2[0];
+          }
+        }
+      }
+    } catch (e) {
+    }
+    return null;
   }
 };
 const COUNTRIES = [
@@ -11651,7 +11701,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }, 1e3);
     try {
       if (liked) {
-        if (likeRecordId) await likes.remove(likeRecordId);
+        if (likeRecordId) await likes.remove(likeRecordId, video.id, currentUser.id);
         setLiked(false);
         setLikeRecordId(null);
         onLike(video.id, -1);

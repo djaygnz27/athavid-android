@@ -263,22 +263,74 @@ export const interests = {
   }
 };
 
+// ── Likes local cache ─────────────────────────────────────────────────────────
+// Stores liked video IDs and their record IDs in localStorage so state persists
+// across sessions even when the API returns empty for unauthenticated reads.
+const LIKES_CACHE_KEY = "sachi_liked_videos";
+function getLikesCache() {
+  try { return JSON.parse(localStorage.getItem(LIKES_CACHE_KEY) || "{}"); } catch { return {}; }
+}
+function setLikesCache(cache) {
+  localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(cache));
+}
+function getCacheKey(video_id, user_id) { return `${user_id}__${video_id}`; }
+
 // ── Likes ──────────────────────────────────────────────────────────────────
 export const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    return request("POST", `/apps/${APP_ID}/entities/SachiLike`, {
+    const rec = await request("POST", `/apps/${APP_ID}/entities/SachiLike`, {
       video_id, user_id, username, display_name, avatar_url
     });
+    // Cache it locally
+    const cache = getLikesCache();
+    cache[getCacheKey(video_id, user_id)] = rec.id || "liked";
+    setLikesCache(cache);
+    return rec;
   },
-  async remove(id) {
-    return request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
+  async remove(id, video_id, user_id) {
+    await request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
+    // Remove from cache
+    const cache = getLikesCache();
+    delete cache[getCacheKey(video_id, user_id)];
+    setLikesCache(cache);
   },
   async getByVideo(video_id) {
     return request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&limit=500`);
   },
   async checkUserLiked(video_id, user_id) {
-    const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
-    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-    return items.length > 0 ? items[0] : null;
+    // 1. Check local cache first — instant and auth-independent
+    const cache = getLikesCache();
+    const cacheKey = getCacheKey(video_id, user_id);
+    if (cache[cacheKey]) {
+      return { id: cache[cacheKey], video_id, user_id, _fromCache: true };
+    }
+    // 2. Try API by user_id
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+      if (items.length > 0) {
+        // Warm the cache so next time it's instant
+        cache[cacheKey] = items[0].id;
+        setLikesCache(cache);
+        return items[0];
+      }
+    } catch(e) {}
+    // 3. Fallback: query by username
+    try {
+      const storedUser = localStorage.getItem("sachi_user");
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        if (u.username) {
+          const res2 = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u.username)}&limit=1`);
+          const items2 = Array.isArray(res2) ? res2 : (res2?.records || res2?.items || []);
+          if (items2.length > 0) {
+            cache[cacheKey] = items2[0].id;
+            setLikesCache(cache);
+            return items2[0];
+          }
+        }
+      }
+    } catch(e) {}
+    return null;
   },
 };
