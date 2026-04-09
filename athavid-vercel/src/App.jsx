@@ -297,7 +297,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     } catch(e) { console.error("Reaction save failed:", e); }
   };
 
-  const QUICK_EMOJIS = ["😂","🤣","😭","💀","🔥","🤯","😍","🥰","😎","🙌","💯","🫡","😤","🫣","👀","🤌","💪","🥹","😅","🤦","🤷","🙏","💥","✨","🎉","👏","😬","😱","🥲","😏"];
+  const QUICK_EMOJIS = ["😂","🤣","😭","💀","🔥","🤯","😍","🥰","😎","🙌","💯","🫡","😤","🫣","👀","🤌","💪","🥹","😅","🤦","🤷","🙏","💥","✨","🎉","👏","😬","😱","🥲","😏","LOL","LMAO"];
 
   const CommentRow = ({ c, isReply=false, parentId=null }) => {
     const [pickerOpen, setPickerOpen] = React.useState(false);
@@ -357,15 +357,18 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
                 <button onClick={() => setPickerOpen(false)} style={{ background:"none", border:"none", color:"#aaa", cursor:"pointer", fontSize:14, padding:0 }}>✕</button>
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(6, 1fr)", gap:6 }}>
-                {QUICK_EMOJIS.map(em => (
+                {QUICK_EMOJIS.map(em => {
+                  const isText = em === "LOL" || em === "LMAO";
+                  return (
                   <button key={em}
                     onClick={() => { reactToComment(c.id, "emoji_reactions", isReply, parentId, em); setPickerOpen(false); }}
-                    style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, padding:"8px 4px", fontSize:22, cursor:"pointer", fontFamily:"Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif", lineHeight:1, textAlign:"center" }}
+                    style={{ background:"rgba(255,255,255,0.06)", border:"none", borderRadius:10, padding: isText ? "6px 4px" : "8px 4px", fontSize: isText ? 10 : 22, fontWeight: isText ? 700 : "normal", cursor:"pointer", fontFamily: isText ? "sans-serif" : "Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif", lineHeight:1, textAlign:"center", color: isText ? "#F5C842" : "inherit" }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(245,200,66,0.2)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}>
                     {em}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
