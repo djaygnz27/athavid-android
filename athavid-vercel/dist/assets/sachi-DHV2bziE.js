@@ -7261,7 +7261,7 @@ function Landing({ onEnter }) {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
         marginTop: 20,
-        fontSize: 32,
+        fontSize: 22,
         lineHeight: 1.7,
         color: "#F5C842",
         maxWidth: 340,

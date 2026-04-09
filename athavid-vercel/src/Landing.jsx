@@ -242,7 +242,7 @@ export default function Landing({ onEnter }) {
 
         {/* Founding creator sentence */}
         <div className="f4" style={{
-          marginTop:20, fontSize:32, lineHeight:1.7,
+          marginTop:20, fontSize:22, lineHeight:1.7,
           color:"#F5C842", maxWidth:340, letterSpacing:0.3,
           fontWeight:800, textAlign:"center",
         }}>
