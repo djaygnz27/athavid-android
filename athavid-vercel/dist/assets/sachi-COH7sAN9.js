@@ -7247,38 +7247,42 @@ function Landing({ onEnter }) {
         height: 1.5,
         background: "linear-gradient(90deg,transparent,rgba(245,200,66,0.6),transparent)"
       } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f3", style: {
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f3", style: {
         marginTop: 16,
-        fontSize: 28,
-        lineHeight: 1.75,
+        fontSize: 26,
+        lineHeight: 1.6,
         color: "rgba(220,180,255,0.7)",
-        maxWidth: 300,
-        fontWeight: 600
-      }, children: [
-        "Real moments. Real people.",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-        "No filters."
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
+        maxWidth: 320,
+        fontWeight: 600,
+        textAlign: "center"
+      }, children: "Real moments. Real people. No filters." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f4", style: {
         marginTop: 20,
-        fontSize: 22,
-        lineHeight: 1.7,
+        fontSize: 18,
+        lineHeight: 1.8,
         color: "#F5C842",
         maxWidth: 340,
         letterSpacing: 0.3,
-        fontWeight: 800,
-        textAlign: "right"
-      }, children: "We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE." }),
+        fontWeight: 700,
+        textAlign: "center"
+      }, children: [
+        "We're looking for ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "50 Founding Creators" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        "to shape Sachi and help test",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        "before we go LIVE."
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
         marginTop: 14,
-        fontSize: 26,
+        fontSize: 22,
         lineHeight: 1.6,
         color: "rgba(220,180,255,0.9)",
         maxWidth: 300,
         letterSpacing: 0.3,
         fontWeight: 600,
-        textAlign: "right"
-      }, children: "Click top right to apply!" }),
+        textAlign: "center"
+      }, children: "Tap top right to apply!" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: { marginTop: 36, display: "flex", gap: 9, alignItems: "center" }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         width: 7,
         height: 7,
