@@ -2357,7 +2357,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     try {
       if (liked) {
         // Unlike: delete the record
-        if (likeRecordId) await likes.remove(likeRecordId);
+        if (likeRecordId) await likes.remove(likeRecordId, video.id, currentUser.id);
         setLiked(false);
         setLikeRecordId(null);
         onLike(video.id, -1);
