@@ -255,7 +255,7 @@ export default function Landing({ onEnter }) {
           color:"rgba(220,180,255,0.9)", maxWidth:300, letterSpacing:0.3,
           fontWeight:600, textAlign:"right",
         }}>
-          Click top right to apply! 👆
+          Click top right to apply! 👉
         </div>
 
         {/* Creator credit */}
