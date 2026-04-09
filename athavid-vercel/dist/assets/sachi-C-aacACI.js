@@ -7673,18 +7673,6 @@ function decodeJwt(token) {
     return null;
   }
 }
-function buildGoogleAuthUrl() {
-  const origin = window.location.origin;
-  const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: origin,
-    response_type: "id_token",
-    scope: "openid email profile",
-    nonce: Math.random().toString(36).slice(2),
-    prompt: "select_account"
-  });
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-}
 async function handleGoogleRedirectCallback() {
   const hash = window.location.hash;
   if (!hash || !hash.includes("id_token=")) return null;
@@ -7704,6 +7692,56 @@ async function handleGoogleRedirectCallback() {
     return { sessionUser, needsProfile: false };
   }
   return { payload, needsProfile: true };
+}
+function loadGSI() {
+  return new Promise((resolve) => {
+    var _a, _b;
+    if ((_b = (_a = window.google) == null ? void 0 : _a.accounts) == null ? void 0 : _b.id) {
+      resolve(window.google);
+      return;
+    }
+    const existing = document.getElementById("google-gsi-script");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.google));
+      return;
+    }
+    const s = document.createElement("script");
+    s.id = "google-gsi-script";
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.defer = true;
+    s.onload = () => resolve(window.google);
+    document.head.appendChild(s);
+  });
+}
+async function signInWithGooglePopup(onSuccess) {
+  const google = await loadGSI();
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: async (response) => {
+      const payload = decodeJwt(response.credential);
+      if (!(payload == null ? void 0 : payload.email)) return;
+      localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+      const found = await lookupSachiUser(payload.email);
+      if (found) {
+        const sessionUser = buildSessionUser(found, payload);
+        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+        localStorage.removeItem("sachi_pending_google");
+        onSuccess({ sessionUser, needsProfile: false });
+      } else {
+        onSuccess({ payload, needsProfile: true });
+      }
+    },
+    ux_mode: "popup",
+    cancel_on_tap_outside: false
+  });
+  google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      const div = document.getElementById("sachi-google-btn-hidden");
+      if (div) google.accounts.id.renderButton(div, { theme: "outline", size: "large" });
+    }
+  });
 }
 function FinishStep({ googlePayload, onSuccess }) {
   const { email, name, picture } = googlePayload;
@@ -7903,9 +7941,23 @@ function AuthModal({ onClose, onSuccess }) {
   const [step, setStep] = reactExports.useState(pending ? "finish" : "signin");
   const [googlePayload, setGooglePayload] = reactExports.useState(pending || null);
   const [loading, setLoading] = reactExports.useState(false);
-  const handleGoogleRedirect = () => {
-    localStorage.setItem("sachi_auth_intent", "1");
-    window.location.href = buildGoogleAuthUrl();
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signInWithGooglePopup((result) => {
+        if (result.sessionUser) {
+          onSuccess(result.sessionUser);
+          onClose();
+        } else if (result.needsProfile && result.payload) {
+          setGooglePayload(result.payload);
+          setStep("finish");
+        }
+        setLoading(false);
+      });
+    } catch (e) {
+      console.error("Google sign in error:", e);
+      setLoading(false);
+    }
   };
   if (step === "finish" && googlePayload) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }, children: [
@@ -7954,7 +8006,7 @@ function AuthModal({ onClose, onSuccess }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
-          onClick: handleGoogleRedirect,
+          onClick: handleGoogleSignIn,
           disabled: loading,
           style: {
             display: "flex",
@@ -8003,7 +8055,8 @@ function AuthModal({ onClose, onSuccess }) {
         " ",
         /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
         "."
-      ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "sachi-google-btn-hidden", style: { display: "none" } })
     ] })
   ] });
 }
