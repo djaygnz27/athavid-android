@@ -1,9 +1,15 @@
-import base44 from "../src/api.js";
+// Cloudflare Stream - Create Live Input for Sachi Podcast Hosts
+// v2 - no base44 import, returns credentials directly
 
 const CF_ACCOUNT_ID = "a346b1c78fc48549d2de3de99a789a2d";
-const CF_TOKEN = Deno.env.get("CLOUDFLARE_API_TOKEN");
 
 export default async function handler(req: Request) {
+  const CF_TOKEN = Deno.env.get("CLOUDFLARE_API_TOKEN");
+
+  if (!CF_TOKEN) {
+    return new Response(JSON.stringify({ error: "CLOUDFLARE_API_TOKEN not configured" }), { status: 500 });
+  }
+
   const { podcast_id, podcast_title, host_username } = await req.json();
 
   if (!podcast_id || !podcast_title) {
@@ -20,7 +26,7 @@ export default async function handler(req: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        meta: { name: `${podcast_title} - ${host_username}` },
+        meta: { name: `${podcast_title} - ${host_username || "host"}` },
         recording: { mode: "automatic", timeoutSeconds: 10 },
         deleteRecordingAfterDays: 30,
       }),
@@ -28,6 +34,7 @@ export default async function handler(req: Request) {
   );
 
   const cfData = await cfRes.json();
+
   if (!cfData.success) {
     return new Response(JSON.stringify({ error: "Cloudflare error", details: cfData.errors }), { status: 500 });
   }
@@ -35,16 +42,8 @@ export default async function handler(req: Request) {
   const input = cfData.result;
   const rtmpUrl = input.rtmps?.url;
   const streamKey = input.rtmps?.streamKey;
-  const playbackUrl = `https://customer-i1lj9522l179k.cloudflarestream.com/${input.uid}/manifest/video.m3u8`;
   const cfInputId = input.uid;
-
-  // Update the podcast record with stream details
-  await base44.asServiceRole.entities.SachiPodcast.update(podcast_id, {
-    live_stream_url: playbackUrl,
-    cf_input_id: cfInputId,
-    rtmp_url: rtmpUrl,
-    stream_key: streamKey,
-  });
+  const playbackUrl = `https://customer-i1lj9522l179k.cloudflarestream.com/${cfInputId}/manifest/video.m3u8`;
 
   return new Response(JSON.stringify({
     success: true,
@@ -52,5 +51,6 @@ export default async function handler(req: Request) {
     stream_key: streamKey,
     playback_url: playbackUrl,
     cf_input_id: cfInputId,
+    podcast_id,
   }), { status: 200 });
 }
