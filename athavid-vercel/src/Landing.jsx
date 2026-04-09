@@ -258,14 +258,6 @@ export default function Landing({ onEnter }) {
           Click top right to apply! 👉
         </div>
 
-        {/* Creator credit */}
-        <div className="f5" style={{
-          marginTop:12, fontSize:20, letterSpacing:1.5,
-          color:"rgba(245,200,66,0.6)", fontWeight:600,
-          textTransform:"uppercase",
-        }}>
-          — Jaya Gunaratne, Creator
-        </div>
 
         {/* Pulsing dots loader */}
         <div className="f4" style={{ marginTop:36, display:"flex", gap:9, alignItems:"center" }}>
