@@ -3932,7 +3932,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       (currentUser.full_name && currentUser.full_name === selectedPodcast.host_username) ||
       ((currentUser.email?.split("@")[0]) === selectedPodcast.host_username) ||
       currentUser.email === "jaygnz27@gmail.com" ||
-      currentUser.email === "lasanjaya@gmail.com"
+      currentUser.email === "lasanjaya@gmail.com" ||
+      currentUser.id === selectedPodcast.created_by_id
     );
     const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
     const coverEmoji = selectedPodcast.cover_emoji || "🎙️";
