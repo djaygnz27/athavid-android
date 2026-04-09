@@ -25,7 +25,7 @@ export default function Landing({ onEnter }) {
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
-    const t2 = setTimeout(() => handleEnter(), 5200);
+    const t2 = setTimeout(() => handleEnter(), 8000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -219,7 +219,7 @@ export default function Landing({ onEnter }) {
 
         {/* Tagline */}
         <div className="f2" style={{
-          marginTop:16, fontSize:13, letterSpacing:3.5,
+          marginTop:16, fontSize:18, letterSpacing:3.5,
           textTransform:"uppercase", fontWeight:600,
           color:"rgba(220,180,255,0.6)",
         }}>
@@ -234,7 +234,7 @@ export default function Landing({ onEnter }) {
 
         {/* Sub tagline */}
         <div className="f3" style={{
-          marginTop:16, fontSize:14, lineHeight:1.75,
+          marginTop:16, fontSize:20, lineHeight:1.75,
           color:"rgba(220,180,255,0.4)", maxWidth:250,
         }}>
           Real moments. Real people.<br/>No filters.
@@ -242,7 +242,7 @@ export default function Landing({ onEnter }) {
 
         {/* Founding creator sentence */}
         <div className="f4" style={{
-          marginTop:18, fontSize:12, lineHeight:1.6,
+          marginTop:18, fontSize:18, lineHeight:1.6,
           color:"rgba(245,200,66,0.55)", maxWidth:240, letterSpacing:0.3,
         }}>
           We're looking for 50 Founding Creators<br/>to shape Sachi from day one.
