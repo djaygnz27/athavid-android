@@ -108,6 +108,28 @@ export default function Landing({ onEnter }) {
         }
       `}</style>
 
+      {/* Apply button — top right */}
+      <div style={{
+        position:"absolute", top:20, right:20, zIndex:20,
+      }}>
+        <button
+          onClick={e => { e.stopPropagation(); window.location.href='/apply'; }}
+          style={{
+            background:"linear-gradient(135deg,#F5C842 0%,#F5A623 100%)",
+            color:"#1a0f00", border:"none", borderRadius:50,
+            padding:"10px 20px", fontWeight:800, fontSize:13,
+            cursor:"pointer", letterSpacing:0.3,
+            boxShadow:"0 4px 20px rgba(245,168,66,0.45)",
+            fontFamily:"inherit",
+            display:"flex", alignItems:"center", gap:6,
+            whiteSpace:"nowrap",
+          }}
+        >
+          🌸 Apply — 50 Spots
+        </button>
+      </div>
+
+
       {/* Purple ambient glow blobs */}
       <div style={{
         position:"absolute", width:500, height:500, borderRadius:"50%",
