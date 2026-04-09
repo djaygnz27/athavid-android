@@ -240,6 +240,14 @@ export default function Landing({ onEnter }) {
           Real moments. Real people.<br/>No filters.
         </div>
 
+        {/* Founding creator sentence */}
+        <div className="f4" style={{
+          marginTop:18, fontSize:12, lineHeight:1.6,
+          color:"rgba(245,200,66,0.55)", maxWidth:240, letterSpacing:0.3,
+        }}>
+          We're looking for 50 Founding Creators<br/>to shape Sachi from day one.
+        </div>
+
         {/* Pulsing dots loader */}
         <div className="f4" style={{ marginTop:36, display:"flex", gap:9, alignItems:"center" }}>
           {[0,1,2].map(i => (
