@@ -242,10 +242,29 @@ export default function Landing({ onEnter }) {
 
         {/* Founding creator sentence */}
         <div className="f4" style={{
-          marginTop:18, fontSize:18, lineHeight:1.6,
-          color:"rgba(245,200,66,0.55)", maxWidth:240, letterSpacing:0.3,
+          marginTop:18, fontSize:22, lineHeight:1.7,
+          color:"rgba(245,200,66,0.85)", maxWidth:320, letterSpacing:0.3,
+          fontWeight:700, textAlign:"center",
         }}>
-          We're looking for 50 Founding Creators<br/>to shape Sachi from day one.
+          We're growing and looking for 50 Founding Creators to shape Sachi and volunteer to help test, before we go LIVE.
+        </div>
+
+        {/* CTA hint */}
+        <div className="f4" style={{
+          marginTop:12, fontSize:18, lineHeight:1.6,
+          color:"rgba(220,180,255,0.75)", maxWidth:300, letterSpacing:0.3,
+          fontWeight:500, textAlign:"center",
+        }}>
+          👆 Click top right to apply!
+        </div>
+
+        {/* Creator credit */}
+        <div className="f5" style={{
+          marginTop:10, fontSize:13, letterSpacing:1.5,
+          color:"rgba(245,200,66,0.35)", fontWeight:500,
+          textTransform:"uppercase",
+        }}>
+          — Jaya Gunaratne, Creator
         </div>
 
         {/* Pulsing dots loader */}
