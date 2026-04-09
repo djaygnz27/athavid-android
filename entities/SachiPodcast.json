@@ -60,6 +60,15 @@
         "Inactive",
         "Pending"
       ]
+    },
+    "cf_input_id": {
+      "type": "string"
+    },
+    "rtmp_url": {
+      "type": "string"
+    },
+    "stream_key": {
+      "type": "string"
     }
   },
   "required": [],

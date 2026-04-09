@@ -3846,6 +3846,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [registerDone, setRegisterDone] = useState(false);
   const [toast, setToast] = useState(null);
   const [goingLive, setGoingLive] = useState(false);
+  const [loadingStreamKey, setLoadingStreamKey] = useState(false);
+  const [showStreamKey, setShowStreamKey] = useState(false);
+  const [streamCreds, setStreamCreds] = useState(null);
   const [endingLive, setEndingLive] = useState(false);
   const [editingStream, setEditingStream] = useState(false);
   const [selectedEpisode, setSelectedEpisode] = useState(null);
@@ -4156,6 +4159,111 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                         <button onClick={() => { setNewStreamUrl(selectedPodcast.live_stream_url||""); setEditingStream(true); }}
                           style={{ background:"rgba(108,60,247,0.2)", border:"1px solid rgba(108,60,247,0.4)", borderRadius:8, padding:"5px 12px", color:"#a78bfa", fontSize:12, cursor:"pointer", fontWeight:600, flexShrink:0 }}>
                           {selectedPodcast.live_stream_url ? "Edit" : "Add URL"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {/* Cloudflare Native Streaming */}
+                  <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:14, padding:14, marginBottom:14 }}>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:700, marginBottom:8 }}>🎙️ Native Sachi Live Stream (via Cloudflare)</div>
+                    {selectedPodcast.stream_key ? (
+                      <>
+                        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, marginBottom:6 }}>Use these in OBS / Streamlabs:</div>
+                        <div style={{ background:"rgba(0,0,0,0.3)", borderRadius:8, padding:10, marginBottom:6 }}>
+                          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10, marginBottom:2 }}>RTMP Server</div>
+                          <div style={{ color:"#a78bfa", fontSize:12, wordBreak:"break-all", userSelect:"all" }}>rtmps://live.cloudflare.com:443/live/</div>
+                        </div>
+                        <div style={{ background:"rgba(0,0,0,0.3)", borderRadius:8, padding:10, marginBottom:8 }}>
+                          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10, marginBottom:2 }}>Stream Key</div>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <div style={{ color:"#F5C842", fontSize:12, wordBreak:"break-all", userSelect:"all", flex:1 }}>
+                              {showStreamKey ? selectedPodcast.stream_key : "••••••••••••••••••••••••"}
+                            </div>
+                            <button onClick={() => setShowStreamKey(s => !s)}
+                              style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:6, padding:"4px 8px", color:"#fff", fontSize:11, cursor:"pointer" }}>
+                              {showStreamKey ? "Hide" : "Show"}
+                            </button>
+                            <button onClick={() => { navigator.clipboard.writeText(selectedPodcast.stream_key); showToast("✅ Stream key copied!", "success"); }}
+                              style={{ background:"rgba(108,60,247,0.3)", border:"none", borderRadius:6, padding:"4px 8px", color:"#a78bfa", fontSize:11, cursor:"pointer" }}>Copy</button>
+                          </div>
+                        </div>
+                        <div style={{ color:"rgba(255,255,255,0.3)", fontSize:10 }}>Stream saves automatically as an episode after you go live 🎬</div>
+                      </>
+                    ) : (
+                      <div>
+                        <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, marginBottom:10 }}>Get your personal RTMP stream key to go live directly on Sachi using OBS or Streamlabs.</div>
+                        <button onClick={async () => {
+                          if (loadingStreamKey) return;
+                          setLoadingStreamKey(true);
+                          try {
+                            const res = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
+                              method:"POST", headers:{"Content-Type":"application/json"},
+                              body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_username: selectedPodcast.host_username || currentUser?.username })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setSelectedPodcast(p => ({...p, stream_key: data.stream_key, cf_input_id: data.cf_input_id, live_stream_url: data.playback_url }));
+                              showToast("🎙️ Stream key generated!", "success");
+                            } else {
+                              showToast("Failed to create stream. Try again.", "error");
+                            }
+                          } catch(e) { showToast("Error creating stream", "error"); }
+                          setLoadingStreamKey(false);
+                        }} style={{ width:"100%", padding:"11px 0", background: loadingStreamKey ? "rgba(245,200,66,0.2)" : "rgba(245,200,66,0.15)", border:"1px solid #F5C842", borderRadius:12, color:"#F5C842", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                          {loadingStreamKey ? "⏳ Generating..." : "⚡ Generate My Stream Key"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {/* Cloudflare Native Streaming */}
+                  <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.2)", borderRadius:14, padding:14, marginBottom:14 }}>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:700, marginBottom:8 }}>🎙️ Native Sachi Live (via Cloudflare)</div>
+                    {selectedPodcast.stream_key ? (
+                      <>
+                        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, marginBottom:6 }}>Use in OBS / Streamlabs:</div>
+                        <div style={{ background:"rgba(0,0,0,0.3)", borderRadius:8, padding:10, marginBottom:6 }}>
+                          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10, marginBottom:2 }}>RTMP Server</div>
+                          <div style={{ color:"#a78bfa", fontSize:12, wordBreak:"break-all", userSelect:"all" }}>rtmps://live.cloudflare.com:443/live/</div>
+                        </div>
+                        <div style={{ background:"rgba(0,0,0,0.3)", borderRadius:8, padding:10, marginBottom:8 }}>
+                          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10, marginBottom:2 }}>Stream Key</div>
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <div style={{ color:"#F5C842", fontSize:12, wordBreak:"break-all", userSelect:"all", flex:1 }}>
+                              {showStreamKey ? selectedPodcast.stream_key : "••••••••••••••••••••••••"}
+                            </div>
+                            <button onClick={() => setShowStreamKey(s => !s)}
+                              style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:6, padding:"4px 8px", color:"#fff", fontSize:11, cursor:"pointer" }}>
+                              {showStreamKey ? "Hide" : "Show"}
+                            </button>
+                            <button onClick={() => { navigator.clipboard.writeText(selectedPodcast.stream_key); showToast("✅ Stream key copied!", "success"); }}
+                              style={{ background:"rgba(108,60,247,0.3)", border:"none", borderRadius:6, padding:"4px 8px", color:"#a78bfa", fontSize:11, cursor:"pointer" }}>Copy</button>
+                          </div>
+                        </div>
+                        <div style={{ color:"rgba(255,255,255,0.3)", fontSize:10 }}>Stream saves automatically as an episode after going live 🎬</div>
+                      </>
+                    ) : (
+                      <div>
+                        <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, marginBottom:10 }}>Get your personal RTMP stream key to go live on Sachi using OBS or Streamlabs.</div>
+                        <button onClick={async () => {
+                          if (loadingStreamKey) return;
+                          setLoadingStreamKey(true);
+                          try {
+                            const res = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
+                              method:"POST", headers:{"Content-Type":"application/json"},
+                              body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_username: selectedPodcast.host_username || currentUser?.username })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { stream_key: data.stream_key, cf_input_id: data.cf_input_id, live_stream_url: data.playback_url });
+                              setSelectedPodcast(p => ({...p, stream_key: data.stream_key, cf_input_id: data.cf_input_id, live_stream_url: data.playback_url}));
+                              showToast("🎙️ Stream key generated!", "success");
+                            } else {
+                              showToast("Failed to create stream. Try again.", "error");
+                            }
+                          } catch(e) { showToast("Error creating stream", "error"); }
+                          setLoadingStreamKey(false);
+                        }} style={{ width:"100%", padding:"11px 0", background: loadingStreamKey ? "rgba(245,200,66,0.2)" : "rgba(245,200,66,0.15)", border:"1px solid #F5C842", borderRadius:12, color:"#F5C842", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                          {loadingStreamKey ? "⏳ Generating..." : "⚡ Generate My Stream Key"}
                         </button>
                       </div>
                     )}
