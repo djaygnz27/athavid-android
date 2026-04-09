@@ -7258,6 +7258,18 @@ function Landing({ onEnter }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
         "No filters."
       ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f4", style: {
+        marginTop: 18,
+        fontSize: 12,
+        lineHeight: 1.6,
+        color: "rgba(245,200,66,0.55)",
+        maxWidth: 240,
+        letterSpacing: 0.3
+      }, children: [
+        "We're looking for 50 Founding Creators",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        "to shape Sachi from day one."
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: { marginTop: 36, display: "flex", gap: 9, alignItems: "center" }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         width: 7,
         height: 7,
