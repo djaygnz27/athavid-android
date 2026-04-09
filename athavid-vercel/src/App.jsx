@@ -4207,7 +4207,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                               const inp = cfData.result;
                               const newKey = inp.rtmps?.streamKey;
                               const cfId = inp.uid;
-                              const pbUrl = `https://customer-i1lj9522l179k.cloudflarestream.com/${cfId}/manifest/video.m3u8`;
+                              const pbUrl = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${cfId}/manifest/video.m3u8`;
                               await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { stream_key: newKey, cf_input_id: cfId, live_stream_url: pbUrl });
                               setSelectedPodcast(p => ({...p, stream_key: newKey, cf_input_id: cfId, live_stream_url: pbUrl}));
                               showToast("🎙️ Stream key generated!", "success");

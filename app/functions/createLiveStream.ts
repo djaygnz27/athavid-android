@@ -43,7 +43,7 @@ export default async function handler(req: Request) {
   const rtmpUrl = input.rtmps?.url;
   const streamKey = input.rtmps?.streamKey;
   const cfInputId = input.uid;
-  const playbackUrl = `https://customer-i1lj9522l179k.cloudflarestream.com/${cfInputId}/manifest/video.m3u8`;
+  const playbackUrl = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${cfInputId}/manifest/video.m3u8`;
 
   return new Response(JSON.stringify({
     success: true,
