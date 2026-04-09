@@ -7018,7 +7018,11 @@ function Landing({ onEnter }) {
   );
   reactExports.useEffect(() => {
     const t2 = setTimeout(() => setPhase("in"), 80);
-    return () => clearTimeout(t2);
+    const autoEnter = setTimeout(() => handleEnter(), 5e3);
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(autoEnter);
+    };
   }, []);
   const handleEnter = () => {
     setLeaving(true);
