@@ -125,7 +125,7 @@ export default function Landing({ onEnter }) {
             whiteSpace:"nowrap",
           }}
         >
-          🌸 Apply — 36 Spots Left
+          🌸 Apply — 36/50 Spots Left
         </button>
       </div>
 
