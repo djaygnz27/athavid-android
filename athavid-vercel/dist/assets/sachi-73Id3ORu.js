@@ -11958,6 +11958,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [isAiGenerated, setIsAiGenerated] = reactExports.useState(false);
   const [textPostContent, setTextPostContent] = reactExports.useState("");
   const [textPostTemplate, setTextPostTemplate] = reactExports.useState(0);
+  const [textFontScale, setTextFontScale] = reactExports.useState(1);
   const [showPostDetails, setShowPostDetails] = reactExports.useState(false);
   const [postTitle, setPostTitle] = reactExports.useState("");
   const [postVisibility, setPostVisibility] = reactExports.useState("everyone");
@@ -12381,7 +12382,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 540, 960);
       const textLen = textPostContent.trim().length;
-      const fontSize = textLen <= 40 ? 58 : textLen <= 80 ? 48 : textLen <= 140 ? 38 : textLen <= 220 ? 30 : 24;
+      const baseFontSize = textLen <= 40 ? 58 : textLen <= 80 ? 48 : textLen <= 140 ? 38 : textLen <= 220 ? 30 : 24;
+      const fontSize = Math.max(10, Math.floor(baseFontSize * textFontScale));
       const lineH = fontSize * 1.5;
       const maxW = 460;
       ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
@@ -12953,11 +12955,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           const calcFs = (text, mini, base) => {
             if (mini) return base > 10 ? Math.floor(base * 0.28) : base;
             const len = (text || "").length;
-            if (len <= 40) return base;
-            if (len <= 80) return Math.max(20, Math.floor(base * 0.82));
-            if (len <= 140) return Math.max(16, Math.floor(base * 0.65));
-            if (len <= 220) return Math.max(14, Math.floor(base * 0.52));
-            return Math.max(12, Math.floor(base * 0.42));
+            let auto;
+            if (len <= 40) auto = base;
+            else if (len <= 80) auto = Math.max(20, Math.floor(base * 0.82));
+            else if (len <= 140) auto = Math.max(16, Math.floor(base * 0.65));
+            else if (len <= 220) auto = Math.max(14, Math.floor(base * 0.52));
+            else auto = Math.max(12, Math.floor(base * 0.42));
+            return Math.max(10, Math.floor(auto * textFontScale));
           };
           const TEXT_TEMPLATES = [
             {
@@ -13131,6 +13135,28 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 }
               }
             ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#aaa", fontSize: 12, fontWeight: 600, marginRight: 4 }, children: "Size:" }),
+              [{ label: "S", val: 0.7 }, { label: "M", val: 1 }, { label: "L", val: 1.3 }, { label: "XL", val: 1.6 }].map(({ label, val }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => setTextFontScale(val),
+                  style: {
+                    padding: "5px 14px",
+                    borderRadius: 20,
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: label === "S" ? 11 : label === "M" ? 13 : label === "L" ? 15 : 17,
+                    background: textFontScale === val ? "#F5C842" : "rgba(255,255,255,0.1)",
+                    color: textFontScale === val ? "#111" : "#fff",
+                    transition: "all 0.15s"
+                  },
+                  children: label
+                },
+                label
+              ))
+            ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 13, fontWeight: 600, marginBottom: 10 }, children: "Select a style" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }, children: TEXT_TEMPLATES.map((t2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
               "div",
