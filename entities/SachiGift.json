@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_username": {
+      "type": "string"
+    },
+    "sender_avatar": {
+      "type": "string"
+    },
+    "host_id": {
+      "type": "string"
+    },
+    "host_username": {
+      "type": "string"
+    },
+    "gift_id": {
+      "type": "string"
+    },
+    "gift_name": {
+      "type": "string"
+    },
+    "gift_emoji": {
+      "type": "string"
+    },
+    "gift_icon": {
+      "type": "string"
+    },
+    "coin_cost": {
+      "type": "number"
+    },
+    "usd_value": {
+      "type": "number"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiGift"
+}

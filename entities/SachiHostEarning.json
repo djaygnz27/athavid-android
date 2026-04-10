@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "properties": {
+    "host_id": {
+      "type": "string"
+    },
+    "host_username": {
+      "type": "string"
+    },
+    "total_coins_received": {
+      "type": "number"
+    },
+    "total_usd_earned": {
+      "type": "number"
+    },
+    "pending_payout_usd": {
+      "type": "number"
+    },
+    "paid_out_usd": {
+      "type": "number"
+    },
+    "stripe_account_id": {
+      "type": "string"
+    },
+    "payout_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending_kyc",
+        "paid"
+      ]
+    }
+  },
+  "required": [],
+  "name": "SachiHostEarning"
+}

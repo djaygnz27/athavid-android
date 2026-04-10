@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "properties": {
+    "host_id": {
+      "type": "string"
+    },
+    "host_username": {
+      "type": "string"
+    },
+    "host_email": {
+      "type": "string"
+    },
+    "coins_redeemed": {
+      "type": "number"
+    },
+    "usd_amount": {
+      "type": "number"
+    },
+    "paypal_email": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "paid",
+        "rejected"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiPayoutRequest"
+}
