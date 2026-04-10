@@ -1167,7 +1167,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: urls[0],
         thumbnail_url: urls[0],
-        photo_urls: JSON.stringify(urls),
+        photo_urls: urls,
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
@@ -1481,7 +1481,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url, thumbnail_url: img_url,
-        photo_urls: JSON.stringify([img_url]), is_photo: true,
+        photo_urls: [img_url], is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
         likes_count:0, comments_count:0, views_count:0, shares_count:0,
