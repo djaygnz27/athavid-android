@@ -201,22 +201,52 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Swipe-down to close — attached to the drag handle pill only
-  const onPillTouchStart = (e) => {
-    dragStartY.current = e.touches[0].clientY;
-    setIsDragging(true);
-  };
-  const onPillTouchMove = (e) => {
-    if (dragStartY.current === null) return;
-    const delta = e.touches[0].clientY - dragStartY.current;
-    if (delta > 0) { e.preventDefault(); setDragY(delta); }
-  };
-  const onPillTouchEnd = () => {
-    if (dragY > 80) { onClose(); }
-    else { setDragY(0); }
-    setIsDragging(false);
-    dragStartY.current = null;
-  };
+  // TikTok-style swipe down to close — listens on the whole sheet
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+
+    let startY = null;
+    let currentDelta = 0;
+
+    const onTouchStart = (e) => {
+      startY = e.touches[0].clientY;
+      currentDelta = 0;
+    };
+
+    const onTouchMove = (e) => {
+      if (startY === null) return;
+      const delta = e.touches[0].clientY - startY;
+      if (delta > 0) {
+        currentDelta = delta;
+        sheet.style.transform = `translateY(${delta}px)`;
+        sheet.style.transition = "none";
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (currentDelta > 80) {
+        sheet.style.transform = `translateY(100%)`;
+        sheet.style.transition = "transform 0.25s ease";
+        setTimeout(() => onClose(), 220);
+      } else {
+        sheet.style.transform = `translateY(0)`;
+        sheet.style.transition = "transform 0.25s ease";
+      }
+      startY = null;
+      currentDelta = 0;
+    };
+
+    sheet.addEventListener("touchstart", onTouchStart, { passive: true });
+    sheet.addEventListener("touchmove", onTouchMove, { passive: true });
+    sheet.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      sheet.removeEventListener("touchstart", onTouchStart);
+      sheet.removeEventListener("touchmove", onTouchMove);
+      sheet.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [onClose]);
 
   useEffect(() => {
     if (!video) return;
@@ -451,13 +481,9 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)" }} />
       <div
         ref={sheetRef}
-        style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, transform:`translateY(${dragY}px)`, transition: isDragging ? "none" : "transform 0.3s ease", willChange:"transform" }}>
+        style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, willChange:"transform" }}>
         <div style={{ padding:"12px 16px 0", flexShrink:0 }}>
-          <div
-            onTouchStart={onPillTouchStart}
-            onTouchMove={onPillTouchMove}
-            onTouchEnd={onPillTouchEnd}
-            style={{ padding:"10px 0", marginBottom:4, display:"flex", justifyContent:"center", cursor:"grab", touchAction:"none" }}>
+          <div style={{ padding:"10px 0", marginBottom:4, display:"flex", justifyContent:"center" }}>
             <div style={{ width:40, height:4, background:"#888", borderRadius:99 }} />
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
