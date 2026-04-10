@@ -7642,6 +7642,20 @@ const likes = {
     return null;
   }
 };
+const messages = {
+  send: (data) => request$1("POST", `/apps/${APP_ID$4}/entities/SachiMessage`, data),
+  getThread: (user1_id, user2_id) => {
+    const thread_id = [user1_id, user2_id].sort().join("_");
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
+  },
+  getInbox: (user_id) => request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
+  markRead: (id2) => request$1("PATCH", `/apps/${APP_ID$4}/entities/SachiMessage/${id2}`, { is_read: true }),
+  getUnreadCount: async (user_id) => {
+    const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
+    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+    return items.length;
+  }
+};
 const COUNTRIES = [
   "Afghanistan",
   "Albania",
@@ -10816,6 +10830,10 @@ async function captureThumbnail(file) {
     };
   });
 }
+const createNotif = (data) => {
+  request$1("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification", { is_read: false, ...data }).catch(() => {
+  });
+};
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
   const [list, setList] = reactExports.useState([]);
   const [text, setText] = reactExports.useState("");
@@ -10824,8 +10842,10 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [replyingTo, setReplyingTo] = reactExports.useState(null);
   const [expandedReplies, setExpandedReplies] = reactExports.useState({});
   const [emojiPickerOpen, setEmojiPickerOpen] = reactExports.useState(null);
+  const sheetRef = reactExports.useRef(null);
   const bottomRef = reactExports.useRef(null);
   const inputRef = reactExports.useRef(null);
+  const headerRef = reactExports.useRef(null);
   reactExports.useEffect(() => {
     if (!video) return;
     comments.list(video.id).then((r2) => setList(Array.isArray(r2) ? r2 : [])).catch(() => setList([])).finally(() => setLoading(false));
@@ -10851,7 +10871,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     setText("");
   };
   const post = async () => {
-    var _a;
+    var _a, _b;
     if (!currentUser) {
       onNeedAuth();
       return;
@@ -10878,6 +10898,18 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         setList((prev) => [...prev, c]);
         setText("");
         await videos.update(video.id, { comments_count: newCount });
+        if (video.user_id && video.user_id !== (currentUser == null ? void 0 : currentUser.id)) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "comment",
+            video_id: video.id,
+            video_thumbnail: video.thumbnail_url || "",
+            text: `commented: "${text.trim().substring(0, 50)}"`
+          });
+        }
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
       }
@@ -10932,8 +10964,26 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   };
   const QUICK_EMOJIS = ["😂", "🤣", "😭", "💀", "🔥", "🤯", "😍", "🥰", "😎", "🙌", "💯", "🫡", "😤", "🫣", "👀", "🤌", "💪", "🥹", "😅", "🤦", "🤷", "🙏", "💥", "✨", "🎉", "👏", "😬", "😱", "🥲", "😏", "LOL", "LMAO"];
   const CommentRow = ({ c, isReply = false, parentId = null }) => {
-    var _a;
+    var _a, _b;
     const [pickerOpen, setPickerOpen] = React.useState(false);
+    const [editing, setEditing] = React.useState(false);
+    const [editText, setEditText] = React.useState(c.comment_text);
+    const [saving, setSaving] = React.useState(false);
+    const currentUsername = currentUser ? currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user" : null;
+    const isOwner = currentUsername && c.username === currentUsername;
+    const saveEdit = async () => {
+      if (!editText.trim()) return;
+      setSaving(true);
+      try {
+        await comments.update(c.id, { comment_text: editText.trim() });
+        setList((prev) => prev.map((x2) => x2.id === c.id ? { ...x2, comment_text: editText.trim() } : x2));
+        setEditing(false);
+      } catch (e) {
+        alert("Could not save edit.");
+      } finally {
+        setSaving(false);
+      }
+    };
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, marginBottom: 12, paddingLeft: isReply ? 44 : 0 }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: c.avatar_url, style: { width: isReply ? 28 : 36, height: isReply ? 28 : 36, borderRadius: "50%", border: `2px solid rgba(108,99,255,${isReply ? 0.2 : 0.3})`, flexShrink: 0 } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
@@ -10941,7 +10991,54 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           "@",
           c.username
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ccc", fontSize: isReply ? 13 : 14, marginBottom: 4 }, children: c.comment_text }),
+        editing ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 6 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              value: editText,
+              onChange: (e) => setEditText(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === "Enter") saveEdit();
+                if (e.key === "Escape") setEditing(false);
+              },
+              autoFocus: true,
+              style: { width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(108,99,255,0.5)", borderRadius: 10, padding: "6px 10px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, marginTop: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: saveEdit,
+                disabled: saving,
+                style: { background: "linear-gradient(135deg,#6c63ff,#ff6b6b)", border: "none", borderRadius: 8, padding: "4px 14px", color: "#fff", fontSize: 12, cursor: "pointer", fontWeight: 600 },
+                children: saving ? "Saving..." : "Save"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => setEditing(false),
+                style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, padding: "4px 12px", color: "#aaa", fontSize: 12, cursor: "pointer" },
+                children: "Cancel"
+              }
+            )
+          ] })
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ccc", fontSize: isReply ? 13 : 14 }, children: c.comment_text }),
+          isOwner && !isReply && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                setEditing(true);
+                setEditText(c.comment_text);
+              },
+              style: { background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 12, padding: 0, flexShrink: 0 },
+              title: "Edit",
+              children: "✏️"
+            }
+          )
+        ] }),
         c.emoji_reactions && Object.keys(c.emoji_reactions).length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }, children: Object.entries(c.emoji_reactions).map(([em, count]) => count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "span",
           {
@@ -11007,7 +11104,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
               children: "💬 Reply"
             }
           ),
-          !isReply && ((_a = c.replies) == null ? void 0 : _a.length) > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          !isReply && ((_b = c.replies) == null ? void 0 : _b.length) > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
               onClick: () => setExpandedReplies((prev) => ({ ...prev, [c.id]: !prev[c.id] })),
@@ -11045,61 +11142,69 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 1e3, display: "flex", flexDirection: "column", justifyContent: "flex-end" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)" } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", maxHeight: "75vh", display: "flex", flexDirection: "column", zIndex: 1001 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "12px 16px 0", flexShrink: 0 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#444", borderRadius: 99, margin: "0 auto 12px" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: [
-            "💬 Comments ",
-            list.length > 0 && `(${list.length})`
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer" }, children: "✕" })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "0 16px 8px" }, children: [
-        loading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", textAlign: "center", padding: 32 }, children: "Loading..." }),
-        !loading && list.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", textAlign: "center", padding: 40 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "💬" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No comments yet. Be first!" })
-        ] }),
-        list.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx(CommentRow, { c }, c.id)),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: bottomRef })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "8px 16px 32px", borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }, children: [
-        replyingTo && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "4px 10px", background: "rgba(108,99,255,0.15)", borderRadius: 8 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#aaa", fontSize: 12 }, children: [
-            "Replying to ",
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ff6b6b" }, children: [
-              "@",
-              replyingTo.username
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        ref: sheetRef,
+        style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", maxHeight: "75vh", display: "flex", flexDirection: "column", zIndex: 1001, willChange: "transform" },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: headerRef, style: { padding: "16px 16px 12px", flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: "center", marginBottom: 12 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { width: 48, height: 5, background: "rgba(255,255,255,0.3)", borderRadius: 99, cursor: "pointer" } }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: [
+                "💬 Comments ",
+                list.length > 0 && `(${list.length})`
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", cursor: "pointer", fontSize: 18 }, children: "✕" })
             ] })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: cancelReply, style: { background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 14 }, children: "✕" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "input",
-            {
-              ref: inputRef,
-              value: text,
-              onChange: (e) => setText(e.target.value),
-              onKeyDown: (e) => e.key === "Enter" && post(),
-              placeholder: currentUser ? replyingTo ? `Reply to @${replyingTo.username}...` : "Add a comment..." : "Log in to comment...",
-              style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "8px 14px", color: "#fff", fontSize: 14, outline: "none" }
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: post,
-              disabled: posting,
-              style: { background: "linear-gradient(135deg,#ff6b6b,#ff8e53)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", cursor: "pointer", fontSize: 16 },
-              children: "➤"
-            }
-          )
-        ] })
-      ] })
-    ] })
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "0 16px 8px" }, children: [
+            loading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", textAlign: "center", padding: 32 }, children: "Loading..." }),
+            !loading && list.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", textAlign: "center", padding: 40 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "💬" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No comments yet. Be first!" })
+            ] }),
+            list.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx(CommentRow, { c }, c.id)),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: bottomRef }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: "center", padding: "16px 0 8px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 24, padding: "10px 40px", color: "#aaa", fontSize: 14, cursor: "pointer", letterSpacing: 0.5 }, children: "Close" }) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "8px 16px 32px", borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }, children: [
+            replyingTo && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, padding: "4px 10px", background: "rgba(108,99,255,0.15)", borderRadius: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#aaa", fontSize: 12 }, children: [
+                "Replying to ",
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ff6b6b" }, children: [
+                  "@",
+                  replyingTo.username
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: cancelReply, style: { background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 14 }, children: "✕" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "input",
+                {
+                  ref: inputRef,
+                  value: text,
+                  onChange: (e) => setText(e.target.value),
+                  onKeyDown: (e) => e.key === "Enter" && post(),
+                  placeholder: currentUser ? replyingTo ? `Reply to @${replyingTo.username}...` : "Add a comment..." : "Log in to comment...",
+                  style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "8px 14px", color: "#fff", fontSize: 14, outline: "none" }
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: post,
+                  disabled: posting,
+                  style: { background: "linear-gradient(135deg,#ff6b6b,#ff8e53)", border: "none", borderRadius: "50%", width: 36, height: 36, color: "#fff", cursor: "pointer", fontSize: 16 },
+                  children: "➤"
+                }
+              )
+            ] })
+          ] })
+        ]
+      }
+    )
   ] });
 }
 function GoLiveModal({ currentUser, onClose, onUploaded }) {
@@ -12050,7 +12155,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: urls[0],
         thumbnail_url: urls[0],
-        photo_urls: JSON.stringify(urls),
+        photo_urls: urls,
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
@@ -12076,6 +12181,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }, 2500);
       } else {
         setStep("Posted! 🎉");
+        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            poster_id: currentUser.id,
+            poster_username: username,
+            poster_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+            video_caption: (postTitle ? postTitle + " " : "") + caption.trim()
+          })
+        }).catch(() => {
+        });
         setTimeout(() => {
           onUploaded();
           onClose();
@@ -12132,6 +12248,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         thumbnail_url = await Promise.race([captureThumbnail(file), new Promise((r2) => setTimeout(() => r2(null), 5e3))]);
       } catch {
       }
+      if (!thumbnail_url) thumbnail_url = video_url;
       setProgress(80);
       setStep("Saving to feed...");
       const videoGeo = await getPostLocation();
@@ -12171,6 +12288,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }, 2500);
       } else {
         setStep("Posted! 🎉");
+        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            poster_id: currentUser.id,
+            poster_username: username,
+            poster_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+            video_caption: (postTitle ? postTitle + " " : "") + caption.trim()
+          })
+        }).catch(() => {
+        });
         setTimeout(() => {
           onUploaded();
           onClose();
@@ -12326,7 +12454,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url,
         thumbnail_url: img_url,
-        photo_urls: JSON.stringify([img_url]),
+        photo_urls: [img_url],
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map((t2) => t2.toLowerCase()),
@@ -13347,7 +13475,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   };
   const likeLockedRef = React.useRef(false);
   const doLike = async () => {
-    var _a2;
+    var _a2, _b;
     if (!currentUser) {
       onNeedAuth();
       return;
@@ -13375,6 +13503,18 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setLiked(true);
         setLikeRecordId(rec.id);
         onLike(video.id, 1);
+        if (video.user_id && video.user_id !== currentUser.id) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "like",
+            video_id: video.id,
+            video_thumbnail: video.thumbnail_url || "",
+            text: "liked your video"
+          });
+        }
       }
     } catch (e) {
       console.error("like error", e);
@@ -13394,7 +13534,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     setLikesListLoading(false);
   };
   const doFollow = async () => {
-    var _a2;
+    var _a2, _b;
     if (!currentUser) {
       onNeedAuth();
       return;
@@ -13420,6 +13560,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         setFollowRecord(rec);
         if (onFollowChange) onFollowChange(video.user_id || video.created_by, true);
+        if (video.user_id && video.user_id !== currentUser.id) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "follow",
+            text: "started following you"
+          });
+        }
       }
     } catch (err) {
       console.error(err);
@@ -13758,18 +13908,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               e.stopPropagation();
               const el2 = videoRef.current;
               if (el2) {
-                const wasPlaying = !el2.paused;
                 el2.muted = false;
                 setMuted(false);
-                if (wasPlaying) {
-                  el2.play().catch(() => {
+                el2.play().catch(() => {
+                });
+                setPlaying(true);
+                hideUIAfterDelay(1500);
+                if (soundRef.current && video.sound_url) {
+                  soundRef.current.play().catch(() => {
                   });
-                  setPlaying(true);
-                  hideUIAfterDelay(1500);
-                  if (soundRef.current && video.sound_url) {
-                    soundRef.current.play().catch(() => {
-                    });
-                  }
                 }
               }
             },
@@ -13777,18 +13924,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               e.stopPropagation();
               const el2 = videoRef.current;
               if (el2) {
-                const wasPlaying = !el2.paused;
                 el2.muted = false;
                 setMuted(false);
-                if (wasPlaying) {
-                  el2.play().catch(() => {
+                el2.play().catch(() => {
+                });
+                setPlaying(true);
+                hideUIAfterDelay(1500);
+                if (soundRef.current && video.sound_url) {
+                  soundRef.current.play().catch(() => {
                   });
-                  setPlaying(true);
-                  hideUIAfterDelay(1500);
-                  if (soundRef.current && video.sound_url) {
-                    soundRef.current.play().catch(() => {
-                    });
-                  }
                 }
               }
             },
@@ -14926,29 +15070,52 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: "Following" })
               ] })
             ] }),
-            !isOwnProfile && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                onClick: doFollow,
-                disabled: followLoading,
-                style: {
-                  padding: "10px 40px",
-                  borderRadius: 24,
-                  background: followRecord ? "#22c55e" : "#ff0000",
-                  border: "none",
-                  color: "#fff",
-                  fontWeight: 800,
-                  fontSize: 15,
-                  cursor: "pointer",
-                  opacity: followLoading ? 0.6 : 1,
-                  boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
-                  transition: "background 0.25s, box-shadow 0.25s",
-                  WebkitTapHighlightColor: "transparent",
-                  touchAction: "manipulation"
-                },
-                children: followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"
-              }
-            )
+            !isOwnProfile && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, justifyContent: "center" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: doFollow,
+                  disabled: followLoading,
+                  style: {
+                    padding: "10px 32px",
+                    borderRadius: 24,
+                    background: followRecord ? "#22c55e" : "#ff0000",
+                    border: "none",
+                    color: "#fff",
+                    fontWeight: 800,
+                    fontSize: 14,
+                    cursor: "pointer",
+                    opacity: followLoading ? 0.6 : 1,
+                    boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
+                    transition: "background 0.25s, box-shadow 0.25s",
+                    WebkitTapHighlightColor: "transparent",
+                    touchAction: "manipulation"
+                  },
+                  children: followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => {
+                    onClose();
+                    window.__openDM && window.__openDM(userId, username, (profile == null ? void 0 : profile.avatar_url) || "");
+                  },
+                  style: {
+                    padding: "10px 20px",
+                    borderRadius: 24,
+                    background: "rgba(108,99,255,0.2)",
+                    border: "1px solid rgba(108,99,255,0.5)",
+                    color: "#a29bfe",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: "pointer",
+                    WebkitTapHighlightColor: "transparent"
+                  },
+                  children: "✉️ Message"
+                }
+              )
+            ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1, padding: 2 }, children: userVideos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🎬" }),
@@ -14959,12 +15126,33 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
               onClick: () => setPlayerIndex(i),
               style: { position: "relative", aspectRatio: "1/1", background: "#111", overflow: "hidden", cursor: "pointer" },
               children: [
-                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: resolveMediaUrl(v2.video_url), style: { width: "100%", height: "100%", objectFit: "cover" }, muted: true, playsInline: true, preload: "metadata" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, opacity: 0.8 }, children: "▶" }) }),
+                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "video",
+                  {
+                    src: resolveMediaUrl(v2.video_url),
+                    style: { width: "100%", height: "100%", objectFit: "cover" },
+                    muted: true,
+                    playsInline: true,
+                    preload: "metadata",
+                    onLoadedMetadata: (e) => {
+                      try {
+                        e.target.currentTime = 1;
+                      } catch {
+                      }
+                    }
+                  }
+                ),
+                !v2.is_photo && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, opacity: 0.8 }, children: "▶" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" } }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 4, left: 6, color: "#fff", fontSize: 11, fontWeight: 700 }, children: [
-                  "❤️ ",
-                  v2.likes_count || 0
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 4, left: 4, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", gap: 6 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                    "❤️ ",
+                    v2.likes_count || 0
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                    "👁 ",
+                    v2.views_count || 0
+                  ] })
                 ] })
               ]
             },
@@ -15026,7 +15214,9 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
         style: { position: "relative", aspectRatio: "9/16", background: "#111", overflow: "hidden", cursor: "pointer" },
         onClick: () => setMenuVideo(v2),
         children: [
-          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
+          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), onError: (e) => {
+            e.target.style.display = "none";
+          }, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
             position: "absolute",
             top: 6,
@@ -17214,6 +17404,9 @@ function App() {
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = reactExports.useState(true);
   const [activeTab, setActiveTab] = reactExports.useState("feed");
+  const [unreadCount, setUnreadCount] = reactExports.useState(0);
+  const [notifCount, setNotifCount] = reactExports.useState(0);
+  const [inboxDMTarget, setInboxDMTarget] = reactExports.useState(null);
   const [showAdmin, setShowAdmin] = reactExports.useState(false);
   const [showGoLive, setShowGoLive] = reactExports.useState(false);
   const [showLiveHub, setShowLiveHub] = reactExports.useState(false);
@@ -17234,6 +17427,35 @@ function App() {
     }).catch(() => {
     });
   }, [currentUser]);
+  React.useEffect(() => {
+    if (!currentUser) {
+      setUnreadCount(0);
+      setNotifCount(0);
+      return;
+    }
+    const poll = async () => {
+      messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {
+      });
+      try {
+        const res = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
+        const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+        setNotifCount(items.length);
+      } catch (e) {
+      }
+    };
+    poll();
+    const iv = setInterval(poll, 2e4);
+    return () => clearInterval(iv);
+  }, [currentUser]);
+  React.useEffect(() => {
+    window.__openDM = (userId, username2, avatar) => {
+      setInboxDMTarget({ userId, username: username2, avatar });
+      setActiveTab("inbox");
+    };
+    return () => {
+      delete window.__openDM;
+    };
+  }, []);
   const handleFollowChange = (userId, isNowFollowing) => {
     setFollowedUserIds((prev) => {
       const next = new Set(prev);
@@ -18007,6 +18229,23 @@ function App() {
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
+          onClick: () => requireAuth(() => setActiveTab("notifications")),
+          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "notifications" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s", position: "relative" },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "notifications" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M13.73 21a2 2 0 0 1-3.46 0" })
+              ] }),
+              notifCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -4, right: -4, background: "#F5C842", borderRadius: "50%", width: 14, height: 14, fontSize: 8, color: "#0B0C1A", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }, children: notifCount > 9 ? "9+" : notifCount })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "notifications" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "notifications" ? 700 : 400, letterSpacing: 0.3 }, children: "Activity" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
           onClick: () => requireAuth(() => setShowUpload(true)),
           style: { flex: 1, minWidth: 52, padding: "8px 10px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
           children: [
@@ -18043,6 +18282,23 @@ function App() {
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "admin" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "admin" ? 700 : 400, letterSpacing: 0.3 }, children: "Mod" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => requireAuth(() => setActiveTab("inbox")),
+          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "inbox" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s", position: "relative" },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "inbox" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "22,6 12,13 2,6" })
+              ] }),
+              unreadCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -4, right: -4, background: "#ff6b6b", borderRadius: "50%", width: 14, height: 14, fontSize: 8, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }, children: unreadCount > 9 ? "9+" : unreadCount })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "inbox" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "inbox" ? 700 : 400, letterSpacing: 0.3 }, children: "Inbox" })
           ]
         }
       ),
@@ -18422,7 +18678,7 @@ function App() {
                       if (!editProfileName.trim()) return;
                       setEditProfileSaving(true);
                       try {
-                        await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                        await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
                         setCurrentUser((u2) => ({ ...u2, full_name: editProfileName.trim() }));
                         setShowEditProfile(false);
                       } catch (e) {
