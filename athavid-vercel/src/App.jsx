@@ -1,7 +1,7 @@
 // Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes, messages } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes, messages, notifications } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import SachiLiveHub from "./SachiLive.jsx";
@@ -186,6 +186,10 @@ async function captureThumbnail(file) {
 // ── Auth Modal ────────────────────────────────────────────────────────────────
 
 // ── Comment Sheet ─────────────────────────────────────────────────────────────
+const createNotif = (data) => {
+  request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification", { is_read: false, ...data }).catch(() => {});
+};
+
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
   const [list, setList] = useState([]);
   const [text, setText] = useState("");
@@ -242,6 +246,19 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         setList(prev => [...prev, c]);
         setText("");
         await videos.update(video.id, { comments_count: newCount });
+        // notify video owner
+        if (video.user_id && video.user_id !== currentUser?.id) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || currentUser.email?.split("@")[0] || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "comment",
+            video_id: video.id,
+            video_thumbnail: video.thumbnail_url || "",
+            text: `commented: "${text.trim().substring(0, 50)}"`
+          });
+        }
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
       }
@@ -2452,6 +2469,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setLiked(true);
         setLikeRecordId(rec.id);
         onLike(video.id, 1);
+        // notify video owner
+        if (video.user_id && video.user_id !== currentUser.id) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || currentUser.email?.split("@")[0] || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "like",
+            video_id: video.id,
+            video_thumbnail: video.thumbnail_url || "",
+            text: "liked your video"
+          });
+        }
       }
     } catch(e) { console.error("like error", e); }
     setLikeLoading(false);
@@ -2491,6 +2521,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         setFollowRecord(rec);
         if (onFollowChange) onFollowChange(video.user_id || video.created_by, true);
+        // notify the person being followed
+        if (video.user_id && video.user_id !== currentUser.id) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || currentUser.email?.split("@")[0] || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "follow",
+            text: "started following you"
+          });
+        }
       }
     } catch(err) { console.error(err); }
     setFollowLoading(false);
@@ -3613,17 +3654,24 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                 </div>
 
                 {!isOwnProfile && currentUser && (
-                  <button onClick={doFollow} disabled={followLoading}
-                    style={{ padding:"10px 40px", borderRadius:24,
-                      background: followRecord ? "#22c55e" : "#ff0000",
-                      border: "none",
-                      color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
-                      opacity: followLoading ? 0.6 : 1,
-                      boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
-                      transition:"background 0.25s, box-shadow 0.25s",
-                      WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                    {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
-                  </button>
+                  <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+                    <button onClick={doFollow} disabled={followLoading}
+                      style={{ padding:"10px 32px", borderRadius:24,
+                        background: followRecord ? "#22c55e" : "#ff0000",
+                        border: "none",
+                        color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer",
+                        opacity: followLoading ? 0.6 : 1,
+                        boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
+                        transition:"background 0.25s, box-shadow 0.25s",
+                        WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                      {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
+                    </button>
+                    <button onClick={() => { onClose(); window.__openDM && window.__openDM(userId, username, profile?.avatar_url || ""); }}
+                      style={{ padding:"10px 20px", borderRadius:24, background:"rgba(108,99,255,0.2)", border:"1px solid rgba(108,99,255,0.5)",
+                        color:"#a29bfe", fontWeight:700, fontSize:14, cursor:"pointer", WebkitTapHighlightColor:"transparent" }}>
+                      ✉️ Message
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -3652,8 +3700,9 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                         </div>
                         )}
                         <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
-                        <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
-                          ❤️ {v.likes_count || 0}
+                        <div style={{ position:"absolute", bottom:4, left:4, color:"#fff", fontSize:10, fontWeight:700, display:"flex", gap:6 }}>
+                          <span>❤️ {v.likes_count || 0}</span>
+                          <span>👁 {v.views_count || 0}</span>
                         </div>
                       </div>
                     ))}
@@ -4799,8 +4848,77 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 }
 
 
+// ─── Notifications Panel ─────────────────────────────────────────────────────
+function NotificationsPanel({ currentUser, onClose, onNotifRead }) {
+  const [notifs, setNotifs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification?recipient_id=${currentUser.id}&limit=50&sort=-created_date`);
+        const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+        setNotifs(items);
+        // Mark all as read
+        items.filter(n => !n.is_read).forEach(n =>
+          request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification/${n.id}`, { is_read: true }).catch(() => {})
+        );
+        if (onNotifRead) onNotifRead();
+      } catch(e) {}
+      setLoading(false);
+    };
+    load();
+  }, [currentUser.id]);
+
+  const fmtTime = (d) => {
+    const dt = new Date(d);
+    const diff = Date.now() - dt;
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return Math.floor(diff/60000) + "m ago";
+    if (diff < 86400000) return Math.floor(diff/3600000) + "h ago";
+    return dt.toLocaleDateString();
+  };
+
+  const icon = (type) => ({ like:"❤️", comment:"💬", follow:"👤", message:"✉️" }[type] || "🔔");
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:100, display:"flex", flexDirection:"column" }}>
+      <div style={{ padding:"16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 16px)", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(14,14,28,0.98)", backdropFilter:"blur(20px)" }}>
+        <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>🔔 Activity</div>
+      </div>
+      <div style={{ flex:1, overflowY:"auto" }}>
+        {loading && <div style={{ textAlign:"center", color:"#555", padding:40 }}>Loading...</div>}
+        {!loading && notifs.length === 0 && (
+          <div style={{ textAlign:"center", color:"#555", padding:60 }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🔔</div>
+            <div style={{ fontSize:16 }}>No activity yet</div>
+            <div style={{ fontSize:13, marginTop:8, color:"#444" }}>Likes, comments and follows will appear here</div>
+          </div>
+        )}
+        {notifs.map(n => (
+          <div key={n.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", background: n.is_read ? "transparent" : "rgba(108,99,255,0.06)" }}>
+            <div style={{ position:"relative" }}>
+              <img src={n.sender_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${n.sender_username}`}
+                style={{ width:44, height:44, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.3)" }} />
+              <div style={{ position:"absolute", bottom:-2, right:-2, background:"#1a1a2e", borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11 }}>{icon(n.type)}</div>
+            </div>
+            <div style={{ flex:1 }}>
+              <span style={{ color:"#fff", fontWeight:700, fontSize:13 }}>@{n.sender_username}</span>
+              <span style={{ color:"#aaa", fontSize:13 }}> {n.text}</span>
+            </div>
+            {n.video_thumbnail && (
+              <img src={n.video_thumbnail} style={{ width:40, height:40, borderRadius:6, objectFit:"cover" }} />
+            )}
+            <div style={{ color:"#444", fontSize:11, flexShrink:0 }}>{fmtTime(n.created_date)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Inbox Panel ────────────────────────────────────────────────────────────
-function InboxPanel({ currentUser, onClose }) {
+function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen }) {
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeThread, setActiveThread] = useState(null); // { userId, username, avatar }
@@ -4808,6 +4926,14 @@ function InboxPanel({ currentUser, onClose }) {
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
+
+  // If opened via Message button, jump straight to that DM
+  useEffect(() => {
+    if (initialDMTarget && initialDMTarget.userId) {
+      openThread(initialDMTarget.userId, initialDMTarget.username, initialDMTarget.avatar);
+      if (onOpen) onOpen();
+    }
+  }, []);
 
   // Load inbox — group by sender, get latest per thread
   const loadInbox = async () => {
@@ -5872,6 +5998,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feed");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(0);
+  const [inboxDMTarget, setInboxDMTarget] = useState(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showGoLive, setShowGoLive] = useState(false);
   const [showLiveHub, setShowLiveHub] = useState(false);
@@ -5891,14 +6019,30 @@ function App() {
     }).catch(() => {});
   }, [currentUser]);
 
-  // Poll unread message count
+  // Poll unread message count + notif count
   React.useEffect(() => {
-    if (!currentUser) { setUnreadCount(0); return; }
-    const poll = () => messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {});
+    if (!currentUser) { setUnreadCount(0); setNotifCount(0); return; }
+    const poll = async () => {
+      messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {});
+      try {
+        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
+        const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+        setNotifCount(items.length);
+      } catch(e) {}
+    };
     poll();
-    const iv = setInterval(poll, 15000);
+    const iv = setInterval(poll, 20000);
     return () => clearInterval(iv);
   }, [currentUser]);
+
+  // Expose openDM globally so profile sheet can trigger it
+  React.useEffect(() => {
+    window.__openDM = (userId, username, avatar) => {
+      setInboxDMTarget({ userId, username, avatar });
+      setActiveTab("inbox");
+    };
+    return () => { delete window.__openDM; };
+  }, []);
 
   const handleFollowChange = (userId, isNowFollowing) => {
     setFollowedUserIds(prev => {
@@ -6505,6 +6649,20 @@ function App() {
               <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400, letterSpacing:0.3 }}>Explore</div>
+          </button>
+
+          {/* Notifications */}
+          <button onClick={() => requireAuth(() => setActiveTab("notifications"))}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="notifications" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s", position:"relative" }}>
+            <div style={{ position:"relative" }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="notifications" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {notifCount > 0 && (
+                <div style={{ position:"absolute", top:-4, right:-4, background:"#F5C842", borderRadius:"50%", width:14, height:14, fontSize:8, color:"#0B0C1A", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>{notifCount > 9 ? "9+" : notifCount}</div>
+              )}
+            </div>
+            <div style={{ fontSize:9, color: activeTab==="notifications" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="notifications" ? 700 : 400, letterSpacing:0.3 }}>Activity</div>
           </button>
 
           {/* Post button — flat nav style, no circle */}
