@@ -5051,6 +5051,10 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen }) {
   const [threadMsgs, setThreadMsgs] = useState([]);
   const [newMsg, setNewMsg] = useState("");
   const [sending, setSending] = useState(false);
+  const [showNewDM, setShowNewDM] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [userResults, setUserResults] = useState([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
   const bottomRef = useRef(null);
 
   // If opened via Message button, jump straight to that DM
@@ -5079,6 +5083,21 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen }) {
   };
 
   useEffect(() => { loadInbox(); }, [currentUser.id]);
+
+  // Search users for new DM
+  useEffect(() => {
+    if (!userSearch.trim()) { setUserResults([]); return; }
+    const t = setTimeout(async () => {
+      setSearchingUsers(true);
+      try {
+        const res = await AthaVidUser.filter({ username__icontains: userSearch.trim() });
+        const items = Array.isArray(res) ? res : (res?.records || []);
+        setUserResults(items.filter(u => u.id !== currentUser.id).slice(0, 8));
+      } catch(e) { setUserResults([]); }
+      setSearchingUsers(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [userSearch]);
 
   const openThread = async (senderId, senderUsername, senderAvatar) => {
     setActiveThread({ userId: senderId, username: senderUsername, avatar: senderAvatar });
@@ -5158,8 +5177,59 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen }) {
   return (
     <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:100, display:"flex", flexDirection:"column" }}>
       <div style={{ padding:"16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 16px)", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(14,14,28,0.98)", backdropFilter:"blur(20px)" }}>
-        <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>✉️ Inbox</div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>✉️ Inbox</div>
+          <button onClick={() => { setShowNewDM(true); setUserSearch(""); setUserResults([]); }}
+            style={{ background:"linear-gradient(135deg,#6c63ff,#a855f7)", border:"none", borderRadius:20, padding:"7px 14px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            ✏️ New
+          </button>
+        </div>
       </div>
+
+      {/* New DM search overlay */}
+      {showNewDM && (
+        <div style={{ position:"absolute", inset:0, background:"#0B0C1A", zIndex:200, display:"flex", flexDirection:"column", paddingTop:"calc(env(safe-area-inset-top,0px) + 0px)" }}>
+          <div style={{ padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:10, background:"rgba(14,14,28,0.98)" }}>
+            <button onClick={() => setShowNewDM(false)} style={{ background:"none", border:"none", color:"#F5C842", fontSize:20, cursor:"pointer", padding:0 }}>←</button>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>New Message</div>
+          </div>
+          <div style={{ padding:"12px 16px" }}>
+            <input
+              autoFocus
+              value={userSearch}
+              onChange={e => setUserSearch(e.target.value)}
+              placeholder="Search by username..."
+              style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:24, padding:"10px 16px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }}
+            />
+          </div>
+          <div style={{ flex:1, overflowY:"auto" }}>
+            {searchingUsers && <div style={{ textAlign:"center", color:"#555", padding:20 }}>Searching...</div>}
+            {!searchingUsers && userSearch && userResults.length === 0 && (
+              <div style={{ textAlign:"center", color:"#555", padding:40 }}>No users found</div>
+            )}
+            {!userSearch && (
+              <div style={{ textAlign:"center", color:"#555", padding:40 }}>
+                <div style={{ fontSize:36, marginBottom:8 }}>🔍</div>
+                <div>Type a username to find someone</div>
+              </div>
+            )}
+            {userResults.map(u => (
+              <div key={u.id} onClick={() => {
+                setShowNewDM(false);
+                openThread(u.id, u.username, u.avatar_url || "");
+              }}
+                style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}>
+                <img src={u.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`}
+                  style={{ width:44, height:44, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.3)" }} />
+                <div>
+                  <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>@{u.username}</div>
+                  {u.display_name && <div style={{ color:"#888", fontSize:12 }}>{u.display_name}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ flex:1, overflowY:"auto" }}>
         {loading && <div style={{ textAlign:"center", color:"#555", padding:40 }}>Loading...</div>}
         {!loading && threads.length === 0 && (
