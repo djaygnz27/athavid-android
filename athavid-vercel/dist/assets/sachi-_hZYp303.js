@@ -16528,7 +16528,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     ] })
   ] });
 }
-function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen }) {
+function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile }) {
   const [threads, setThreads] = reactExports.useState([]);
   const [loading, setLoading] = reactExports.useState(true);
   const [activeThread, setActiveThread] = reactExports.useState(null);
@@ -16632,7 +16632,13 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen }) {
   if (activeThread) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 500, display: "flex", flexDirection: "column" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 14px)", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 12, background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-        onClose();
+        if (fromProfile) {
+          onClose();
+        } else {
+          setActiveThread(null);
+          setThreadMsgs([]);
+          loadInbox();
+        }
       }, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 20, padding: 0 }, children: "←" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + activeThread.username, style: { width: 36, height: 36, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.4)" } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700 }, children: [
@@ -17738,7 +17744,7 @@ function App() {
   }, [currentUser]);
   React.useEffect(() => {
     window.__openDM = (userId, username2, avatar) => {
-      setInboxDMTarget({ userId, username: username2, avatar });
+      setInboxDMTarget({ userId, username: username2, avatar, fromProfile: true });
       setActiveTab("inbox");
     };
     return () => {
@@ -18492,7 +18498,8 @@ function App() {
         currentUser,
         onClose: () => setActiveTab("feed"),
         initialDMTarget: inboxDMTarget,
-        onOpen: () => setInboxDMTarget(null)
+        onOpen: () => setInboxDMTarget(null),
+        fromProfile: (inboxDMTarget == null ? void 0 : inboxDMTarget.fromProfile) || false
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,8px)", paddingTop: 0, display: "flex", justifyContent: "center", pointerEvents: "none", opacity: activeTab === "feed" && globalIsPlaying ? 0.25 : 1, transition: "opacity 0.4s ease" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { pointerEvents: "auto", margin: "0 16px 8px", background: "rgba(14,14,28,0.96)", backdropFilter: "blur(30px)", borderRadius: 40, border: "1px solid rgba(245,200,66,0.15)", display: "flex", alignItems: "center", padding: "6px 8px", gap: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }, children: [
