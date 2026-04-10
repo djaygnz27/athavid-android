@@ -7299,8 +7299,8 @@ function Landing({ onEnter }) {
     } }) })
   ] });
 }
-const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID$4 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL$3 = "https://sachi-c7f0261c.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
   sessionToken = t2;
@@ -7318,7 +7318,7 @@ async function request$1(method, path, body) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${BASE_URL$1}${path}`, {
+  const res = await fetch(`${BASE_URL$3}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : void 0
@@ -7334,34 +7334,34 @@ async function request$1(method, path, body) {
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request$1("POST", `/apps/${APP_ID$2}/auth/login`, { email, password });
+    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request$1("POST", `/apps/${APP_ID$2}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `/apps/${APP_ID$4}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request$1("POST", `/apps/${APP_ID$2}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request$1("POST", `/apps/${APP_ID$2}/auth/resend-otp`, { email });
+    return request$1("POST", `/apps/${APP_ID$4}/auth/resend-otp`, { email });
   },
   getUser() {
     const u2 = localStorage.getItem("sachi_user");
     return u2 ? JSON.parse(u2) : null;
   },
   async forgotPassword(email) {
-    return request$1("POST", `/apps/${APP_ID$2}/auth/reset-password-request`, { email });
+    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request$1("POST", `/apps/${APP_ID$2}/auth/reset-password`, {
+    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -7372,20 +7372,20 @@ const auth = {
 };
 const videos = {
   async list(limit = 30, skip = 0) {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiVideo`, data);
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$2}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen = /* @__PURE__ */ new Set();
@@ -7400,7 +7400,7 @@ const videos = {
     let skip = 0;
     const limit = 100;
     while (true) {
-      const res = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
+      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
       all = all.concat(items);
       if (items.length < limit) break;
@@ -7410,21 +7410,21 @@ const videos = {
     return all.filter((v2) => v2.user_id === userId && !v2.is_archived);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiComment`, data);
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$2}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file) {
@@ -7449,7 +7449,7 @@ async function uploadFile(file) {
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request$1("POST", `/apps/${APP_ID$2}/entities/Follow`, {
+    return request$1("POST", `/apps/${APP_ID$4}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -7457,52 +7457,52 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request$1("DELETE", `/apps/${APP_ID$2}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/Follow?follower_id=${follower_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/Follow?following_id=${following_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const reports = {
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiReport`, data);
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiReport`, data);
   },
   async list() {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiReport?sort=-created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiReport?sort=-created_date&limit=200`);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$2}/entities/SachiReport/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiReport/${id2}`, data);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request$1("POST", `/apps/${APP_ID$2}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$2}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -7518,13 +7518,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request$1("PUT", `/apps/${APP_ID$2}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `/apps/${APP_ID$4}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request$1("POST", `/apps/${APP_ID$2}/entities/UserInterest`, {
+        await request$1("POST", `/apps/${APP_ID$4}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -7586,7 +7586,7 @@ function getCacheKey(video_id, user_id) {
 }
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    const rec = await request$1("POST", `/apps/${APP_ID$2}/entities/SachiLike`, {
+    const rec = await request$1("POST", `/apps/${APP_ID$4}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
@@ -7599,13 +7599,13 @@ const likes = {
     return rec;
   },
   async remove(id2, video_id, user_id) {
-    await request$1("DELETE", `/apps/${APP_ID$2}/entities/SachiLike/${id2}`);
+    await request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiLike/${id2}`);
     const cache = getLikesCache();
     delete cache[getCacheKey(video_id, user_id)];
     setLikesCache(cache);
   },
   async getByVideo(video_id) {
-    return request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&limit=500`);
   },
   async checkUserLiked(video_id, user_id) {
     const cache = getLikesCache();
@@ -7614,7 +7614,7 @@ const likes = {
       return { id: cache[cacheKey], video_id, user_id, _fromCache: true };
     }
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
       if (items.length > 0) {
         cache[cacheKey] = items[0].id;
@@ -7628,7 +7628,7 @@ const likes = {
       if (storedUser) {
         const u2 = JSON.parse(storedUser);
         if (u2.username) {
-          const res2 = await request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
+          const res2 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
           const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.records) || (res2 == null ? void 0 : res2.items) || [];
           if (items2.length > 0) {
             cache[cacheKey] = items2[0].id;
@@ -7753,12 +7753,12 @@ const COUNTRIES = [
   "Zimbabwe"
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID$3 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL$2 = "https://sachi-c7f0261c.base44.app/api";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID$1}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL$2}/apps/${APP_ID$3}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
@@ -7864,6 +7864,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
   const [is18, setIs18] = reactExports.useState(false);
+  const [agreedToTerms, setAgreedToTerms] = reactExports.useState(false);
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
   const inp = {
@@ -7904,6 +7905,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     if (!dob) return setError("Please enter your birthday.");
     if (!country.trim()) return setError("Please select your country.");
     if (!is18) return setError("You must confirm you are 18 years or older.");
+    if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
     const birthDate = new Date(dob);
     const today = /* @__PURE__ */ new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -7914,7 +7916,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID$1}/entities/AthaVidUser`,
+        `${BASE_URL$2}/apps/${APP_ID$3}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8030,14 +8032,27 @@ function FinishStep({ googlePayload, onSuccess }) {
       ),
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 18 years or older" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginBottom: 14, lineHeight: 1.5 }, children: [
-      "By joining you agree to our",
-      " ",
-      /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842" }, children: "Terms" }),
-      " &",
-      " ",
-      /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
-      "."
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          type: "checkbox",
+          checked: agreedToTerms,
+          onChange: (e) => setAgreedToTerms(e.target.checked),
+          style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0, marginTop: 2 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ccc", fontSize: 13, lineHeight: 1.5 }, children: [
+        "I have read and agree to Sachi's",
+        " ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842", fontWeight: 700 }, onClick: (e) => e.stopPropagation(), children: "Terms of Service" }),
+        " ",
+        "and",
+        " ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842", fontWeight: 700 }, onClick: (e) => e.stopPropagation(), children: "Privacy Policy" }),
+        " ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
+      ] })
     ] }),
     error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12 }, children: error }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleFinish, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Setting up your profile…" : "Let's Go 🚀" })
@@ -8174,65 +8189,1709 @@ function AuthModal({ onClose, onSuccess }) {
     ] })
   ] });
 }
+const EFFECTIVE_DATE$1 = "April 1, 2026";
+const COMPANY$1 = "LDNA Consulting LLC";
+const EMAIL$1 = "support@sachistream.com";
+const APP$1 = "Sachi";
+const DOMAIN$1 = "sachistream.com";
 function Terms() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0f0f1a", minHeight: "100vh", padding: "32px 20px", color: "#ddd", fontFamily: "sans-serif", maxWidth: 700, margin: "0 auto" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 28, fontWeight: 900, marginBottom: 4 }, children: "📋 Terms of Service" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 28 }, children: "Last updated: April 1, 2026" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#aaa", fontSize: 14, lineHeight: 1.8, marginBottom: 20 }, children: [
-      "Welcome to ",
-      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Sachi" }),
-      ", a short-video sharing platform operated by ",
-      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "LDNA Consulting, New Providence, NJ 07974" }),
-      ". By creating an account or using Sachi, you agree to these Terms of Service. Please read them carefully."
+  const s = {
+    wrapper: { minHeight: "100vh", background: "#0B0C1A", color: "#e0e0e0", fontFamily: "'Segoe UI', sans-serif", padding: "0 0 80px 0" },
+    hero: { background: "linear-gradient(135deg,#1a1040 0%,#0B0C1A 100%)", borderBottom: "1px solid rgba(245,200,66,0.15)", padding: "40px 24px 32px", textAlign: "center" },
+    logo: { fontSize: 28, fontWeight: 900, color: "#F5C842", marginBottom: 6 },
+    subtitle: { color: "#888", fontSize: 13 },
+    body: { maxWidth: 720, margin: "0 auto", padding: "32px 24px" },
+    h2: { color: "#F5C842", fontSize: 17, fontWeight: 800, marginTop: 36, marginBottom: 10, borderBottom: "1px solid rgba(245,200,66,0.12)", paddingBottom: 8 },
+    p: { fontSize: 14, lineHeight: 1.8, color: "#ccc", marginBottom: 14 },
+    li: { fontSize: 14, lineHeight: 1.8, color: "#ccc", marginBottom: 6 },
+    back: { display: "inline-flex", alignItems: "center", gap: 6, color: "#F5C842", fontSize: 13, fontWeight: 700, textDecoration: "none", marginBottom: 24, cursor: "pointer" }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.hero, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.logo, children: [
+        "⊛ ",
+        APP$1
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, marginBottom: 6 }, children: "Terms of Service" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.subtitle, children: [
+        "Effective Date: ",
+        EFFECTIVE_DATE$1,
+        " · Last Updated: ",
+        EFFECTIVE_DATE$1
+      ] })
     ] }),
-    [
-      { title: "1. Eligibility", body: "You must be at least 18 years old to create an account and use Sachi. By registering, you confirm that you are 18 or older. We reserve the right to terminate accounts of users found to be under 18." },
-      { title: "2. User Accounts", body: "You are responsible for maintaining the confidentiality of your login credentials. You agree to provide accurate information when registering and to update it as needed. You are fully responsible for all activity that occurs under your account." },
-      { title: "3. Content You Post", body: "You retain ownership of the content you upload. However, by posting on Sachi, you grant LDNA Consulting a non-exclusive, royalty-free, worldwide license to display, distribute, and promote your content within the platform. You are solely responsible for everything you post. You must not post content that is illegal, harassing, defamatory, or infringes on any third party's rights." },
-      { title: "4. No Liability for Other Users' Content — YOU MUST READ AND AGREE", body: "Sachi is a user-generated content platform. We do NOT create, endorse, verify, or take responsibility for any content posted by other users. By creating an account, you expressly acknowledge and agree that Sachi and LDNA Consulting are NOT responsible or liable — directly or indirectly — for any content, videos, comments, images, or messages posted by other users. This includes content that is offensive, inaccurate, harmful, illegal, or objectionable. Your interactions with other users and any content you encounter are entirely at your own risk. If you see content that violates these Terms, you may report it using the in-app report feature." },
-      { title: "5. Prohibited Content", body: "The following content is strictly prohibited: content involving minors in any sexual context, content that promotes violence or terrorism, content that infringes copyrights or trademarks, spam or misleading information, and any content that violates applicable law." },
-      { title: "6. Content Moderation", body: "We reserve the right — but not the obligation — to review, remove, or restrict any content or account that we determine, in our sole discretion, violates these Terms or is harmful to our community." },
-      { title: "7. Intellectual Property", body: "The Sachi name, logo, and platform design are the property of LDNA Consulting. You may not copy, reproduce, or use them without prior written permission." },
-      { title: "8. Disclaimers", body: "Sachi is provided 'as is' without warranties of any kind. We do not guarantee uninterrupted service or that the platform will be error-free. We are not liable for any user-generated content." },
-      { title: "9. Limitation of Liability", body: "To the maximum extent permitted by law, LDNA Consulting shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of Sachi." },
-      { title: "10. Termination", body: "We may suspend or terminate your account at any time for violations of these Terms, without prior notice. You may also delete your account at any time." },
-      { title: "11. Changes to Terms", body: "We may update these Terms from time to time. Continued use of Sachi after changes are posted constitutes your acceptance of the updated Terms." },
-      { title: "12. Governing Law", body: "These Terms are governed by the laws of the State of New Jersey, United States, without regard to its conflict of law provisions." },
-      { title: "13. Contact", body: "For questions about these Terms, contact us at: jaygnz27@gmail.com" }
-    ].map(({ title, body }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 22 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff8e53", fontWeight: 800, fontSize: 15, marginBottom: 6 }, children: title }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "#bbb", fontSize: 14, lineHeight: 1.8, margin: 0 }, children: body })
-    ] }, title)),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/", style: { color: "#ff6b6b", fontSize: 14, textDecoration: "none" }, children: "← Back to Sachi" }) })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.body, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("a", { href: "/", style: s.back, children: [
+        "← Back to ",
+        APP$1
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "Welcome to ",
+        APP$1,
+        ' ("the Platform"), operated by ',
+        COMPANY$1,
+        ' ("we," "us," or "our"). By accessing or using ',
+        DOMAIN$1,
+        " or any ",
+        APP$1,
+        " mobile application, you agree to be bound by these Terms of Service. Please read them carefully."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "1. Acceptance of Terms" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "By creating an account or using ",
+        APP$1,
+        ", you confirm that you are at least 13 years of age, that you have read and understood these Terms, and that you agree to be legally bound by them. If you do not agree, do not use the Platform."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "2. Eligibility" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "You must be at least 13 years old to create an account. Certain features — including mature or adult content — are restricted to users who have verified they are 18 years or older. By enabling 18+ content, you represent and warrant that you are of legal age in your jurisdiction." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "3. Your Account" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "You are responsible for maintaining the security of your account. You agree not to share your login credentials with any third party. ",
+        APP$1,
+        " uses Google Sign-In for authentication. You are responsible for all activity that occurs under your account."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "We reserve the right to suspend or terminate accounts that violate these Terms, at our sole discretion, with or without prior notice." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "4. User Content" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "You retain ownership of the content you post on ",
+        APP$1,
+        ". By posting content, you grant ",
+        COMPANY$1,
+        " a non-exclusive, worldwide, royalty-free, sublicensable license to use, display, reproduce, and distribute your content on the Platform and for promotional purposes."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "You represent and warrant that:" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "You own or have the rights to all content you post." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Your content does not infringe any third-party intellectual property rights." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Your content complies with all applicable laws." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "5. Prohibited Content & Conduct" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "You agree NOT to post, share, or engage in any of the following on ",
+        APP$1,
+        ":"
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Content that is illegal, defamatory, harassing, or threatening" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Child sexual abuse material (CSAM) or any content that sexualizes minors" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Content that promotes violence, hate speech, or discrimination" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Spam, scams, or misleading information" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Content that violates any third party's intellectual property rights" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "AI-generated deepfakes or synthetic media designed to deceive" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Malware, viruses, or any malicious code" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "Violations may result in immediate account termination and, where required by law, reporting to the appropriate authorities." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "6. Child Safety (CSAM Policy)" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        APP$1,
+        " has a zero-tolerance policy for child sexual abuse material (CSAM). Any such content will be immediately removed, the responsible account permanently banned, and the content reported to the National Center for Missing and Exploited Children (NCMEC) and relevant law enforcement agencies."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "7. Intellectual Property" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "The ",
+        APP$1,
+        " name, logo (™), platform design, and original content are the intellectual property of ",
+        COMPANY$1,
+        '. The "SACHI" word mark is a pending trademark with the USPTO (effective April 1, 2026). You may not use our branding without written permission.'
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "8. Music & Third-Party Content" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        APP$1,
+        " may include music powered by Audius and other licensed providers. You agree to use such content only within the Platform and not to download, redistribute, or repurpose it outside of ",
+        APP$1,
+        "."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "9. Privacy" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "Your use of ",
+        APP$1,
+        " is also governed by our ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", style: { color: "#F5C842" }, children: "Privacy Policy" }),
+        ", which is incorporated into these Terms by reference."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "10. Disclaimers & Limitation of Liability" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        APP$1,
+        ' is provided "as is" without warranties of any kind. To the fullest extent permitted by law, ',
+        COMPANY$1,
+        " shall not be liable for any indirect, incidental, special, or consequential damages arising out of your use of the Platform."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "11. Termination" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "We may terminate or suspend your access at any time for any reason. You may delete your account at any time by contacting us at ",
+        EMAIL$1,
+        ". Upon termination, your license to use the Platform ends immediately."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "12. Governing Law" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "These Terms are governed by the laws of the State of New Jersey, United States, without regard to its conflict of law principles. Any disputes shall be resolved in the courts of Union County, New Jersey." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "13. Changes to These Terms" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "We may update these Terms at any time. If we make material changes, we will notify you via email or an in-app notice. Continued use of ",
+        APP$1,
+        " after changes constitutes acceptance of the new Terms."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "14. Contact Us" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "If you have questions about these Terms, please contact us at:",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: `mailto:${EMAIL$1}`, style: { color: "#F5C842" }, children: EMAIL$1 }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        COMPANY$1,
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        "New Providence, NJ 07974, USA"
+      ] })
+    ] })
   ] });
 }
-function Privacy() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0f0f1a", minHeight: "100vh", padding: "32px 20px", color: "#ddd", fontFamily: "sans-serif", maxWidth: 700, margin: "0 auto" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 28, fontWeight: 900, marginBottom: 4 }, children: "🔒 Privacy Policy" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 28 }, children: "Last updated: April 1, 2026" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#aaa", fontSize: 14, lineHeight: 1.8, marginBottom: 20 }, children: [
-      "This Privacy Policy explains how ",
-      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "LDNA Consulting" }),
-      ' ("we", "us", "our") collects, uses, and protects your personal information when you use ',
-      /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Sachi" }),
-      "."
+const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
+const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
+const GIFTS = [
+  { id: "sakura", name: "Sakura", emoji: "🌸", icon: "🌸", coins: 5, color: "#e91e8c", glow: "rgba(233,30,140,0.6)", rarity: "common", anim: "float" },
+  { id: "crystal", name: "Crystal", emoji: "💎", icon: "💎", coins: 15, color: "#00bcd4", glow: "rgba(0,188,212,0.6)", rarity: "common", anim: "spin" },
+  { id: "aurora", name: "Aurora", emoji: "🌌", icon: "🌌", coins: 30, color: "#7c4dff", glow: "rgba(124,77,255,0.6)", rarity: "rare", anim: "wave" },
+  { id: "sunburst", name: "Sunburst", emoji: "☀️", icon: "☀️", coins: 50, color: "#FF9500", glow: "rgba(255,149,0,0.6)", rarity: "rare", anim: "pulse" },
+  { id: "moonstone", name: "Moonstone", emoji: "🌙", icon: "🌙", coins: 100, color: "#b0bec5", glow: "rgba(176,190,197,0.7)", rarity: "epic", anim: "orbit" },
+  { id: "phoenix", name: "Phoenix", emoji: "🔥", icon: "🦅", coins: 200, color: "#ff6d00", glow: "rgba(255,109,0,0.7)", rarity: "epic", anim: "rise" },
+  { id: "nebula", name: "Nebula", emoji: "✨", icon: "✨", coins: 500, color: "#aa00ff", glow: "rgba(170,0,255,0.8)", rarity: "legendary", anim: "explode" },
+  { id: "cosmos", name: "Cosmos", emoji: "🪐", icon: "🪐", coins: 1e3, color: "#F5C842", glow: "rgba(245,200,66,0.9)", rarity: "legendary", anim: "nova" }
+];
+const RARITY_COLORS = {
+  common: { bg: "rgba(255,255,255,0.06)", border: "rgba(255,255,255,0.12)", label: "#888" },
+  rare: { bg: "rgba(0,188,212,0.08)", border: "rgba(0,188,212,0.25)", label: "#00bcd4" },
+  epic: { bg: "rgba(124,77,255,0.1)", border: "rgba(124,77,255,0.3)", label: "#7c4dff" },
+  legendary: { bg: "rgba(245,200,66,0.1)", border: "rgba(245,200,66,0.4)", label: "#F5C842" }
+};
+const COIN_PACKS = [
+  { id: "pack_100", coins: 100, price: "$0.99", tag: "", icon: "🪙", price_id: "price_1TKVSjKB9bqKOOJ0Njg8IwVw" },
+  { id: "pack_500", coins: 500, price: "$3.99", tag: "POPULAR", icon: "🥈", price_id: "price_1TKVSkKB9bqKOOJ02I2vMaHF" },
+  { id: "pack_1200", coins: 1200, price: "$7.99", tag: "GREAT DEAL", icon: "🥇", price_id: "price_1TKVSlKB9bqKOOJ0DultXMlu" },
+  { id: "pack_3500", coins: 3500, price: "$19.99", tag: "", icon: "💠", price_id: "price_1TKVSlKB9bqKOOJ0Ew1CcIQ7" },
+  { id: "pack_10000", coins: 1e4, price: "$49.99", tag: "BEST VALUE", icon: "👑", price_id: "price_1TKVSmKB9bqKOOJ0fOjNzyQy" }
+];
+async function apiReq$1(method, path, body) {
+  const res = await fetch(BASE_URL$1 + path, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : void 0
+  });
+  return res.json();
+}
+async function getWallet(userId) {
+  var _a;
+  const d = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
+  return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
+}
+async function sendGiftAPI(giftData) {
+  try {
+    const res = await fetch(COINS_FN, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "send_gift", ...giftData })
+    });
+    return res.json();
+  } catch {
+    const wallet = await getWallet(giftData.sender_id);
+    if (!wallet || wallet.coins < giftData.coin_cost) return { error: "Insufficient coins" };
+    await apiReq$1("PUT", `/apps/${APP_ID$2}/entities/SachiCoinWallet/${wallet.id}`, {
+      coins: wallet.coins - giftData.coin_cost,
+      total_spent_coins: (wallet.total_spent_coins || 0) + giftData.coin_cost
+    });
+    const gift = await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiGift`, giftData);
+    return { success: true, gift, coins_remaining: wallet.coins - giftData.coin_cost };
+  }
+}
+function GiftAnimationOverlay({ gift, sender }) {
+  const [visible, setVisible] = reactExports.useState(true);
+  const [phase, setPhase] = reactExports.useState("enter");
+  reactExports.useEffect(() => {
+    const t1 = setTimeout(() => setPhase("peak"), 300);
+    const t2 = setTimeout(() => setPhase("exit"), 2500);
+    const t3 = setTimeout(() => setVisible(false), 3200);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
+  if (!visible) return null;
+  const gDef = GIFTS.find((g) => g.id === gift.gift_id) || GIFTS[0];
+  const isLegendary = gDef.rarity === "legendary";
+  const isEpic = gDef.rarity === "epic";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+    position: "fixed",
+    bottom: 120,
+    left: 16,
+    zIndex: 9999,
+    transform: phase === "enter" ? "translateX(-120px) scale(0.6)" : phase === "exit" ? "translateX(-120px) scale(0.6)" : "translateX(0px) scale(1)",
+    opacity: phase === "enter" || phase === "exit" ? 0 : 1,
+    transition: "all 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+    pointerEvents: "none"
+  }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      background: `linear-gradient(135deg, ${gDef.color}22, rgba(11,12,26,0.95))`,
+      border: `2px solid ${gDef.color}88`,
+      borderRadius: 20,
+      padding: "12px 18px",
+      boxShadow: `0 0 40px ${gDef.glow}, 0 8px 32px rgba(0,0,0,0.6)`,
+      backdropFilter: "blur(20px)",
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      minWidth: 220
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "img",
+        {
+          src: (sender == null ? void 0 : sender.avatar_url) || `https://ui-avatars.com/api/?name=${gift.sender_username}&background=random&color=fff&size=80&bold=true`,
+          style: { width: 42, height: 42, borderRadius: "50%", border: `2px solid ${gDef.color}`, flexShrink: 0 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 13 }, children: [
+          "@",
+          gift.sender_username
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 11 }, children: "sent a gift" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        width: 52,
+        height: 52,
+        borderRadius: "50%",
+        background: `radial-gradient(circle, ${gDef.color}44, transparent)`,
+        border: `2px solid ${gDef.color}66`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 28,
+        flexShrink: 0,
+        boxShadow: `0 0 20px ${gDef.glow}`,
+        animation: isLegendary ? "legendaryPulse 0.6s ease infinite alternate" : void 0
+      }, children: gift.gift_emoji })
     ] }),
-    [
-      { title: "1. Information We Collect", body: "We collect information you provide when creating an account (name, email address, password), content you upload (videos, photos, captions), and usage data (device type, IP address, pages visited, interactions within the app)." },
-      { title: "2. How We Use Your Information", body: "We use your information to: operate and improve the Sachi platform, authenticate your identity and secure your account, display your content to other users, send account-related notifications (e.g. email verification, password reset), and comply with legal obligations." },
-      { title: "3. Data Sharing", body: "We do not sell your personal information to third parties. We may share data with trusted service providers who help us operate the platform (e.g. cloud storage, email delivery), only to the extent necessary. We may disclose information if required by law or to protect the rights, property, or safety of our users." },
-      { title: "4. Cookies & Tracking", body: "Sachi uses local browser storage (localStorage) to maintain your login session. We do not use third-party advertising cookies. Basic analytics may be used to understand how the app is used, without identifying individual users." },
-      { title: "5. Data Retention", body: "We retain your account data and content for as long as your account is active. If you delete your account, we will remove your personal information from our systems within 30 days, except where retention is required by law." },
-      { title: "6. Your Rights", body: "You have the right to access, update, or delete your personal information at any time. You can update your profile within the app or contact us directly to request deletion of your account and data." },
-      { title: "7. Children's Privacy", body: "Sachi is strictly intended for users aged 18 and older. We do not knowingly collect personal information from anyone under 18. If we discover that a user is under 18, their account will be terminated immediately." },
-      { title: "8. Security", body: "We take reasonable technical and organizational measures to protect your data against unauthorized access, loss, or misuse. However, no online platform can guarantee absolute security." },
-      { title: "9. Changes to This Policy", body: "We may update this Privacy Policy from time to time. We will notify you of significant changes by posting a notice in the app or via email. Continued use of Sachi after changes are posted means you accept the updated policy." },
-      { title: "10. Contact Us", body: "If you have questions or concerns about this Privacy Policy, please contact us at: jaygnz27@gmail.com — LDNA Consulting, New Providence, NJ 07974" }
-    ].map(({ title, body }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 22 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff8e53", fontWeight: 800, fontSize: 15, marginBottom: 6 }, children: title }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "#bbb", fontSize: 14, lineHeight: 1.8, margin: 0 }, children: body })
-    ] }, title)),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/", style: { color: "#ff6b6b", fontSize: 14, textDecoration: "none" }, children: "← Back to Sachi" }) })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      textAlign: "center",
+      marginTop: 6,
+      background: `linear-gradient(90deg, ${gDef.color}cc, ${gDef.color}88)`,
+      borderRadius: 20,
+      padding: "4px 14px",
+      display: "inline-block",
+      marginLeft: 12
+    }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#fff", fontWeight: 900, fontSize: 12, textTransform: "uppercase", letterSpacing: 1 }, children: [
+      isLegendary ? "⭐ " : isEpic ? "✨ " : "",
+      gift.gift_name,
+      gift.quantity > 1 ? ` ×${gift.quantity}` : ""
+    ] }) }),
+    isLegendary && [...Array(8)].map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      background: gDef.color,
+      transform: `rotate(${i * 45}deg) translateX(${phase === "peak" ? 60 : 0}px)`,
+      opacity: phase === "peak" ? 0 : 1,
+      transition: `all 0.5s ease ${i * 0.05}s`,
+      boxShadow: `0 0 8px ${gDef.glow}`,
+      pointerEvents: "none"
+    } }, i))
+  ] });
+}
+function GiftTray({ room, currentUser, wallet, onWalletUpdate, onClose, onGiftSent }) {
+  const [selected, setSelected] = reactExports.useState(null);
+  const [qty, setQty] = reactExports.useState(1);
+  const [sending, setSending] = reactExports.useState(false);
+  const [sent, setSent] = reactExports.useState(false);
+  const [err, setErr] = reactExports.useState("");
+  const [tab, setTab] = reactExports.useState("gifts");
+  const totalCost = selected ? selected.coins * qty : 0;
+  const canAfford = ((wallet == null ? void 0 : wallet.coins) || 0) >= totalCost;
+  const doSend = async () => {
+    var _a;
+    if (!selected || !currentUser || sending) return;
+    if (!canAfford) {
+      setTab("buy");
+      return;
+    }
+    setSending(true);
+    setErr("");
+    try {
+      const result = await sendGiftAPI({
+        sender_id: currentUser.id,
+        sender_username: currentUser.username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user",
+        sender_avatar: currentUser.avatar_url || "",
+        host_id: room.host_id,
+        host_username: room.host_username,
+        room_id: room.id,
+        gift_id: selected.id,
+        gift_name: selected.name,
+        gift_emoji: selected.emoji,
+        gift_icon: selected.icon,
+        coin_cost: selected.coins,
+        quantity: qty
+      });
+      if (result.error) {
+        setErr(result.error);
+        setSending(false);
+        return;
+      }
+      onWalletUpdate && onWalletUpdate(result.coins_remaining);
+      onGiftSent && onGiftSent({ ...selected, sender_username: currentUser.username, gift_id: selected.id, gift_emoji: selected.emoji, gift_name: selected.name, quantity: qty });
+      setSent(true);
+      setTimeout(() => {
+        setSent(false);
+        setSelected(null);
+        setQty(1);
+        setSending(false);
+      }, 1800);
+    } catch (e) {
+      setErr("Failed to send. Try again.");
+      setSending(false);
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 9500,
+    background: "linear-gradient(180deg, rgba(11,12,26,0.0), rgba(11,12,26,0.95) 40px)"
+  }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "fixed", inset: 0, zIndex: 9499 } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "relative",
+      zIndex: 9500,
+      background: "linear-gradient(180deg, #0f0d1f, #0B0C1A)",
+      borderRadius: "28px 28px 0 0",
+      border: "1px solid rgba(124,77,255,0.2)",
+      boxShadow: "0 -20px 60px rgba(124,77,255,0.15)",
+      paddingBottom: 32
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 2, margin: "14px auto 0" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 12px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 17 }, children: "🎁 Send a Gift" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            background: "linear-gradient(135deg, rgba(245,200,66,0.15), rgba(245,200,66,0.05))",
+            border: "1px solid rgba(245,200,66,0.3)",
+            borderRadius: 20,
+            padding: "5px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 5
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 14 }, children: "🪙" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontWeight: 800, fontSize: 15 }, children: ((wallet == null ? void 0 : wallet.coins) || 0).toLocaleString() })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 34, height: 34, color: "#888", fontSize: 16, cursor: "pointer" }, children: "✕" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", padding: "0 20px", gap: 8, marginBottom: 16 }, children: [["gifts", "🎁 Gifts"], ["buy", "🪙 Get Coins"]].map(([key, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setTab(key), style: {
+        flex: 1,
+        background: tab === key ? "rgba(124,77,255,0.2)" : "rgba(255,255,255,0.05)",
+        border: tab === key ? "1.5px solid rgba(124,77,255,0.5)" : "1.5px solid transparent",
+        borderRadius: 20,
+        padding: "8px 0",
+        color: tab === key ? "#b388ff" : "#666",
+        fontWeight: tab === key ? 700 : 400,
+        fontSize: 13,
+        cursor: "pointer",
+        transition: "all 0.2s"
+      }, children: label }, key)) }),
+      tab === "gifts" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, padding: "0 16px 16px" }, children: GIFTS.map((g) => {
+          const rc2 = RARITY_COLORS[g.rarity];
+          const isSel = (selected == null ? void 0 : selected.id) === g.id;
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => {
+            setSelected(g);
+            setQty(1);
+            setErr("");
+          }, style: {
+            background: isSel ? `${g.color}22` : rc2.bg,
+            border: isSel ? `2px solid ${g.color}` : `1.5px solid ${rc2.border}`,
+            borderRadius: 16,
+            padding: "12px 6px 10px",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 5,
+            boxShadow: isSel ? `0 0 20px ${g.glow}` : "none",
+            transform: isSel ? "scale(1.06)" : "scale(1)",
+            transition: "all 0.18s cubic-bezier(0.34,1.56,0.64,1)"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28, lineHeight: 1 }, children: g.emoji }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 10, textAlign: "center", lineHeight: 1.2 }, children: g.name }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: rc2.label, fontWeight: 800, fontSize: 10, display: "flex", alignItems: "center", gap: 2 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 9 }, children: "🪙" }),
+              g.coins
+            ] }),
+            g.rarity !== "common" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: `${g.color}33`, borderRadius: 4, padding: "1px 5px", color: rc2.label, fontSize: 8, fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.5 }, children: g.rarity })
+          ] }, g.id);
+        }) }),
+        selected && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "0 16px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          background: `linear-gradient(135deg, ${selected.color}15, rgba(11,12,26,0.8))`,
+          border: `1.5px solid ${selected.color}44`,
+          borderRadius: 18,
+          padding: "14px 16px"
+        }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 32 }, children: selected.emoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: selected.name }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: RARITY_COLORS[selected.rarity].label, fontSize: 11, fontWeight: 700, textTransform: "uppercase" }, children: selected.rarity })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setQty((q2) => Math.max(1, q2 - 1)), style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", fontSize: 18, cursor: "pointer" }, children: "−" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16, minWidth: 24, textAlign: "center" }, children: qty }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setQty((q2) => Math.min(99, q2 + 1)), style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", fontSize: 18, cursor: "pointer" }, children: "+" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 13 }, children: [
+              "Total: ",
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#F5C842", fontWeight: 800 }, children: [
+                "🪙 ",
+                totalCost.toLocaleString()
+              ] })
+            ] }),
+            !canAfford && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#ff6b6b", fontSize: 12, fontWeight: 700 }, children: [
+              "Need ",
+              (totalCost - ((wallet == null ? void 0 : wallet.coins) || 0)).toLocaleString(),
+              " more coins"
+            ] })
+          ] }),
+          err && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 12, marginBottom: 8 }, children: err }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: doSend,
+              disabled: sending || sent,
+              style: {
+                display: "block",
+                width: "100%",
+                padding: "14px 0",
+                background: sent ? "linear-gradient(135deg,#4caf50,#388e3c)" : canAfford ? `linear-gradient(135deg, ${selected.color}, ${selected.color}bb)` : "linear-gradient(135deg,#7c4dff,#6200ea)",
+                border: "none",
+                borderRadius: 14,
+                color: "#fff",
+                fontWeight: 900,
+                fontSize: 16,
+                cursor: "pointer",
+                boxShadow: sent ? "0 0 20px rgba(76,175,80,0.5)" : `0 4px 20px ${selected.glow}`,
+                transition: "all 0.3s"
+              },
+              children: sent ? "✓ Gift Sent!" : sending ? "Sending..." : canAfford ? `🎁 Send ${selected.name}` : "🪙 Get Coins First"
+            }
+          )
+        ] }) })
+      ] }),
+      tab === "buy" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12, textAlign: "center", marginBottom: 14 }, children: "100 coins = $1.00 · Hosts keep 80% of all gifts" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: COIN_PACKS.map((pack) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => handleBuyCoins(pack),
+            style: {
+              background: pack.tag === "BEST VALUE" ? "linear-gradient(135deg,rgba(245,200,66,0.12),rgba(245,200,66,0.04))" : pack.tag === "POPULAR" ? "linear-gradient(135deg,rgba(124,77,255,0.12),rgba(124,77,255,0.04))" : "rgba(255,255,255,0.04)",
+              border: pack.tag === "BEST VALUE" ? "1.5px solid rgba(245,200,66,0.4)" : pack.tag === "POPULAR" ? "1.5px solid rgba(124,77,255,0.4)" : "1.5px solid rgba(255,255,255,0.1)",
+              borderRadius: 16,
+              padding: "14px 18px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between"
+            },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 26 }, children: pack.icon }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left" }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: [
+                    "🪙 ",
+                    pack.coins.toLocaleString(),
+                    " Coins"
+                  ] }),
+                  pack.tag && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+                    background: pack.tag === "BEST VALUE" ? "rgba(245,200,66,0.2)" : "rgba(124,77,255,0.2)",
+                    color: pack.tag === "BEST VALUE" ? "#F5C842" : "#b388ff",
+                    borderRadius: 6,
+                    padding: "2px 8px",
+                    fontSize: 10,
+                    fontWeight: 900,
+                    display: "inline-block",
+                    marginTop: 3,
+                    letterSpacing: 0.5
+                  }, children: pack.tag })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+                background: "linear-gradient(135deg,#7c4dff,#651fff)",
+                borderRadius: 12,
+                padding: "8px 18px",
+                color: "#fff",
+                fontWeight: 800,
+                fontSize: 15,
+                boxShadow: "0 4px 14px rgba(124,77,255,0.4)"
+              }, children: pack.price })
+            ]
+          },
+          pack.id
+        )) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11, textAlign: "center", marginTop: 16, lineHeight: 1.5 }, children: "Payments processed securely by Stripe · All purchases are final" })
+      ] })
+    ] })
+  ] });
+}
+async function handleBuyCoins(pack) {
+  var _a;
+  const user = JSON.parse(localStorage.getItem("sachi_user") || "null");
+  if (!user) {
+    alert("Sign in to buy coins");
+    return;
+  }
+  try {
+    const res = await fetch(COINS_FN, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "buy_coins",
+        pack_id: pack.id,
+        user_id: user.id,
+        username: user.username || ((_a = user.email) == null ? void 0 : _a.split("@")[0]) || "user",
+        success_url: window.location.href + "?coins=success&session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: window.location.href + "?coins=cancel"
+      })
+    });
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else alert("Could not start checkout. Try again.");
+  } catch {
+    alert("Coin purchases will be available shortly. Our payment system is being configured.");
+  }
+}
+function HostEarningsPanel({ currentUser, onClose }) {
+  const [wallet, setWallet] = reactExports.useState(null);
+  const [gifts, setGifts] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [showPayout, setShowPayout] = reactExports.useState(false);
+  const [paypalEmail, setPaypalEmail] = reactExports.useState("");
+  const [payoutSent, setPayoutSent] = reactExports.useState(false);
+  reactExports.useEffect(() => {
+    const load = async () => {
+      if (!currentUser) return;
+      try {
+        const w2 = await getWallet(currentUser.id);
+        setWallet(w2);
+        const g = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
+        setGifts(Array.isArray(g) ? g : (g == null ? void 0 : g.items) || []);
+      } catch {
+      }
+      setLoading(false);
+    };
+    load();
+  }, [currentUser]);
+  const requestPayout = async () => {
+    if (!paypalEmail.includes("@")) return;
+    try {
+      await fetch(COINS_FN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "request_payout",
+          host_id: currentUser.id,
+          host_username: currentUser.username,
+          host_email: currentUser.email,
+          paypal_email: paypalEmail
+        })
+      });
+      setPayoutSent(true);
+      setShowPayout(false);
+    } catch {
+      await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiPayoutRequest`, {
+        host_id: currentUser.id,
+        host_username: currentUser.username || "host",
+        host_email: currentUser.email,
+        paypal_email: paypalEmail,
+        usd_amount: (wallet == null ? void 0 : wallet.pending_payout_usd) || 0,
+        status: "pending"
+      });
+      setPayoutSent(true);
+      setShowPayout(false);
+    }
+  };
+  const pendingUsd = (wallet == null ? void 0 : wallet.pending_payout_usd) || 0;
+  const totalPaid = (wallet == null ? void 0 : wallet.total_paid_out_usd) || 0;
+  const totalEarned = (wallet == null ? void 0 : wallet.total_earned_coins) || 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 7e3, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0 } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "relative",
+      zIndex: 7001,
+      background: "linear-gradient(180deg,#120f2a,#0B0C1A)",
+      borderRadius: "28px 28px 0 0",
+      border: "1px solid rgba(124,77,255,0.25)",
+      boxShadow: "0 -20px 60px rgba(124,77,255,0.2)",
+      width: "100%",
+      maxWidth: 520,
+      padding: "24px 24px 48px",
+      maxHeight: "85vh",
+      overflowY: "auto"
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "rgba(255,255,255,0.15)", borderRadius: 2, margin: "0 auto 22px" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, marginBottom: 6 }, children: "💰 Creator Earnings" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "Your gift earnings from Sachi LIVE" }),
+      loading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: 40, color: "#888" }, children: "Loading..." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }, children: [
+          { label: "Pending Payout", value: `$${pendingUsd.toFixed(2)}`, icon: "💵", color: "#4caf50", sub: "Ready to withdraw" },
+          { label: "Total Paid Out", value: `$${totalPaid.toFixed(2)}`, icon: "✅", color: "#F5C842", sub: "All time" },
+          { label: "Coins Earned", value: totalEarned.toLocaleString(), icon: "🪙", color: "#7c4dff", sub: "From gifts" },
+          { label: "Sachi's Cut", value: "20%", icon: "🏛️", color: "#888", sub: "Platform fee" }
+        ].map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          background: `${s.color}11`,
+          border: `1.5px solid ${s.color}33`,
+          borderRadius: 16,
+          padding: "14px 16px"
+        }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 24, marginBottom: 6 }, children: s.icon }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: s.color, fontWeight: 900, fontSize: 20 }, children: s.value }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 12 }, children: s.label }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: s.sub })
+        ] }, s.label)) }),
+        payoutSent ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(76,175,80,0.15)", border: "1.5px solid rgba(76,175,80,0.4)", borderRadius: 16, padding: "16px", textAlign: "center", marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#4caf50", fontWeight: 800, fontSize: 16 }, children: "✅ Payout Requested!" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginTop: 4 }, children: "We'll process it within 3-5 business days via PayPal" })
+        ] }) : pendingUsd >= 5 ? showPayout ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(124,77,255,0.1)", border: "1.5px solid rgba(124,77,255,0.3)", borderRadius: 16, padding: 16, marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 10 }, children: "Your PayPal email" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "input",
+            {
+              value: paypalEmail,
+              onChange: (e) => setPaypalEmail(e.target.value),
+              placeholder: "you@paypal.com",
+              type: "email",
+              style: { display: "block", width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", marginBottom: 12 }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              onClick: requestPayout,
+              style: { display: "block", width: "100%", padding: "13px 0", background: "linear-gradient(135deg,#4caf50,#388e3c)", border: "none", borderRadius: 12, color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" },
+              children: [
+                "💵 Request $",
+                pendingUsd.toFixed(2),
+                " Payout"
+              ]
+            }
+          )
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => setShowPayout(true), style: {
+          display: "block",
+          width: "100%",
+          padding: "15px 0",
+          marginBottom: 24,
+          background: "linear-gradient(135deg,#4caf50,#388e3c)",
+          border: "none",
+          borderRadius: 16,
+          color: "#fff",
+          fontWeight: 800,
+          fontSize: 16,
+          cursor: "pointer",
+          boxShadow: "0 4px 20px rgba(76,175,80,0.4)"
+        }, children: [
+          "💵 Withdraw $",
+          pendingUsd.toFixed(2),
+          " via PayPal"
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "14px 16px", marginBottom: 24, textAlign: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 13 }, children: [
+            "Minimum payout is ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontWeight: 700 }, children: "$5.00" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#666", fontSize: 12, marginTop: 4 }, children: [
+            "You need $",
+            Math.max(0, 5 - pendingUsd).toFixed(2),
+            " more in gifts to withdraw"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }, children: "Recent Gifts" }),
+        gifts.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "28px 0", color: "#888" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 10 }, children: "🎁" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No gifts yet — go live to start earning" })
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: gifts.map((g) => {
+          const gDef = GIFTS.find((x2) => x2.id === g.gift_id) || GIFTS[0];
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            background: `${gDef.color}0d`,
+            border: `1px solid ${gDef.color}22`,
+            borderRadius: 14,
+            padding: "10px 14px"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: g.sender_avatar || `https://ui-avatars.com/api/?name=${g.sender_username}&background=random&color=fff&size=60&bold=true`,
+                style: { width: 36, height: 36, borderRadius: "50%", border: `1.5px solid ${gDef.color}66` }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 13 }, children: [
+                "@",
+                g.sender_username
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 12 }, children: [
+                "sent ",
+                g.quantity > 1 ? `${g.quantity}× ` : "",
+                g.gift_emoji,
+                " ",
+                g.gift_name
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "right" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 13 }, children: [
+                "🪙 ",
+                (g.coin_cost * (g.quantity || 1)).toLocaleString()
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#4caf50", fontSize: 11 }, children: [
+                "+$",
+                (g.coin_cost * (g.quantity || 1) * 8e-3).toFixed(2)
+              ] })
+            ] })
+          ] }, g.id);
+        }) })
+      ] })
+    ] })
+  ] });
+}
+const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+function apiReq(method, path, body) {
+  return fetch(BASE_URL + path, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : void 0
+  }).then((r2) => r2.json());
+}
+const liveRooms = {
+  list: () => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
+  get: (id2) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiLiveRoom/${id2}`),
+  create: (data) => apiReq("POST", `/apps/${APP_ID$1}/entities/SachiLiveRoom`, data),
+  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$1}/entities/SachiLiveRoom/${id2}`, d)
+};
+const liveComments = {
+  list: (rid) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
+  create: (data) => apiReq("POST", `/apps/${APP_ID$1}/entities/SachiLiveComment`, data)
+};
+const guestReqs = {
+  list: (rid) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiGuestRequest?room_id=${rid}&limit=20`),
+  create: (data) => apiReq("POST", `/apps/${APP_ID$1}/entities/SachiGuestRequest`, data),
+  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$1}/entities/SachiGuestRequest/${id2}`, d)
+};
+const sachiGifts = {
+  list: (rid) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiGift?room_id=${rid}&sort=-created_date&limit=30`)
+};
+const NEWS_CHANNELS = [
+  { id: "dn", name: "Democracy Now", emoji: "🗽", url: "https://www.youtube.com/embed/live_stream?channel=UCzuqE7-t13O4NIDYJfakERg&autoplay=1", color: "#c62828" },
+  { id: "bbc", name: "BBC News", emoji: "🇬🇧", url: "https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA&autoplay=1", color: "#b71c1c" },
+  { id: "alj", name: "Al Jazeera", emoji: "🌍", url: "https://www.youtube.com/embed/live_stream?channel=UCSNeTbWve-VALqR4qxIgY-w&autoplay=1", color: "#1565c0" },
+  { id: "ctv", name: "CTV News", emoji: "🇨🇦", url: "https://www.youtube.com/embed/live_stream?channel=UCt2RawFZhd-CHQH-yFB6Q8Q&autoplay=1", color: "#e65100" },
+  { id: "sky", name: "Sky News", emoji: "☁️", url: "https://www.youtube.com/embed/live_stream?channel=UCoMdktPbSTixAyNGwb-UYkQ&autoplay=1", color: "#0d47a1" },
+  { id: "dw", name: "DW News", emoji: "🇩🇪", url: "https://www.youtube.com/embed/live_stream?channel=UCknLrEdhRCp1aegoMqRaCZg&autoplay=1", color: "#880e4f" },
+  { id: "f24", name: "France 24", emoji: "🇫🇷", url: "https://www.youtube.com/embed/live_stream?channel=UCQfwfsi5VrQ8yKZ-UWmAEFg&autoplay=1", color: "#1a237e" }
+];
+const CATS = { Music: "🎵", Talk: "💬", News: "📰", Gaming: "🎮", Sports: "⚽", Comedy: "😂", Education: "📚", Other: "🎤" };
+const RTC_CONFIG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] };
+function LiveCommentFeed({ roomId, currentUser, gifts }) {
+  const [comments2, setComments] = reactExports.useState([]);
+  const [text, setText] = reactExports.useState("");
+  const bottomRef = reactExports.useRef(null);
+  const load = reactExports.useCallback(async () => {
+    try {
+      const data = await liveComments.list(roomId);
+      setComments(Array.isArray(data) ? data : (data == null ? void 0 : data.items) || []);
+    } catch {
+    }
+  }, [roomId]);
+  reactExports.useEffect(() => {
+    load();
+    const t2 = setInterval(load, 3e3);
+    return () => clearInterval(t2);
+  }, [load]);
+  reactExports.useEffect(() => {
+    var _a;
+    (_a = bottomRef.current) == null ? void 0 : _a.scrollIntoView({ behavior: "smooth" });
+  }, [comments2, gifts]);
+  const send = async () => {
+    if (!text.trim() || !currentUser) return;
+    const msg = text.trim();
+    setText("");
+    try {
+      await liveComments.create({ room_id: roomId, user_id: currentUser.id, username: currentUser.username || "user", avatar_url: currentUser.avatar_url || "", text: msg });
+      load();
+    } catch {
+    }
+  };
+  const timeline = [
+    ...comments2.map((c) => ({ ...c, _type: "comment", _ts: new Date(c.created_date).getTime() })),
+    ...(gifts || []).map((g) => ({ ...g, _type: "gift", _ts: new Date(g.created_date || Date.now()).getTime() }))
+  ].sort((a, b) => a._ts - b._ts);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }, children: [
+      timeline.map((item, i) => item._type === "gift" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, background: `${(GIFTS.find((g) => g.id === item.gift_id) || GIFTS[0]).color}18`, borderRadius: 10, padding: "6px 10px", border: `1px solid ${(GIFTS.find((g) => g.id === item.gift_id) || GIFTS[0]).color}33` }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: item.gift_emoji }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#F5C842", fontWeight: 700, fontSize: 11 }, children: [
+          "@",
+          item.sender_username
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ccc", fontSize: 11 }, children: [
+          "sent ",
+          item.gift_name,
+          " ",
+          item.quantity > 1 ? `×${item.quantity}` : ""
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: "auto", fontSize: 11, color: "#888" }, children: [
+          "🪙",
+          (item.coin_cost * (item.quantity || 1)).toLocaleString()
+        ] })
+      ] }, `g${i}`) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, alignItems: "flex-start" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            src: item.avatar_url || `https://ui-avatars.com/api/?name=${item.username}&background=random&color=fff&size=40&bold=true`,
+            style: { width: 26, height: 26, borderRadius: "50%", flexShrink: 0, border: "1.5px solid rgba(124,77,255,0.3)" }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "5px 10px", maxWidth: "80%" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#b388ff", fontWeight: 700, fontSize: 11 }, children: [
+            "@",
+            item.username,
+            " "
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e0e0e0", fontSize: 13 }, children: item.text })
+        ] })
+      ] }, `c${i}`)),
+      timeline.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "rgba(255,255,255,0.2)", fontSize: 13, marginTop: 32 }, children: "💬 Be the first to say something" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: bottomRef })
+    ] }),
+    currentUser ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, padding: "8px 12px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          value: text,
+          onChange: (e) => setText(e.target.value),
+          onKeyDown: (e) => e.key === "Enter" && send(),
+          placeholder: "Say something...",
+          maxLength: 200,
+          style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "8px 14px", color: "#fff", fontSize: 13, outline: "none" }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: send,
+          disabled: !text.trim(),
+          style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 20, padding: "8px 16px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: text.trim() ? 1 : 0.4 },
+          children: "→"
+        }
+      )
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 12 }, children: "Sign in to chat" })
+  ] });
+}
+function GoLivePanel({ currentUser, onClose, onLive }) {
+  const [title, setTitle] = reactExports.useState("");
+  const [category, setCategory] = reactExports.useState("Talk");
+  const [starting, setStarting] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState("");
+  const start = async () => {
+    var _a;
+    if (!title.trim()) return setError("Add a title for your live room.");
+    setStarting(true);
+    try {
+      const room = await liveRooms.create({ host_id: currentUser.id, host_username: currentUser.username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "host", host_avatar: currentUser.avatar_url || "", title: title.trim(), category, is_live: true, viewer_count: 0, stream_type: "webrtc", rtmp_url: "", stream_key: "", hls_url: "" });
+      onLive(room);
+    } catch {
+      setError("Could not start. Try again.");
+      setStarting(false);
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 7e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", zIndex: 7001, background: "linear-gradient(180deg,#1a1040,#0B0C1A)", borderRadius: "24px 24px 0 0", padding: "28px 24px 44px", width: "100%", maxWidth: 480 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2, margin: "0 auto 22px" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22, marginBottom: 6 }, children: "🔴 Start a Live Room" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 20 }, children: "Go live — viewers can gift you coins & earn real money" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          value: title,
+          onChange: (e) => setTitle(e.target.value),
+          placeholder: "What's your live about?",
+          maxLength: 80,
+          style: { display: "block", width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(124,77,255,0.3)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", marginBottom: 14 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12, marginBottom: 8 }, children: "Category" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 }, children: Object.entries(CATS).map(([cat, icon]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => setCategory(cat), style: { background: category === cat ? "rgba(124,77,255,0.2)" : "rgba(255,255,255,0.07)", border: category === cat ? "1.5px solid #7c4dff" : "1.5px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "7px 15px", color: category === cat ? "#b388ff" : "#aaa", fontSize: 13, cursor: "pointer", fontWeight: category === cat ? 700 : 400 }, children: [
+          icon,
+          " ",
+          cat
+        ] }, cat)) })
+      ] }),
+      error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12 }, children: error }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: start, disabled: starting, style: { display: "block", width: "100%", padding: "15px 0", background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 900, fontSize: 16, cursor: "pointer", opacity: starting ? 0.7 : 1, boxShadow: "0 4px 20px rgba(124,77,255,0.4)" }, children: starting ? "Starting..." : "🔴 Go Live Now" })
+    ] })
+  ] });
+}
+function GuestVideoPanel({ guest, onRemove }) {
+  const videoRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (videoRef.current && guest.stream) {
+      videoRef.current.srcObject = guest.stream;
+      videoRef.current.play().catch(() => {
+      });
+    }
+  }, [guest.stream]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: 120, height: 160, borderRadius: 14, overflow: "hidden", border: "2px solid #7c4dff", background: "#111" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("video", { ref: videoRef, autoPlay: true, playsInline: true, style: { width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(to top,rgba(0,0,0,0.9),transparent)", padding: "6px 8px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 11, fontWeight: 700 }, children: [
+        "@",
+        guest.username
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(124,77,255,0.9)", borderRadius: 4, padding: "1px 6px", color: "#fff", fontSize: 9, fontWeight: 800, display: "inline-block", marginTop: 2 }, children: "GUEST" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onRemove, style: { position: "absolute", top: 4, right: 4, background: "rgba(229,57,53,0.85)", border: "none", borderRadius: "50%", width: 22, height: 22, color: "#fff", fontSize: 11, cursor: "pointer" }, children: "✕" })
+  ] });
+}
+function HostLiveRoom({ room, currentUser, onEnd }) {
+  const videoRef = reactExports.useRef(null);
+  const localStreamRef = reactExports.useRef(null);
+  const peersRef = reactExports.useRef({});
+  const guestVideosRef = reactExports.useRef({});
+  const [guests, setGuests] = reactExports.useState([]);
+  const [pendingReqs, setPendingReqs] = reactExports.useState([]);
+  const [viewerCount, setViewerCount] = reactExports.useState(0);
+  const [elapsed, setElapsed] = reactExports.useState(0);
+  const [showComments, setShowComments] = reactExports.useState(true);
+  const [muted, setMuted] = reactExports.useState(false);
+  const [camOff, setCamOff] = reactExports.useState(false);
+  const [showGiftTray, setShowGiftTray] = reactExports.useState(false);
+  const [showEarnings, setShowEarnings] = reactExports.useState(false);
+  const [wallet, setWallet] = reactExports.useState(null);
+  const [roomGifts, setRoomGifts] = reactExports.useState([]);
+  const [activeGiftAnim, setActiveGiftAnim] = reactExports.useState(null);
+  reactExports.useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }).then((stream) => {
+      localStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    }).catch(() => {
+    });
+    const timer = setInterval(() => setElapsed((p2) => p2 + 1), 1e3);
+    getWallet(currentUser.id).then((w2) => setWallet(w2)).catch(() => {
+    });
+    const poll = setInterval(async () => {
+      try {
+        const r2 = await liveRooms.get(room.id);
+        setViewerCount(r2.viewer_count || 0);
+      } catch {
+      }
+      try {
+        const d = await guestReqs.list(room.id);
+        const items = Array.isArray(d) ? d : (d == null ? void 0 : d.items) || [];
+        setPendingReqs(items.filter((r2) => r2.status === "pending"));
+        for (const req of items.filter((r2) => r2.status === "accepted")) await processGuestSignal(req);
+      } catch {
+      }
+      try {
+        const g = await sachiGifts.list(room.id);
+        setRoomGifts(Array.isArray(g) ? g : (g == null ? void 0 : g.items) || []);
+      } catch {
+      }
+    }, 3e3);
+    return () => {
+      clearInterval(timer);
+      clearInterval(poll);
+      if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t2) => t2.stop());
+      Object.values(peersRef.current).forEach((pc2) => pc2.close());
+    };
+  }, [room.id]);
+  const processGuestSignal = async (req) => {
+    if (!req.notes) return;
+    let sig;
+    try {
+      sig = JSON.parse(req.notes);
+    } catch {
+      return;
+    }
+    const guestId = req.id;
+    if (sig.type === "offer" && !peersRef.current[guestId]) {
+      const pc2 = new RTCPeerConnection(RTC_CONFIG);
+      peersRef.current[guestId] = pc2;
+      if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t2) => pc2.addTrack(t2, localStreamRef.current));
+      const guestStream = new MediaStream();
+      pc2.ontrack = (e) => {
+        var _a;
+        (_a = e.streams[0]) == null ? void 0 : _a.getTracks().forEach((t2) => guestStream.addTrack(t2));
+        guestVideosRef.current[guestId] = guestStream;
+        setGuests((gs) => {
+          const ex = gs.find((g) => g.id === guestId);
+          if (ex) return gs.map((g) => g.id === guestId ? { ...g, stream: guestStream } : g);
+          return [...gs, { id: guestId, username: req.username, avatar_url: req.avatar_url, stream: guestStream }];
+        });
+      };
+      pc2.onicecandidate = async (e) => {
+        if (e.candidate) {
+          const cur = await guestReqs.list(room.id);
+          const items = Array.isArray(cur) ? cur : (cur == null ? void 0 : cur.items) || [];
+          const mine = items.find((r2) => r2.id === guestId);
+          if (mine) {
+            let es = {};
+            try {
+              es = JSON.parse(mine.notes || "{}");
+            } catch {
+            }
+            const cands = es.hostCandidates || [];
+            cands.push(e.candidate);
+            await guestReqs.update(guestId, { notes: JSON.stringify({ ...es, hostCandidates: cands }) });
+          }
+        }
+      };
+      await pc2.setRemoteDescription({ type: "offer", sdp: sig.sdp });
+      if (sig.candidates) for (const c of sig.candidates) {
+        try {
+          await pc2.addIceCandidate(c);
+        } catch {
+        }
+      }
+      const answer = await pc2.createAnswer();
+      await pc2.setLocalDescription(answer);
+      await guestReqs.update(guestId, { notes: JSON.stringify({ type: "answer", sdp: answer.sdp, from: "host" }) });
+    }
+  };
+  const handleGiftSent = (gift) => {
+    setActiveGiftAnim(gift);
+    setTimeout(() => setActiveGiftAnim(null), 3500);
+  };
+  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "#000", display: "flex" }, children: [
+    activeGiftAnim && /* @__PURE__ */ jsxRuntimeExports.jsx(GiftAnimationOverlay, { gift: activeGiftAnim, sender: currentUser }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("video", { ref: videoRef, autoPlay: true, muted: true, playsInline: true, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 0, inset: "0 0 auto", height: 120, background: "linear-gradient(to bottom,rgba(0,0,0,0.8),transparent)", pointerEvents: "none" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 0, inset: "auto 0 0", height: 200, background: "linear-gradient(to top,rgba(0,0,0,0.9),transparent)", pointerEvents: "none" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 16, left: 16, right: 16, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", borderRadius: 6, padding: "4px 10px", color: "#fff", fontWeight: 900, fontSize: 12, letterSpacing: 1, boxShadow: "0 0 12px rgba(124,77,255,0.8)" }, children: "🔴 LIVE" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(0,0,0,0.55)", borderRadius: 6, padding: "4px 10px", color: "#fff", fontWeight: 700, fontSize: 12 }, children: fmt(elapsed) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(0,0,0,0.55)", borderRadius: 6, padding: "4px 10px", color: "#fff", fontWeight: 700, fontSize: 12 }, children: [
+            "👁 ",
+            viewerCount
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowEarnings(true), style: { background: "linear-gradient(135deg,rgba(245,200,66,0.25),rgba(245,200,66,0.1))", border: "1px solid rgba(245,200,66,0.4)", borderRadius: 20, padding: "6px 12px", color: "#F5C842", fontWeight: 800, fontSize: 12, cursor: "pointer" }, children: "💰 Earnings" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+            if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t2) => t2.stop());
+            Object.values(peersRef.current).forEach((pc2) => pc2.close());
+            await liveRooms.update(room.id, { is_live: false, viewer_count: 0 });
+            onEnd();
+          }, style: { background: "rgba(229,57,53,0.8)", border: "none", borderRadius: 20, padding: "6px 14px", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }, children: "End" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 58, left: 16, color: "#fff", fontWeight: 700, fontSize: 14, textShadow: "0 2px 8px rgba(0,0,0,0.9)" }, children: room.title }),
+      guests.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 130, right: 12, display: "flex", flexDirection: "column", gap: 8, zIndex: 10 }, children: guests.slice(0, 3).map((g) => /* @__PURE__ */ jsxRuntimeExports.jsx(GuestVideoPanel, { guest: g, onRemove: async () => {
+        if (peersRef.current[g.id]) {
+          peersRef.current[g.id].close();
+          delete peersRef.current[g.id];
+        }
+        await guestReqs.update(g.id, { status: "removed" });
+        setGuests((gs) => gs.filter((x2) => x2.id !== g.id));
+      } }, g.id)) }),
+      pendingReqs.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 100, right: 12, display: "flex", flexDirection: "column", gap: 8, zIndex: 10, maxWidth: 210 }, children: pendingReqs.slice(0, 3).map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(11,12,26,0.92)", borderRadius: 14, padding: "12px 14px", border: "1px solid rgba(124,77,255,0.35)", backdropFilter: "blur(10px)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: r2.avatar_url || `https://ui-avatars.com/api/?name=${r2.username}&background=random&color=fff&size=40&bold=true`, style: { width: 34, height: 34, borderRadius: "50%", border: "2px solid #7c4dff" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 13 }, children: [
+              "@",
+              r2.username
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#b388ff", fontSize: 11 }, children: "🙋 Wants to join" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+            await guestReqs.update(r2.id, { status: "accepted", notes: r2.notes || "" });
+            setPendingReqs((p2) => p2.filter((x2) => x2.id !== r2.id));
+          }, style: { flex: 1, background: "#4caf50", border: "none", borderRadius: 8, padding: "7px 0", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }, children: "✓ Accept" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+            await guestReqs.update(r2.id, { status: "declined" });
+            setPendingReqs((p2) => p2.filter((x2) => x2.id !== r2.id));
+          }, style: { flex: 1, background: "rgba(229,57,53,0.8)", border: "none", borderRadius: 8, padding: "7px 0", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }, children: "✕ Decline" })
+        ] })
+      ] }, r2.id)) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 12, zIndex: 10 }, children: [
+        [
+          { icon: muted ? "🔇" : "🎤", action: () => {
+            if (localStreamRef.current) localStreamRef.current.getAudioTracks().forEach((t2) => {
+              t2.enabled = muted;
+            });
+            setMuted(!muted);
+          }, active: muted },
+          { icon: camOff ? "📵" : "📹", action: () => {
+            if (localStreamRef.current) localStreamRef.current.getVideoTracks().forEach((t2) => {
+              t2.enabled = camOff;
+            });
+            setCamOff(!camOff);
+          }, active: camOff },
+          { icon: "💬", action: () => setShowComments((s) => !s), active: false }
+        ].map((btn, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: btn.action, style: { background: btn.active ? "rgba(229,57,53,0.8)" : "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)", border: "none", borderRadius: "50%", width: 50, height: 50, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }, children: btn.icon }, i)),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowGiftTray(true), style: { background: "linear-gradient(135deg,rgba(124,77,255,0.4),rgba(101,0,255,0.4))", backdropFilter: "blur(8px)", border: "1.5px solid rgba(124,77,255,0.6)", borderRadius: "50%", width: 50, height: 50, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 16px rgba(124,77,255,0.4)" }, children: "🎁" })
+      ] })
+    ] }),
+    showComments && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: 280, background: "rgba(11,12,26,0.97)", borderLeft: "1px solid rgba(124,77,255,0.1)", display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#b388ff", fontWeight: 800, fontSize: 13 }, children: "💬 Live Chat" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12 }, children: [
+          viewerCount,
+          " watching"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, overflow: "hidden" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(LiveCommentFeed, { roomId: room.id, currentUser, gifts: roomGifts }) })
+    ] }),
+    showGiftTray && /* @__PURE__ */ jsxRuntimeExports.jsx(GiftTray, { room, currentUser, wallet, onWalletUpdate: (c) => setWallet((w2) => ({ ...w2, coins: c })), onClose: () => setShowGiftTray(false), onGiftSent: handleGiftSent }),
+    showEarnings && /* @__PURE__ */ jsxRuntimeExports.jsx(HostEarningsPanel, { currentUser, onClose: () => setShowEarnings(false) })
+  ] });
+}
+function ViewerLiveRoom({ room, currentUser, onClose }) {
+  const [viewerCount, setViewerCount] = reactExports.useState(room.viewer_count || 0);
+  const [reqStatus, setReqStatus] = reactExports.useState(null);
+  const [myReqId, setMyReqId] = reactExports.useState(null);
+  const [roomEnded, setRoomEnded] = reactExports.useState(false);
+  const [showGiftTray, setShowGiftTray] = reactExports.useState(false);
+  const [wallet, setWallet] = reactExports.useState(null);
+  const [roomGifts, setRoomGifts] = reactExports.useState([]);
+  const [activeGiftAnim, setActiveGiftAnim] = reactExports.useState(null);
+  const remoteVideoRef = reactExports.useRef(null);
+  const pcRef = reactExports.useRef(null);
+  const localStreamRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    liveRooms.update(room.id, { viewer_count: (room.viewer_count || 0) + 1 }).catch(() => {
+    });
+    if (currentUser) getWallet(currentUser.id).then((w2) => setWallet(w2)).catch(() => {
+    });
+    const poll = setInterval(async () => {
+      try {
+        const r2 = await liveRooms.get(room.id);
+        setViewerCount(r2.viewer_count || 0);
+        if (!r2.is_live) setRoomEnded(true);
+      } catch {
+      }
+      try {
+        const g = await sachiGifts.list(room.id);
+        const items = Array.isArray(g) ? g : (g == null ? void 0 : g.items) || [];
+        if (items.length > roomGifts.length && items[0]) {
+          setActiveGiftAnim(items[0]);
+          setTimeout(() => setActiveGiftAnim(null), 3500);
+        }
+        setRoomGifts(items);
+      } catch {
+      }
+      if (myReqId) {
+        try {
+          const d = await guestReqs.list(room.id);
+          const items = Array.isArray(d) ? d : (d == null ? void 0 : d.items) || [];
+          const mine = items.find((r2) => r2.id === myReqId);
+          if (mine) {
+            setReqStatus(mine.status);
+            if (mine.status === "accepted") handleGuestAccepted(mine);
+          }
+        } catch {
+        }
+      }
+    }, 3e3);
+    return () => {
+      clearInterval(poll);
+      liveRooms.update(room.id, { viewer_count: Math.max(0, viewerCount - 1) }).catch(() => {
+      });
+      if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t2) => t2.stop());
+      if (pcRef.current) pcRef.current.close();
+    };
+  }, [room.id, myReqId]);
+  const handleGuestAccepted = async (req) => {
+    if (pcRef.current || reqStatus === "connected") return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+      localStreamRef.current = stream;
+      const pc2 = new RTCPeerConnection(RTC_CONFIG);
+      pcRef.current = pc2;
+      stream.getTracks().forEach((t2) => pc2.addTrack(t2, stream));
+      pc2.ontrack = (e) => {
+        if (remoteVideoRef.current && e.streams[0]) {
+          remoteVideoRef.current.srcObject = e.streams[0];
+          remoteVideoRef.current.play().catch(() => {
+          });
+        }
+      };
+      const iceCandidates = [];
+      pc2.onicecandidate = (e) => {
+        if (e.candidate) iceCandidates.push(e.candidate);
+      };
+      pc2.onicegatheringstatechange = async () => {
+        if (pc2.iceGatheringState === "complete") {
+          const offer2 = pc2.localDescription;
+          await guestReqs.update(req.id, { notes: JSON.stringify({ type: "offer", sdp: offer2.sdp, candidates: iceCandidates }) });
+        }
+      };
+      const offer = await pc2.createOffer();
+      await pc2.setLocalDescription(offer);
+      let answered = false;
+      const ap = setInterval(async () => {
+        if (answered) {
+          clearInterval(ap);
+          return;
+        }
+        try {
+          const d = await guestReqs.list(room.id);
+          const items = Array.isArray(d) ? d : (d == null ? void 0 : d.items) || [];
+          const mine = items.find((r2) => r2.id === req.id);
+          if (!(mine == null ? void 0 : mine.notes)) return;
+          let sig;
+          try {
+            sig = JSON.parse(mine.notes);
+          } catch {
+            return;
+          }
+          if (sig.type === "answer" && sig.from === "host" && !answered) {
+            answered = true;
+            clearInterval(ap);
+            await pc2.setRemoteDescription({ type: "answer", sdp: sig.sdp });
+            if (sig.hostCandidates) for (const c of sig.hostCandidates) {
+              try {
+                await pc2.addIceCandidate(c);
+              } catch {
+              }
+            }
+            setReqStatus("connected");
+          }
+        } catch {
+        }
+      }, 2e3);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const handleGiftSent = (gift) => {
+    setActiveGiftAnim(gift);
+    setTimeout(() => setActiveGiftAnim(null), 3500);
+  };
+  if (roomEnded) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "#0B0C1A", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 60 }, children: "📴" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22 }, children: "Live Room Ended" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 14 }, children: "The host ended this stream" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 20, padding: "12px 32px", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", marginTop: 8 }, children: "← Back to LIVE" })
+  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "#0B0C1A", display: "flex", flexDirection: "column" }, children: [
+    activeGiftAnim && /* @__PURE__ */ jsxRuntimeExports.jsx(GiftAnimationOverlay, { gift: activeGiftAnim, sender: null }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", background: "linear-gradient(145deg,#1a0a2e,#0B0C1A)", overflow: "hidden" }, children: [
+      reqStatus === "connected" && /* @__PURE__ */ jsxRuntimeExports.jsx("video", { ref: remoteVideoRef, autoPlay: true, playsInline: true, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, pointerEvents: "none" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: room.host_avatar || `https://ui-avatars.com/api/?name=${room.host_username}&background=random&color=fff&size=120&bold=true`,
+              style: { width: 90, height: 90, borderRadius: "50%", border: "3px solid #7c4dff", boxShadow: "0 0 30px rgba(124,77,255,0.6)" }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: -4, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#7c4dff,#651fff)", borderRadius: 4, padding: "2px 8px", color: "#fff", fontWeight: 900, fontSize: 10, whiteSpace: "nowrap" }, children: "🔴 LIVE" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 17 }, children: [
+          "@",
+          room.host_username
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#b388ff", fontWeight: 700, fontSize: 15, textAlign: "center", padding: "0 32px" }, children: room.title }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 13 }, children: [
+          CATS[room.category] || "🎤",
+          " ",
+          room.category,
+          " · 👁 ",
+          viewerCount,
+          " watching"
+        ] }),
+        reqStatus === "connected" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(76,175,80,0.2)", border: "1px solid #4caf50", borderRadius: 12, padding: "8px 20px", color: "#4caf50", fontWeight: 700, fontSize: 13, pointerEvents: "auto" }, children: "✅ You're live as a guest!" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 16, left: 16, right: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", border: "none", borderRadius: "50%", width: 40, height: 40, color: "#fff", fontSize: 18, cursor: "pointer" }, children: "✕" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(0,0,0,0.55)", borderRadius: 10, padding: "5px 12px", color: "#fff", fontSize: 12, fontWeight: 700 }, children: [
+          "👁 ",
+          viewerCount
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 24, right: 16, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }, children: [
+        currentUser && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => setShowGiftTray(true),
+            style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 24, padding: "12px 20px", color: "#fff", fontWeight: 900, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 4px 20px rgba(124,77,255,0.5)" },
+            children: [
+              "🎁 Send Gift",
+              wallet && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { background: "rgba(255,255,255,0.2)", borderRadius: 10, padding: "2px 8px", fontSize: 12 }, children: [
+                "🪙",
+                (wallet.coins || 0).toLocaleString()
+              ] })
+            ]
+          }
+        ),
+        !reqStatus && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: async () => {
+              setReqStatus("pending");
+              try {
+                const r2 = await guestReqs.create({ room_id: room.id, user_id: currentUser.id, username: currentUser.username || "user", avatar_url: currentUser.avatar_url || "", status: "pending", notes: "" });
+                setMyReqId(r2.id);
+              } catch {
+                setReqStatus(null);
+              }
+            },
+            style: { background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)", border: "1.5px solid rgba(255,255,255,0.2)", borderRadius: 24, padding: "10px 18px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" },
+            children: "🙋 Request to Join"
+          }
+        ),
+        reqStatus === "pending" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.4)", borderRadius: 20, padding: "10px 18px", color: "#F5C842", fontWeight: 700, fontSize: 13 }, children: "⏳ Waiting for host..." }),
+        reqStatus === "declined" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(229,57,53,0.15)", border: "1px solid rgba(229,57,53,0.4)", borderRadius: 20, padding: "10px 18px", color: "#ff6b6b", fontWeight: 700, fontSize: 13 }, children: "Request declined" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: 280, background: "rgba(11,12,26,0.98)", borderTop: "1px solid rgba(124,77,255,0.1)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#b388ff", fontWeight: 800, fontSize: 13 }, children: "💬 Live Chat" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12 }, children: [
+          viewerCount,
+          " watching"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 236, overflow: "hidden" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(LiveCommentFeed, { roomId: room.id, currentUser, gifts: roomGifts }) })
+    ] }),
+    showGiftTray && /* @__PURE__ */ jsxRuntimeExports.jsx(GiftTray, { room, currentUser, wallet, onWalletUpdate: (c) => setWallet((w2) => ({ ...w2, coins: c })), onClose: () => setShowGiftTray(false), onGiftSent: handleGiftSent })
+  ] });
+}
+function NewsViewer({ channel, onClose }) {
+  const [current, setCurrent] = reactExports.useState(channel);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "#000", display: "flex", flexDirection: "column" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 10px", background: "linear-gradient(to bottom,rgba(0,0,0,0.85),transparent)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", border: "none", borderRadius: "50%", width: 40, height: 40, color: "#fff", fontSize: 18, cursor: "pointer" }, children: "✕" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", borderRadius: 6, padding: "3px 10px", color: "#fff", fontWeight: 900, fontSize: 11, letterSpacing: 1 }, children: "🔴 LIVE" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: [
+          current.emoji,
+          " ",
+          current.name
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40 } })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("iframe", { src: current.url, style: { flex: 1, border: "none", width: "100%" }, allow: "autoplay; encrypted-media", allowFullScreen: true, title: current.name }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(11,12,26,0.97)", borderTop: "1px solid rgba(124,77,255,0.1)", padding: "12px 16px", overflowX: "auto", display: "flex", gap: 10, flexShrink: 0 }, children: NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => setCurrent(ch2), style: { flexShrink: 0, background: current.id === ch2.id ? `${ch2.color}33` : "rgba(255,255,255,0.06)", border: current.id === ch2.id ? `1.5px solid ${ch2.color}` : "1.5px solid transparent", borderRadius: 20, padding: "7px 15px", color: "#fff", fontSize: 12, fontWeight: current.id === ch2.id ? 700 : 400, cursor: "pointer", whiteSpace: "nowrap" }, children: [
+      ch2.emoji,
+      " ",
+      ch2.name
+    ] }, ch2.id)) })
+  ] });
+}
+function LiveRoomCard({ room, onClick }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick, style: { background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(124,77,255,0.2)", borderRadius: 18, padding: 0, cursor: "pointer", textAlign: "left", overflow: "hidden", width: "100%", position: "relative" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 3, background: "linear-gradient(90deg,#7c4dff,#00bcd4,#F5C842)", width: "100%" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 12px 12px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            src: room.host_avatar || `https://ui-avatars.com/api/?name=${room.host_username}&background=random&color=fff&size=80&bold=true`,
+            style: { width: 44, height: 44, borderRadius: "50%", border: "2.5px solid #7c4dff", flexShrink: 0 }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { minWidth: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: [
+            "@",
+            room.host_username
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", borderRadius: 4, padding: "2px 7px", color: "#fff", fontWeight: 900, fontSize: 10, letterSpacing: 1, display: "inline-block", marginTop: 2 }, children: "🔴 LIVE" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }, children: room.title }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 11 }, children: [
+          CATS[room.category] || "🎤",
+          " ",
+          room.category
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 11 }, children: [
+          "👁 ",
+          room.viewer_count || 0
+        ] })
+      ] })
+    ] })
+  ] });
+}
+function SachiLiveHub({ currentUser, onClose, onNeedAuth }) {
+  const [tab, setTab] = reactExports.useState("creators");
+  const [rooms, setRooms] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [activeNews, setActiveNews] = reactExports.useState(null);
+  const [activeRoom, setActiveRoom] = reactExports.useState(null);
+  const [showGoLive, setShowGoLive] = reactExports.useState(false);
+  const [myRoom, setMyRoom] = reactExports.useState(null);
+  const [wallet, setWallet] = reactExports.useState(null);
+  const [showEarnings, setShowEarnings] = reactExports.useState(false);
+  const loadRooms = reactExports.useCallback(async () => {
+    try {
+      const data = await liveRooms.list();
+      setRooms((Array.isArray(data) ? data : (data == null ? void 0 : data.items) || []).filter((r2) => r2.is_live));
+    } catch {
+    }
+    setLoading(false);
+  }, []);
+  reactExports.useEffect(() => {
+    loadRooms();
+    if (currentUser) getWallet(currentUser.id).then((w2) => setWallet(w2)).catch(() => {
+    });
+    const t2 = setInterval(loadRooms, 8e3);
+    return () => clearInterval(t2);
+  }, [loadRooms, currentUser]);
+  if (activeNews) return /* @__PURE__ */ jsxRuntimeExports.jsx(NewsViewer, { channel: activeNews, onClose: () => setActiveNews(null) });
+  if (myRoom) return /* @__PURE__ */ jsxRuntimeExports.jsx(HostLiveRoom, { room: myRoom, currentUser, onEnd: () => {
+    setMyRoom(null);
+    loadRooms();
+  } });
+  if (activeRoom) return /* @__PURE__ */ jsxRuntimeExports.jsx(ViewerLiveRoom, { room: activeRoom, currentUser, onClose: () => {
+    setActiveRoom(null);
+    loadRooms();
+  } });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 4500, background: "#0B0C1A", display: "flex", flexDirection: "column" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg,#7c4dff,#00bcd4,#F5C842,#ff6b6b,#7c4dff)", backgroundSize: "200% 100%", zIndex: 10 } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px 20px 0", flexShrink: 0 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 18, cursor: "pointer" }, children: "✕" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 22 }, children: "🔴 Sachi LIVE" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: rooms.length > 0 ? `${rooms.length} rooms live` : "Be the first to go live" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: [
+          currentUser && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            wallet !== null && /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => setShowEarnings(true), style: { background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.05))", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 20, padding: "6px 12px", color: "#F5C842", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }, children: [
+              "🪙 ",
+              ((wallet == null ? void 0 : wallet.coins) || 0).toLocaleString()
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                onClick: () => setShowGoLive(true),
+                style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 22, padding: "9px 18px", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 16px rgba(124,77,255,0.45)" },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 8, height: 8, borderRadius: "50%", background: "#ff6b6b", display: "inline-block" } }),
+                  "Go Live"
+                ]
+              }
+            )
+          ] }),
+          !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 22, padding: "9px 18px", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" }, children: "Sign In" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", background: "rgba(255,255,255,0.06)", borderRadius: 24, padding: 3, gap: 2, marginBottom: 4 }, children: [["creators", "👥 Creator Rooms"], ["news", "📺 News"]].map(([key, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setTab(key), style: { flex: 1, background: tab === key ? "rgba(124,77,255,0.2)" : "none", border: "none", cursor: "pointer", padding: "8px 0", color: tab === key ? "#b388ff" : "rgba(255,255,255,0.4)", fontWeight: tab === key ? 700 : 500, fontSize: 13, borderRadius: 20, transition: "all 0.2s" }, children: label }, key)) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "16px 16px 80px" }, children: [
+      tab === "creators" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        loading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: 60, color: "#888" }, children: "Loading..." }),
+        !loading && rooms.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 24px" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64, marginBottom: 16 }, children: "🎙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, marginBottom: 8 }, children: "No one's live yet" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 14, marginBottom: 12 }, children: "Start a live — viewers can send you gifts" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, justifyContent: "center", marginBottom: 28 }, children: ["🌸 Sakura", "💎 Crystal", "🌌 Aurora", "👑 Cosmos"].map((g) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(124,77,255,0.12)", border: "1px solid rgba(124,77,255,0.25)", borderRadius: 12, padding: "8px 12px", color: "#b388ff", fontSize: 12, fontWeight: 600 }, children: g }, g)) }),
+          currentUser ? /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowGoLive(true), style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 22, padding: "13px 32px", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", boxShadow: "0 4px 20px rgba(124,77,255,0.4)" }, children: "🔴 Start a Live Room" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", border: "none", borderRadius: 22, padding: "13px 32px", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer" }, children: "Sign In to Go Live" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }, children: rooms.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx(LiveRoomCard, { room: r2, onClick: () => setActiveRoom(r2) }, r2.id)) })
+      ] }),
+      tab === "news" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }, children: NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => setActiveNews(ch2), style: { background: `linear-gradient(135deg,${ch2.color}22,rgba(11,12,26,0.8))`, border: `1.5px solid ${ch2.color}44`, borderRadius: 18, padding: "18px 14px", cursor: "pointer", textAlign: "left" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 34, marginBottom: 8 }, children: ch2.emoji }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 14, marginBottom: 6 }, children: ch2.name }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "linear-gradient(135deg,#7c4dff,#651fff)", borderRadius: 4, padding: "2px 8px", color: "#fff", fontWeight: 800, fontSize: 10, letterSpacing: 1, display: "inline-block" }, children: "🔴 LIVE" })
+      ] }, ch2.id)) })
+    ] }),
+    showGoLive && /* @__PURE__ */ jsxRuntimeExports.jsx(GoLivePanel, { currentUser, onClose: () => setShowGoLive(false), onLive: (room) => {
+      setShowGoLive(false);
+      setMyRoom(room);
+    } }),
+    showEarnings && /* @__PURE__ */ jsxRuntimeExports.jsx(HostEarningsPanel, { currentUser, onClose: () => setShowEarnings(false) })
+  ] });
+}
+const EFFECTIVE_DATE = "April 1, 2026";
+const COMPANY = "LDNA Consulting LLC";
+const EMAIL = "support@sachistream.com";
+const APP = "Sachi";
+const DOMAIN = "sachistream.com";
+function Privacy() {
+  const s = {
+    wrapper: { minHeight: "100vh", background: "#0B0C1A", color: "#e0e0e0", fontFamily: "'Segoe UI', sans-serif", padding: "0 0 80px 0" },
+    hero: { background: "linear-gradient(135deg,#1a1040 0%,#0B0C1A 100%)", borderBottom: "1px solid rgba(245,200,66,0.15)", padding: "40px 24px 32px", textAlign: "center" },
+    logo: { fontSize: 28, fontWeight: 900, color: "#F5C842", marginBottom: 6 },
+    subtitle: { color: "#888", fontSize: 13 },
+    body: { maxWidth: 720, margin: "0 auto", padding: "32px 24px" },
+    h2: { color: "#F5C842", fontSize: 17, fontWeight: 800, marginTop: 36, marginBottom: 10, borderBottom: "1px solid rgba(245,200,66,0.12)", paddingBottom: 8 },
+    p: { fontSize: 14, lineHeight: 1.8, color: "#ccc", marginBottom: 14 },
+    li: { fontSize: 14, lineHeight: 1.8, color: "#ccc", marginBottom: 6 },
+    back: { display: "inline-flex", alignItems: "center", gap: 6, color: "#F5C842", fontSize: 13, fontWeight: 700, textDecoration: "none", marginBottom: 24, cursor: "pointer" }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.wrapper, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.hero, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.logo, children: [
+        "⊛ ",
+        APP
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, marginBottom: 6 }, children: "Privacy Policy" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.subtitle, children: [
+        "Effective Date: ",
+        EFFECTIVE_DATE,
+        " · Last Updated: ",
+        EFFECTIVE_DATE
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.body, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("a", { href: "/", style: s.back, children: [
+        "← Back to ",
+        APP
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        COMPANY,
+        ' ("we," "us," "our") operates the ',
+        APP,
+        " platform at ",
+        DOMAIN,
+        ". This Privacy Policy explains what data we collect, how we use it, and your rights. By using ",
+        APP,
+        ", you consent to the practices described here."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "1. Information We Collect" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Information you provide:" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Account data: name, email address, username, date of birth, profile photo (from Google Sign-In)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Location: city and country (auto-detected via IP at sign-up; required for posting content)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Content: videos, photos, text posts, comments, and audio you upload or create" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Communications: messages sent to us via email or support channels" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Information collected automatically:" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Usage data: pages visited, videos watched, interactions (likes, comments, shares)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Device data: device type, operating system, browser type" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "IP address (used for approximate location detection and security)" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "2. How We Use Your Information" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "To create and manage your account" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: s.li, children: [
+          "To display your content in the ",
+          APP,
+          " feed"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "To personalize your content recommendations based on your interests and location" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "To enforce our Terms of Service and community guidelines" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "To communicate with you about platform updates, security alerts, and new features" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "To analyze platform performance and improve user experience" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "To comply with legal obligations" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "3. Google Sign-In" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "We use Google OAuth 2.0 for authentication. When you sign in with Google, we receive your name, email address, and profile photo from Google. We do not receive or store your Google password. Your use of Google Sign-In is also governed by ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "https://policies.google.com/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Google's Privacy Policy" }),
+        "."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "4. Location Data" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "We collect your approximate city and country using IP-based geolocation at sign-up. When you post content, your city and country are stored with that post and displayed publicly. We do not collect precise GPS location data. You may update your location in your profile settings." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "5. Sharing Your Information" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "We do not sell your personal information. We may share data with:" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: s.li, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Service providers:" }),
+          " Infrastructure partners (e.g. Cloudflare for video streaming, Base44 for data storage) who process data on our behalf under confidentiality agreements"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: s.li, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Law enforcement:" }),
+          " When required by law, court order, or to protect the safety of users or the public"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: s.li, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "NCMEC:" }),
+          " Any CSAM content and associated user data is reported to the National Center for Missing and Exploited Children as required by US federal law"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("li", { style: s.li, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Business transfers:" }),
+          " In connection with a merger, acquisition, or sale of assets (with notice to users)"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "6. Data Retention" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "We retain your account data for as long as your account is active or as needed to provide services. If you delete your account, we will delete your personal data within 30 days, except where we are required to retain it by law or for legitimate security purposes." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "7. Your Rights" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "Depending on your location, you may have the right to:" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("ul", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Access the personal data we hold about you" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Correct inaccurate data" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: 'Request deletion of your data ("right to be forgotten")' }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Object to certain processing of your data" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("li", { style: s.li, children: "Data portability (receive a copy of your data in a structured format)" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "To exercise any of these rights, contact us at ",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: `mailto:${EMAIL}`, style: { color: "#F5C842" }, children: EMAIL }),
+        ". We will respond within 30 days."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "8. Children's Privacy (COPPA)" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        APP,
+        " is not directed to children under 13. We do not knowingly collect personal information from children under 13. If we learn that we have collected information from a child under 13, we will delete it immediately. If you believe a child under 13 has created an account, contact us at ",
+        EMAIL,
+        "."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "9. Security" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "We take reasonable technical and organizational measures to protect your data from unauthorized access, loss, or misuse. Video content is served via Cloudflare's secure CDN. However, no system is 100% secure, and we cannot guarantee absolute security." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "10. Third-Party Links & Services" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        APP,
+        " may contain links to third-party websites or embed third-party content (e.g. news streams). We are not responsible for the privacy practices of those third parties. We encourage you to review their privacy policies."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "11. International Users" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        APP,
+        " is operated from the United States. If you access the Platform from outside the US, your data may be transferred to and processed in the US. By using ",
+        APP,
+        ", you consent to such transfer."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "For users in the European Economic Area (EEA) or UK, our legal basis for processing is your consent (given at sign-up) and our legitimate interests in operating a safe platform." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "12. Cookies & Local Storage" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: s.p, children: "We use browser localStorage to maintain your session, remember your preferences (e.g. liked videos, dark mode), and improve performance. We do not use advertising cookies or cross-site tracking." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "13. Changes to This Policy" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "We may update this Privacy Policy from time to time. If we make material changes, we will notify you by email or via an in-app notice at least 7 days before they take effect. Your continued use of ",
+        APP,
+        " after changes indicates your acceptance."
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.h2, children: "14. Contact Us" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: s.p, children: [
+        "If you have questions, concerns, or requests regarding this Privacy Policy, contact us at:",
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: `mailto:${EMAIL}`, style: { color: "#F5C842" }, children: EMAIL }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        COMPANY,
+        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+        "New Providence, NJ 07974, USA"
+      ] })
+    ] })
   ] });
 }
 function ChildSafety() {
@@ -15399,6 +17058,7 @@ function App() {
   const [activeTab, setActiveTab] = reactExports.useState("feed");
   const [showAdmin, setShowAdmin] = reactExports.useState(false);
   const [showGoLive, setShowGoLive] = reactExports.useState(false);
+  const [showLiveHub, setShowLiveHub] = reactExports.useState(false);
   const [profileSheet, setProfileSheet] = reactExports.useState(null);
   const [showSearch, setShowSearch] = reactExports.useState(false);
   const [authToast, setAuthToast] = reactExports.useState(false);
@@ -15765,7 +17425,7 @@ function App() {
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
-          onClick: () => requireAuth(() => setShowGoLive(true)),
+          onClick: () => setShowLiveHub(true),
           style: { background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 20, padding: "4px 10px", color: "#F5C842", fontSize: 11, fontWeight: 700, cursor: "pointer", letterSpacing: 0.3, WebkitTapHighlightColor: "transparent", display: "flex", alignItems: "center", gap: 4 },
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { width: 6, height: 6, borderRadius: "50%", background: "#F5C842", display: "inline-block", animation: "heartbeat 1.4s ease-in-out infinite" } }),
@@ -16534,6 +18194,10 @@ function App() {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a09de8", fontSize: 12, marginTop: 2 }, children: "Welcome in — let's go 🔥" })
       ] })
     ] }),
+    showLiveHub && /* @__PURE__ */ jsxRuntimeExports.jsx(SachiLiveHub, { currentUser, onClose: () => setShowLiveHub(false), onNeedAuth: () => {
+      setShowLiveHub(false);
+      setShowAuth(true);
+    } }),
     showAuth && /* @__PURE__ */ jsxRuntimeExports.jsx(AuthModal, { onClose: () => setShowAuth(false), onSuccess: (user) => {
       setCurrentUser(user);
       setShowAuth(false);
