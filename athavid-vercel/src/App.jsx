@@ -194,29 +194,11 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [replyingTo, setReplyingTo] = useState(null); // { id, username }
   const [expandedReplies, setExpandedReplies] = useState({});
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(null); // comment id
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartY = useRef(null);
   const sheetRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
   const headerRef = useRef(null);
-  const swipeStartY = useRef(null);
-
-  const onHeaderTouchStart = (e) => {
-    swipeStartY.current = e.touches[0].clientY;
-  };
-
-  const onHeaderTouchEnd = (e) => {
-    if (swipeStartY.current === null) return;
-    const endY = e.changedTouches[0].clientY;
-    const diff = endY - swipeStartY.current;
-    if (diff > 50) {
-      onClose();
-    }
-    swipeStartY.current = null;
-  };
 
   useEffect(() => {
     if (!video) return;
@@ -452,17 +434,13 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <div
         ref={sheetRef}
         style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, willChange:"transform" }}>
-        <div
-          ref={headerRef}
-          onTouchStart={onHeaderTouchStart}
-          onTouchEnd={onHeaderTouchEnd}
-          style={{ padding:"16px 16px 12px", flexShrink:0 }}>
+        <div ref={headerRef} style={{ padding:"16px 16px 12px", flexShrink:0 }}>
           <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
-            <div style={{ width:48, height:5, background:"rgba(255,255,255,0.3)", borderRadius:99 }} />
+            <div onClick={onClose} style={{ width:48, height:5, background:"rgba(255,255,255,0.3)", borderRadius:99, cursor:"pointer" }} />
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>💬 Comments {list.length > 0 && `(${list.length})`}</div>
-            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:36, height:36, color:"#fff", cursor:"pointer", fontSize:18 }}>✕</button>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"0 16px 8px" }}>
@@ -475,6 +453,11 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           )}
           {list.map(c => <CommentRow key={c.id} c={c} />)}
           <div ref={bottomRef} />
+          <div style={{ display:"flex", justifyContent:"center", padding:"16px 0 8px" }}>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:24, padding:"10px 40px", color:"#aaa", fontSize:14, cursor:"pointer", letterSpacing:0.5 }}>
+              Close
+            </button>
+          </div>
         </div>
         <div style={{ padding:"8px 16px 32px", borderTop:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
           {replyingTo && (
