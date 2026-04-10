@@ -329,12 +329,55 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 
   const CommentRow = ({ c, isReply=false, parentId=null }) => {
     const [pickerOpen, setPickerOpen] = React.useState(false);
+    const [editing, setEditing] = React.useState(false);
+    const [editText, setEditText] = React.useState(c.comment_text);
+    const [saving, setSaving] = React.useState(false);
+
+    const currentUsername = currentUser ? (currentUser.full_name || currentUser.email?.split("@")[0] || "user") : null;
+    const isOwner = currentUsername && c.username === currentUsername;
+
+    const saveEdit = async () => {
+      if (!editText.trim()) return;
+      setSaving(true);
+      try {
+        await comments.update(c.id, { comment_text: editText.trim() });
+        setList(prev => prev.map(x => x.id === c.id ? { ...x, comment_text: editText.trim() } : x));
+        setEditing(false);
+      } catch(e) { alert("Could not save edit."); }
+      finally { setSaving(false); }
+    };
+
     return (
     <div style={{ display:"flex", gap:10, marginBottom:12, paddingLeft: isReply ? 44 : 0 }}>
       <img src={c.avatar_url} style={{ width: isReply?28:36, height: isReply?28:36, borderRadius:"50%", border:`2px solid rgba(108,99,255,${isReply?0.2:0.3})`, flexShrink:0 }} />
       <div style={{ flex:1 }}>
-        <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
-        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
+          {isOwner && !isReply && !editing && (
+            <button onClick={() => { setEditing(true); setEditText(c.comment_text); }}
+              style={{ background:"none", border:"none", color:"#888", cursor:"pointer", fontSize:14, padding:"0 4px" }} title="Edit comment">✏️</button>
+          )}
+        </div>
+        {editing ? (
+          <div style={{ marginBottom:6 }}>
+            <input value={editText} onChange={e => setEditText(e.target.value)}
+              onKeyDown={e => { if(e.key==="Enter") saveEdit(); if(e.key==="Escape") setEditing(false); }}
+              autoFocus
+              style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(108,99,255,0.5)", borderRadius:10, padding:"6px 10px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }} />
+            <div style={{ display:"flex", gap:8, marginTop:6 }}>
+              <button onClick={saveEdit} disabled={saving}
+                style={{ background:"linear-gradient(135deg,#6c63ff,#ff6b6b)", border:"none", borderRadius:8, padding:"4px 14px", color:"#fff", fontSize:12, cursor:"pointer", fontWeight:600 }}>
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button onClick={() => setEditing(false)}
+                style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:8, padding:"4px 12px", color:"#aaa", fontSize:12, cursor:"pointer" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
+        )}
         {/* Emoji reaction bubbles */}
         {c.emoji_reactions && Object.keys(c.emoji_reactions).length > 0 && (
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
@@ -415,18 +458,15 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <div
         ref={sheetRef}
         style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, transform:`translateY(${dragY}px)`, transition: isDragging ? "none" : "transform 0.3s ease", willChange:"transform" }}>
-        <div style={{ padding:"12px 16px 0", flexShrink:0 }}>
-          <div
-            onTouchStart={handleDragStart}
-            onTouchMove={handleDragMove}
-            onTouchEnd={handleDragEnd}
-            onMouseDown={handleDragStart}
-            onMouseMove={isDragging ? handleDragMove : undefined}
-            onMouseUp={handleDragEnd}
-            style={{ width:40, height:4, background:"#888", borderRadius:99, margin:"0 auto 12px", cursor:"grab", padding:"12px 60px", marginLeft:"-60px", marginTop:"-12px", boxSizing:"content-box" }} />
+        <div
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+          style={{ padding:"12px 16px 0", flexShrink:0, cursor:"grab", userSelect:"none" }}>
+          <div style={{ width:40, height:4, background:"#888", borderRadius:99, margin:"0 auto 12px" }} />
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>💬 Comments {list.length > 0 && `(${list.length})`}</div>
-            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
+            <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11 }}>swipe down to close</div>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"0 16px 8px" }}>
