@@ -201,54 +201,22 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  // TikTok-style swipe — only on the header, so scroll list doesn't block it
   const headerRef = useRef(null);
-  useEffect(() => {
-    const header = headerRef.current;
-    const sheet = sheetRef.current;
-    if (!header || !sheet) return;
+  const swipeStartY = useRef(null);
 
-    let startY = null;
-    let currentDelta = 0;
+  const onHeaderTouchStart = (e) => {
+    swipeStartY.current = e.touches[0].clientY;
+  };
 
-    const onTouchStart = (e) => {
-      startY = e.touches[0].clientY;
-      currentDelta = 0;
-    };
-
-    const onTouchMove = (e) => {
-      if (startY === null) return;
-      const delta = e.touches[0].clientY - startY;
-      if (delta > 0) {
-        currentDelta = delta;
-        sheet.style.transform = `translateY(${delta}px)`;
-        sheet.style.transition = "none";
-      }
-    };
-
-    const onTouchEnd = () => {
-      if (currentDelta > 60) {
-        sheet.style.transform = `translateY(110%)`;
-        sheet.style.transition = "transform 0.2s ease";
-        setTimeout(() => onClose(), 200);
-      } else {
-        sheet.style.transform = `translateY(0)`;
-        sheet.style.transition = "transform 0.2s ease";
-      }
-      startY = null;
-      currentDelta = 0;
-    };
-
-    header.addEventListener("touchstart", onTouchStart, { passive: true });
-    header.addEventListener("touchmove", onTouchMove, { passive: true });
-    header.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      header.removeEventListener("touchstart", onTouchStart);
-      header.removeEventListener("touchmove", onTouchMove);
-      header.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [onClose]);
+  const onHeaderTouchEnd = (e) => {
+    if (swipeStartY.current === null) return;
+    const endY = e.changedTouches[0].clientY;
+    const diff = endY - swipeStartY.current;
+    if (diff > 50) {
+      onClose();
+    }
+    swipeStartY.current = null;
+  };
 
   useEffect(() => {
     if (!video) return;
@@ -484,7 +452,11 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <div
         ref={sheetRef}
         style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, willChange:"transform" }}>
-        <div ref={headerRef} style={{ padding:"16px 16px 12px", flexShrink:0, touchAction:"pan-x", userSelect:"none" }}>
+        <div
+          ref={headerRef}
+          onTouchStart={onHeaderTouchStart}
+          onTouchEnd={onHeaderTouchEnd}
+          style={{ padding:"16px 16px 12px", flexShrink:0 }}>
           <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
             <div style={{ width:48, height:5, background:"rgba(255,255,255,0.3)", borderRadius:99 }} />
           </div>
