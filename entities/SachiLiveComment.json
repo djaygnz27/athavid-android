@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiLiveComment"
+}
