@@ -143,6 +143,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [is18, setIs18] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -175,6 +176,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     if (!dob) return setError("Please enter your birthday.");
     if (!country.trim()) return setError("Please select your country.");
     if (!is18) return setError("You must confirm you are 18 years or older.");
+    if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
     const birthDate = new Date(dob);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -295,11 +297,21 @@ function FinishStep({ googlePayload, onSuccess }) {
         </span>
       </label>
 
-      <div style={{ color:"#555", fontSize:11, marginBottom:14, lineHeight:1.5 }}>
-        By joining you agree to our{" "}
-        <a href="/terms" target="_blank" style={{ color:"#F5C842" }}>Terms</a> &amp;{" "}
-        <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
-      </div>
+      <label style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:16, cursor:"pointer", textAlign:"left" }}>
+        <input
+          type="checkbox"
+          checked={agreedToTerms}
+          onChange={e => setAgreedToTerms(e.target.checked)}
+          style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0, marginTop:2 }}
+        />
+        <span style={{ color:"#ccc", fontSize:13, lineHeight:1.5 }}>
+          I have read and agree to Sachi's{" "}
+          <a href="/terms" target="_blank" style={{ color:"#F5C842", fontWeight:700 }} onClick={e => e.stopPropagation()}>Terms of Service</a>
+          {" "}and{" "}
+          <a href="/privacy" target="_blank" style={{ color:"#F5C842", fontWeight:700 }} onClick={e => e.stopPropagation()}>Privacy Policy</a>
+          {" "}<span style={{ color:"#ff6b6b" }}>*</span>
+        </span>
+      </label>
 
       {error && <div style={{ color:"#ff6b6b", fontSize:13, marginBottom:12 }}>{error}</div>}
 
