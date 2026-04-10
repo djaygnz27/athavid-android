@@ -201,10 +201,12 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  // TikTok-style swipe down to close — listens on the whole sheet
+  // TikTok-style swipe — only on the header, so scroll list doesn't block it
+  const headerRef = useRef(null);
   useEffect(() => {
+    const header = headerRef.current;
     const sheet = sheetRef.current;
-    if (!sheet) return;
+    if (!header || !sheet) return;
 
     let startY = null;
     let currentDelta = 0;
@@ -225,26 +227,26 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     };
 
     const onTouchEnd = () => {
-      if (currentDelta > 80) {
-        sheet.style.transform = `translateY(100%)`;
-        sheet.style.transition = "transform 0.25s ease";
-        setTimeout(() => onClose(), 220);
+      if (currentDelta > 60) {
+        sheet.style.transform = `translateY(110%)`;
+        sheet.style.transition = "transform 0.2s ease";
+        setTimeout(() => onClose(), 200);
       } else {
         sheet.style.transform = `translateY(0)`;
-        sheet.style.transition = "transform 0.25s ease";
+        sheet.style.transition = "transform 0.2s ease";
       }
       startY = null;
       currentDelta = 0;
     };
 
-    sheet.addEventListener("touchstart", onTouchStart, { passive: true });
-    sheet.addEventListener("touchmove", onTouchMove, { passive: true });
-    sheet.addEventListener("touchend", onTouchEnd, { passive: true });
+    header.addEventListener("touchstart", onTouchStart, { passive: true });
+    header.addEventListener("touchmove", onTouchMove, { passive: true });
+    header.addEventListener("touchend", onTouchEnd, { passive: true });
 
     return () => {
-      sheet.removeEventListener("touchstart", onTouchStart);
-      sheet.removeEventListener("touchmove", onTouchMove);
-      sheet.removeEventListener("touchend", onTouchEnd);
+      header.removeEventListener("touchstart", onTouchStart);
+      header.removeEventListener("touchmove", onTouchMove);
+      header.removeEventListener("touchend", onTouchEnd);
     };
   }, [onClose]);
 
@@ -482,11 +484,11 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <div
         ref={sheetRef}
         style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, willChange:"transform" }}>
-        <div style={{ padding:"12px 16px 0", flexShrink:0 }}>
-          <div style={{ padding:"10px 0", marginBottom:4, display:"flex", justifyContent:"center" }}>
-            <div style={{ width:40, height:4, background:"#888", borderRadius:99 }} />
+        <div ref={headerRef} style={{ padding:"16px 16px 12px", flexShrink:0, touchAction:"pan-x", userSelect:"none" }}>
+          <div style={{ display:"flex", justifyContent:"center", marginBottom:12 }}>
+            <div style={{ width:48, height:5, background:"rgba(255,255,255,0.3)", borderRadius:99 }} />
           </div>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>💬 Comments {list.length > 0 && `(${list.length})`}</div>
             <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
           </div>
