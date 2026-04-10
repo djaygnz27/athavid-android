@@ -194,8 +194,32 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [replyingTo, setReplyingTo] = useState(null); // { id, username }
   const [expandedReplies, setExpandedReplies] = useState({});
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(null); // comment id
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(null);
+  const sheetRef = useRef(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    dragStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (dragStartY.current === null) return;
+    const delta = e.touches[0].clientY - dragStartY.current;
+    if (delta > 0) setDragY(delta);
+  };
+
+  const handleTouchEnd = () => {
+    if (dragY > 120) {
+      onClose();
+    }
+    setDragY(0);
+    setIsDragging(false);
+    dragStartY.current = null;
+  };
 
   useEffect(() => {
     if (!video) return;
@@ -385,9 +409,14 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   return (
     <div style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)" }} />
-      <div style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001 }}>
+      <div
+        ref={sheetRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, transform:`translateY(${dragY}px)`, transition: isDragging ? "none" : "transform 0.3s ease", willChange:"transform" }}>
         <div style={{ padding:"12px 16px 0", flexShrink:0 }}>
-          <div style={{ width:40, height:4, background:"#444", borderRadius:99, margin:"0 auto 12px" }} />
+          <div style={{ width:40, height:4, background:"#888", borderRadius:99, margin:"0 auto 12px", cursor:"grab" }} />
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>💬 Comments {list.length > 0 && `(${list.length})`}</div>
             <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
