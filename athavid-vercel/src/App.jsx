@@ -1227,6 +1227,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Generating thumbnail...");
       let thumbnail_url = null;
       try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
+      if (!thumbnail_url) thumbnail_url = video_url; // fallback so grid never shows black
       setProgress(80);
       setStep("Saving to feed...");
       const videoGeo = await getPostLocation();
@@ -3564,7 +3565,8 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                         {v.thumbnail_url ? (
                           <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         ) : (
-                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata"
+                            onLoadedMetadata={e => { try { e.target.currentTime = 1; } catch {} }} />
                         )}
                         {/* Play icon overlay */}
                         <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -3639,7 +3641,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
           <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
             onClick={() => setMenuVideo(v)}>
             {v.thumbnail_url
-              ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              ? <img src={resolveMediaUrl(v.thumbnail_url)} onError={e => { e.target.style.display="none"; }} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
             {/* Three-dot indicator */}
             <div style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
