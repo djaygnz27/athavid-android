@@ -16528,6 +16528,260 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     ] })
   ] });
 }
+function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen }) {
+  const [threads, setThreads] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [activeThread, setActiveThread] = reactExports.useState(null);
+  const [threadMsgs, setThreadMsgs] = reactExports.useState([]);
+  const [newMsg, setNewMsg] = reactExports.useState("");
+  const [sending, setSending] = reactExports.useState(false);
+  const [showNewDM, setShowNewDM] = reactExports.useState(false);
+  const [userSearch, setUserSearch] = reactExports.useState("");
+  const [userResults, setUserResults] = reactExports.useState([]);
+  const [searchingUsers, setSearchingUsers] = reactExports.useState(false);
+  const bottomRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (initialDMTarget && initialDMTarget.userId) {
+      openThread(initialDMTarget.userId, initialDMTarget.username, initialDMTarget.avatar);
+      if (onOpen) onOpen();
+    }
+  }, []);
+  const loadInbox = async () => {
+    try {
+      const res = await messages.getInbox(currentUser.id);
+      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+      const map = {};
+      items.forEach((m2) => {
+        if (!map[m2.thread_id] || new Date(m2.created_date) > new Date(map[m2.thread_id].created_date)) {
+          map[m2.thread_id] = m2;
+        }
+      });
+      setThreads(Object.values(map).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+    } catch (e) {
+    }
+    setLoading(false);
+  };
+  reactExports.useEffect(() => {
+    loadInbox();
+  }, [currentUser.id]);
+  reactExports.useEffect(() => {
+    if (!userSearch.trim()) {
+      setUserResults([]);
+      return;
+    }
+    const t2 = setTimeout(async () => {
+      setSearchingUsers(true);
+      try {
+        const res = await AthaVidUser.filter({ username__icontains: userSearch.trim() });
+        const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || [];
+        setUserResults(items.filter((u2) => u2.id !== currentUser.id).slice(0, 8));
+      } catch (e) {
+        setUserResults([]);
+      }
+      setSearchingUsers(false);
+    }, 300);
+    return () => clearTimeout(t2);
+  }, [userSearch]);
+  const openThread = async (senderId, senderUsername, senderAvatar) => {
+    setActiveThread({ userId: senderId, username: senderUsername, avatar: senderAvatar });
+    const res = await messages.getThread(currentUser.id, senderId);
+    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+    const sorted = items.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    setThreadMsgs(sorted);
+    items.filter((m2) => m2.recipient_id === currentUser.id && !m2.is_read).forEach((m2) => messages.markRead(m2.id));
+    setTimeout(() => {
+      var _a;
+      return (_a = bottomRef.current) == null ? void 0 : _a.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+  const sendMsg = async () => {
+    if (!newMsg.trim() || !activeThread) return;
+    setSending(true);
+    const thread_id = [currentUser.id, activeThread.userId].sort().join("_");
+    try {
+      const sent = await messages.send({
+        sender_id: currentUser.id,
+        sender_username: currentUser.username,
+        sender_avatar: currentUser.avatar_url || "",
+        recipient_id: activeThread.userId,
+        recipient_username: activeThread.username,
+        text: newMsg.trim(),
+        is_read: false,
+        thread_id
+      });
+      setThreadMsgs((prev) => [...prev, sent]);
+      setNewMsg("");
+      setTimeout(() => {
+        var _a;
+        return (_a = bottomRef.current) == null ? void 0 : _a.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } catch (e) {
+      alert("Failed to send");
+    }
+    setSending(false);
+  };
+  const fmtTime = (d) => {
+    const dt = new Date(d);
+    const now = /* @__PURE__ */ new Date();
+    const diff = now - dt;
+    if (diff < 6e4) return "just now";
+    if (diff < 36e5) return Math.floor(diff / 6e4) + "m ago";
+    if (diff < 864e5) return Math.floor(diff / 36e5) + "h ago";
+    return dt.toLocaleDateString();
+  };
+  if (activeThread) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 500, display: "flex", flexDirection: "column" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 14px)", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 12, background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+        setActiveThread(null);
+        setThreadMsgs([]);
+        loadInbox();
+      }, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 20, padding: 0 }, children: "←" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + activeThread.username, style: { width: 36, height: 36, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.4)" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700 }, children: [
+        "@",
+        activeThread.username
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 10 }, children: [
+      threadMsgs.map((m2, i) => {
+        const isMine = m2.sender_id === currentUser.id;
+        return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: isMine ? "flex-end" : "flex-start" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { maxWidth: "72%", background: isMine ? "linear-gradient(135deg,#6c63ff,#ff6b6b)" : "rgba(255,255,255,0.08)", borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px", padding: "10px 14px" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 14 }, children: m2.text }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginTop: 4, textAlign: isMine ? "right" : "left" }, children: fmtTime(m2.created_date) })
+        ] }) }, m2.id || i);
+      }),
+      threadMsgs.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", marginTop: 60 }, children: "Start the conversation 👋" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: bottomRef })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "10px 16px 32px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 8, alignItems: "center", background: "rgba(14,14,28,0.98)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          value: newMsg,
+          onChange: (e) => setNewMsg(e.target.value),
+          onKeyDown: (e) => e.key === "Enter" && sendMsg(),
+          placeholder: "Message...",
+          autoFocus: true,
+          style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: "10px 16px", color: "#fff", fontSize: 14, outline: "none" }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: sendMsg,
+          disabled: sending || !newMsg.trim(),
+          style: { background: "linear-gradient(135deg,#6c63ff,#ff6b6b)", border: "none", borderRadius: "50%", width: 40, height: 40, color: "#fff", cursor: "pointer", fontSize: 18 },
+          children: "➤"
+        }
+      )
+    ] })
+  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 100, display: "flex", flexDirection: "column" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "✉️ Inbox" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: () => {
+            setShowNewDM(true);
+            setUserSearch("");
+            setUserResults([]);
+          },
+          style: { background: "linear-gradient(135deg,#6c63ff,#a855f7)", border: "none", borderRadius: 20, padding: "7px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
+          children: "✏️ New"
+        }
+      )
+    ] }) }),
+    showNewDM && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, background: "#0B0C1A", zIndex: 200, display: "flex", flexDirection: "column", paddingTop: "calc(env(safe-area-inset-top,0px) + 0px)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10, background: "rgba(14,14,28,0.98)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowNewDM(false), style: { background: "none", border: "none", color: "#F5C842", fontSize: 20, cursor: "pointer", padding: 0 }, children: "←" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "New Message" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 16px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          autoFocus: true,
+          value: userSearch,
+          onChange: (e) => setUserSearch(e.target.value),
+          placeholder: "Search by username...",
+          style: { width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 24, padding: "10px 16px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto" }, children: [
+        searchingUsers && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 20 }, children: "Searching..." }),
+        !searchingUsers && userSearch && userResults.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "No users found" }),
+        !userSearch && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🔍" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Type a username to find someone" })
+        ] }),
+        userResults.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => {
+              setShowNewDM(false);
+              openThread(u2.id, u2.username, u2.avatar_url || "");
+            },
+            style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: u2.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u2.username}`,
+                  style: { width: 44, height: 44, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.3)" }
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: [
+                  "@",
+                  u2.username
+                ] }),
+                u2.display_name && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: u2.display_name })
+              ] })
+            ]
+          },
+          u2.id
+        ))
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto" }, children: [
+      loading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "Loading..." }),
+      !loading && threads.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 60 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "✉️" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16 }, children: "No messages yet" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13, marginTop: 8, color: "#444" }, children: "When someone messages you, it will appear here" })
+      ] }),
+      threads.map((t2) => {
+        const isIncoming = t2.sender_id !== currentUser.id;
+        const otherId = isIncoming ? t2.sender_id : t2.recipient_id;
+        const otherUsername = isIncoming ? t2.sender_username : t2.recipient_username;
+        const otherAvatar = isIncoming ? t2.sender_avatar : "";
+        const unread = !t2.is_read && t2.recipient_id === currentUser.id;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => openThread(otherId, otherUsername, otherAvatar),
+            style: { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", background: unread ? "rgba(108,99,255,0.08)" : "transparent" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: otherAvatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + otherUsername, style: { width: 46, height: 46, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.3)" } }),
+                unread && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 0, right: 0, width: 12, height: 12, background: "#ff6b6b", borderRadius: "50%", border: "2px solid #0B0C1A" } })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: unread ? "#fff" : "#ccc", fontWeight: unread ? 700 : 400, fontSize: 14 }, children: [
+                  "@",
+                  otherUsername
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }, children: t2.text })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontSize: 11 }, children: fmtTime(t2.created_date) })
+            ]
+          },
+          t2.id
+        );
+      })
+    ] })
+  ] });
+}
 function AdminPanel({ currentUser }) {
   const [modTab, setModTab] = reactExports.useState("videos");
   const [allVideos, setAllVideos] = reactExports.useState([]);
@@ -18234,6 +18488,15 @@ function App() {
     ] }),
     activeTab === "podcast" && /* @__PURE__ */ jsxRuntimeExports.jsx(PodcastPage, { currentUser, onNeedAuth: () => setShowAuth(true) }),
     activeTab === "admin" && /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPanel, { currentUser }),
+    activeTab === "inbox" && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      InboxPanel,
+      {
+        currentUser,
+        onClose: () => setActiveTab("feed"),
+        initialDMTarget: inboxDMTarget,
+        onOpen: () => setInboxDMTarget(null)
+      }
+    ),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,8px)", paddingTop: 0, display: "flex", justifyContent: "center", pointerEvents: "none", opacity: activeTab === "feed" && globalIsPlaying ? 0.25 : 1, transition: "opacity 0.4s ease" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { pointerEvents: "auto", margin: "0 16px 8px", background: "rgba(14,14,28,0.96)", backdropFilter: "blur(30px)", borderRadius: 40, border: "1px solid rgba(245,200,66,0.15)", display: "flex", alignItems: "center", padding: "6px 8px", gap: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
