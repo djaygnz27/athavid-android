@@ -201,22 +201,25 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
-  const handleTouchStart = (e) => {
-    dragStartY.current = e.touches[0].clientY;
+  const handleDragStart = (e) => {
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartY.current = clientY;
     setIsDragging(true);
   };
 
-  const handleTouchMove = (e) => {
+  const handleDragMove = (e) => {
     if (dragStartY.current === null) return;
-    const delta = e.touches[0].clientY - dragStartY.current;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const delta = clientY - dragStartY.current;
     if (delta > 0) setDragY(delta);
   };
 
-  const handleTouchEnd = () => {
-    if (dragY > 120) {
+  const handleDragEnd = () => {
+    if (dragY > 100) {
       onClose();
+    } else {
+      setDragY(0);
     }
-    setDragY(0);
     setIsDragging(false);
     dragStartY.current = null;
   };
@@ -411,12 +414,16 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)" }} />
       <div
         ref={sheetRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         style={{ position:"relative", background:"#1a1a2e", borderRadius:"24px 24px 0 0", maxHeight:"75vh", display:"flex", flexDirection:"column", zIndex:1001, transform:`translateY(${dragY}px)`, transition: isDragging ? "none" : "transform 0.3s ease", willChange:"transform" }}>
         <div style={{ padding:"12px 16px 0", flexShrink:0 }}>
-          <div style={{ width:40, height:4, background:"#888", borderRadius:99, margin:"0 auto 12px", cursor:"grab" }} />
+          <div
+            onTouchStart={handleDragStart}
+            onTouchMove={handleDragMove}
+            onTouchEnd={handleDragEnd}
+            onMouseDown={handleDragStart}
+            onMouseMove={isDragging ? handleDragMove : undefined}
+            onMouseUp={handleDragEnd}
+            style={{ width:40, height:4, background:"#888", borderRadius:99, margin:"0 auto 12px", cursor:"grab", padding:"12px 60px", marginLeft:"-60px", marginTop:"-12px", boxSizing:"content-box" }} />
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16 }}>💬 Comments {list.length > 0 && `(${list.length})`}</div>
             <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:"50%", width:30, height:30, color:"#fff", cursor:"pointer" }}>✕</button>
