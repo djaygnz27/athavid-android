@@ -1499,8 +1499,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 540, 960);
 
-      const fontSize = 58;
-      const lineH = fontSize * 1.45;
+      // Dynamic font size based on text length — matches preview
+      const textLen = textPostContent.trim().length;
+      const fontSize = textLen <= 40 ? 58
+        : textLen <= 80  ? 48
+        : textLen <= 140 ? 38
+        : textLen <= 220 ? 30
+        : 24;
+      const lineH = fontSize * 1.5;
       const maxW = 460;
       ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
       ctx.textBaseline = "top";
@@ -1927,6 +1933,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
         {/* ── TEXT POST MODE ── */}
         {uploadTab === "text" && (() => {
+          // Dynamic font size — shrinks as text gets longer
+          const calcFs = (text, mini, base) => {
+            if (mini) return base > 10 ? Math.floor(base * 0.28) : base;
+            const len = (text || "").length;
+            if (len <= 40)  return base;
+            if (len <= 80)  return Math.max(20, Math.floor(base * 0.82));
+            if (len <= 140) return Math.max(16, Math.floor(base * 0.65));
+            if (len <= 220) return Math.max(14, Math.floor(base * 0.52));
+            return Math.max(12, Math.floor(base * 0.42));
+          };
+
           // Template definitions — each has a render function for the preview
           const TEXT_TEMPLATES = [
             {
@@ -1940,7 +1957,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   else acc.push(w);
                   return acc;
                 }, []) : ["Hey","happy","Monday"];
-                const fs = mini ? 11 : 38;
+                const fs = calcFs(text, mini, 38);
                 const pad = mini ? "2px 5px" : "6px 14px";
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", gap: mini?3:8, padding: mini?"8px":"20px", width:"100%" }}>
@@ -1965,7 +1982,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   else acc.push(w);
                   return acc;
                 }, []) : ["Hey","happy","Monday"];
-                const fs = mini ? 10 : 34;
+                const fs = calcFs(text, mini, 34);
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?2:6, padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
                     {lines.map((l,i) => (
@@ -1982,7 +1999,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle:"linear-gradient(135deg,#0B0C1A,#1a1040)",
               render:(text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:mini?3:10, padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
                     {!mini && <div style={{ fontSize:32, marginBottom:4 }}>🌸</div>}
@@ -1997,7 +2014,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle:"linear-gradient(160deg,#d8e8f5,#eaf2ff)",
               render:(text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 30;
+                const fs = calcFs(text, mini, 30);
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
                     <span style={{ fontSize:fs, fontWeight:700, color:"#4a6fa5", fontFamily:"Georgia,serif", textAlign:"center", lineHeight:1.4, wordBreak:"break-word", opacity:0.85 }}>{words}</span>
@@ -2010,7 +2027,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle:"#111111",
               render:(text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
                     {mini && <div style={{ fontSize:12 }}>🌙</div>}
@@ -2025,7 +2042,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle:"linear-gradient(135deg,#FF416C,#FF9500)",
               render:(text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
                     {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌅</div>}
@@ -2040,7 +2057,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle:"linear-gradient(160deg,#0F2027,#2C5364)",
               render:(text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 32;
+                const fs = calcFs(text, mini, 32);
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
                     {!mini && <div style={{ fontSize:32, marginBottom:8 }}>🌊</div>}
@@ -2055,7 +2072,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle:"linear-gradient(135deg,#1a1a1a,#2d1a00)",
               render:(text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return (
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:mini?"8px":"24px", width:"100%", height:"100%" }}>
                     {!mini && <div style={{ fontSize:32, marginBottom:8 }}>✨</div>}
