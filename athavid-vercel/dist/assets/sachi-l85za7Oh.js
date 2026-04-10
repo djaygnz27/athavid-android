@@ -12380,8 +12380,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       grad.addColorStop(1, tpl.bg[1]);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 540, 960);
-      const fontSize = 58;
-      const lineH = fontSize * 1.45;
+      const textLen = textPostContent.trim().length;
+      const fontSize = textLen <= 40 ? 58 : textLen <= 80 ? 48 : textLen <= 140 ? 38 : textLen <= 220 ? 30 : 24;
+      const lineH = fontSize * 1.5;
       const maxW = 460;
       ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
       ctx.textBaseline = "top";
@@ -12949,6 +12950,15 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           ] })
         ] }),
         uploadTab === "text" && (() => {
+          const calcFs = (text, mini, base) => {
+            if (mini) return base > 10 ? Math.floor(base * 0.28) : base;
+            const len = (text || "").length;
+            if (len <= 40) return base;
+            if (len <= 80) return Math.max(20, Math.floor(base * 0.82));
+            if (len <= 140) return Math.max(16, Math.floor(base * 0.65));
+            if (len <= 220) return Math.max(14, Math.floor(base * 0.52));
+            return Math.max(12, Math.floor(base * 0.42));
+          };
           const TEXT_TEMPLATES = [
             {
               name: "Blush",
@@ -12963,7 +12973,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   } else acc.push(w2);
                   return acc;
                 }, []) : ["Hey", "happy", "Monday"];
-                const fs = mini ? 11 : 38;
+                const fs = calcFs(text, mini, 38);
                 const pad = mini ? "2px 5px" : "6px 14px";
                 return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: mini ? 3 : 8, padding: mini ? "8px" : "20px", width: "100%" }, children: [
                   !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 4 }, children: "😊" }),
@@ -12984,7 +12994,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   } else acc.push(w2);
                   return acc;
                 }, []) : ["Hey", "happy", "Monday"];
-                const fs = mini ? 10 : 34;
+                const fs = calcFs(text, mini, 34);
                 return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: mini ? 2 : 6, padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: lines.map((l2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#F5C842", display: "inline-block", padding: mini ? "1px 5px" : "4px 12px", borderRadius: 3, transform: `rotate(${i % 2 === 0 ? -1 : 1}deg)` }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: fs, fontWeight: 900, color: "#222", fontFamily: "'Arial Black',sans-serif", lineHeight: 1.1 }, children: l2 }) }, i)) });
               }
             },
@@ -12994,7 +13004,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle: "linear-gradient(135deg,#0B0C1A,#1a1040)",
               render: (text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: mini ? 3 : 10, padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: [
                   !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 4 }, children: "🌸" }),
                   mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12 }, children: "🌸" }),
@@ -13008,7 +13018,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle: "linear-gradient(160deg,#d8e8f5,#eaf2ff)",
               render: (text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 30;
+                const fs = calcFs(text, mini, 30);
                 return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: fs, fontWeight: 700, color: "#4a6fa5", fontFamily: "Georgia,serif", textAlign: "center", lineHeight: 1.4, wordBreak: "break-word", opacity: 0.85 }, children: words }) });
               }
             },
@@ -13018,7 +13028,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle: "#111111",
               render: (text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: [
                   mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12 }, children: "🌙" }),
                   !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌙" }),
@@ -13032,7 +13042,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle: "linear-gradient(135deg,#FF416C,#FF9500)",
               render: (text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: [
                   !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌅" }),
                   mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12 }, children: "🌅" }),
@@ -13046,7 +13056,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle: "linear-gradient(160deg,#0F2027,#2C5364)",
               render: (text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 32;
+                const fs = calcFs(text, mini, 32);
                 return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: [
                   !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌊" }),
                   mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12 }, children: "🌊" }),
@@ -13060,7 +13070,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               bgStyle: "linear-gradient(135deg,#1a1a1a,#2d1a00)",
               render: (text, mini) => {
                 const words = text || "Hey happy Monday";
-                const fs = mini ? 9 : 34;
+                const fs = calcFs(text, mini, 34);
                 return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: [
                   !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "✨" }),
                   mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12 }, children: "✨" }),
