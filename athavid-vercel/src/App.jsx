@@ -1,7 +1,7 @@
 // Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes, messages } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import SachiLiveHub from "./SachiLive.jsx";
@@ -1241,6 +1241,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setTimeout(() => { onClose(); }, 2500);
       } else {
         setStep("Posted! 🎉");
+        // Notify followers
+        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            poster_id: currentUser.id,
+            poster_username: username,
+            poster_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+            video_caption: (postTitle ? postTitle + " " : "") + caption.trim()
+          })
+        }).catch(() => {});
         setTimeout(() => { onUploaded(); onClose(); }, 1000);
       }
     } catch(e) {
@@ -1313,6 +1324,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setTimeout(() => { onClose(); }, 2500);
       } else {
         setStep("Posted! 🎉");
+        // Notify followers
+        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            poster_id: currentUser.id,
+            poster_username: username,
+            poster_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+            video_caption: (postTitle ? postTitle + " " : "") + caption.trim()
+          })
+        }).catch(() => {});
         setTimeout(() => { onUploaded(); onClose(); }, 1000);
       }
     } catch(e) {
@@ -4777,6 +4799,151 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 }
 
 
+// ─── Inbox Panel ────────────────────────────────────────────────────────────
+function InboxPanel({ currentUser, onClose }) {
+  const [threads, setThreads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeThread, setActiveThread] = useState(null); // { userId, username, avatar }
+  const [threadMsgs, setThreadMsgs] = useState([]);
+  const [newMsg, setNewMsg] = useState("");
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef(null);
+
+  // Load inbox — group by sender, get latest per thread
+  const loadInbox = async () => {
+    try {
+      const res = await messages.getInbox(currentUser.id);
+      const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+      // dedupe by thread_id, keep latest
+      const map = {};
+      items.forEach(m => {
+        if (!map[m.thread_id] || new Date(m.created_date) > new Date(map[m.thread_id].created_date)) {
+          map[m.thread_id] = m;
+        }
+      });
+      setThreads(Object.values(map).sort((a,b) => new Date(b.created_date) - new Date(a.created_date)));
+    } catch(e) {}
+    setLoading(false);
+  };
+
+  useEffect(() => { loadInbox(); }, [currentUser.id]);
+
+  const openThread = async (senderId, senderUsername, senderAvatar) => {
+    setActiveThread({ userId: senderId, username: senderUsername, avatar: senderAvatar });
+    const res = await messages.getThread(currentUser.id, senderId);
+    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+    const sorted = items.sort((a,b) => new Date(a.created_date) - new Date(b.created_date));
+    setThreadMsgs(sorted);
+    // mark unread as read
+    items.filter(m => m.recipient_id === currentUser.id && !m.is_read).forEach(m => messages.markRead(m.id));
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior:"smooth" }), 100);
+  };
+
+  const sendMsg = async () => {
+    if (!newMsg.trim() || !activeThread) return;
+    setSending(true);
+    const thread_id = [currentUser.id, activeThread.userId].sort().join("_");
+    try {
+      const sent = await messages.send({
+        sender_id: currentUser.id,
+        sender_username: currentUser.username,
+        sender_avatar: currentUser.avatar_url || "",
+        recipient_id: activeThread.userId,
+        recipient_username: activeThread.username,
+        text: newMsg.trim(),
+        is_read: false,
+        thread_id
+      });
+      setThreadMsgs(prev => [...prev, sent]);
+      setNewMsg("");
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior:"smooth" }), 100);
+    } catch(e) { alert("Failed to send"); }
+    setSending(false);
+  };
+
+  const fmtTime = (d) => {
+    const dt = new Date(d);
+    const now = new Date();
+    const diff = now - dt;
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return Math.floor(diff/60000) + "m ago";
+    if (diff < 86400000) return Math.floor(diff/3600000) + "h ago";
+    return dt.toLocaleDateString();
+  };
+
+  if (activeThread) return (
+    <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:500, display:"flex", flexDirection:"column" }}>
+      <div style={{ padding:"14px 16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 14px)", borderBottom:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:12, background:"rgba(14,14,28,0.98)", backdropFilter:"blur(20px)" }}>
+        <button onClick={() => { setActiveThread(null); setThreadMsgs([]); loadInbox(); }} style={{ background:"none", border:"none", color:"#F5C842", cursor:"pointer", fontSize:20, padding:0 }}>←</button>
+        <img src={activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed="+activeThread.username} style={{ width:36, height:36, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.4)" }} />
+        <div style={{ color:"#fff", fontWeight:700 }}>@{activeThread.username}</div>
+      </div>
+      <div style={{ flex:1, overflowY:"auto", padding:"16px", display:"flex", flexDirection:"column", gap:10 }}>
+        {threadMsgs.map((m, i) => {
+          const isMine = m.sender_id === currentUser.id;
+          return (
+            <div key={m.id||i} style={{ display:"flex", justifyContent: isMine ? "flex-end" : "flex-start" }}>
+              <div style={{ maxWidth:"72%", background: isMine ? "linear-gradient(135deg,#6c63ff,#ff6b6b)" : "rgba(255,255,255,0.08)", borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px", padding:"10px 14px" }}>
+                <div style={{ color:"#fff", fontSize:14 }}>{m.text}</div>
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10, marginTop:4, textAlign: isMine ? "right" : "left" }}>{fmtTime(m.created_date)}</div>
+              </div>
+            </div>
+          );
+        })}
+        {threadMsgs.length === 0 && <div style={{ textAlign:"center", color:"#555", marginTop:60 }}>Start the conversation 👋</div>}
+        <div ref={bottomRef} />
+      </div>
+      <div style={{ padding:"10px 16px 32px", borderTop:"1px solid rgba(255,255,255,0.07)", display:"flex", gap:8, alignItems:"center", background:"rgba(14,14,28,0.98)" }}>
+        <input value={newMsg} onChange={e => setNewMsg(e.target.value)} onKeyDown={e => e.key==="Enter" && sendMsg()}
+          placeholder="Message..." autoFocus
+          style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:24, padding:"10px 16px", color:"#fff", fontSize:14, outline:"none" }} />
+        <button onClick={sendMsg} disabled={sending || !newMsg.trim()}
+          style={{ background:"linear-gradient(135deg,#6c63ff,#ff6b6b)", border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", cursor:"pointer", fontSize:18 }}>➤</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:100, display:"flex", flexDirection:"column" }}>
+      <div style={{ padding:"16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 16px)", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(14,14,28,0.98)", backdropFilter:"blur(20px)" }}>
+        <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>✉️ Inbox</div>
+      </div>
+      <div style={{ flex:1, overflowY:"auto" }}>
+        {loading && <div style={{ textAlign:"center", color:"#555", padding:40 }}>Loading...</div>}
+        {!loading && threads.length === 0 && (
+          <div style={{ textAlign:"center", color:"#555", padding:60 }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>✉️</div>
+            <div style={{ fontSize:16 }}>No messages yet</div>
+            <div style={{ fontSize:13, marginTop:8, color:"#444" }}>When someone messages you, it will appear here</div>
+          </div>
+        )}
+        {threads.map(t => {
+          const isIncoming = t.sender_id !== currentUser.id;
+          const otherId = isIncoming ? t.sender_id : t.recipient_id;
+          const otherUsername = isIncoming ? t.sender_username : t.recipient_username;
+          const otherAvatar = isIncoming ? t.sender_avatar : "";
+          const unread = !t.is_read && t.recipient_id === currentUser.id;
+          return (
+            <div key={t.id} onClick={() => openThread(otherId, otherUsername, otherAvatar)}
+              style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: unread ? "rgba(108,99,255,0.08)" : "transparent" }}>
+              <div style={{ position:"relative" }}>
+                <img src={otherAvatar || "https://api.dicebear.com/7.x/avataaars/svg?seed="+otherUsername} style={{ width:46, height:46, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.3)" }} />
+                {unread && <div style={{ position:"absolute", top:0, right:0, width:12, height:12, background:"#ff6b6b", borderRadius:"50%", border:"2px solid #0B0C1A" }} />}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ color: unread ? "#fff" : "#ccc", fontWeight: unread ? 700 : 400, fontSize:14 }}>@{otherUsername}</div>
+                <div style={{ color:"#555", fontSize:12, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", marginTop:2 }}>{t.text}</div>
+              </div>
+              <div style={{ color:"#444", fontSize:11 }}>{fmtTime(t.created_date)}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 // ─── Admin Panel ─────────────────────────────────────────────────────────────
 function AdminPanel({ currentUser }) {
   const [modTab, setModTab] = useState("videos"); // videos | ai | analytics
@@ -5704,6 +5871,7 @@ function App() {
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feed");
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showGoLive, setShowGoLive] = useState(false);
   const [showLiveHub, setShowLiveHub] = useState(false);
@@ -5721,6 +5889,15 @@ function App() {
     follows.getFollowing(currentUser.id).then(res => {
       setFollowedUserIds(new Set((res.items || res || []).map(r => r.following_id)));
     }).catch(() => {});
+  }, [currentUser]);
+
+  // Poll unread message count
+  React.useEffect(() => {
+    if (!currentUser) { setUnreadCount(0); return; }
+    const poll = () => messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {});
+    poll();
+    const iv = setInterval(poll, 15000);
+    return () => clearInterval(iv);
   }, [currentUser]);
 
   const handleFollowChange = (userId, isNowFollowing) => {
@@ -6361,6 +6538,20 @@ function App() {
               <div style={{ fontSize:9, color: activeTab==="admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="admin" ? 700 : 400, letterSpacing:0.3 }}>Mod</div>
             </button>
           )}
+
+          {/* Inbox */}
+          <button onClick={() => requireAuth(() => setActiveTab("inbox"))}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="inbox" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s", position:"relative" }}>
+            <div style={{ position:"relative" }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="inbox" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+              </svg>
+              {unreadCount > 0 && (
+                <div style={{ position:"absolute", top:-4, right:-4, background:"#ff6b6b", borderRadius:"50%", width:14, height:14, fontSize:8, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>{unreadCount > 9 ? "9+" : unreadCount}</div>
+              )}
+            </div>
+            <div style={{ fontSize:9, color: activeTab==="inbox" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="inbox" ? 700 : 400, letterSpacing:0.3 }}>Inbox</div>
+          </button>
 
           {/* Profile */}
           <button onClick={() => setActiveTab("profile")}
