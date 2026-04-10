@@ -6502,7 +6502,7 @@ function App() {
                   if (!editProfileName.trim()) return;
                   setEditProfileSaving(true);
                   try {
-                    await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
                     setCurrentUser(u => ({ ...u, full_name: editProfileName.trim() }));
                     setShowEditProfile(false);
                   } catch(e) { alert("Save failed: " + e.message); }
