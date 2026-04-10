@@ -3568,10 +3568,12 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                           <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata"
                             onLoadedMetadata={e => { try { e.target.currentTime = 1; } catch {} }} />
                         )}
-                        {/* Play icon overlay */}
+                        {/* Play icon overlay — videos only */}
+                        {!v.is_photo && (
                         <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                           <div style={{ fontSize:22, opacity:0.8 }}>▶</div>
                         </div>
+                        )}
                         <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
                         <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
                           ❤️ {v.likes_count || 0}
