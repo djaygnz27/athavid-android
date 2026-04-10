@@ -4766,6 +4766,32 @@ function AdminPanel({ currentUser }) {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
 
+  // ── Founding Creators state ──
+  const [founders, setFounders] = useState([]);
+  const [foundersLoading, setFoundersLoading] = useState(false);
+  const [selectedFounder, setSelectedFounder] = useState(null);
+  const [founderNote, setFounderNote] = useState("");
+
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator?sort=-created_date&limit=100");
+      setFounders(res.items || res || []);
+    } catch(e) { console.error(e); }
+    setFoundersLoading(false);
+  };
+
+  useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
+
+  const updateFounderStatus = async (founder, status) => {
+    try {
+      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
+      setSelectedFounder(null);
+      setFounderNote("");
+    } catch(e) { alert("Failed: " + e.message); }
+  };
+
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
@@ -4826,14 +4852,14 @@ function AdminPanel({ currentUser }) {
       <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 10px", position:"sticky", top:0, zIndex:100 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div style={{ color:"#F5C842", fontWeight:900, fontSize:20 }}>🛡️ Mod Panel</div>
-          <button onClick={() => modTab==="analytics" ? loadAnalytics() : modTab==="users" ? loadRegisteredUsers() : loadVideos()}
+          <button onClick={() => modTab==="analytics" ? loadAnalytics() : modTab==="users" ? loadRegisteredUsers() : modTab==="founders" ? loadFounders() : loadVideos()}
             style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:20, padding:"7px 14px", color:"#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
             ↻ Refresh
           </button>
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["analytics","📊 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Creators"],["analytics","📊 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
@@ -5350,6 +5376,128 @@ function AdminPanel({ currentUser }) {
         </div>
       )}
       </>)}
+
+      {/* ── FOUNDING CREATORS TAB ── */}
+      {modTab === "founders" && (
+        <div style={{ padding:"16px" }}>
+          {/* Summary bar */}
+          {(() => {
+            const counts = { Pending:0, Approved:0, Rejected:0, Contacted:0, Waitlisted:0 };
+            founders.forEach(f => { if (counts[f.status] !== undefined) counts[f.status]++; else counts.Pending++; });
+            return (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8, marginBottom:16 }}>
+                {[
+                  ["Pending","🟡",counts.Pending,"rgba(245,200,66,0.15)","#F5C842"],
+                  ["Approved","✅",counts.Approved,"rgba(76,175,80,0.15)","#4caf50"],
+                  ["Contacted","📩",counts.Contacted,"rgba(100,181,246,0.15)","#64b5f6"],
+                  ["Waitlisted","⏳",counts.Waitlisted,"rgba(255,152,0,0.15)","#ff9800"],
+                  ["Rejected","❌",counts.Rejected,"rgba(229,57,53,0.15)","#ef5350"],
+                ].map(([label,icon,count,bg,color]) => (
+                  <div key={label} style={{ background:bg, border:`1px solid ${color}44`, borderRadius:12, padding:"10px 6px", textAlign:"center" }}>
+                    <div style={{ fontSize:18 }}>{icon}</div>
+                    <div style={{ color, fontWeight:900, fontSize:20 }}>{count}</div>
+                    <div style={{ color:"#888", fontSize:10 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {foundersLoading && <div style={{ textAlign:"center", color:"#888", padding:40 }}>Loading applications…</div>}
+
+          {!foundersLoading && founders.length === 0 && (
+            <div style={{ textAlign:"center", padding:60 }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>🌟</div>
+              <div style={{ color:"#fff", fontWeight:700, fontSize:18 }}>No applications yet</div>
+              <div style={{ color:"#888", fontSize:13, marginTop:6 }}>Applications from sachistream.com/apply will appear here</div>
+            </div>
+          )}
+
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {founders.map(f => {
+              const statusColor = f.status==="Approved"?"#4caf50":f.status==="Rejected"?"#ef5350":f.status==="Contacted"?"#64b5f6":f.status==="Waitlisted"?"#ff9800":"#F5C842";
+              const isOpen = selectedFounder?.id === f.id;
+              return (
+                <div key={f.id} style={{ background:"rgba(255,255,255,0.04)", border:`1.5px solid ${statusColor}33`, borderRadius:16, overflow:"hidden" }}>
+                  {/* Card header — always visible */}
+                  <div onClick={() => { setSelectedFounder(isOpen ? null : f); setFounderNote(f.notes||""); }}
+                    style={{ padding:"14px 16px", cursor:"pointer", display:"flex", alignItems:"flex-start", gap:12 }}>
+                    {/* Avatar */}
+                    <div style={{ width:44, height:44, borderRadius:"50%", background:`linear-gradient(135deg,${statusColor}44,rgba(11,12,26,0.9))`, border:`2px solid ${statusColor}66`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
+                      {f.full_name?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                        <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{f.full_name}</div>
+                        <div style={{ background:`${statusColor}22`, border:`1px solid ${statusColor}55`, borderRadius:20, padding:"2px 10px", color:statusColor, fontWeight:700, fontSize:11 }}>{f.status || "Pending"}</div>
+                      </div>
+                      <div style={{ color:"#888", fontSize:12, marginTop:2 }}>{f.email} {f.phone ? `· ${f.phone}` : ""}</div>
+                      <div style={{ color:"#aaa", fontSize:12, marginTop:2 }}>📍 {f.location || "—"} · 🎯 {f.content_type || "—"} · 👥 {f.follower_count || "—"}</div>
+                    </div>
+                    <div style={{ color:"#888", fontSize:18 }}>{isOpen ? "▲" : "▼"}</div>
+                  </div>
+
+                  {/* Expanded detail */}
+                  {isOpen && (
+                    <div style={{ padding:"0 16px 16px", borderTop:"1px solid rgba(255,255,255,0.07)" }}>
+                      {/* Why Sachi */}
+                      {f.why_sachi && (
+                        <div style={{ background:"rgba(124,77,255,0.08)", border:"1px solid rgba(124,77,255,0.2)", borderRadius:12, padding:"12px 14px", marginTop:14, marginBottom:12 }}>
+                          <div style={{ color:"#b388ff", fontWeight:700, fontSize:11, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>💬 Why Sachi</div>
+                          <div style={{ color:"#e0e0e0", fontSize:13, lineHeight:1.6 }}>{f.why_sachi}</div>
+                        </div>
+                      )}
+                      {/* Content description */}
+                      {f.content_description && (
+                        <div style={{ marginBottom:10 }}>
+                          <div style={{ color:"#888", fontSize:11, marginBottom:4 }}>CONTENT</div>
+                          <div style={{ color:"#ccc", fontSize:13 }}>{f.content_description}</div>
+                        </div>
+                      )}
+                      {/* Social links */}
+                      {f.social_links && (
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{ color:"#888", fontSize:11, marginBottom:4 }}>SOCIAL</div>
+                          <div style={{ color:"#64b5f6", fontSize:13 }}>{f.social_links}</div>
+                        </div>
+                      )}
+                      {/* Applied date */}
+                      <div style={{ color:"#555", fontSize:11, marginBottom:14 }}>
+                        Applied: {new Date(f.created_date).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit" })}
+                      </div>
+                      {/* Internal note */}
+                      <div style={{ marginBottom:12 }}>
+                        <div style={{ color:"#888", fontSize:11, marginBottom:6 }}>INTERNAL NOTE</div>
+                        <textarea value={founderNote} onChange={e => setFounderNote(e.target.value)} placeholder="Add a note (optional)…" rows={2}
+                          style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none", resize:"vertical" }} />
+                      </div>
+                      {/* Action buttons */}
+                      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                        <button onClick={() => updateFounderStatus(f, "Approved")}
+                          style={{ flex:1, minWidth:80, background:"linear-gradient(135deg,#4caf50,#388e3c)", border:"none", borderRadius:10, padding:"10px 0", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+                          ✅ Approve
+                        </button>
+                        <button onClick={() => updateFounderStatus(f, "Waitlisted")}
+                          style={{ flex:1, minWidth:80, background:"linear-gradient(135deg,#ff9800,#e65100)", border:"none", borderRadius:10, padding:"10px 0", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+                          ⏳ Waitlist
+                        </button>
+                        <button onClick={() => updateFounderStatus(f, "Contacted")}
+                          style={{ flex:1, minWidth:80, background:"linear-gradient(135deg,#1976d2,#0d47a1)", border:"none", borderRadius:10, padding:"10px 0", color:"#fff", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+                          📩 Contacted
+                        </button>
+                        <button onClick={() => updateFounderStatus(f, "Rejected")}
+                          style={{ flex:1, minWidth:80, background:"rgba(229,57,53,0.2)", border:"1px solid rgba(229,57,53,0.4)", borderRadius:10, padding:"10px 0", color:"#ef5350", fontWeight:800, fontSize:13, cursor:"pointer" }}>
+                          ❌ Reject
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
