@@ -349,3 +349,12 @@ export const messages = {
     return items.length;
   }
 };
+
+export const notifications = {
+  get: (user_id) => request("GET", `/apps/${APP_ID}/entities/SachiNotification?recipient_id=${user_id}&limit=50&sort=-created_date`),
+  markRead: (id) => request("PATCH", `/apps/${APP_ID}/entities/SachiNotification/${id}`, { is_read: true }),
+  getUnread: async (user_id) => {
+    const res = await request("GET", `/apps/${APP_ID}/entities/SachiNotification?recipient_id=${user_id}&is_read=false&limit=50`);
+    return Array.isArray(res) ? res : (res?.records || res?.items || []);
+  }
+};

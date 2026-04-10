@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "recipient_id": {
+      "type": "string"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_username": {
+      "type": "string"
+    },
+    "sender_avatar": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "like",
+        "comment",
+        "follow",
+        "message"
+      ]
+    },
+    "video_id": {
+      "type": "string"
+    },
+    "video_thumbnail": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "is_read": {
+      "type": "boolean"
+    }
+  },
+  "required": [],
+  "name": "SachiNotification"
+}
