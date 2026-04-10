@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_username": {
+      "type": "string"
+    },
+    "sender_avatar": {
+      "type": "string"
+    },
+    "recipient_id": {
+      "type": "string"
+    },
+    "recipient_username": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "is_read": {
+      "type": "boolean"
+    },
+    "thread_id": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiMessage"
+}

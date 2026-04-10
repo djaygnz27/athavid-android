@@ -334,3 +334,18 @@ export const likes = {
     return null;
   },
 };
+
+export const messages = {
+  send: (data) => request("POST", `/apps/${APP_ID}/entities/SachiMessage`, data),
+  getThread: (user1_id, user2_id) => {
+    const thread_id = [user1_id, user2_id].sort().join("_");
+    return request("GET", `/apps/${APP_ID}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
+  },
+  getInbox: (user_id) => request("GET", `/apps/${APP_ID}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
+  markRead: (id) => request("PATCH", `/apps/${APP_ID}/entities/SachiMessage/${id}`, { is_read: true }),
+  getUnreadCount: async (user_id) => {
+    const res = await request("GET", `/apps/${APP_ID}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
+    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+    return items.length;
+  }
+};
