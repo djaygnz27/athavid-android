@@ -16355,6 +16355,33 @@ function AdminPanel({ currentUser }) {
   }, [modTab]);
   const [registeredUsers, setRegisteredUsers] = reactExports.useState([]);
   const [usersLoading, setUsersLoading] = reactExports.useState(false);
+  const [founders, setFounders] = reactExports.useState([]);
+  const [foundersLoading, setFoundersLoading] = reactExports.useState(false);
+  const [selectedFounder, setSelectedFounder] = reactExports.useState(null);
+  const [founderNote, setFounderNote] = reactExports.useState("");
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request$1("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator?sort=-created_date&limit=100");
+      setFounders(res.items || res || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setFoundersLoading(false);
+  };
+  reactExports.useEffect(() => {
+    if (modTab === "founders") loadFounders();
+  }, [modTab]);
+  const updateFounderStatus = async (founder, status) => {
+    try {
+      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      setFounders((prev) => prev.map((f2) => f2.id === founder.id ? { ...f2, status, notes: founderNote || f2.notes } : f2));
+      setSelectedFounder(null);
+      setFounderNote("");
+    } catch (e) {
+      alert("Failed: " + e.message);
+    }
+  };
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
@@ -16420,13 +16447,13 @@ function AdminPanel({ currentUser }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => modTab === "analytics" ? loadAnalytics() : modTab === "users" ? loadRegisteredUsers() : loadVideos(),
+            onClick: () => modTab === "analytics" ? loadAnalytics() : modTab === "users" ? loadRegisteredUsers() : modTab === "founders" ? loadFounders() : loadVideos(),
             style: { background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 20, padding: "7px 14px", color: "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" },
             children: "↻ Refresh"
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: modTab === "videos" ? 10 : 0 }, children: [["videos", "🎬 Videos"], ["ai", "🤖 AI Flagged"], ["users", "👥 Users"], ["analytics", "📊 Analytics"]].map(([val, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: modTab === "videos" ? 10 : 0 }, children: [["videos", "🎬 Videos"], ["ai", "🤖 AI Flagged"], ["users", "👥 Users"], ["founders", "🌟 Creators"], ["analytics", "📊 Analytics"]].map(([val, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
           onClick: () => setModTab(val),
@@ -16930,6 +16957,137 @@ function AdminPanel({ currentUser }) {
           )
         ] })
       ] }, video.id)) })
+    ] }),
+    modTab === "founders" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
+      (() => {
+        const counts = { Pending: 0, Approved: 0, Rejected: 0, Contacted: 0, Waitlisted: 0 };
+        founders.forEach((f2) => {
+          if (counts[f2.status] !== void 0) counts[f2.status]++;
+          else counts.Pending++;
+        });
+        return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, marginBottom: 16 }, children: [
+          ["Pending", "🟡", counts.Pending, "rgba(245,200,66,0.15)", "#F5C842"],
+          ["Approved", "✅", counts.Approved, "rgba(76,175,80,0.15)", "#4caf50"],
+          ["Contacted", "📩", counts.Contacted, "rgba(100,181,246,0.15)", "#64b5f6"],
+          ["Waitlisted", "⏳", counts.Waitlisted, "rgba(255,152,0,0.15)", "#ff9800"],
+          ["Rejected", "❌", counts.Rejected, "rgba(229,57,53,0.15)", "#ef5350"]
+        ].map(([label, icon, count, bg2, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: bg2, border: `1px solid ${color}44`, borderRadius: 12, padding: "10px 6px", textAlign: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 18 }, children: icon }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 20 }, children: count }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 10 }, children: label })
+        ] }, label)) });
+      })(),
+      foundersLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#888", padding: 40 }, children: "Loading applications…" }),
+      !foundersLoading && founders.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 60 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🌟" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 18 }, children: "No applications yet" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginTop: 6 }, children: "Applications from sachistream.com/apply will appear here" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: founders.map((f2) => {
+        var _a, _b;
+        const statusColor = f2.status === "Approved" ? "#4caf50" : f2.status === "Rejected" ? "#ef5350" : f2.status === "Contacted" ? "#64b5f6" : f2.status === "Waitlisted" ? "#ff9800" : "#F5C842";
+        const isOpen = (selectedFounder == null ? void 0 : selectedFounder.id) === f2.id;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", border: `1.5px solid ${statusColor}33`, borderRadius: 16, overflow: "hidden" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: () => {
+                setSelectedFounder(isOpen ? null : f2);
+                setFounderNote(f2.notes || "");
+              },
+              style: { padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 12 },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${statusColor}44,rgba(11,12,26,0.9))`, border: `2px solid ${statusColor}66`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }, children: ((_b = (_a = f2.full_name) == null ? void 0 : _a.charAt(0)) == null ? void 0 : _b.toUpperCase()) || "?" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: f2.full_name }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: `${statusColor}22`, border: `1px solid ${statusColor}55`, borderRadius: 20, padding: "2px 10px", color: statusColor, fontWeight: 700, fontSize: 11 }, children: f2.status || "Pending" })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginTop: 2 }, children: [
+                    f2.email,
+                    " ",
+                    f2.phone ? `· ${f2.phone}` : ""
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 12, marginTop: 2 }, children: [
+                    "📍 ",
+                    f2.location || "—",
+                    " · 🎯 ",
+                    f2.content_type || "—",
+                    " · 👥 ",
+                    f2.follower_count || "—"
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 18 }, children: isOpen ? "▲" : "▼" })
+              ]
+            }
+          ),
+          isOpen && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 16px", borderTop: "1px solid rgba(255,255,255,0.07)" }, children: [
+            f2.why_sachi && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(124,77,255,0.08)", border: "1px solid rgba(124,77,255,0.2)", borderRadius: 12, padding: "12px 14px", marginTop: 14, marginBottom: 12 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#b388ff", fontWeight: 700, fontSize: 11, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }, children: "💬 Why Sachi" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#e0e0e0", fontSize: 13, lineHeight: 1.6 }, children: f2.why_sachi })
+            ] }),
+            f2.content_description && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginBottom: 4 }, children: "CONTENT" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ccc", fontSize: 13 }, children: f2.content_description })
+            ] }),
+            f2.social_links && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginBottom: 4 }, children: "SOCIAL" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#64b5f6", fontSize: 13 }, children: f2.social_links })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginBottom: 14 }, children: [
+              "Applied: ",
+              new Date(f2.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginBottom: 6 }, children: "INTERNAL NOTE" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "textarea",
+                {
+                  value: founderNote,
+                  onChange: (e) => setFounderNote(e.target.value),
+                  placeholder: "Add a note (optional)…",
+                  rows: 2,
+                  style: { width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none", resize: "vertical" }
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => updateFounderStatus(f2, "Approved"),
+                  style: { flex: 1, minWidth: 80, background: "linear-gradient(135deg,#4caf50,#388e3c)", border: "none", borderRadius: 10, padding: "10px 0", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" },
+                  children: "✅ Approve"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => updateFounderStatus(f2, "Waitlisted"),
+                  style: { flex: 1, minWidth: 80, background: "linear-gradient(135deg,#ff9800,#e65100)", border: "none", borderRadius: 10, padding: "10px 0", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" },
+                  children: "⏳ Waitlist"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => updateFounderStatus(f2, "Contacted"),
+                  style: { flex: 1, minWidth: 80, background: "linear-gradient(135deg,#1976d2,#0d47a1)", border: "none", borderRadius: 10, padding: "10px 0", color: "#fff", fontWeight: 800, fontSize: 13, cursor: "pointer" },
+                  children: "📩 Contacted"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => updateFounderStatus(f2, "Rejected"),
+                  style: { flex: 1, minWidth: 80, background: "rgba(229,57,53,0.2)", border: "1px solid rgba(229,57,53,0.4)", borderRadius: 10, padding: "10px 0", color: "#ef5350", fontWeight: 800, fontSize: 13, cursor: "pointer" },
+                  children: "❌ Reject"
+                }
+              )
+            ] })
+          ] })
+        ] }, f2.id);
+      }) })
     ] })
   ] });
 }
