@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "host_id": {
+      "type": "string"
+    },
+    "host_username": {
+      "type": "string"
+    },
+    "host_avatar": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Music",
+        "Talk",
+        "News",
+        "Gaming",
+        "Sports",
+        "Comedy",
+        "Education",
+        "Other"
+      ]
+    },
+    "is_live": {
+      "type": "boolean"
+    },
+    "viewer_count": {
+      "type": "number"
+    },
+    "stream_type": {
+      "type": "string"
+    },
+    "rtmp_url": {
+      "type": "string"
+    },
+    "stream_key": {
+      "type": "string"
+    },
+    "hls_url": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "SachiLiveRoom"
+}

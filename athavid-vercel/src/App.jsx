@@ -4,6 +4,7 @@ import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
+import SachiLiveHub from "./SachiLive.jsx";
 import Privacy from "./Privacy.jsx";
 import ChildSafety from "./ChildSafety.jsx";
 import FoundingCreatorPage from "./FoundingCreator.jsx";
@@ -5498,6 +5499,7 @@ function App() {
   const [activeTab, setActiveTab] = useState("feed");
   const [showAdmin, setShowAdmin] = useState(false);
   const [showGoLive, setShowGoLive] = useState(false);
+  const [showLiveHub, setShowLiveHub] = useState(false);
   const [profileSheet, setProfileSheet] = useState(null); // { userId, username }
   const [showSearch, setShowSearch] = useState(false);
   const [authToast, setAuthToast] = useState(false);
@@ -5829,7 +5831,7 @@ function App() {
 
           {/* Right: search + rec */}
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <button onClick={() => requireAuth(() => setShowGoLive(true))}
+            <button onClick={() => setShowLiveHub(true)}
               style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20, padding:"4px 10px", color:"#F5C842", fontSize:11, fontWeight:700, cursor:"pointer", letterSpacing:0.3, WebkitTapHighlightColor:"transparent", display:"flex", alignItems:"center", gap:4 }}>
               <span style={{ width:6, height:6, borderRadius:"50%", background:"#F5C842", display:"inline-block", animation:"heartbeat 1.4s ease-in-out infinite" }} />
               Live
@@ -6323,6 +6325,7 @@ function App() {
           </div>
         </div>
       )}
+      {showLiveHub && <SachiLiveHub currentUser={currentUser} onClose={() => setShowLiveHub(false)} onNeedAuth={() => { setShowLiveHub(false); setShowAuth(true); }} />}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
