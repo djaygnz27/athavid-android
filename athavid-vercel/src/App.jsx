@@ -1130,6 +1130,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   // Text post states
   const [textPostContent, setTextPostContent] = useState("");
   const [textPostTemplate, setTextPostTemplate] = useState(0);
+  const [textFontScale, setTextFontScale] = useState(1.0); // 0.7=S, 1.0=M, 1.3=L, 1.6=XL
 
   // Post details step
   const [showPostDetails, setShowPostDetails] = useState(false);
@@ -1499,13 +1500,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 540, 960);
 
-      // Dynamic font size based on text length — matches preview
+      // Dynamic font size based on text length + user scale choice
       const textLen = textPostContent.trim().length;
-      const fontSize = textLen <= 40 ? 58
+      const baseFontSize = textLen <= 40 ? 58
         : textLen <= 80  ? 48
         : textLen <= 140 ? 38
         : textLen <= 220 ? 30
         : 24;
+      const fontSize = Math.max(10, Math.floor(baseFontSize * textFontScale));
       const lineH = fontSize * 1.5;
       const maxW = 460;
       ctx.font = `900 ${fontSize}px 'Arial Black', Arial, sans-serif`;
@@ -1937,11 +1939,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           const calcFs = (text, mini, base) => {
             if (mini) return base > 10 ? Math.floor(base * 0.28) : base;
             const len = (text || "").length;
-            if (len <= 40)  return base;
-            if (len <= 80)  return Math.max(20, Math.floor(base * 0.82));
-            if (len <= 140) return Math.max(16, Math.floor(base * 0.65));
-            if (len <= 220) return Math.max(14, Math.floor(base * 0.52));
-            return Math.max(12, Math.floor(base * 0.42));
+            let auto;
+            if (len <= 40)  auto = base;
+            else if (len <= 80)  auto = Math.max(20, Math.floor(base * 0.82));
+            else if (len <= 140) auto = Math.max(16, Math.floor(base * 0.65));
+            else if (len <= 220) auto = Math.max(14, Math.floor(base * 0.52));
+            else auto = Math.max(12, Math.floor(base * 0.42));
+            return Math.max(10, Math.floor(auto * textFontScale));
           };
 
           // Template definitions — each has a render function for the preview
@@ -2114,6 +2118,21 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   borderRadius:14, padding:"12px 14px", color:"#fff", fontSize:16, resize:"none", outline:"none",
                   boxSizing:"border-box", marginBottom:14, fontWeight:600, lineHeight:1.5 }}
               />
+
+              {/* ── Font Size Toggle ── */}
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                <span style={{ color:"#aaa", fontSize:12, fontWeight:600, marginRight:4 }}>Size:</span>
+                {[{label:"S", val:0.7},{label:"M", val:1.0},{label:"L", val:1.3},{label:"XL", val:1.6}].map(({label,val}) => (
+                  <button key={label} onClick={() => setTextFontScale(val)}
+                    style={{
+                      padding:"5px 14px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:700,
+                      fontSize: label==="S" ? 11 : label==="M" ? 13 : label==="L" ? 15 : 17,
+                      background: textFontScale===val ? "#F5C842" : "rgba(255,255,255,0.1)",
+                      color: textFontScale===val ? "#111" : "#fff",
+                      transition:"all 0.15s",
+                    }}>{label}</button>
+                ))}
+              </div>
 
               {/* ── "Select a style" label ── */}
               <div style={{ color:"#aaa", fontSize:13, fontWeight:600, marginBottom:10 }}>Select a style</div>
