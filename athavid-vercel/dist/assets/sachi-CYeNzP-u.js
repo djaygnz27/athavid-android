@@ -11369,7 +11369,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
           inset: 0,
           width: "100%",
           height: "100%",
-          objectFit: "cover",
+          objectFit: "contain",
           transform: "scaleX(-1)"
           /* mirror front cam */
         }
