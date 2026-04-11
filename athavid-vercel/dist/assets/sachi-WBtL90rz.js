@@ -7874,7 +7874,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const { email, name, picture } = googlePayload;
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
   const [username, setUsername] = reactExports.useState(suggested);
-  const [dob, setDob] = reactExports.useState("");
+  const [dob, setDob] = reactExports.useState("1990-01-01");
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
   const [is18, setIs18] = reactExports.useState(false);
