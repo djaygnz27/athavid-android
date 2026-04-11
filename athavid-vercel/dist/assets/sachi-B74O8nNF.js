@@ -7918,7 +7918,6 @@ function FinishStep({ googlePayload, onSuccess }) {
     if (!username.trim()) return setError("Please enter a username.");
     if (!dob) return setError("Please enter your birthday.");
     if (!country.trim()) return setError("Please select your country.");
-    if (!is18) return setError("You must confirm you are 18 years or older.");
     if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
     const birthDate = new Date(dob);
     const today = /* @__PURE__ */ new Date();
@@ -8047,7 +8046,7 @@ function FinishStep({ googlePayload, onSuccess }) {
           style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0 }
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 18 years or older" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 13 years or older" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
