@@ -663,7 +663,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
     <div style={{ position:"fixed", inset:0, background:"#000", zIndex:9000, display:"flex", flexDirection:"column" }}>
       {/* Camera preview / live feed */}
       <video ref={videoRef} autoPlay muted playsInline
-        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover",
+        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain",
           transform:"scaleX(-1)" /* mirror front cam */ }} />
 
       {/* Dark overlay at top and bottom */}
