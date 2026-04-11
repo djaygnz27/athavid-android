@@ -11258,6 +11258,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
   const [elapsed, setElapsed] = reactExports.useState(0);
   const [caption, setCaption] = reactExports.useState("");
   const [error, setError] = reactExports.useState("");
+  const [reviewUrl, setReviewUrl] = reactExports.useState("");
   const [chunks, setChunks] = reactExports.useState([]);
   const videoRef = reactExports.useRef(null);
   const streamRef = reactExports.useRef(null);
@@ -11301,10 +11302,19 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
   const stopLive = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.onstop = () => {
+        var _a;
+        const mimeType = ((_a = chunksRef.current[0]) == null ? void 0 : _a.type) || "video/webm";
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        setReviewUrl(url);
+        setPhase("review");
+      };
       recorderRef.current.stop();
+    } else {
+      setPhase("uploading");
+      setTimeout(() => uploadLive(), 800);
     }
-    setPhase("uploading");
-    setTimeout(() => uploadLive(), 800);
   };
   const uploadLive = async () => {
     var _a, _b;
@@ -11485,6 +11495,72 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
       textAlign: "center",
       maxWidth: 280
     }, children: error }),
+    phase === "review" && reviewUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      inset: 0,
+      background: "#000",
+      zIndex: 150,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 0
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "video",
+        {
+          src: reviewUrl,
+          controls: true,
+          autoPlay: true,
+          playsInline: true,
+          style: { width: "100%", height: "70%", objectFit: "contain", background: "#000" }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 8 }, children: "Review your live recording" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 16, marginTop: 16 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              URL.revokeObjectURL(reviewUrl);
+              setReviewUrl("");
+              chunksRef.current = [];
+              onClose();
+            },
+            style: {
+              padding: "12px 28px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "#fff",
+              fontSize: 14,
+              cursor: "pointer"
+            },
+            children: "🗑️ Discard"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              setPhase("uploading");
+              setTimeout(() => uploadLive(), 300);
+            },
+            style: {
+              padding: "12px 28px",
+              borderRadius: 12,
+              background: "linear-gradient(135deg,#F5C842,#FF9500)",
+              border: "none",
+              color: "#0B0C1A",
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: "pointer"
+            },
+            children: "📤 Post Live"
+          }
+        )
+      ] })
+    ] }),
     phase === "uploading" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       position: "absolute",
       inset: 0,
