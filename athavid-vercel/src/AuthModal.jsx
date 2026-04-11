@@ -139,8 +139,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g,"").toLowerCase();
 
   const [username, setUsername] = useState(suggested);
-  const [dob, setDob] = useState("");
-  // default hint year so mobile pickers don't land on today
+  const [dob, setDob] = useState("1990-01-01");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [is18, setIs18] = useState(false);
