@@ -7874,7 +7874,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const { email, name, picture } = googlePayload;
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
   const [username, setUsername] = reactExports.useState(suggested);
-  const [dob, setDob] = reactExports.useState("1990-01-01");
+  const [dob, setDob] = reactExports.useState("");
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
   const [is18, setIs18] = reactExports.useState(false);
@@ -7916,7 +7916,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   }, []);
   const handleFinish = async () => {
     if (!username.trim()) return setError("Please enter a username.");
-    if (!dob) return setError("Please enter your birthday.");
+    if (!dob || dob.split("-").some((p2) => !p2 || p2 === "")) return setError("Please select your full birthday (month, day, year).");
     if (!country.trim()) return setError("Please select your country.");
     if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
     const birthDate = new Date(dob);
@@ -7993,19 +7993,63 @@ function FinishStep({ googlePayload, onSuccess }) {
       "Birthday ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "input",
-      {
-        value: dob,
-        onChange: (e) => setDob(e.target.value),
-        type: "date",
-        min: "1900-01-01",
-        max: new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1e3).toISOString().slice(0, 10),
-        placeholder: "YYYY-MM-DD",
-        style: { ...inp, colorScheme: "dark" }
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: -8, marginBottom: 8 }, children: "You must be 13 or older · scroll the year carefully" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, marginBottom: 10 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "select",
+        {
+          value: dob ? dob.split("-")[1] : "",
+          onChange: (e) => {
+            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
+            parts[1] = e.target.value;
+            setDob(parts.join("-"));
+          },
+          style: { ...inp, marginBottom: 0, flex: 1 },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Month" }),
+            ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map(
+              (m2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: m2, children: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i] }, m2)
+            )
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "select",
+        {
+          value: dob ? dob.split("-")[2] : "",
+          onChange: (e) => {
+            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
+            parts[2] = e.target.value;
+            setDob(parts.join("-"));
+          },
+          style: { ...inp, marginBottom: 0, flex: 1 },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Day" }),
+            Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map(
+              (d) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: d, children: parseInt(d) }, d)
+            )
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "select",
+        {
+          value: dob ? dob.split("-")[0] : "",
+          onChange: (e) => {
+            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
+            parts[0] = e.target.value;
+            setDob(parts.join("-"));
+          },
+          style: { ...inp, marginBottom: 0, flex: 1.2 },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Year" }),
+            Array.from({ length: 100 }, (_, i) => String((/* @__PURE__ */ new Date()).getFullYear() - 13 - i)).map(
+              (y2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: y2, children: y2 }, y2)
+            )
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: -6, marginBottom: 8 }, children: "Must be 13 or older to join" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
       "City ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })

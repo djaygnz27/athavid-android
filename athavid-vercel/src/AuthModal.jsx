@@ -139,7 +139,7 @@ function FinishStep({ googlePayload, onSuccess }) {
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g,"").toLowerCase();
 
   const [username, setUsername] = useState(suggested);
-  const [dob, setDob] = useState("1990-01-01");
+  const [dob, setDob] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [is18, setIs18] = useState(false);
@@ -173,7 +173,7 @@ function FinishStep({ googlePayload, onSuccess }) {
 
   const handleFinish = async () => {
     if (!username.trim()) return setError("Please enter a username.");
-    if (!dob) return setError("Please enter your birthday.");
+    if (!dob || dob.split("-").some(p => !p || p==="")) return setError("Please select your full birthday (month, day, year).");
     if (!country.trim()) return setError("Please select your country.");
     // 18+ checkbox removed — Sachi allows 13+
     if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
@@ -254,16 +254,36 @@ function FinishStep({ googlePayload, onSuccess }) {
       <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
         Birthday <span style={{color:"#ff6b6b"}}>*</span>
       </div>
-      <input
-        value={dob}
-        onChange={e => setDob(e.target.value)}
-        type="date"
-        min="1900-01-01"
-        max={new Date(Date.now() - 13*365.25*24*60*60*1000).toISOString().slice(0,10)}
-        placeholder="YYYY-MM-DD"
-        style={{ ...inp, colorScheme:"dark" }}
-      />
-      <div style={{ color:"#888", fontSize:11, marginTop:-8, marginBottom:8 }}>You must be 13 or older · scroll the year carefully</div>
+      <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+        <select
+          value={dob ? dob.split("-")[1] : ""}
+          onChange={e => { const parts = dob ? dob.split("-") : ["1990","01","01"]; parts[1]=e.target.value; setDob(parts.join("-")); }}
+          style={{ ...inp, marginBottom:0, flex:1 }}>
+          <option value="">Month</option>
+          {["01","02","03","04","05","06","07","08","09","10","11","12"].map((m,i)=>
+            <option key={m} value={m}>{["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][i]}</option>
+          )}
+        </select>
+        <select
+          value={dob ? dob.split("-")[2] : ""}
+          onChange={e => { const parts = dob ? dob.split("-") : ["1990","01","01"]; parts[2]=e.target.value; setDob(parts.join("-")); }}
+          style={{ ...inp, marginBottom:0, flex:1 }}>
+          <option value="">Day</option>
+          {Array.from({length:31},(_,i)=>String(i+1).padStart(2,"0")).map(d=>
+            <option key={d} value={d}>{parseInt(d)}</option>
+          )}
+        </select>
+        <select
+          value={dob ? dob.split("-")[0] : ""}
+          onChange={e => { const parts = dob ? dob.split("-") : ["1990","01","01"]; parts[0]=e.target.value; setDob(parts.join("-")); }}
+          style={{ ...inp, marginBottom:0, flex:1.2 }}>
+          <option value="">Year</option>
+          {Array.from({length:100},(_,i)=> String(new Date().getFullYear()-13-i)).map(y=>
+            <option key={y} value={y}>{y}</option>
+          )}
+        </select>
+      </div>
+      <div style={{ color:"#888", fontSize:11, marginTop:-6, marginBottom:8 }}>Must be 13 or older to join</div>
 
       <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
         City <span style={{color:"#888", fontSize:11}}>(optional)</span>
