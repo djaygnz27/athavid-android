@@ -140,6 +140,7 @@ function FinishStep({ googlePayload, onSuccess }) {
 
   const [username, setUsername] = useState(suggested);
   const [dob, setDob] = useState("");
+  // default hint year so mobile pickers don't land on today
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [is18, setIs18] = useState(false);
@@ -182,7 +183,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-    if (age < 13) return setError("You must be at least 13 years old to join Sachi.");
+    if (age < 13) return setError("You must be at least 13 years old to join Sachi. Please check your birth year is correct.");
 
     setLoading(true); setError("");
     try {
@@ -258,9 +259,12 @@ function FinishStep({ googlePayload, onSuccess }) {
         value={dob}
         onChange={e => setDob(e.target.value)}
         type="date"
-        max={new Date().toISOString().slice(0,10)}
+        min="1900-01-01"
+        max={new Date(Date.now() - 13*365.25*24*60*60*1000).toISOString().slice(0,10)}
+        placeholder="YYYY-MM-DD"
         style={{ ...inp, colorScheme:"dark" }}
       />
+      <div style={{ color:"#888", fontSize:11, marginTop:-8, marginBottom:8 }}>You must be 13 or older · scroll the year carefully</div>
 
       <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>
         City <span style={{color:"#888", fontSize:11}}>(optional)</span>

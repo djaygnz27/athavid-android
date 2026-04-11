@@ -7925,7 +7925,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     let age = today.getFullYear() - birthDate.getFullYear();
     const m2 = today.getMonth() - birthDate.getMonth();
     if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
-    if (age < 13) return setError("You must be at least 13 years old to join Sachi.");
+    if (age < 13) return setError("You must be at least 13 years old to join Sachi. Please check your birth year is correct.");
     setLoading(true);
     setError("");
     try {
@@ -8000,10 +8000,13 @@ function FinishStep({ googlePayload, onSuccess }) {
         value: dob,
         onChange: (e) => setDob(e.target.value),
         type: "date",
-        max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+        min: "1900-01-01",
+        max: new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1e3).toISOString().slice(0, 10),
+        placeholder: "YYYY-MM-DD",
         style: { ...inp, colorScheme: "dark" }
       }
     ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: -8, marginBottom: 8 }, children: "You must be 13 or older · scroll the year carefully" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
       "City ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
