@@ -175,7 +175,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     if (!username.trim()) return setError("Please enter a username.");
     if (!dob) return setError("Please enter your birthday.");
     if (!country.trim()) return setError("Please select your country.");
-    if (!is18) return setError("You must confirm you are 18 years or older.");
+    // 18+ checkbox removed — Sachi allows 13+
     if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
     const birthDate = new Date(dob);
     const today = new Date();
@@ -296,7 +296,7 @@ function FinishStep({ googlePayload, onSuccess }) {
           style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0 }}
         />
         <span style={{ color:"#ccc", fontSize:14, fontWeight:600 }}>
-          I confirm I am 18 years or older
+          I confirm I am 13 years or older
         </span>
       </label>
 
