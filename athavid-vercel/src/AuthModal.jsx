@@ -182,7 +182,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-    if (age < 13) return setError("You must be at least 13 years old to join Sachi. Please check your birth year is correct.");
+    if (age < 13) return setError("⚠️ Incorrect birthday! Your birth year appears wrong — please go back and select the correct year.");
 
     setLoading(true); setError("");
     try {
