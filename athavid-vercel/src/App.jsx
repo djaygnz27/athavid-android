@@ -3918,7 +3918,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
                 Cancel
               </button>
               <button onClick={handleSaveEdit} disabled={saving}
-                style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#e91e63,#9c27b0)",
+                style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)",
                   border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700,
                   cursor:saving?"not-allowed":"pointer", opacity:saving?0.7:1 }}>
                 {saving ? "Saving..." : "Save Changes"}
@@ -7154,7 +7154,7 @@ function App() {
                   finally { setEditProfileSaving(false); }
                 }}
                 disabled={editProfileSaving}
-                style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#e91e63,#9c27b0)",
+                style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#F5C842,#FF9500)",
                   border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700,
                   cursor:editProfileSaving?"not-allowed":"pointer" }}>
                 {editProfileSaving ? "Saving..." : "Save Name"}
