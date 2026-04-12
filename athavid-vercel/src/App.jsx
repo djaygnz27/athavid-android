@@ -153,33 +153,75 @@ function countryFlag(code) {
 
 
 async function captureThumbnail(file) {
-  return new Promise((resolve) => {
-    const video = document.createElement("video");
-    video.preload = "metadata"; video.muted = true; video.playsInline = true;
-    const url = URL.createObjectURL(file);
-    video.src = url;
-    video.onloadeddata = () => { video.currentTime = Math.min(1, video.duration * 0.1); };
-    video.onseeked = () => {
+  // Try multiple seek times in case the first frame is black
+  const tryCapture = (videoEl, canvas, seekTime) => new Promise((resolve) => {
+    const ctx = canvas.getContext("2d");
+    const done = () => {
       try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 500; canvas.height = 888;
-        const ctx = canvas.getContext("2d");
-        const vw = video.videoWidth, vh = video.videoHeight;
+        const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
+        if (!vw || !vh) return resolve(null);
         const targetRatio = 500 / 888, srcRatio = vw / vh;
         let sx = 0, sy = 0, sw = vw, sh = vh;
         if (srcRatio > targetRatio) { sw = vh * targetRatio; sx = (vw - sw) / 2; }
         else { sh = vw / targetRatio; sy = (vh - sh) / 2; }
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 500, 888);
-        URL.revokeObjectURL(url);
-        canvas.toBlob(async (blob) => {
-          if (!blob) return resolve(null);
-          const thumbFile = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
-          try { const url = await uploadFile(thumbFile); resolve(url); }
-          catch { resolve(null); }
-        }, "image/jpeg", 0.85);
-      } catch { URL.revokeObjectURL(url); resolve(null); }
+        ctx.clearRect(0, 0, 500, 888);
+        ctx.drawImage(videoEl, sx, sy, sw, sh, 0, 0, 500, 888);
+        // Check if frame is not pure black
+        const d = ctx.getImageData(0, 0, 50, 50).data;
+        let sum = 0;
+        for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i+1] + d[i+2];
+        if (sum < 1000) return resolve(null); // frame is black, skip
+        resolve("ok");
+      } catch { resolve(null); }
     };
-    video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    videoEl.onseeked = done;
+    videoEl.onerror = () => resolve(null);
+    try { videoEl.currentTime = seekTime; } catch { resolve(null); }
+  });
+
+  return new Promise(async (resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.crossOrigin = "anonymous";
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 500; canvas.height = 888;
+
+    const cleanup = () => { try { URL.revokeObjectURL(objectUrl); } catch {} };
+
+    // Timeout safety — 8 seconds max
+    const timeout = setTimeout(() => { cleanup(); resolve(null); }, 8000);
+
+    video.onloadedmetadata = async () => {
+      const dur = video.duration || 0;
+      // Try 3 different seek points: 10%, 25%, 50% of video
+      const seekPoints = [
+        Math.min(0.5, dur * 0.1),
+        Math.min(2, dur * 0.25),
+        Math.min(5, dur * 0.5),
+      ];
+      let captured = false;
+      for (const t of seekPoints) {
+        const result = await tryCapture(video, canvas, t);
+        if (result === "ok") { captured = true; break; }
+      }
+      clearTimeout(timeout);
+      cleanup();
+      if (!captured) return resolve(null);
+      canvas.toBlob(async (blob) => {
+        if (!blob) return resolve(null);
+        const thumbFile = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
+        try { const url = await uploadFile(thumbFile); resolve(url); }
+        catch { resolve(null); }
+      }, "image/jpeg", 0.85);
+    };
+
+    video.onerror = () => { clearTimeout(timeout); cleanup(); resolve(null); };
+    video.src = objectUrl;
+    video.load();
   });
 }
 
@@ -1343,7 +1385,43 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Generating thumbnail...");
       let thumbnail_url = null;
       try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
-      if (!thumbnail_url) thumbnail_url = null; // no fallback — better to show nothing than black poster
+      // For .mov files (iPhone), try play-based capture if seek failed
+      if (!thumbnail_url && (file.type === "video/quicktime" || /\.mov$/i.test(file.name))) {
+        try {
+          thumbnail_url = await new Promise((resolve) => {
+            const v2 = document.createElement("video");
+            v2.muted = true; v2.playsInline = true; v2.autoplay = true;
+            const u2 = URL.createObjectURL(file);
+            v2.src = u2;
+            const canvas2 = document.createElement("canvas");
+            canvas2.width = 500; canvas2.height = 888;
+            const bail = setTimeout(() => { URL.revokeObjectURL(u2); resolve(null); }, 6000);
+            v2.ontimeupdate = async () => {
+              if (v2.currentTime < 0.5) return;
+              v2.pause();
+              clearTimeout(bail);
+              try {
+                const ctx2 = canvas2.getContext("2d");
+                const vw = v2.videoWidth, vh = v2.videoHeight;
+                if (!vw || !vh) { URL.revokeObjectURL(u2); return resolve(null); }
+                const targetRatio = 500/888, srcRatio = vw/vh;
+                let sx=0,sy=0,sw=vw,sh=vh;
+                if (srcRatio > targetRatio) { sw=vh*targetRatio; sx=(vw-sw)/2; }
+                else { sh=vw/targetRatio; sy=(vh-sh)/2; }
+                ctx2.drawImage(v2,sx,sy,sw,sh,0,0,500,888);
+                URL.revokeObjectURL(u2);
+                canvas2.toBlob(async (blob) => {
+                  if (!blob || blob.size < 1000) return resolve(null);
+                  const tf = new File([blob],"thumbnail.jpg",{type:"image/jpeg"});
+                  try { resolve(await uploadFile(tf)); } catch { resolve(null); }
+                }, "image/jpeg", 0.85);
+              } catch { URL.revokeObjectURL(u2); resolve(null); }
+            };
+            v2.onerror = () => { clearTimeout(bail); URL.revokeObjectURL(u2); resolve(null); };
+          });
+        } catch { thumbnail_url = null; }
+      }
+      if (!thumbnail_url) thumbnail_url = null; // no fallback — never use video URL as thumbnail
       setProgress(80);
       setStep("Saving to feed...");
       const videoGeo = await getPostLocation();
