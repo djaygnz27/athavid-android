@@ -7375,6 +7375,14 @@ function App() {
           ));
         } catch(e) { console.warn("Video avatar sync failed:", e); }
       }} onClose={() => setShowAvatarPicker(false)} />}
+
+      {/* Legal Footer */}
+      <div style={{ textAlign:"center", padding:"12px 16px 24px", marginTop:8 }}>
+        <span style={{ color:"rgba(255,255,255,0.25)", fontSize:11 }}>
+          <a href="/privacy.html" style={{ color:"rgba(245,200,66,0.5)", textDecoration:"none", marginRight:12 }}>Privacy Policy</a>
+          <a href="/terms.html" style={{ color:"rgba(245,200,66,0.5)", textDecoration:"none" }}>Terms of Service</a>
+        </span>
+      </div>
     </div>
   );
 }
