@@ -17213,12 +17213,12 @@ function AdminPanel({ currentUser }) {
     setSaving(null);
   };
   const deleteVideo = async (video) => {
-    setConfirmDelete(video);
+    setModDeleteTarget(video);
   };
-  const [confirmDelete, setConfirmDelete] = reactExports.useState(null);
-  const doConfirmDelete = async () => {
-    const video = confirmDelete;
-    setConfirmDelete(null);
+  const [modDeleteTarget, setModDeleteTarget] = reactExports.useState(null);
+  const doModDelete = async () => {
+    const video = modDeleteTarget;
+    setModDeleteTarget(null);
     if (!video) return;
     setSaving(video.id);
     try {
@@ -17766,21 +17766,21 @@ function AdminPanel({ currentUser }) {
         ] })
       ] }, video.id)) })
     ] }),
-    confirmDelete && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 28, maxWidth: 340, width: "100%", textAlign: "center" }, children: [
+    modDeleteTarget && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 28, maxWidth: 340, width: "100%", textAlign: "center" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "🗑️" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }, children: "Delete this post?" }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 20, wordBreak: "break-word" }, children: [
         '"',
-        confirmDelete.caption || "This video",
+        modDeleteTarget.caption || "This video",
         '" by @',
-        confirmDelete.username || "unknown"
+        modDeleteTarget.username || "unknown"
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 12, marginBottom: 24 }, children: "This cannot be undone. The creator will need to re-upload." }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => setConfirmDelete(null),
+            onClick: () => setModDeleteTarget(null),
             style: { flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#aaa", fontSize: 14, fontWeight: 600, cursor: "pointer" },
             children: "Cancel"
           }
@@ -17788,7 +17788,7 @@ function AdminPanel({ currentUser }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: doConfirmDelete,
+            onClick: doModDelete,
             style: { flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#ff4444", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" },
             children: "Delete"
           }

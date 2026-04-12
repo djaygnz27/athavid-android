@@ -5536,14 +5536,14 @@ function AdminPanel({ currentUser }) {
 
   const deleteVideo = async (video) => {
     // Use inline confirm to avoid mobile browser blocking window.confirm
-    setConfirmDelete(video);
+    setModDeleteTarget(video);
   };
 
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [modDeleteTarget, setModDeleteTarget] = useState(null);
 
-  const doConfirmDelete = async () => {
-    const video = confirmDelete;
-    setConfirmDelete(null);
+  const doModDelete = async () => {
+    const video = modDeleteTarget;
+    setModDeleteTarget(null);
     if (!video) return;
     setSaving(video.id);
     try {
@@ -6107,21 +6107,21 @@ function AdminPanel({ currentUser }) {
       </>)}
 
       {/* ── DELETE CONFIRM DIALOG ── */}
-      {confirmDelete && (
+      {modDeleteTarget && (
         <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
           <div style={{ background:"#1a1a2e", borderRadius:20, padding:28, maxWidth:340, width:"100%", textAlign:"center" }}>
             <div style={{ fontSize:32, marginBottom:12 }}>🗑️</div>
             <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:8 }}>Delete this post?</div>
             <div style={{ color:"#aaa", fontSize:13, marginBottom:20, wordBreak:"break-word" }}>
-              "{confirmDelete.caption || "This video"}" by @{confirmDelete.username || "unknown"}
+              "{modDeleteTarget.caption || "This video"}" by @{modDeleteTarget.username || "unknown"}
             </div>
             <div style={{ color:"#ff6b6b", fontSize:12, marginBottom:24 }}>This cannot be undone. The creator will need to re-upload.</div>
             <div style={{ display:"flex", gap:12 }}>
-              <button onClick={() => setConfirmDelete(null)}
+              <button onClick={() => setModDeleteTarget(null)}
                 style={{ flex:1, padding:"12px 0", borderRadius:12, border:"1px solid rgba(255,255,255,0.15)", background:"transparent", color:"#aaa", fontSize:14, fontWeight:600, cursor:"pointer" }}>
                 Cancel
               </button>
-              <button onClick={doConfirmDelete}
+              <button onClick={doModDelete}
                 style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"#ff4444", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>
                 Delete
               </button>
