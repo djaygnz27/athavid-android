@@ -2957,32 +2957,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
-      {/* ── SACHI BRAND OVERLAY — covers TikTok/Instagram watermarks with Sachi branding ── */}
-      {!photoUrls && (
-        <>
-          {/* Full left strip dark cover from 15% down to caption area */}
-          <div style={{
-            position:"absolute", top:"15%", left:0, bottom:140,
-            width:220,
-            background:"linear-gradient(to right, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.88) 55%, rgba(11,12,26,0.0) 100%)",
-            pointerEvents:"none",
-            zIndex:14,
-          }} />
-          {/* Sachi branding on top */}
-          <div style={{
-            position:"absolute", bottom:"35%", left:12,
-            pointerEvents:"none",
-            zIndex:15,
-            display:"flex", alignItems:"center", gap:6,
-          }}>
-            <img src="/sachi-icon-v4.png" style={{ width:28, height:28, borderRadius:7, flexShrink:0 }} alt="Sachi" />
-            <div style={{ display:"flex", flexDirection:"column" }}>
-              <span style={{ color:"#F5C842", fontWeight:800, fontSize:14, lineHeight:1, letterSpacing:0.3 }}>Sachi</span>
-              <span style={{ color:"rgba(255,255,255,0.6)", fontWeight:500, fontSize:10, lineHeight:1, marginTop:2 }}>sachistream.com</span>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Tap hint removed — content-first UI */}
 
