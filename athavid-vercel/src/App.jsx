@@ -1343,7 +1343,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Generating thumbnail...");
       let thumbnail_url = null;
       try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
-      if (!thumbnail_url) thumbnail_url = video_url; // fallback so grid never shows black
+      if (!thumbnail_url) thumbnail_url = null; // no fallback — better to show nothing than black poster
       setProgress(80);
       setStep("Saving to feed...");
       const videoGeo = await getPostLocation();
@@ -2766,7 +2766,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         return (
           <>
-            <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
+            <video ref={videoRef} src={resolvedVideoUrl} poster={video.thumbnail_url && !video.thumbnail_url.match(/\.mp4|\.mov|\.webm/i) ? resolveMediaUrl(video.thumbnail_url) : undefined}
               loop playsInline
               muted={muted || !!video.sound_url}
               onPlay={() => {
