@@ -2894,15 +2894,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         return (
           <>
+            {/* Thumbnail always visible as background until video plays — eliminates black gap */}
+            {video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && (
+              <img
+                className="__sachiThumbBg"
+                src={resolveMediaUrl(video.thumbnail_url)}
+                style={{
+                  position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover",
+                  opacity: playing ? 0 : 1,
+                  transition: "opacity 0.2s ease",
+                  pointerEvents:"none", zIndex:1
+                }}
+                alt=""
+              />
+            )}
             <video ref={videoRef}
               src={resolvedVideoUrl}
-              poster={(() => {
-                const t = video.thumbnail_url;
-                if (!t) return undefined;
-                // Only use thumbnail as poster if it's actually an image (not a video file)
-                if (/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(t)) return undefined;
-                return resolveMediaUrl(t);
-              })()}
               loop playsInline preload="auto"
               muted={muted || !!video.sound_url}
               onPlay={() => {
@@ -2918,25 +2925,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 if (soundRef.current) soundRef.current.pause();
               }}
               onError={(e) => {
-                // If video fails to load, show thumbnail as a fallback image
-                const t = video.thumbnail_url;
-                if (t && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(t)) {
-                  const el = e.currentTarget;
-                  el.style.display = "none";
-                  const img = el.parentNode.querySelector(".__sachiThumbFallback");
-                  if (img) img.style.display = "block";
-                }
+                // On error, keep thumbnail visible (opacity already 1 since playing=false)
+                e.currentTarget.style.display = "none";
               }}
-              style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
-            {/* Thumbnail fallback shown if video fails to load */}
-            {video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && (
-              <img
-                className="__sachiThumbFallback"
-                src={resolveMediaUrl(video.thumbnail_url)}
-                style={{ display:"none", position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}
-                alt=""
-              />
-            )}
+              style={{ position:"relative", zIndex:2, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
             {video.sound_url && (
               <audio ref={soundRef} src={video.sound_url} loop preload="none"
                 style={{ display:"none" }} />

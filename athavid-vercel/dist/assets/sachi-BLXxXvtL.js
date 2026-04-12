@@ -14207,17 +14207,30 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       );
       return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            className: "__sachiThumbBg",
+            src: resolveMediaUrl(video.thumbnail_url),
+            style: {
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              opacity: playing ? 0 : 1,
+              transition: "opacity 0.2s ease",
+              pointerEvents: "none",
+              zIndex: 1
+            },
+            alt: ""
+          }
+        ),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "video",
           {
             ref: videoRef,
             src: resolvedVideoUrl,
-            poster: (() => {
-              const t2 = video.thumbnail_url;
-              if (!t2) return void 0;
-              if (/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(t2)) return void 0;
-              return resolveMediaUrl(t2);
-            })(),
             loop: true,
             playsInline: true,
             preload: "auto",
@@ -14237,24 +14250,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               if (soundRef.current) soundRef.current.pause();
             },
             onError: (e) => {
-              const t2 = video.thumbnail_url;
-              if (t2 && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(t2)) {
-                const el2 = e.currentTarget;
-                el2.style.display = "none";
-                const img = el2.parentNode.querySelector(".__sachiThumbFallback");
-                if (img) img.style.display = "block";
-              }
+              e.currentTarget.style.display = "none";
             },
-            style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
-          }
-        ),
-        video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "img",
-          {
-            className: "__sachiThumbFallback",
-            src: resolveMediaUrl(video.thumbnail_url),
-            style: { display: "none", position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" },
-            alt: ""
+            style: { position: "relative", zIndex: 2, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
           }
         ),
         video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(
