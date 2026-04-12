@@ -7299,7 +7299,7 @@ function Landing({ onEnter }) {
     } }) })
   ] });
 }
-const APP_ID$4 = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID$5 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$3 = "https://sachi-c7f0261c.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
@@ -7334,34 +7334,34 @@ async function request$1(method, path, body) {
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/login`, { email, password });
+    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `/apps/${APP_ID$5}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/resend-otp`, { email });
+    return request$1("POST", `/apps/${APP_ID$5}/auth/resend-otp`, { email });
   },
   getUser() {
     const u2 = localStorage.getItem("sachi_user");
     return u2 ? JSON.parse(u2) : null;
   },
   async forgotPassword(email) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password-request`, { email });
+    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password`, {
+    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -7372,20 +7372,20 @@ const auth = {
 };
 const videos = {
   async list(limit = 30, skip = 0) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiVideo`, data);
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen = /* @__PURE__ */ new Set();
@@ -7400,7 +7400,7 @@ const videos = {
     let skip = 0;
     const limit = 100;
     while (true) {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
       all = all.concat(items);
       if (items.length < limit) break;
@@ -7410,21 +7410,21 @@ const videos = {
     return all.filter((v2) => v2.user_id === userId && !v2.is_archived);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiComment`, data);
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file) {
@@ -7449,7 +7449,7 @@ async function uploadFile(file) {
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/Follow`, {
+    return request$1("POST", `/apps/${APP_ID$5}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -7457,52 +7457,52 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?follower_id=${follower_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?following_id=${following_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const reports = {
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiReport`, data);
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiReport`, data);
   },
   async list() {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiReport?sort=-created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiReport?sort=-created_date&limit=200`);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiReport/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiReport/${id2}`, data);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -7518,13 +7518,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request$1("PUT", `/apps/${APP_ID$4}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `/apps/${APP_ID$5}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request$1("POST", `/apps/${APP_ID$4}/entities/UserInterest`, {
+        await request$1("POST", `/apps/${APP_ID$5}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -7586,7 +7586,7 @@ function getCacheKey(video_id, user_id) {
 }
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    const rec = await request$1("POST", `/apps/${APP_ID$4}/entities/SachiLike`, {
+    const rec = await request$1("POST", `/apps/${APP_ID$5}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
@@ -7599,13 +7599,13 @@ const likes = {
     return rec;
   },
   async remove(id2, video_id, user_id) {
-    await request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiLike/${id2}`);
+    await request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiLike/${id2}`);
     const cache = getLikesCache();
     delete cache[getCacheKey(video_id, user_id)];
     setLikesCache(cache);
   },
   async getByVideo(video_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&limit=500`);
   },
   async checkUserLiked(video_id, user_id) {
     const cache = getLikesCache();
@@ -7614,7 +7614,7 @@ const likes = {
       return { id: cache[cacheKey], video_id, user_id, _fromCache: true };
     }
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
       if (items.length > 0) {
         cache[cacheKey] = items[0].id;
@@ -7628,7 +7628,7 @@ const likes = {
       if (storedUser) {
         const u2 = JSON.parse(storedUser);
         if (u2.username) {
-          const res2 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
+          const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
           const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.records) || (res2 == null ? void 0 : res2.items) || [];
           if (items2.length > 0) {
             cache[cacheKey] = items2[0].id;
@@ -7643,15 +7643,15 @@ const likes = {
   }
 };
 const messages = {
-  send: (data) => request$1("POST", `/apps/${APP_ID$4}/entities/SachiMessage`, data),
+  send: (data) => request$1("POST", `/apps/${APP_ID$5}/entities/SachiMessage`, data),
   getThread: (user1_id, user2_id) => {
     const thread_id = [user1_id, user2_id].sort().join("_");
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
   },
-  getInbox: (user_id) => request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
-  markRead: (id2) => request$1("PATCH", `/apps/${APP_ID$4}/entities/SachiMessage/${id2}`, { is_read: true }),
+  getInbox: (user_id) => request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
+  markRead: (id2) => request$1("PATCH", `/apps/${APP_ID$5}/entities/SachiMessage/${id2}`, { is_read: true }),
   getUnreadCount: async (user_id) => {
-    const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
+    const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
     const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
     return items.length;
   }
@@ -7767,12 +7767,12 @@ const COUNTRIES = [
   "Zimbabwe"
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID$3 = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID$4 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$2 = "https://sachi-c7f0261c.base44.app/api";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL$2}/apps/${APP_ID$3}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
@@ -7929,7 +7929,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL$2}/apps/${APP_ID$3}/entities/AthaVidUser`,
+        `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8403,7 +8403,7 @@ function Terms() {
     ] })
   ] });
 }
-const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID$3 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
 const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
 const GIFTS = [
@@ -8439,7 +8439,7 @@ async function apiReq$1(method, path, body) {
 }
 async function getWallet(userId) {
   var _a;
-  const d = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
+  const d = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
   return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
 }
 async function sendGiftAPI(giftData) {
@@ -8453,11 +8453,11 @@ async function sendGiftAPI(giftData) {
   } catch {
     const wallet = await getWallet(giftData.sender_id);
     if (!wallet || wallet.coins < giftData.coin_cost) return { error: "Insufficient coins" };
-    await apiReq$1("PUT", `/apps/${APP_ID$2}/entities/SachiCoinWallet/${wallet.id}`, {
+    await apiReq$1("PUT", `/apps/${APP_ID$3}/entities/SachiCoinWallet/${wallet.id}`, {
       coins: wallet.coins - giftData.coin_cost,
       total_spent_coins: (wallet.total_spent_coins || 0) + giftData.coin_cost
     });
-    const gift = await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiGift`, giftData);
+    const gift = await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiGift`, giftData);
     return { success: true, gift, coins_remaining: wallet.coins - giftData.coin_cost };
   }
 }
@@ -8845,7 +8845,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       try {
         const w2 = await getWallet(currentUser.id);
         setWallet(w2);
-        const g = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
+        const g = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
         setGifts(Array.isArray(g) ? g : (g == null ? void 0 : g.items) || []);
       } catch {
       }
@@ -8870,7 +8870,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       setPayoutSent(true);
       setShowPayout(false);
     } catch {
-      await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiPayoutRequest`, {
+      await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiPayoutRequest`, {
         host_id: currentUser.id,
         host_username: currentUser.username || "host",
         host_email: currentUser.email,
@@ -9026,7 +9026,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
     ] })
   ] });
 }
-const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 function apiReq(method, path, body) {
   return fetch(BASE_URL + path, {
@@ -9036,22 +9036,22 @@ function apiReq(method, path, body) {
   }).then((r2) => r2.json());
 }
 const liveRooms = {
-  list: () => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
-  get: (id2) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiLiveRoom/${id2}`),
-  create: (data) => apiReq("POST", `/apps/${APP_ID$1}/entities/SachiLiveRoom`, data),
-  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$1}/entities/SachiLiveRoom/${id2}`, d)
+  list: () => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
+  get: (id2) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiLiveRoom/${id2}`),
+  create: (data) => apiReq("POST", `/apps/${APP_ID$2}/entities/SachiLiveRoom`, data),
+  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$2}/entities/SachiLiveRoom/${id2}`, d)
 };
 const liveComments = {
-  list: (rid) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
-  create: (data) => apiReq("POST", `/apps/${APP_ID$1}/entities/SachiLiveComment`, data)
+  list: (rid) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
+  create: (data) => apiReq("POST", `/apps/${APP_ID$2}/entities/SachiLiveComment`, data)
 };
 const guestReqs = {
-  list: (rid) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiGuestRequest?room_id=${rid}&limit=20`),
-  create: (data) => apiReq("POST", `/apps/${APP_ID$1}/entities/SachiGuestRequest`, data),
-  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$1}/entities/SachiGuestRequest/${id2}`, d)
+  list: (rid) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiGuestRequest?room_id=${rid}&limit=20`),
+  create: (data) => apiReq("POST", `/apps/${APP_ID$2}/entities/SachiGuestRequest`, data),
+  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$2}/entities/SachiGuestRequest/${id2}`, d)
 };
 const sachiGifts = {
-  list: (rid) => apiReq("GET", `/apps/${APP_ID$1}/entities/SachiGift?room_id=${rid}&sort=-created_date&limit=30`)
+  list: (rid) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiGift?room_id=${rid}&sort=-created_date&limit=30`)
 };
 const NEWS_CHANNELS = [
   { id: "dn", name: "Democracy Now", emoji: "🗽", url: "https://www.youtube.com/embed/live_stream?channel=UCzuqE7-t13O4NIDYJfakERg&autoplay=1", color: "#c62828" },
@@ -10598,6 +10598,24 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
     ] })
   ] }) });
 }
+const _muteStore = { muted: true };
+const getMuted = () => _muteStore.muted;
+const setGlobalMuted = (val) => {
+  _muteStore.muted = val;
+  window.dispatchEvent(new CustomEvent("sachi-mute-change", { detail: val }));
+};
+const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
+const APP_BASE = `/apps/${APP_ID$1}`;
+const APP_VERSION = "2.2.0";
+(function checkVersion() {
+  const stored = localStorage.getItem("sachi_app_version");
+  if (stored && stored !== APP_VERSION) {
+    localStorage.setItem("sachi_app_version", APP_VERSION);
+    window.location.reload(true);
+  } else {
+    localStorage.setItem("sachi_app_version", APP_VERSION);
+  }
+})();
 function formatDate(d) {
   if (!d) return "";
   const dt = new Date(d);
@@ -10620,7 +10638,15 @@ const resolveMediaUrl = (url, isVideo) => {
   }
   return url;
 };
+let _locationPromise = null;
 async function getPostLocation() {
+  if (_locationPromise) return _locationPromise;
+  _locationPromise = _fetchPostLocation().finally(() => {
+    _locationPromise = null;
+  });
+  return _locationPromise;
+}
+async function _fetchPostLocation() {
   const savedCode = localStorage.getItem("sachi_country_code");
   const savedRegion = localStorage.getItem("sachi_region");
   const savedCity = localStorage.getItem("sachi_city");
@@ -10747,7 +10773,6 @@ function getStateAbbr(state, countryCode) {
   if (countryCode === "US" && US_STATES[state]) return US_STATES[state];
   if (countryCode === "AU" && AU_STATES[state]) return AU_STATES[state];
   if (countryCode === "CA" && CA_PROVINCES[state]) return CA_PROVINCES[state];
-  if (state.length <= 4) return state;
   return state;
 }
 function countryFlag(code) {
@@ -10827,23 +10852,12 @@ function countryFlag(code) {
   }
 }
 async function captureThumbnail(file) {
-  return new Promise((resolve) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.muted = true;
-    video.playsInline = true;
-    const url = URL.createObjectURL(file);
-    video.src = url;
-    video.onloadeddata = () => {
-      video.currentTime = Math.min(1, video.duration * 0.1);
-    };
-    video.onseeked = () => {
+  const tryCapture = (videoEl, canvas2, seekTime) => new Promise((resolve) => {
+    const ctx = canvas2.getContext("2d");
+    const done = () => {
       try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 500;
-        canvas.height = 888;
-        const ctx = canvas.getContext("2d");
-        const vw = video.videoWidth, vh2 = video.videoHeight;
+        const vw = videoEl.videoWidth, vh2 = videoEl.videoHeight;
+        if (!vw || !vh2) return resolve(null);
         const targetRatio = 500 / 888, srcRatio = vw / vh2;
         let sx = 0, sy = 0, sw = vw, sh2 = vh2;
         if (srcRatio > targetRatio) {
@@ -10853,31 +10867,77 @@ async function captureThumbnail(file) {
           sh2 = vw / targetRatio;
           sy = (vh2 - sh2) / 2;
         }
-        ctx.drawImage(video, sx, sy, sw, sh2, 0, 0, 500, 888);
-        URL.revokeObjectURL(url);
-        canvas.toBlob(async (blob) => {
-          if (!blob) return resolve(null);
-          const thumbFile = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
-          try {
-            const url2 = await uploadFile(thumbFile);
-            resolve(url2);
-          } catch {
-            resolve(null);
-          }
-        }, "image/jpeg", 0.85);
+        ctx.clearRect(0, 0, 500, 888);
+        ctx.drawImage(videoEl, sx, sy, sw, sh2, 0, 0, 500, 888);
+        const d = ctx.getImageData(0, 0, 50, 50).data;
+        let sum = 0;
+        for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
+        if (sum < 1e3) return resolve(null);
+        resolve("ok");
       } catch {
-        URL.revokeObjectURL(url);
         resolve(null);
       }
     };
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
+    videoEl.onseeked = done;
+    videoEl.onerror = () => resolve(null);
+    try {
+      videoEl.currentTime = seekTime;
+    } catch {
       resolve(null);
-    };
+    }
   });
+  const objectUrl = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.preload = "metadata";
+  video.muted = true;
+  video.playsInline = true;
+  video.crossOrigin = "anonymous";
+  const canvas = document.createElement("canvas");
+  canvas.width = 500;
+  canvas.height = 888;
+  const cleanup = () => {
+    try {
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+    }
+  };
+  try {
+    await Promise.race([
+      new Promise((resolve, reject) => {
+        video.onloadedmetadata = resolve;
+        video.onerror = () => reject(new Error("video load error"));
+        video.src = objectUrl;
+        video.load();
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 8e3))
+    ]);
+    const dur = video.duration || 0;
+    const seekPoints = [
+      Math.min(0.5, dur * 0.1),
+      Math.min(2, dur * 0.25),
+      Math.min(5, dur * 0.5)
+    ];
+    let captured = false;
+    for (const t2 of seekPoints) {
+      const result = await tryCapture(video, canvas, t2);
+      if (result === "ok") {
+        captured = true;
+        break;
+      }
+    }
+    cleanup();
+    if (!captured) return null;
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    if (!blob) return null;
+    const thumbFile = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
+    return await uploadFile(thumbFile);
+  } catch {
+    cleanup();
+    return null;
+  }
 }
 const createNotif = (data) => {
-  request$1("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification", { is_read: false, ...data }).catch(() => {
+  request$1("POST", "${APP_BASE}/entities/SachiNotification", { is_read: false, ...data }).catch(() => {
   });
 };
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
@@ -10960,7 +11020,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         setTimeout(() => onClose(), 600);
       }
     } catch (e) {
-      alert("Error: " + e.message);
+      console.error("Comment post error:", e);
     } finally {
       setPosting(false);
     }
@@ -11025,7 +11085,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         setList((prev) => prev.map((x2) => x2.id === c.id ? { ...x2, comment_text: editText.trim() } : x2));
         setEditing(false);
       } catch (e) {
-        alert("Could not save edit.");
+        console.error("Could not save edit:", e);
       } finally {
         setSaving(false);
       }
@@ -11327,8 +11387,9 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
       let thumbUrl = "";
       try {
         const thumbBlob = await captureThumbnail(file);
-        const thumbFile = new File([thumbBlob], "thumb.jpg", { type: "image/jpeg" });
-        thumbUrl = await uploadFile(thumbFile);
+        if (thumbBlob) {
+          thumbUrl = thumbBlob;
+        }
       } catch (_) {
       }
       const liveGeo = await getPostLocation();
@@ -12371,7 +12432,69 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         thumbnail_url = await Promise.race([captureThumbnail(file), new Promise((r2) => setTimeout(() => r2(null), 5e3))]);
       } catch {
       }
-      if (!thumbnail_url) thumbnail_url = video_url;
+      if (!thumbnail_url && (file.type === "video/quicktime" || /\.mov$/i.test(file.name))) {
+        try {
+          thumbnail_url = await new Promise((resolve) => {
+            const v2 = document.createElement("video");
+            v2.muted = true;
+            v2.playsInline = true;
+            v2.autoplay = true;
+            const u2 = URL.createObjectURL(file);
+            v2.src = u2;
+            const canvas2 = document.createElement("canvas");
+            canvas2.width = 500;
+            canvas2.height = 888;
+            const bail = setTimeout(() => {
+              URL.revokeObjectURL(u2);
+              resolve(null);
+            }, 6e3);
+            v2.ontimeupdate = async () => {
+              if (v2.currentTime < 0.5) return;
+              v2.pause();
+              clearTimeout(bail);
+              try {
+                const ctx2 = canvas2.getContext("2d");
+                const vw = v2.videoWidth, vh2 = v2.videoHeight;
+                if (!vw || !vh2) {
+                  URL.revokeObjectURL(u2);
+                  return resolve(null);
+                }
+                const targetRatio = 500 / 888, srcRatio = vw / vh2;
+                let sx = 0, sy = 0, sw = vw, sh2 = vh2;
+                if (srcRatio > targetRatio) {
+                  sw = vh2 * targetRatio;
+                  sx = (vw - sw) / 2;
+                } else {
+                  sh2 = vw / targetRatio;
+                  sy = (vh2 - sh2) / 2;
+                }
+                ctx2.drawImage(v2, sx, sy, sw, sh2, 0, 0, 500, 888);
+                URL.revokeObjectURL(u2);
+                canvas2.toBlob(async (blob) => {
+                  if (!blob || blob.size < 1e3) return resolve(null);
+                  const tf2 = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
+                  try {
+                    resolve(await uploadFile(tf2));
+                  } catch {
+                    resolve(null);
+                  }
+                }, "image/jpeg", 0.85);
+              } catch {
+                URL.revokeObjectURL(u2);
+                resolve(null);
+              }
+            };
+            v2.onerror = () => {
+              clearTimeout(bail);
+              URL.revokeObjectURL(u2);
+              resolve(null);
+            };
+          });
+        } catch {
+          thumbnail_url = null;
+        }
+      }
+      if (!thumbnail_url) thumbnail_url = null;
       setProgress(80);
       setStep("Saving to feed...");
       const videoGeo = await getPostLocation();
@@ -13505,13 +13628,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [showLikesPanel, setShowLikesPanel] = reactExports.useState(false);
   const [likesList, setLikesList] = reactExports.useState([]);
   const [likesListLoading, setLikesListLoading] = reactExports.useState(false);
-  if (window.__sachiMuted === void 0) window.__sachiMuted = true;
-  const [muted, _setMutedLocal] = reactExports.useState(() => window.__sachiMuted);
+  const [muted, _setMutedLocal] = reactExports.useState(() => getMuted());
   const setMuted = (val) => {
-    const newVal = typeof val === "function" ? val(window.__sachiMuted) : val;
-    window.__sachiMuted = newVal;
+    const newVal = typeof val === "function" ? val(getMuted()) : val;
+    setGlobalMuted(newVal);
     _setMutedLocal(newVal);
-    window.dispatchEvent(new CustomEvent("sachi-mute-change", { detail: newVal }));
   };
   reactExports.useEffect(() => {
     const handler = (e) => {
@@ -13529,7 +13650,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [showUI, setShowUI] = reactExports.useState(false);
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
-  const photoUrls = video.is_photo && video.photo_urls ? Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls) : null;
+  const safeParsePhotoUrls = (val) => {
+    if (!val) return null;
+    if (Array.isArray(val)) return val;
+    try {
+      return JSON.parse(val);
+    } catch {
+      return null;
+    }
+  };
+  const photoUrls = video.is_photo ? safeParsePhotoUrls(video.photo_urls) || (video.video_url ? [video.video_url] : null) : null;
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || currentUser.username && currentUser.username === video.username);
   const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
   const userAge = getUserAge();
@@ -13548,9 +13678,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     };
   }, []);
   reactExports.useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = video.sound_url ? true : muted;
+    if (videoRef.current) videoRef.current.muted = video.sound_url ? true : getMuted();
     if (soundRef.current) {
-      if (muted) {
+      if (getMuted()) {
         soundRef.current.pause();
       } else if (playing && video.sound_url) {
         soundRef.current.play().catch(() => {
@@ -13561,16 +13691,26 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   reactExports.useEffect(() => {
     const el2 = videoRef.current;
     if (!el2) return;
+    const tryPlay = () => {
+      const currentlyMuted = getMuted();
+      el2.muted = video.sound_url ? true : currentlyMuted;
+      el2.play().catch(() => {
+      });
+      setPlaying(true);
+      if (!currentlyMuted && soundRef.current && video.sound_url) {
+        soundRef.current.play().catch(() => {
+        });
+      }
+    };
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        const currentlyMuted = window.__sachiMuted !== void 0 ? window.__sachiMuted : true;
-        el2.muted = video.sound_url ? true : currentlyMuted;
-        el2.play().catch(() => {
-        });
-        setPlaying(true);
-        if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {
-          });
+        if (el2.readyState < 1) {
+          el2.onloadedmetadata = () => {
+            tryPlay();
+            el2.onloadedmetadata = null;
+          };
+        } else {
+          tryPlay();
         }
         setShowUI(true);
         hideUIAfterDelay(1500);
@@ -13746,6 +13886,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       await videos.delete(video.id);
       onDelete && onDelete(video.id);
     } catch (err) {
+      console.error("Failed to delete:", err);
       alert("Failed to delete. Try again.");
     }
   };
@@ -14028,9 +14169,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {
             ref: videoRef,
             src: resolvedVideoUrl,
-            poster: resolveMediaUrl(video.thumbnail_url),
+            poster: (() => {
+              const t2 = video.thumbnail_url;
+              if (!t2) return void 0;
+              if (/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(t2)) return void 0;
+              return resolveMediaUrl(t2);
+            })(),
             loop: true,
             playsInline: true,
+            preload: "auto",
             muted: muted || !!video.sound_url,
             onPlay: () => {
               setPlaying(true);
@@ -14046,7 +14193,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               window.dispatchEvent(new CustomEvent("sachiVideoPause"));
               if (soundRef.current) soundRef.current.pause();
             },
+            onError: (e) => {
+              const t2 = video.thumbnail_url;
+              if (t2 && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(t2)) {
+                const el2 = e.currentTarget;
+                el2.style.display = "none";
+                const img = el2.parentNode.querySelector(".__sachiThumbFallback");
+                if (img) img.style.display = "block";
+              }
+            },
             style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
+          }
+        ),
+        video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            className: "__sachiThumbFallback",
+            src: resolveMediaUrl(video.thumbnail_url),
+            style: { display: "none", position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" },
+            alt: ""
           }
         ),
         video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -15108,12 +15273,12 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
+      request$1("GET", `${APP_BASE}/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
-      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      request$1("GET", `${APP_BASE}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
       // Live following count: how many people this profile follows
-      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
+      request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = (userRes == null ? void 0 : userRes.items) || userRes || [];
       const u2 = allUsers.find((x2) => x2.id === userId || x2.created_by === userId) || null;
@@ -15152,7 +15317,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         setProfile((p2) => p2 ? { ...p2, followers_count: (p2.followers_count || 0) + 1 } : p2);
       }
       try {
-        const myFollowingRes = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingRes = await request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${currentUser.id}&limit=500`);
         const myFollowingCount = ((myFollowingRes == null ? void 0 : myFollowingRes.items) || myFollowingRes || []).length;
         setProfile((p2) => p2 ? { ...p2 } : p2);
         localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
@@ -15345,7 +15510,8 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       setConfirmDelete(null);
       onRefresh();
     } catch (e) {
-      alert("Delete failed: " + e.message);
+      console.error("Delete failed:", e);
+      alert("Delete failed. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -15357,7 +15523,8 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       setEditVideo(null);
       onRefresh();
     } catch (e) {
-      alert("Save failed: " + e.message);
+      console.error("Save failed:", e);
+      alert("Could not save changes. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -15559,7 +15726,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
                     style: {
                       flex: 2,
                       padding: "12px 0",
-                      background: "linear-gradient(135deg,#e91e63,#9c27b0)",
+                      background: "linear-gradient(135deg,#F5C842,#FF9500)",
                       border: "none",
                       borderRadius: 12,
                       color: "#fff",
@@ -15717,8 +15884,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadPodcasts = async () => {
     setLoadingPodcasts(true);
     try {
-      const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
-      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast?status=Active`);
+      const data = await request$1("GET", `${APP_BASE}/entities/SachiPodcast?status=Active`);
       const list = Array.isArray(data) ? data : data.records || data.items || [];
       setPodcasts(list);
     } catch (e) {
@@ -15730,8 +15896,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadMyShows = async () => {
     if (!currentUser) return;
     try {
-      const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
-      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast`);
+      const data = await request$1("GET", `${APP_BASE}/entities/SachiPodcast`);
       const all = Array.isArray(data) ? data : data.records || data.items || [];
       const mine = all.filter(
         (p2) => {
@@ -15753,7 +15918,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     setRegistering(true);
     try {
       const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-      await request$1("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
+      await request$1("POST", `${APP_BASE}/entities/SachiPodcast`, {
         title: registerForm.title,
         host_name: registerForm.host_name,
         description: registerForm.description,
@@ -15909,7 +16074,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
                   try {
-                    await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                     setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
                     setEditingStream(false);
                     showToast("✅ Stream URL saved!", "success");
@@ -15947,7 +16112,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     }).catch(() => {
                     });
                     try {
-                      await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
+                      await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
                     } catch {
                     }
                     setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
@@ -15980,7 +16145,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
                   try {
-                    await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                     setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
                     setEditingStream(false);
                     showToast("✅ Stream URL saved!", "success");
@@ -16076,7 +16241,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                       body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "", set_live: true, admin_email: currentUser == null ? void 0 : currentUser.email })
                     });
                     try {
-                      await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
+                      await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
                     } catch {
                     }
                     setSelectedPodcast((p2) => ({ ...p2, is_live: true }));
@@ -16392,7 +16557,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 try {
                   const token = localStorage.getItem("token");
                   const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                  const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                  const res = await fetch(`https://sachi-c7f0261c.base44.app/api${APP_BASE}/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
                   const json = await res.json();
                   const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
                   const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
@@ -16474,7 +16639,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               try {
                 const token = localStorage.getItem("token");
                 const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                const res = await fetch(`https://sachi-c7f0261c.base44.app/api${APP_BASE}/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
                 const json = await res.json();
                 const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
                 const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
@@ -16525,7 +16690,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               try {
                 const token = localStorage.getItem("token");
                 const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                const res = await fetch(`https://sachi-c7f0261c.base44.app/api${APP_BASE}/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
                 const json = await res.json();
                 const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
                 const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
@@ -16922,7 +17087,7 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request$1("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
+      const res = await request$1("GET", "${APP_BASE}/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch (e) {
       console.error(e);
@@ -16969,7 +17134,7 @@ function AdminPanel({ currentUser }) {
   const loadFounders = async () => {
     setFoundersLoading(true);
     try {
-      const res = await request$1("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator?sort=-created_date&limit=100");
+      const res = await request$1("GET", "${APP_BASE}/entities/FoundingCreator?sort=-created_date&limit=100");
       setFounders(res.items || res || []);
     } catch (e) {
       console.error(e);
@@ -16981,7 +17146,7 @@ function AdminPanel({ currentUser }) {
   }, [modTab]);
   const updateFounderStatus = async (founder, status) => {
     try {
-      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      await request$1("PUT", `${APP_BASE}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
       setFounders((prev) => prev.map((f2) => f2.id === founder.id ? { ...f2, status, notes: founderNote || f2.notes } : f2));
       setSelectedFounder(null);
       setFounderNote("");
@@ -17008,7 +17173,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newMature = !video.is_mature;
-      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, {
+      await request$1("PUT", `${APP_BASE}/entities/SachiVideo/${video.id}`, {
         is_mature: newMature,
         mature_reason: newMature ? reason || "other" : null
       });
@@ -17022,7 +17187,7 @@ function AdminPanel({ currentUser }) {
     if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
     setSaving(video.id);
     try {
-      await request$1("DELETE", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`);
+      await request$1("DELETE", `${APP_BASE}/entities/SachiVideo/${video.id}`);
       setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
     } catch (e) {
       alert("Failed to delete: " + e.message);
@@ -17033,7 +17198,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newFlag = !video.is_ai_detected;
-      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      await request$1("PUT", `${APP_BASE}/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
       setAllVideos((prev) => prev.map((v2) => v2.id === video.id ? { ...v2, is_ai_detected: newFlag } : v2));
     } catch (e) {
       alert("Failed to update: " + e.message);
@@ -17380,7 +17545,7 @@ function AdminPanel({ currentUser }) {
               {
                 onClick: async () => {
                   setSaving(video.id);
-                  await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true });
+                  await request$1("PUT", `${APP_BASE}/entities/SachiVideo/${video.id}`, { is_approved: true });
                   setAllVideos((p2) => p2.map((v2) => v2.id === video.id ? { ...v2, is_approved: true } : v2));
                   setSaving(null);
                 },
@@ -17854,7 +18019,7 @@ function App() {
       messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {
       });
       try {
-        const res = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
+        const res = await request$1("GET", `${APP_BASE}/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
         const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
         setNotifCount(items.length);
       } catch (e) {
@@ -17936,7 +18101,7 @@ function App() {
     const loadAvatar = async () => {
       if (currentUser) {
         try {
-          const usersData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request$1("GET", `${APP_BASE}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : usersData.items || [];
           const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
           if (match && match.avatar_url && !match.avatar_url.startsWith("data:")) {
@@ -18093,8 +18258,8 @@ function App() {
       const myUsername = currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
       (async () => {
         try {
-          const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `${APP_BASE}/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowersCount(unique.length);
@@ -18103,8 +18268,8 @@ function App() {
       })();
       (async () => {
         try {
-          const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `${APP_BASE}/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowingCount(unique.length);
@@ -18445,7 +18610,7 @@ function App() {
                 setShowFollowersList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowersList(unique);
@@ -18468,7 +18633,7 @@ function App() {
                 setShowFollowingList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowingList(unique);
@@ -19065,7 +19230,6 @@ function App() {
                   value: editProfileName,
                   onChange: (e) => setEditProfileName(e.target.value),
                   placeholder: (currentUser == null ? void 0 : currentUser.full_name) || username || "Your display name",
-                  defaultValue: (currentUser == null ? void 0 : currentUser.full_name) || "",
                   style: {
                     width: "100%",
                     background: "rgba(255,255,255,0.06)",
@@ -19105,11 +19269,12 @@ function App() {
                       if (!editProfileName.trim()) return;
                       setEditProfileSaving(true);
                       try {
-                        await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                        await request$1("PATCH", `${APP_BASE}/auth/me`, { full_name: editProfileName.trim() });
                         setCurrentUser((u2) => ({ ...u2, full_name: editProfileName.trim() }));
                         setShowEditProfile(false);
                       } catch (e) {
-                        alert("Save failed: " + e.message);
+                        console.error("Save failed:", e);
+                        alert("Could not save name. Please try again.");
                       } finally {
                         setEditProfileSaving(false);
                       }
@@ -19118,7 +19283,7 @@ function App() {
                     style: {
                       flex: 2,
                       padding: "12px 0",
-                      background: "linear-gradient(135deg,#e91e63,#9c27b0)",
+                      background: "linear-gradient(135deg,#F5C842,#FF9500)",
                       border: "none",
                       borderRadius: 12,
                       color: "#fff",
@@ -19145,30 +19310,32 @@ function App() {
       localStorage.setItem("avatar_last", url);
       localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, avatar_url: url }));
       try {
-        const usersData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+        const usersData = await request$1("GET", `${APP_BASE}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
         const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
         const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
         if (match) {
-          if (url.startsWith("https://") || url.startsWith("http://")) {
+          if (url.startsWith("data:")) {
             await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ image_base64: url, mime_type: "image/jpeg", entity_id: match.id })
             });
+          } else if (url.startsWith("https://") || url.startsWith("http://")) {
+            await request$1("PATCH", `${APP_BASE}/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           }
         }
       } catch (e) {
         console.warn("User entity update failed:", e);
       }
       try {
-        await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+        await request$1("PUT", `${APP_BASE}/auth/me`, { avatar_url: url });
       } catch (e) {
         console.warn("Auth avatar update failed (ok for Google users):", e);
       }
       try {
-        const vidsData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
+        const vidsData = await request$1("GET", `${APP_BASE}/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
         const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
-        await Promise.all(vids.map((v2) => request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
+        await Promise.all(vids.map((v2) => request$1("PATCH", `${APP_BASE}/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
         setVideoList((vs) => vs.map(
           (v2) => {
             var _a3;
