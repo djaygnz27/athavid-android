@@ -10980,7 +10980,7 @@ async function captureThumbnail(file) {
   }
 }
 const createNotif = (data) => {
-  request$1("POST", `${APP_BASE$1}/entities/SachiNotification`, { is_read: false, ...data }).catch(() => {
+  request$1("POST", "${APP_BASE}/entities/SachiNotification", { is_read: false, ...data }).catch(() => {
   });
 };
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
@@ -13937,7 +13937,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     e.stopPropagation();
     fn();
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: "100%", height: "100svh", background: "#0B0C1A", flexShrink: 0, scrollSnapAlign: "start" }, children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: "100%", height: "100svh", background: "#0B0C1A", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always" }, children: [
     showMatureBlock && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       position: "absolute",
       inset: 0,
@@ -14334,34 +14334,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       ] });
     })(),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
-    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        position: "absolute",
-        top: "15%",
-        left: 0,
-        bottom: 140,
-        width: 220,
-        background: "linear-gradient(to right, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.88) 55%, rgba(11,12,26,0.0) 100%)",
-        pointerEvents: "none",
-        zIndex: 14
-      } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-        position: "absolute",
-        bottom: "35%",
-        left: 12,
-        pointerEvents: "none",
-        zIndex: 15,
-        display: "flex",
-        alignItems: "center",
-        gap: 6
-      }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: { width: 28, height: 28, borderRadius: 7, flexShrink: 0 }, alt: "Sachi" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, lineHeight: 1, letterSpacing: 0.3 }, children: "Sachi" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.6)", fontWeight: 500, fontSize: 10, lineHeight: 1, marginTop: 2 }, children: "sachistream.com" })
-        ] })
-      ] })
-    ] }),
     !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -14391,7 +14363,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       cursor: "pointer",
       fontSize: 26
     }, children: "▶" }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 148, left: 16, right: 16, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", left: 16, right: 16, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "div",
         {
@@ -14511,7 +14483,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 12, bottom: 120, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 12, bottom: "calc(80px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
@@ -17149,7 +17121,7 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request$1("GET", `${APP_BASE$1}/entities/SachiVideo?limit=500&sort=-created_date`);
+      const res = await request$1("GET", "${APP_BASE}/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch (e) {
       console.error(e);
@@ -17196,7 +17168,7 @@ function AdminPanel({ currentUser }) {
   const loadFounders = async () => {
     setFoundersLoading(true);
     try {
-      const res = await request$1("GET", `${APP_BASE$1}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      const res = await request$1("GET", "${APP_BASE}/entities/FoundingCreator?sort=-created_date&limit=100");
       setFounders(res.items || res || []);
     } catch (e) {
       console.error(e);
@@ -18461,7 +18433,7 @@ function App() {
     activeTab === "feed" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: (el2) => {
       feedContainerRef.current = el2;
       window.__sachiEl = el2;
-    }, style: { height: "100svh", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y" }, children: [
+    }, style: { height: "100svh", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y", paddingBottom: 0 }, children: [
       feedTab === "following" && followingIds.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         height: "100svh",
         display: "flex",
