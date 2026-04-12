@@ -13739,6 +13739,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       el2.muted = video.sound_url ? true : currentlyMuted;
       el2.play().catch(() => {
       });
+      setPlaying(true);
       if (!currentlyMuted && soundRef.current && video.sound_url) {
         soundRef.current.play().catch(() => {
         });
@@ -14205,59 +14206,63 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" }
         }
       );
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, width: "100%", height: "100%", background: "#000" }, children: [
-          video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "img",
-            {
-              className: "__sachiThumbBg",
-              src: resolveMediaUrl(video.thumbnail_url),
-              style: {
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                opacity: playing ? 0 : 1,
-                transition: "opacity 0.3s ease",
-                pointerEvents: "none",
-                zIndex: 1
-              },
-              alt: ""
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "video",
-            {
-              ref: videoRef,
-              src: resolvedVideoUrl,
-              loop: true,
-              playsInline: true,
-              preload: "auto",
-              muted: muted || !!video.sound_url,
-              onPlay: () => {
-                window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
-                if (soundRef.current && video.sound_url && !muted) {
-                  soundRef.current.play().catch(() => {
-                  });
-                }
-              },
-              onPlaying: () => {
-                setPlaying(true);
-                hideUIAfterDelay(1500);
-              },
-              onPause: () => {
-                setPlaying(false);
-                window.dispatchEvent(new CustomEvent("sachiVideoPause"));
-                if (soundRef.current) soundRef.current.pause();
-              },
-              onError: (e) => {
-                e.currentTarget.style.display = "none";
-              },
-              style: { position: "absolute", inset: 0, zIndex: 2, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }
-            }
-          )
-        ] }),
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: "100%", height: "100%", background: "#111", overflow: "hidden" }, children: [
+        video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            src: resolveMediaUrl(video.thumbnail_url),
+            style: {
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 1,
+              opacity: playing ? 0 : 1,
+              transition: "opacity 0.3s ease",
+              pointerEvents: "none"
+            },
+            alt: ""
+          }
+        ) : (
+          /* No thumbnail — show a dark gradient so it's never pure black */
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, zIndex: 1, background: "linear-gradient(180deg,#1a1a2e,#0B0C1A)", opacity: playing ? 0 : 1, transition: "opacity 0.3s ease", pointerEvents: "none" } })
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "video",
+          {
+            ref: videoRef,
+            src: resolvedVideoUrl,
+            poster: (() => {
+              const t2 = video.thumbnail_url;
+              if (!t2) return void 0;
+              if (/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(t2)) return void 0;
+              return resolveMediaUrl(t2);
+            })(),
+            loop: true,
+            playsInline: true,
+            preload: "auto",
+            muted: muted || !!video.sound_url,
+            onPlay: () => {
+              setPlaying(true);
+              hideUIAfterDelay(1500);
+              window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
+              if (soundRef.current && video.sound_url && !muted) {
+                soundRef.current.play().catch(() => {
+                });
+              }
+            },
+            onPause: () => {
+              setPlaying(false);
+              window.dispatchEvent(new CustomEvent("sachiVideoPause"));
+              if (soundRef.current) soundRef.current.pause();
+            },
+            onError: () => {
+              setPlaying(false);
+            },
+            style: { position: "relative", zIndex: 2, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
+          }
+        ),
         video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(
           "audio",
           {
@@ -14329,6 +14334,21 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       ] });
     })(),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
+    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      bottom: 70,
+      left: 0,
+      width: 160,
+      height: 80,
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+      background: "linear-gradient(135deg, rgba(11,12,26,0.55), rgba(11,12,26,0.2))",
+      borderRadius: "0 16px 0 0",
+      pointerEvents: "none",
+      zIndex: 11,
+      maskImage: "linear-gradient(to right, black 60%, transparent 100%)",
+      WebkitMaskImage: "linear-gradient(to right, black 60%, transparent 100%)"
+    } }),
     !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -17213,22 +17233,15 @@ function AdminPanel({ currentUser }) {
     setSaving(null);
   };
   const deleteVideo = async (video) => {
-    setModDeleteTarget(video);
-  };
-  const [modDeleteTarget, setModDeleteTarget] = reactExports.useState(null);
-  const doModDelete = async () => {
-    const video = modDeleteTarget;
-    setModDeleteTarget(null);
-    if (!video) return;
+    if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
     setSaving(video.id);
     try {
       await request$1("DELETE", `${APP_BASE$1}/entities/SachiVideo/${video.id}`);
       setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
     } catch (e) {
-      alert("Delete failed: " + (e.message || "Unknown error"));
-    } finally {
-      setSaving(null);
+      alert("Failed to delete: " + e.message);
     }
+    setSaving(null);
   };
   const flagAI = async (video) => {
     setSaving(video.id);
@@ -17766,35 +17779,6 @@ function AdminPanel({ currentUser }) {
         ] })
       ] }, video.id)) })
     ] }),
-    modDeleteTarget && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 28, maxWidth: 340, width: "100%", textAlign: "center" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "🗑️" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }, children: "Delete this post?" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 20, wordBreak: "break-word" }, children: [
-        '"',
-        modDeleteTarget.caption || "This video",
-        '" by @',
-        modDeleteTarget.username || "unknown"
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 12, marginBottom: 24 }, children: "This cannot be undone. The creator will need to re-upload." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setModDeleteTarget(null),
-            style: { flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#aaa", fontSize: 14, fontWeight: 600, cursor: "pointer" },
-            children: "Cancel"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: doModDelete,
-            style: { flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#ff4444", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" },
-            children: "Delete"
-          }
-        )
-      ] })
-    ] }) }),
     modTab === "founders" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
       (() => {
         const counts = { Pending: 0, Approved: 0, Rejected: 0, Contacted: 0, Waitlisted: 0 };
