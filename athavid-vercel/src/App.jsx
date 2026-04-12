@@ -3095,7 +3095,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       </div>
 
       {/* ── RIGHT SIDE ACTION BAR — vertical stack, TikTok style ── */}
-      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex: 500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex: 500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden", overflow:"hidden", touchAction:"none" }}>
 
         {/* Mute button */}
         <button onClick={tap(doMute)}
