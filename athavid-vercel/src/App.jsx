@@ -2960,14 +2960,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* ── SACHI BRAND OVERLAY — covers TikTok/Instagram watermarks with Sachi branding ── */}
       {!photoUrls && (
         <div style={{
-          position:"absolute", bottom:"28%", left:12,
+          position:"absolute", bottom:"18%", left:12,
           pointerEvents:"none",
           zIndex:15,
           display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2,
         }}>
           {/* Dark backing to hide whatever watermark is underneath */}
           <div style={{
-            position:"absolute", top:-8, left:-12, right:-20, bottom:-8,
+            position:"absolute", top:-80, left:-12, right:-20, bottom:-8,
             background:"linear-gradient(to right, rgba(11,12,26,0.96) 0%, rgba(11,12,26,0.85) 70%, rgba(11,12,26,0.0) 100%)",
             pointerEvents:"none",
           }} />

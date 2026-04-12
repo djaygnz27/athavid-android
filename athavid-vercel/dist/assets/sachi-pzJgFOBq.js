@@ -14336,7 +14336,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
     !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       position: "absolute",
-      bottom: "28%",
+      bottom: "18%",
       left: 12,
       pointerEvents: "none",
       zIndex: 15,
@@ -14347,7 +14347,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         position: "absolute",
-        top: -8,
+        top: -80,
         left: -12,
         right: -20,
         bottom: -8,
