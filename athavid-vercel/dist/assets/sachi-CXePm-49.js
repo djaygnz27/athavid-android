@@ -14336,18 +14336,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
     !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
       position: "absolute",
-      bottom: 70,
+      bottom: 60,
       left: 0,
-      width: 160,
-      height: 80,
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-      background: "linear-gradient(135deg, rgba(11,12,26,0.55), rgba(11,12,26,0.2))",
-      borderRadius: "0 16px 0 0",
+      width: 180,
+      height: 100,
+      background: "linear-gradient(to right, rgba(11,12,26,0.97) 0%, rgba(11,12,26,0.95) 60%, rgba(11,12,26,0.0) 100%)",
       pointerEvents: "none",
-      zIndex: 11,
-      maskImage: "linear-gradient(to right, black 60%, transparent 100%)",
-      WebkitMaskImage: "linear-gradient(to right, black 60%, transparent 100%)"
+      zIndex: 15
     } }),
     !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
