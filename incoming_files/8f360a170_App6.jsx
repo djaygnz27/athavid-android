@@ -268,7 +268,7 @@ async function captureThumbnail(file) {
 
 // ── Comment Sheet ─────────────────────────────────────────────────────────────
 const createNotif = (data) => {
-  request("POST", `${APP_BASE}/entities/SachiNotification`, { is_read: false, ...data }).catch(() => {});
+  request("POST", "${APP_BASE}/entities/SachiNotification", { is_read: false, ...data }).catch(() => {});
 };
 
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
@@ -5463,7 +5463,7 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", `${APP_BASE}/entities/SachiVideo?limit=500&sort=-created_date`);
+      const res = await request("GET", "${APP_BASE}/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -5504,7 +5504,7 @@ function AdminPanel({ currentUser }) {
   const loadFounders = async () => {
     setFoundersLoading(true);
     try {
-      const res = await request("GET", `${APP_BASE}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      const res = await request("GET", "${APP_BASE}/entities/FoundingCreator?sort=-created_date&limit=100");
       setFounders(res.items || res || []);
     } catch(e) { console.error(e); }
     setFoundersLoading(false);
