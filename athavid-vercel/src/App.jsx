@@ -1,4 +1,4 @@
-// Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
+// Sachi v2.2.0 - photo fallback fix, version auto-reload
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes, messages, notifications } from "./api.js";
@@ -9,6 +9,19 @@ import Privacy from "./Privacy.jsx";
 import ChildSafety from "./ChildSafety.jsx";
 import FoundingCreatorPage from "./FoundingCreator.jsx";
 import MusicPicker from "./MusicPicker.jsx";
+
+// ── Auto-reload when new version deploys ──────────────────────────────────
+const APP_VERSION = "2.2.0";
+(function checkVersion() {
+  const stored = localStorage.getItem("sachi_app_version");
+  if (stored && stored !== APP_VERSION) {
+    localStorage.setItem("sachi_app_version", APP_VERSION);
+    window.location.reload(true);
+  } else {
+    localStorage.setItem("sachi_app_version", APP_VERSION);
+  }
+})();
+// ─────────────────────────────────────────────────────────────────────────
 
 function formatDate(d) {
   if (!d) return "";
