@@ -2895,45 +2895,46 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         return (
           <>
-            {/* Thumbnail always visible as background until video plays — eliminates black gap */}
-            {video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && (
-              <img
-                className="__sachiThumbBg"
-                src={resolveMediaUrl(video.thumbnail_url)}
-                style={{
-                  position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover",
-                  opacity: playing ? 0 : 1,
-                  transition: "opacity 0.2s ease",
-                  pointerEvents:"none", zIndex:1
+            {/* Stacking container — both thumbnail and video absolutely positioned inside */}
+            <div style={{ position:"absolute", inset:0, width:"100%", height:"100%", background:"#000" }}>
+              {/* Thumbnail stays fully visible until onPlaying fires — prevents black frame flash */}
+              {video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && (
+                <img
+                  className="__sachiThumbBg"
+                  src={resolveMediaUrl(video.thumbnail_url)}
+                  style={{
+                    position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover",
+                    opacity: playing ? 0 : 1,
+                    transition: "opacity 0.3s ease",
+                    pointerEvents:"none", zIndex:1
+                  }}
+                  alt=""
+                />
+              )}
+              <video ref={videoRef}
+                src={resolvedVideoUrl}
+                loop playsInline preload="auto"
+                muted={muted || !!video.sound_url}
+                onPlay={() => {
+                  window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
+                  if (soundRef.current && video.sound_url && !muted) {
+                    soundRef.current.play().catch(() => {});
+                  }
                 }}
-                alt=""
-              />
-            )}
-            <video ref={videoRef}
-              src={resolvedVideoUrl}
-              loop playsInline preload="auto"
-              muted={muted || !!video.sound_url}
-              onPlay={() => {
-                window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
-                if (soundRef.current && video.sound_url && !muted) {
-                  soundRef.current.play().catch(() => {});
-                }
-              }}
-              onPlaying={() => {
-                // onPlaying fires only when actual video frames start rendering
-                // This is the correct moment to hide the thumbnail background
-                setPlaying(true); hideUIAfterDelay(1500);
-              }}
-              onPause={() => {
-                setPlaying(false);
-                window.dispatchEvent(new CustomEvent("sachiVideoPause"));
-                if (soundRef.current) soundRef.current.pause();
-              }}
-              onError={(e) => {
-                // On error, keep thumbnail visible (opacity already 1 since playing=false)
-                e.currentTarget.style.display = "none";
-              }}
-              style={{ position:"relative", zIndex:2, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+                onPlaying={() => {
+                  // onPlaying fires only when real video frames are rendering — not just when .play() is called
+                  setPlaying(true); hideUIAfterDelay(1500);
+                }}
+                onPause={() => {
+                  setPlaying(false);
+                  window.dispatchEvent(new CustomEvent("sachiVideoPause"));
+                  if (soundRef.current) soundRef.current.pause();
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+                style={{ position:"absolute", inset:0, zIndex:2, width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
+            </div>
             {video.sound_url && (
               <audio ref={soundRef} src={video.sound_url} loop preload="none"
                 style={{ display:"none" }} />

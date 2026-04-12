@@ -14206,56 +14206,58 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       );
       return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "img",
-          {
-            className: "__sachiThumbBg",
-            src: resolveMediaUrl(video.thumbnail_url),
-            style: {
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              opacity: playing ? 0 : 1,
-              transition: "opacity 0.2s ease",
-              pointerEvents: "none",
-              zIndex: 1
-            },
-            alt: ""
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "video",
-          {
-            ref: videoRef,
-            src: resolvedVideoUrl,
-            loop: true,
-            playsInline: true,
-            preload: "auto",
-            muted: muted || !!video.sound_url,
-            onPlay: () => {
-              window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
-              if (soundRef.current && video.sound_url && !muted) {
-                soundRef.current.play().catch(() => {
-                });
-              }
-            },
-            onPlaying: () => {
-              setPlaying(true);
-              hideUIAfterDelay(1500);
-            },
-            onPause: () => {
-              setPlaying(false);
-              window.dispatchEvent(new CustomEvent("sachiVideoPause"));
-              if (soundRef.current) soundRef.current.pause();
-            },
-            onError: (e) => {
-              e.currentTarget.style.display = "none";
-            },
-            style: { position: "relative", zIndex: 2, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
-          }
-        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, width: "100%", height: "100%", background: "#000" }, children: [
+          video.thumbnail_url && !/\.(mp4|mov|webm|avi|mkv|m4v)(\?|$)/i.test(video.thumbnail_url) && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              className: "__sachiThumbBg",
+              src: resolveMediaUrl(video.thumbnail_url),
+              style: {
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                opacity: playing ? 0 : 1,
+                transition: "opacity 0.3s ease",
+                pointerEvents: "none",
+                zIndex: 1
+              },
+              alt: ""
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "video",
+            {
+              ref: videoRef,
+              src: resolvedVideoUrl,
+              loop: true,
+              playsInline: true,
+              preload: "auto",
+              muted: muted || !!video.sound_url,
+              onPlay: () => {
+                window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
+                if (soundRef.current && video.sound_url && !muted) {
+                  soundRef.current.play().catch(() => {
+                  });
+                }
+              },
+              onPlaying: () => {
+                setPlaying(true);
+                hideUIAfterDelay(1500);
+              },
+              onPause: () => {
+                setPlaying(false);
+                window.dispatchEvent(new CustomEvent("sachiVideoPause"));
+                if (soundRef.current) soundRef.current.pause();
+              },
+              onError: (e) => {
+                e.currentTarget.style.display = "none";
+              },
+              style: { position: "absolute", inset: 0, zIndex: 2, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }
+            }
+          )
+        ] }),
         video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(
           "audio",
           {
