@@ -257,65 +257,220 @@
 
 ### 📬 Podcast Outreach — 4 Emails Sent
 - **Clayton Morris (Redacted)** → `claytonmorris06@gmail.com`
-  - Invited as the FIRST live podcast on Sachi Stream
 - **Steven Bartlett (Diary of a CEO)** → `bookings@stevenbartlett.com`
 - **Lex Fridman** → `lex.podcast.pitch@lexfridman.com`
 - **Sam Parr & Shaan Puri (My First Million)** → `contact@mfmpod.com`
-- All sent from `jaygnz27@gmail.com`, CC'd to Jay
+- All sent from `jaygnz27@gmail.com`
 
 ### 📖 Dev Journal Created
 - This document started — full history of Sachi development captured
-- Will be updated after every session going forward
-
----
-
-## 🗓️ Upcoming / In Progress
-
-### 🤖 Google Play — Closed Testing (Active)
-- 12 testers confirmed: US, Australia, Sri Lanka
-- App submitted to Google Play for review
-- Awaiting approval for Closed Testing track
-- After 14 days → Production submission
-
-### 🚀 Public Launch — May 2026 Target
-- Recruit 50-60 beta creators before opening to public
-- Solve content cold-start problem first
-- Cloudflare Stream migration planned when traffic scales up
-
-### ™️ Logo Trademark
-- SACHI design mark (crystal sakura) filing: May 4, 2026
-- Update ™ → ® on site once word mark approved
-
-### 🎙️ Podcast Partner Response
-- Waiting on replies from Clayton Morris, Steven Bartlett, Lex Fridman, MFM
-- Follow up in 1 week if no response
-
----
-
-## 📊 Stats Snapshot (as of April 8, 2026)
-- Platform: sachistream.com ✅ Live
-- Android: Google Play Closed Testing — under review
-- Registered Users: Beta testers only (12 confirmed)
-- Podcast shows: 5 (Redacted, Diary of a CEO, Joe Rogan, My First Million, Money & Muscle)
-- Total dev time: ~2 weeks from first line of code to Google Play submission
-
----
-*Last updated: April 8, 2026 by Daminie*
-*"Sachi means Truth — and building it was anything but easy."*
-
----
-
-## 📅 April 8, 2026 (continued)
 
 ### 🌸 Founding Creator Application Page Launched
 - Created `FoundingCreatorPage` component — full 3-step flow: Landing → Form → Success
 - New `FoundingCreator` database entity created to store all applications
 - Fields captured: name, email, phone, location, content type, audience size, social links, content description, why Sachi
 - Status field: Pending / Approved / Rejected / Waitlisted
-- Two accessible URLs:
-  - **https://www.sachistream.com/founding-creator**
-  - **https://www.sachistream.com/apply** (shareable short link)
-- 🌸 **"Apply to be a Founding Creator"** button added to the ME tab profile page
-- All applications stored in the Base44 database, visible in MOD panel
+- Accessible at: `sachistream.com/founding-creator` and `sachistream.com/apply`
+- "Apply to be a Founding Creator" button added to ME tab profile page
 - Target: 50 founding creator spots before public May 2026 launch
 
+---
+
+## 📅 April 9, 2026 — Music, Live Streaming, Business Email
+
+### 🎵 Music Feature — Audius Integration
+- Built `MusicPicker.jsx` — full music selection UI with 3 tabs:
+  - 🔥 Trending (Audius live API, genre filters)
+  - 🔍 Search (live search across Audius catalog)
+  - 🎤 Sachi Sounds (original creator-uploaded audio reuse)
+- Stream URL format: `https://api.audius.co/v1/tracks/{id}/stream?app_name=SachiStream`
+- Plan: upgrade to Epidemic Sound Partner API at 500+ users
+- Music plays during video recording and is saved with the post
+
+### 📡 Cloudflare Stream — Live Streaming Infrastructure
+- Integrated Cloudflare Stream for native RTMP live streaming
+- Account ID: `a346b1c78fc48549d2de3de99a789a2d`
+- Backend function deployed: `createLiveStream` — generates RTMP URL + stream key per host
+- Deployed at: `https://sachi-c7f0261c.base44.app/functions/createLiveStream`
+- `SachiLiveRoom` entity created to manage active streams
+- Live rooms grid added under the LIVE hub tab
+- News tab: 7 channels (Democracy Now, BBC, Al Jazeera, CTV, Sky News, DW, France 24)
+- OBS setup guide PDF created and linked in podcast host dashboard
+
+### 🎙️ Podcast Host Dashboard Upgraded
+- Hosts can now self-generate RTMP stream keys from `sachistream.com/podcast-host`
+- OBS guide PDF downloadable from the dashboard
+- Stream key generation calls the backend function directly
+
+### 📧 Zoho Mail — Custom Business Email
+- Registered Zoho Mail (Mail Lite plan, 3 licenses)
+- Business emails created:
+  - `jayagunaratne@sachistream.com`
+  - `podcasts@sachistream.com`
+  - `support@sachistream.com` (alias of jayagunaratne@)
+- Configured in Outlook: IMAP `imappro.zoho.com:993`, SMTP `smtppro.zoho.com:465`
+- App password required (not regular password) for Outlook connection
+- Settings stored in `.agents/memory/zoho_mail_config.md`
+
+### 💬 Comment Reaction System
+- Emoji reactions added to comments: 👍 ❤️ 👎 😂
+- Fixed-position popup overlay prevents UI clipping on mobile
+- `SachiComment` schema updated: `thumbs_up`, `hearts`, `thumbs_down`, `emoji_reactions`
+
+---
+
+## 📅 April 10, 2026 — DMs, Notifications, LIVE Hub, Gifts
+
+### 💬 Direct Messaging System Built
+- Full two-way DM inbox: `SachiMessage` entity with thread-based architecture
+- Inbox tab added to main navigation
+- "Send Message" button on every user profile
+- "New Message" button with live user search in inbox
+- Smart back-navigation: returns to profile or inbox depending on entry point
+- Thread view shows full conversation history between two users
+
+### 🔔 Notification Center Built
+- Activity feed tab showing: likes, comments, new followers, DMs, live alerts
+- `SachiNotification` entity stores all notification records
+- Individual toggles for each notification type (stored in localStorage)
+- Notification badge count on nav icon
+
+### 📺 LIVE Hub — Full TikTok-Style System
+- `SachiLive.jsx` built with complete live streaming architecture:
+  - Creator Rooms grid (browse live hosts)
+  - News tab (7 channels)
+  - Go Live button (any user can stream)
+  - Host view: camera/mic controls, real-time chat
+  - Guest Request system: 🙋 "Request to Join" → Accept/Decline queue for host
+  - WebRTC peer connection between host and guest (Google STUN servers)
+  - Live chat: 3-second polling
+- Signaling via `SachiGuestRequest.notes` field (JSON SDP exchange)
+- New entities: `SachiLiveRoom`, `SachiLiveComment`, `SachiGuestRequest`
+
+### 🎁 Virtual Gifts & Monetization
+- `SachiGifts.jsx` built — full aurora/cosmos gift UI aesthetic
+- Gift catalog: emoji gifts with coin values
+- `SachiCoinWallet` entity: tracks user coin balance
+- `SachiGift` entity: records each gift sent during a live
+- `SachiHostEarning` entity: tracks host earnings, payout status
+- `SachiCoinPurchase` entity: Stripe checkout sessions for buying coins
+- Host payout: 80% of gift value, minimum $5 via PayPal
+- `SachiCoinPurchase` links to Stripe payment intents
+
+### ⚖️ Legal Pages — ToS & Privacy Policy
+- Terms of Service drafted under LDNA Consulting LLC (NJ law, April 1 2026 effective)
+- Privacy Policy drafted with GDPR/CCPA/COPPA compliance
+- Both pages live as standalone HTML: `sachistream.com/terms` and `sachistream.com/privacy`
+- Mandatory ToS checkbox added to signup flow — users must explicitly agree
+- Footer links added to main app for Google crawlability
+
+### 📝 Text Posts — Dynamic Font Scaling
+- Text-only posts now supported (`is_text_post: true`)
+- Font size auto-scales based on character count: 58px → 24px
+- Manual toggle: S / M / L / XL size selector
+- Preview updates live as user types
+
+---
+
+## 📅 April 11, 2026 — Bug Fixes, Sign-Up Polish, Live Review
+
+### 🐛 Sign-Up Age Verification Fix
+- **Bug:** iOS Safari default date picker was showing future dates, causing users to fail age gate
+- **Fix 1:** Replaced date picker with dropdown menus (Day / Month / Year) — no native picker
+- **Fix 2:** Age gate minimum raised to 13 years
+- **Fix 3:** Year dropdown restricted to valid range (1900 – 13 years ago)
+- **Fix 4:** Improved UX labels ("Date of Birth" instead of vague text)
+- UI color palette standardized to Sachi gold throughout the signup flow
+
+### 🎥 Live Stream Review Screen
+- After recording a live session, users now see a **Review** screen
+- Can: Watch back recording, Post to feed, or Discard
+- Camera fitment fixed: switched from `cover` to `contain` to prevent cropping on all phone sizes
+
+### 📬 Notification Strategy Confirmed
+- Push notifications > SMS for Sachi's use case
+- Google Sign-In (inherent email validation) negates need for secondary email verification
+- No Zoho/email OTP flow needed — simplified auth confirmed as correct architecture
+
+### 🔧 MOD Panel Bug
+- MOD panel was failing to load after recent App.jsx update
+- Root cause: incorrect template literal syntax (`${}` used outside backtick strings)
+- Fixed: all string interpolation converted to proper template literals
+
+---
+
+## 📅 April 12, 2026 — Video Quality, Branding Overlay, Code Audit
+
+### 🎬 Thumbnail Generation Engine Rebuilt
+- **Problem:** Mobile-uploaded `.mov` files were showing as black screens in the feed
+- New pipeline:
+  - 3-point seek strategy (10%, 25%, 50% of duration)
+  - Black frame detection (pixel brightness threshold check)
+  - 8-second timeout with automated fallback play-based capture for iOS `.mov` files
+- Database cleaned: retroactively fixed broken thumbnails for James Rivera, K Smith, Alpheus Anderson
+
+### 📸 Photo Post Black Screen Fix
+- Two "Training Log" photo posts were being incorrectly processed by the video player
+- Root cause: `is_photo: true` records missing `photo_urls` array in database
+- Fixed: populated `photo_urls` field for affected records
+- Codebase updated: photo posts with `is_photo: true` now always bypass the video player
+
+### 🔄 Auto Version Check + Cache Busting
+- App now checks its own version on load (`v2.2.0`)
+- If browser-cached version differs from live version → auto page reload
+- Cache-busting query params applied to existing media URLs
+- Prevents black screens caused by stale JS bundles
+
+### 🎨 Branding Overlay — TikTok Watermark Masking
+- Sachi logo + domain name overlay added to bottom-left of all videos
+- Covers imported TikTok watermarks from re-posted content
+- Dark gradient strip behind overlay for readability
+- Responsive: covers watermark logos AND usernames across all aspect ratios
+
+### 🔍 Full Code Audit
+- All core files audited by AI code review (Claude):
+  - `App.jsx`, `api.js`, `AuthModal.jsx`, `Landing.jsx`
+  - `SachiLive.jsx`, `PodcastHost.jsx`, `SachiGifts.jsx`, `MusicPicker.jsx`
+- Bugs fixed: error handling gaps, stale state, unhandled promise rejections
+- Video player upgraded: persistent thumbnail background fades out only on `onPlay` event
+  - Eliminates black flash between poster image and video decode
+
+### 🌐 Google OAuth Verification — In Progress
+- Google OAuth consent screen being completed for production verification
+- Requirements gathered:
+  - Privacy Policy URL: `sachistream.com/privacy.html` ✅
+  - Terms of Service URL: `sachistream.com/terms.html` ✅
+  - App logo 120x120 PNG: generated and available for upload ✅
+  - Homepage footer links (Privacy + Terms): added ✅
+  - Google site verification file: `google3261faac314730e8.html` deployed ✅
+  - Domain: `www.sachistream.com` confirmed as authorized domain
+
+---
+
+## 📊 Stats Snapshot (as of April 12, 2026)
+| Metric | Status |
+|---|---|
+| Platform | sachistream.com ✅ Live |
+| Android | Google Play — Closed Testing track |
+| Registered Users | Beta testers (targeting 20 for closed test) |
+| Tester opt-in URL | play.google.com/apps/testing/com.ldna.sachi |
+| Podcast shows | 5 active |
+| Founding Creator spots | 50 total, 14 filled, 36 open |
+| Trademark | SACHI word mark filed (Class 41) ✅ |
+| Business emails | jayagunaratne / podcasts / support @sachistream.com ✅ |
+| Total dev time | ~3 weeks from first line of code |
+
+---
+
+## 🗓️ Next Up
+- [ ] Complete Google OAuth verification submission
+- [ ] Reach 20 testers for Google Play Closed Testing (currently ~12)
+- [ ] Apple Developer Program enrollment (targeting May launch)
+- [ ] Epidemic Sound partnership inquiry at 500+ users
+- [ ] SACHI design mark filing: May 4, 2026
+- [ ] Podcast partner follow-ups (Clayton Morris, Steven Bartlett, Lex, MFM)
+- [ ] Public beta launch: May 2026
+
+---
+*Last updated: April 12, 2026 by Daminie*
+*"Sachi means Truth — and building it was anything but easy."*
