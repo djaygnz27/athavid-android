@@ -622,4 +622,4 @@ export function CoinWalletWidget({ userId, onBuyCoins }) {
   );
 }
 
-export { RARITY_COLORS, COIN_PACKS };
+export { GIFTS, RARITY_COLORS, COIN_PACKS };

@@ -7303,7 +7303,7 @@ function Landing({ onEnter }) {
 }
 const APP_ID$5 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$3 = "https://sachi-c7f0261c.base44.app/api";
-const APP_BASE$3 = `/apps/${APP_ID$5}`;
+const APP_BASE$5 = `/apps/${APP_ID$5}`;
 let sessionToken = null;
 function setToken(t2) {
   sessionToken = t2;
@@ -7352,24 +7352,24 @@ async function request$1(method, path, body, retries = 2) {
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request$1("POST", `${APP_BASE$3}/auth/login`, { email, password });
+    const data = await request$1("POST", `${APP_BASE$5}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request$1("POST", `${APP_BASE$3}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `${APP_BASE$5}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request$1("POST", `${APP_BASE$3}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `${APP_BASE$5}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request$1("POST", `${APP_BASE$3}/auth/resend-otp`, { email });
+    return request$1("POST", `${APP_BASE$5}/auth/resend-otp`, { email });
   },
   getUser() {
     try {
@@ -7380,10 +7380,10 @@ const auth = {
     }
   },
   async forgotPassword(email) {
-    return request$1("POST", `${APP_BASE$3}/auth/reset-password-request`, { email });
+    return request$1("POST", `${APP_BASE$5}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request$1("POST", `${APP_BASE$3}/auth/reset-password`, {
+    return request$1("POST", `${APP_BASE$5}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -7394,20 +7394,20 @@ const auth = {
 };
 const videos = {
   async list(limit = 30, skip = 0) {
-    return request$1("GET", `${APP_BASE$3}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+    return request$1("GET", `${APP_BASE$5}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request$1("POST", `${APP_BASE$3}/entities/SachiVideo`, data);
+    return request$1("POST", `${APP_BASE$5}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `${APP_BASE$3}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `${APP_BASE$5}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request$1("GET", `${APP_BASE$3}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `${APP_BASE$5}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request$1("GET", `${APP_BASE$3}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `${APP_BASE$5}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen = /* @__PURE__ */ new Set();
@@ -7420,26 +7420,26 @@ const videos = {
   // Fixed: was fetching ALL videos in a loop then filtering client-side (N+1 problem).
   // Now filters server-side by user_id directly.
   async byUser(userId) {
-    const res = await request$1("GET", `${APP_BASE$3}/entities/SachiVideo?user_id=${encodeURIComponent(userId)}&limit=500&sort=-created_date`);
+    const res = await request$1("GET", `${APP_BASE$5}/entities/SachiVideo?user_id=${encodeURIComponent(userId)}&limit=500&sort=-created_date`);
     const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     return items.filter((v2) => !v2.is_archived);
   },
   async delete(id2) {
-    return request$1("DELETE", `${APP_BASE$3}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `${APP_BASE$5}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    return request$1("GET", `${APP_BASE$3}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    return request$1("GET", `${APP_BASE$5}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
-    return request$1("POST", `${APP_BASE$3}/entities/SachiComment`, data);
+    return request$1("POST", `${APP_BASE$5}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `${APP_BASE$3}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `${APP_BASE$5}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request$1("DELETE", `${APP_BASE$3}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `${APP_BASE$5}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file) {
@@ -7449,7 +7449,7 @@ async function uploadFile(file) {
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(
-    `${BASE_URL$3}${APP_BASE$3}/integration-endpoints/Core/UploadFile`,
+    `${BASE_URL$3}${APP_BASE$5}/integration-endpoints/Core/UploadFile`,
     { method: "POST", headers, body: form }
   );
   const text = await res.text();
@@ -7464,7 +7464,7 @@ async function uploadFile(file) {
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request$1("POST", `${APP_BASE$3}/entities/Follow`, {
+    return request$1("POST", `${APP_BASE$5}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -7472,52 +7472,52 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request$1("DELETE", `${APP_BASE$3}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `${APP_BASE$5}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request$1("GET", `${APP_BASE$3}/entities/Follow?follower_id=${follower_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$5}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request$1("GET", `${APP_BASE$3}/entities/Follow?following_id=${following_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$5}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const reports = {
   async create(data) {
-    return request$1("POST", `${APP_BASE$3}/entities/SachiReport`, data);
+    return request$1("POST", `${APP_BASE$5}/entities/SachiReport`, data);
   },
   async list() {
-    return request$1("GET", `${APP_BASE$3}/entities/SachiReport?sort=-created_date&limit=200`);
+    return request$1("GET", `${APP_BASE$5}/entities/SachiReport?sort=-created_date&limit=200`);
   },
   async update(id2, data) {
-    return request$1("PUT", `${APP_BASE$3}/entities/SachiReport/${id2}`, data);
+    return request$1("PUT", `${APP_BASE$5}/entities/SachiReport/${id2}`, data);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request$1("POST", `${APP_BASE$3}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `${APP_BASE$5}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request$1("DELETE", `${APP_BASE$3}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `${APP_BASE$5}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request$1("GET", `${APP_BASE$3}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$5}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request$1("POST", `${APP_BASE$3}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `${APP_BASE$5}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request$1("DELETE", `${APP_BASE$3}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `${APP_BASE$5}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request$1("GET", `${APP_BASE$3}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$5}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request$1("GET", `${APP_BASE$3}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `${APP_BASE$5}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -7533,13 +7533,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request$1("PUT", `${APP_BASE$3}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `${APP_BASE$5}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request$1("POST", `${APP_BASE$3}/entities/UserInterest`, {
+        await request$1("POST", `${APP_BASE$5}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -7604,7 +7604,7 @@ function getCacheKey(video_id, user_id) {
 }
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    const rec = await request$1("POST", `${APP_BASE$3}/entities/SachiLike`, {
+    const rec = await request$1("POST", `${APP_BASE$5}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
@@ -7617,13 +7617,13 @@ const likes = {
     return rec;
   },
   async remove(id2, video_id, user_id) {
-    await request$1("DELETE", `${APP_BASE$3}/entities/SachiLike/${id2}`);
+    await request$1("DELETE", `${APP_BASE$5}/entities/SachiLike/${id2}`);
     const cache = getLikesCache();
     delete cache[getCacheKey(video_id, user_id)];
     setLikesCache(cache);
   },
   async getByVideo(video_id) {
-    return request$1("GET", `${APP_BASE$3}/entities/SachiLike?video_id=${video_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$5}/entities/SachiLike?video_id=${video_id}&limit=500`);
   },
   async checkUserLiked(video_id, user_id) {
     const cache = getLikesCache();
@@ -7632,7 +7632,7 @@ const likes = {
       return { id: cache[cacheKey], video_id, user_id, _fromCache: true };
     }
     try {
-      const res = await request$1("GET", `${APP_BASE$3}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const res = await request$1("GET", `${APP_BASE$5}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
       if (items.length > 0) {
         cache[cacheKey] = items[0].id;
@@ -7646,7 +7646,7 @@ const likes = {
       if (storedUser) {
         const u2 = JSON.parse(storedUser);
         if (u2.username) {
-          const res2 = await request$1("GET", `${APP_BASE$3}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
+          const res2 = await request$1("GET", `${APP_BASE$5}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
           const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.records) || (res2 == null ? void 0 : res2.items) || [];
           if (items2.length > 0) {
             cache[cacheKey] = items2[0].id;
@@ -7661,15 +7661,15 @@ const likes = {
   }
 };
 const messages = {
-  send: (data) => request$1("POST", `${APP_BASE$3}/entities/SachiMessage`, data),
+  send: (data) => request$1("POST", `${APP_BASE$5}/entities/SachiMessage`, data),
   getThread: (user1_id, user2_id) => {
     const thread_id = [user1_id, user2_id].sort().join("_");
-    return request$1("GET", `${APP_BASE$3}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
+    return request$1("GET", `${APP_BASE$5}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
   },
-  getInbox: (user_id) => request$1("GET", `${APP_BASE$3}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
-  markRead: (id2) => request$1("PATCH", `${APP_BASE$3}/entities/SachiMessage/${id2}`, { is_read: true }),
+  getInbox: (user_id) => request$1("GET", `${APP_BASE$5}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
+  markRead: (id2) => request$1("PATCH", `${APP_BASE$5}/entities/SachiMessage/${id2}`, { is_read: true }),
   getUnreadCount: async (user_id) => {
-    const res = await request$1("GET", `${APP_BASE$3}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
+    const res = await request$1("GET", `${APP_BASE$5}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
     const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
     return items.length;
   }
@@ -7787,11 +7787,11 @@ const COUNTRIES = [
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID$4 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$2 = "https://sachi-c7f0261c.base44.app/api";
-const APP_BASE$2 = `/apps/${APP_ID$4}`;
+const APP_BASE$4 = `/apps/${APP_ID$4}`;
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL$2}${APP_BASE$2}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL$2}${APP_BASE$4}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     if (!res.ok) return null;
@@ -7962,7 +7962,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     setError("");
     try {
       const res = await fetch(
-        `${BASE_URL$2}${APP_BASE$2}/entities/AthaVidUser`,
+        `${BASE_URL$2}${APP_BASE$4}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8426,6 +8426,7 @@ function Terms() {
 }
 const APP_ID$3 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
+const APP_BASE$3 = `/apps/${APP_ID$3}`;
 const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
 const GIFTS = [
   { id: "sakura", name: "Sakura", emoji: "🌸", icon: "🌸", coins: 5, color: "#e91e8c", glow: "rgba(233,30,140,0.6)", rarity: "common", anim: "float" },
@@ -8451,17 +8452,26 @@ const COIN_PACKS = [
   { id: "pack_10000", coins: 1e4, price: "$49.99", tag: "BEST VALUE", icon: "👑", price_id: "price_1TKVSmKB9bqKOOJ0fOjNzyQy" }
 ];
 async function apiReq$1(method, path, body) {
+  const token = localStorage.getItem("sachi_token");
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(BASE_URL$1 + path, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: body ? JSON.stringify(body) : void 0
   });
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || data.error || `Error ${res.status}`);
+  return data;
 }
 async function getWallet(userId) {
   var _a;
-  const d = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
-  return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
+  try {
+    const d = await apiReq$1("GET", `${APP_BASE$3}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
+    return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
+  } catch {
+    return null;
+  }
 }
 async function sendGiftAPI(giftData) {
   try {
@@ -8474,11 +8484,11 @@ async function sendGiftAPI(giftData) {
   } catch {
     const wallet = await getWallet(giftData.sender_id);
     if (!wallet || wallet.coins < giftData.coin_cost) return { error: "Insufficient coins" };
-    await apiReq$1("PUT", `/apps/${APP_ID$3}/entities/SachiCoinWallet/${wallet.id}`, {
+    await apiReq$1("PUT", `${APP_BASE$3}/entities/SachiCoinWallet/${wallet.id}`, {
       coins: wallet.coins - giftData.coin_cost,
       total_spent_coins: (wallet.total_spent_coins || 0) + giftData.coin_cost
     });
-    const gift = await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiGift`, giftData);
+    const gift = await apiReq$1("POST", `${APP_BASE$3}/entities/SachiGift`, giftData);
     return { success: true, gift, coins_remaining: wallet.coins - giftData.coin_cost };
   }
 }
@@ -8828,7 +8838,11 @@ function GiftTray({ room, currentUser, wallet, onWalletUpdate, onClose, onGiftSe
 }
 async function handleBuyCoins(pack) {
   var _a;
-  const user = JSON.parse(localStorage.getItem("sachi_user") || "null");
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem("sachi_user") || "null");
+  } catch {
+  }
   if (!user) {
     alert("Sign in to buy coins");
     return;
@@ -8866,7 +8880,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       try {
         const w2 = await getWallet(currentUser.id);
         setWallet(w2);
-        const g = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
+        const g = await apiReq$1("GET", `${APP_BASE$3}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
         setGifts(Array.isArray(g) ? g : (g == null ? void 0 : g.items) || []);
       } catch {
       }
@@ -8891,7 +8905,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       setPayoutSent(true);
       setShowPayout(false);
     } catch {
-      await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiPayoutRequest`, {
+      await apiReq$1("POST", `${APP_BASE$3}/entities/SachiPayoutRequest`, {
         host_id: currentUser.id,
         host_username: currentUser.username || "host",
         host_email: currentUser.email,
@@ -9049,7 +9063,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
 }
 const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-const APP_BASE$1 = `/apps/${APP_ID$2}`;
+const APP_BASE$2 = `/apps/${APP_ID$2}`;
 async function apiReq(method, path, body) {
   const token = localStorage.getItem("sachi_token");
   const headers = { "Content-Type": "application/json" };
@@ -9064,22 +9078,22 @@ async function apiReq(method, path, body) {
   return data;
 }
 const liveRooms = {
-  list: () => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
-  get: (id2) => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveRoom/${id2}`),
-  create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiLiveRoom`, data),
-  update: (id2, d) => apiReq("PUT", `${APP_BASE$1}/entities/SachiLiveRoom/${id2}`, d)
+  list: () => apiReq("GET", `${APP_BASE$2}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
+  get: (id2) => apiReq("GET", `${APP_BASE$2}/entities/SachiLiveRoom/${id2}`),
+  create: (data) => apiReq("POST", `${APP_BASE$2}/entities/SachiLiveRoom`, data),
+  update: (id2, d) => apiReq("PUT", `${APP_BASE$2}/entities/SachiLiveRoom/${id2}`, d)
 };
 const liveComments = {
-  list: (rid) => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
-  create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiLiveComment`, data)
+  list: (rid) => apiReq("GET", `${APP_BASE$2}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
+  create: (data) => apiReq("POST", `${APP_BASE$2}/entities/SachiLiveComment`, data)
 };
 const guestReqs = {
-  list: (rid) => apiReq("GET", `${APP_BASE$1}/entities/SachiGuestRequest?room_id=${rid}&limit=20`),
-  create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiGuestRequest`, data),
-  update: (id2, d) => apiReq("PUT", `${APP_BASE$1}/entities/SachiGuestRequest/${id2}`, d)
+  list: (rid) => apiReq("GET", `${APP_BASE$2}/entities/SachiGuestRequest?room_id=${rid}&limit=20`),
+  create: (data) => apiReq("POST", `${APP_BASE$2}/entities/SachiGuestRequest`, data),
+  update: (id2, d) => apiReq("PUT", `${APP_BASE$2}/entities/SachiGuestRequest/${id2}`, d)
 };
 const sachiGifts = {
-  list: (rid) => apiReq("GET", `${APP_BASE$1}/entities/SachiGift?room_id=${rid}&sort=-created_date&limit=30`)
+  list: (rid) => apiReq("GET", `${APP_BASE$2}/entities/SachiGift?room_id=${rid}&sort=-created_date&limit=30`)
 };
 const NEWS_CHANNELS = [
   { id: "dn", name: "Democracy Now", emoji: "🗽", url: "https://www.youtube.com/embed/live_stream?channel=UCzuqE7-t13O4NIDYJfakERg&autoplay=1", color: "#c62828" },
@@ -10634,7 +10648,7 @@ const setGlobalMuted = (val) => {
   window.dispatchEvent(new CustomEvent("sachi-mute-change", { detail: val }));
 };
 const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
-const APP_BASE = `/apps/${APP_ID$1}`;
+const APP_BASE$1 = `/apps/${APP_ID$1}`;
 const APP_VERSION = "2.2.0";
 (function checkVersion() {
   const stored = localStorage.getItem("sachi_app_version");
@@ -15302,12 +15316,12 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request$1("GET", `${APP_BASE}/entities/AthaVidUser?limit=200`).catch(() => null),
+      request$1("GET", `${APP_BASE$1}/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
-      request$1("GET", `${APP_BASE}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      request$1("GET", `${APP_BASE$1}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
       // Live following count: how many people this profile follows
-      request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
+      request$1("GET", `${APP_BASE$1}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = (userRes == null ? void 0 : userRes.items) || userRes || [];
       const u2 = allUsers.find((x2) => x2.id === userId || x2.created_by === userId) || null;
@@ -15346,7 +15360,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         setProfile((p2) => p2 ? { ...p2, followers_count: (p2.followers_count || 0) + 1 } : p2);
       }
       try {
-        const myFollowingRes = await request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingRes = await request$1("GET", `${APP_BASE$1}/entities/Follow?follower_id=${currentUser.id}&limit=500`);
         const myFollowingCount = ((myFollowingRes == null ? void 0 : myFollowingRes.items) || myFollowingRes || []).length;
         setProfile((p2) => p2 ? { ...p2 } : p2);
         localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
@@ -15913,7 +15927,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadPodcasts = async () => {
     setLoadingPodcasts(true);
     try {
-      const data = await request$1("GET", `${APP_BASE}/entities/SachiPodcast?status=Active`);
+      const data = await request$1("GET", `${APP_BASE$1}/entities/SachiPodcast?status=Active`);
       const list = Array.isArray(data) ? data : data.records || data.items || [];
       setPodcasts(list);
     } catch (e) {
@@ -15925,7 +15939,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadMyShows = async () => {
     if (!currentUser) return;
     try {
-      const data = await request$1("GET", `${APP_BASE}/entities/SachiPodcast`);
+      const data = await request$1("GET", `${APP_BASE$1}/entities/SachiPodcast`);
       const all = Array.isArray(data) ? data : data.records || data.items || [];
       const mine = all.filter(
         (p2) => {
@@ -15947,7 +15961,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     setRegistering(true);
     try {
       const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-      await request$1("POST", `${APP_BASE}/entities/SachiPodcast`, {
+      await request$1("POST", `${APP_BASE$1}/entities/SachiPodcast`, {
         title: registerForm.title,
         host_name: registerForm.host_name,
         description: registerForm.description,
@@ -16103,7 +16117,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
                   try {
-                    await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    await request$1("PATCH", `${APP_BASE$1}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                     setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
                     setEditingStream(false);
                     showToast("✅ Stream URL saved!", "success");
@@ -16141,7 +16155,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     }).catch(() => {
                     });
                     try {
-                      await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
+                      await request$1("PATCH", `${APP_BASE$1}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
                     } catch {
                     }
                     setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
@@ -16174,7 +16188,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 ),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
                   try {
-                    await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    await request$1("PATCH", `${APP_BASE$1}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                     setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
                     setEditingStream(false);
                     showToast("✅ Stream URL saved!", "success");
@@ -16270,7 +16284,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                       body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "", set_live: true, admin_email: currentUser == null ? void 0 : currentUser.email })
                     });
                     try {
-                      await request$1("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
+                      await request$1("PATCH", `${APP_BASE$1}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
                     } catch {
                     }
                     setSelectedPodcast((p2) => ({ ...p2, is_live: true }));
@@ -16584,14 +16598,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 setEpisodesLoading(true);
                 setPodcastEpisodes([]);
                 try {
-                  const token = localStorage.getItem("token");
-                  const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                  const res = await fetch(`https://sachi-c7f0261c.base44.app/api${APP_BASE}/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                  const json = await res.json();
-                  const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-                  const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-                  const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-                  setPodcastEpisodes(sorted);
+                  const res = await request$1("GET", `${APP_BASE$1}/entities/SachiPodcastEpisode?podcast_id=${encodeURIComponent(p2.id)}&sort=-episode_number&limit=200`);
+                  const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+                  setPodcastEpisodes(items);
                 } catch (e) {
                   setPodcastEpisodes([]);
                 } finally {
@@ -16666,14 +16675,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               setEpisodesLoading(true);
               setPodcastEpisodes([]);
               try {
-                const token = localStorage.getItem("token");
-                const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                const res = await fetch(`https://sachi-c7f0261c.base44.app/api${APP_BASE}/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                const json = await res.json();
-                const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-                const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-                const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-                setPodcastEpisodes(sorted);
+                const res = await request$1("GET", `${APP_BASE$1}/entities/SachiPodcastEpisode?podcast_id=${encodeURIComponent(p2.id)}&sort=-episode_number&limit=200`);
+                const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+                setPodcastEpisodes(items);
               } catch (e) {
                 setPodcastEpisodes([]);
               } finally {
@@ -16717,14 +16721,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               setEpisodesLoading(true);
               setPodcastEpisodes([]);
               try {
-                const token = localStorage.getItem("token");
-                const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                const res = await fetch(`https://sachi-c7f0261c.base44.app/api${APP_BASE}/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                const json = await res.json();
-                const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-                const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-                const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-                setPodcastEpisodes(sorted);
+                const res = await request$1("GET", `${APP_BASE$1}/entities/SachiPodcastEpisode?podcast_id=${encodeURIComponent(p2.id)}&sort=-episode_number&limit=200`);
+                const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+                setPodcastEpisodes(items);
               } catch (e) {
                 setPodcastEpisodes([]);
               } finally {
@@ -17175,7 +17174,7 @@ function AdminPanel({ currentUser }) {
   }, [modTab]);
   const updateFounderStatus = async (founder, status) => {
     try {
-      await request$1("PUT", `${APP_BASE}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      await request$1("PUT", `${APP_BASE$1}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
       setFounders((prev) => prev.map((f2) => f2.id === founder.id ? { ...f2, status, notes: founderNote || f2.notes } : f2));
       setSelectedFounder(null);
       setFounderNote("");
@@ -17202,7 +17201,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newMature = !video.is_mature;
-      await request$1("PUT", `${APP_BASE}/entities/SachiVideo/${video.id}`, {
+      await request$1("PUT", `${APP_BASE$1}/entities/SachiVideo/${video.id}`, {
         is_mature: newMature,
         mature_reason: newMature ? reason || "other" : null
       });
@@ -17216,7 +17215,7 @@ function AdminPanel({ currentUser }) {
     if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
     setSaving(video.id);
     try {
-      await request$1("DELETE", `${APP_BASE}/entities/SachiVideo/${video.id}`);
+      await request$1("DELETE", `${APP_BASE$1}/entities/SachiVideo/${video.id}`);
       setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
     } catch (e) {
       alert("Failed to delete: " + e.message);
@@ -17227,7 +17226,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newFlag = !video.is_ai_detected;
-      await request$1("PUT", `${APP_BASE}/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      await request$1("PUT", `${APP_BASE$1}/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
       setAllVideos((prev) => prev.map((v2) => v2.id === video.id ? { ...v2, is_ai_detected: newFlag } : v2));
     } catch (e) {
       alert("Failed to update: " + e.message);
@@ -17574,7 +17573,7 @@ function AdminPanel({ currentUser }) {
               {
                 onClick: async () => {
                   setSaving(video.id);
-                  await request$1("PUT", `${APP_BASE}/entities/SachiVideo/${video.id}`, { is_approved: true });
+                  await request$1("PUT", `${APP_BASE$1}/entities/SachiVideo/${video.id}`, { is_approved: true });
                   setAllVideos((p2) => p2.map((v2) => v2.id === video.id ? { ...v2, is_approved: true } : v2));
                   setSaving(null);
                 },
@@ -18048,7 +18047,7 @@ function App() {
       messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {
       });
       try {
-        const res = await request$1("GET", `${APP_BASE}/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
+        const res = await request$1("GET", `${APP_BASE$1}/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
         const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
         setNotifCount(items.length);
       } catch (e) {
@@ -18130,7 +18129,7 @@ function App() {
     const loadAvatar = async () => {
       if (currentUser) {
         try {
-          const usersData = await request$1("GET", `${APP_BASE}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request$1("GET", `${APP_BASE$1}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : usersData.items || [];
           const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
           if (match && match.avatar_url && !match.avatar_url.startsWith("data:")) {
@@ -18287,8 +18286,8 @@ function App() {
       const myUsername = currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
       (async () => {
         try {
-          const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `${APP_BASE}/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `${APP_BASE$1}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `${APP_BASE$1}/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowersCount(unique.length);
@@ -18297,8 +18296,8 @@ function App() {
       })();
       (async () => {
         try {
-          const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `${APP_BASE}/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `${APP_BASE$1}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `${APP_BASE$1}/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowingCount(unique.length);
@@ -18639,7 +18638,7 @@ function App() {
                 setShowFollowersList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `${APP_BASE$1}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowersList(unique);
@@ -18662,7 +18661,7 @@ function App() {
                 setShowFollowingList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `${APP_BASE}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `${APP_BASE$1}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowingList(unique);
@@ -19298,7 +19297,7 @@ function App() {
                       if (!editProfileName.trim()) return;
                       setEditProfileSaving(true);
                       try {
-                        await request$1("PATCH", `${APP_BASE}/auth/me`, { full_name: editProfileName.trim() });
+                        await request$1("PATCH", `${APP_BASE$1}/auth/me`, { full_name: editProfileName.trim() });
                         setCurrentUser((u2) => ({ ...u2, full_name: editProfileName.trim() }));
                         setShowEditProfile(false);
                       } catch (e) {
@@ -19339,7 +19338,7 @@ function App() {
       localStorage.setItem("avatar_last", url);
       localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, avatar_url: url }));
       try {
-        const usersData = await request$1("GET", `${APP_BASE}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+        const usersData = await request$1("GET", `${APP_BASE$1}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
         const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
         const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
         if (match) {
@@ -19350,21 +19349,21 @@ function App() {
               body: JSON.stringify({ image_base64: url, mime_type: "image/jpeg", entity_id: match.id })
             });
           } else if (url.startsWith("https://") || url.startsWith("http://")) {
-            await request$1("PATCH", `${APP_BASE}/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+            await request$1("PATCH", `${APP_BASE$1}/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           }
         }
       } catch (e) {
         console.warn("User entity update failed:", e);
       }
       try {
-        await request$1("PUT", `${APP_BASE}/auth/me`, { avatar_url: url });
+        await request$1("PUT", `${APP_BASE$1}/auth/me`, { avatar_url: url });
       } catch (e) {
         console.warn("Auth avatar update failed (ok for Google users):", e);
       }
       try {
-        const vidsData = await request$1("GET", `${APP_BASE}/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
+        const vidsData = await request$1("GET", `${APP_BASE$1}/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
         const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
-        await Promise.all(vids.map((v2) => request$1("PATCH", `${APP_BASE}/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
+        await Promise.all(vids.map((v2) => request$1("PATCH", `${APP_BASE$1}/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
         setVideoList((vs) => vs.map(
           (v2) => {
             var _a3;
@@ -19377,9 +19376,9 @@ function App() {
     }, onClose: () => setShowAvatarPicker(false) })
   ] });
 }
-const API = "https://api.base44.app";
+const API = "https://sachi-c7f0261c.base44.app/api";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-const GOOGLE_CLIENT_ID = "742987369203-2in74gg9jdv3g14v8b0eo0g3clptp32gosdt.apps.googleusercontent.com";
+const APP_BASE = `/apps/${APP_ID}`;
 const SACHI_FN = "https://sachi-c7f0261c.base44.app/functions";
 const COVER_COLORS = [
   { bg: "linear-gradient(135deg,#1a0a2e,#6c3cf7)", emoji: "🎙️" },
@@ -19396,7 +19395,11 @@ function request(method, path, body) {
     method,
     headers: { "Content-Type": "application/json", ...token ? { "Authorization": "Bearer " + token } : {} },
     body: body ? JSON.stringify(body) : void 0
-  }).then((r2) => r2.json());
+  }).then(async (r2) => {
+    const data = await r2.json().catch(() => ({}));
+    if (!r2.ok) throw new Error(data.message || data.error || `Error ${r2.status}`);
+    return data;
+  });
 }
 function PodcastHost() {
   const [user, setUser] = reactExports.useState(null);
@@ -19453,7 +19456,7 @@ function PodcastHost() {
   const handleGoogleLogin = async (resp) => {
     setLoading(true);
     try {
-      const res = await fetch(API + `/apps/${APP_ID}/auth/google`, {
+      const res = await fetch(API + `${APP_BASE}/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: resp.credential })
@@ -19479,22 +19482,24 @@ function PodcastHost() {
   const loadMyShows = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast`);
-      const all = res.records || res || [];
+      const res = await request("GET", `${APP_BASE}/entities/SachiPodcast`);
+      const all = Array.isArray(res) ? res : res.records || res.items || [];
       const mine = all.filter(
         (p2) => p2.host_user_id === (user == null ? void 0 : user.id) || p2.created_by === (user == null ? void 0 : user.email) || p2.created_by_id === (user == null ? void 0 : user.id)
       );
       setMyShows(mine);
     } catch (e) {
+      console.error("loadMyShows:", e);
     }
     setLoading(false);
   };
   const loadEpisodes = async (podcastId) => {
     try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcastEpisode`);
-      const all = res.records || res || [];
-      setEpisodes(all.filter((e) => e.podcast_id === podcastId));
+      const res = await request("GET", `${APP_BASE}/entities/SachiPodcastEpisode?podcast_id=${encodeURIComponent(podcastId)}&sort=-episode_number&limit=200`);
+      const all = Array.isArray(res) ? res : res.records || res.items || [];
+      setEpisodes(all);
     } catch (e) {
+      console.error("loadEpisodes:", e);
     }
   };
   const uploadCoverImage = async (file) => {
@@ -19503,7 +19508,7 @@ function PodcastHost() {
       const token = localStorage.getItem("sachi_token");
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${API}/apps/${APP_ID}/files/upload`, {
+      const res = await fetch(`${API}${APP_BASE}/files/upload`, {
         method: "POST",
         headers: { ...token ? { "Authorization": "Bearer " + token } : {} },
         body: formData
@@ -19527,7 +19532,7 @@ function PodcastHost() {
     setRegistering(true);
     try {
       const cover = COVER_COLORS[regForm.coverIdx];
-      await request("POST", `/apps/${APP_ID}/entities/SachiPodcast`, {
+      await request("POST", `${APP_BASE}/entities/SachiPodcast`, {
         title: regForm.title,
         host_name: regForm.host_name,
         description: regForm.description,
@@ -19569,7 +19574,7 @@ function PodcastHost() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ podcast_id: selectedShow.id, podcast_title: selectedShow.title, host_name: selectedShow.host_name, live_stream_url: selectedShow.live_stream_url, set_live: true, admin_email: user == null ? void 0 : user.email })
       });
-      await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { is_live: true });
+      await request("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedShow.id}`, { is_live: true });
       setSelectedShow((s2) => ({ ...s2, is_live: true }));
       setMyShows((ms) => ms.map((s2) => s2.id === selectedShow.id ? { ...s2, is_live: true } : s2));
       showToast("🔴 You are LIVE on Sachi!", "live");
@@ -19587,7 +19592,7 @@ function PodcastHost() {
         body: JSON.stringify({ podcast_id: selectedShow.id, set_live: false, admin_email: user == null ? void 0 : user.email })
       }).catch(() => {
       });
-      await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { is_live: false, listener_count: 0 });
+      await request("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedShow.id}`, { is_live: false, listener_count: 0 });
       setSelectedShow((s2) => ({ ...s2, is_live: false, listener_count: 0 }));
       setMyShows((ms) => ms.map((s2) => s2.id === selectedShow.id ? { ...s2, is_live: false } : s2));
       showToast("⏹️ Live session ended", "success");
@@ -19614,7 +19619,7 @@ function PodcastHost() {
         setRtmpUrl(data.rtmp_url);
         setShowKey(true);
         if (!selectedShow.live_stream_url) {
-          await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { live_stream_url: data.playback_url });
+          await request("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedShow.id}`, { live_stream_url: data.playback_url });
           setSelectedShow((s2) => ({ ...s2, live_stream_url: data.playback_url, stream_key: data.stream_key, rtmp_url: data.rtmp_url, cf_input_id: data.cf_input_id }));
         }
         showToast(data.reused ? "✅ Stream key loaded" : "✅ New stream key created", "success");
@@ -19631,7 +19636,7 @@ function PodcastHost() {
     setAddingEp(true);
     try {
       const epCount = episodes.length + 1;
-      await request("POST", `/apps/${APP_ID}/entities/SachiPodcastEpisode`, {
+      await request("POST", `${APP_BASE}/entities/SachiPodcastEpisode`, {
         podcast_id: selectedShow.id,
         title: epForm.title,
         description: epForm.description,
@@ -19644,7 +19649,7 @@ function PodcastHost() {
         comment_count: 0,
         listener_count: 0
       });
-      await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedShow.id}`, { episode_count: epCount });
+      await request("PATCH", `${APP_BASE}/entities/SachiPodcast/${selectedShow.id}`, { episode_count: epCount });
       await loadEpisodes(selectedShow.id);
       setEpForm({ title: "", description: "", video_url: "", episode_number: "" });
       showToast("✅ Episode added!", "success");
