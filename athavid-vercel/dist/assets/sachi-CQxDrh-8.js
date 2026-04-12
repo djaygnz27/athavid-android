@@ -17211,15 +17211,22 @@ function AdminPanel({ currentUser }) {
     setSaving(null);
   };
   const deleteVideo = async (video) => {
-    if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
+    setConfirmDelete(video);
+  };
+  const [confirmDelete, setConfirmDelete] = reactExports.useState(null);
+  const doConfirmDelete = async () => {
+    const video = confirmDelete;
+    setConfirmDelete(null);
+    if (!video) return;
     setSaving(video.id);
     try {
       await request$1("DELETE", `${APP_BASE$1}/entities/SachiVideo/${video.id}`);
       setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
     } catch (e) {
-      alert("Failed to delete: " + e.message);
+      alert("Delete failed: " + (e.message || "Unknown error"));
+    } finally {
+      setSaving(null);
     }
-    setSaving(null);
   };
   const flagAI = async (video) => {
     setSaving(video.id);
@@ -17757,6 +17764,35 @@ function AdminPanel({ currentUser }) {
         ] })
       ] }, video.id)) })
     ] }),
+    confirmDelete && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 28, maxWidth: 340, width: "100%", textAlign: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "🗑️" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }, children: "Delete this post?" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 20, wordBreak: "break-word" }, children: [
+        '"',
+        confirmDelete.caption || "This video",
+        '" by @',
+        confirmDelete.username || "unknown"
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 12, marginBottom: 24 }, children: "This cannot be undone. The creator will need to re-upload." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setConfirmDelete(null),
+            style: { flex: 1, padding: "12px 0", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#aaa", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+            children: "Cancel"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: doConfirmDelete,
+            style: { flex: 1, padding: "12px 0", borderRadius: 12, border: "none", background: "#ff4444", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" },
+            children: "Delete"
+          }
+        )
+      ] })
+    ] }) }),
     modTab === "founders" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
       (() => {
         const counts = { Pending: 0, Approved: 0, Rejected: 0, Contacted: 0, Waitlisted: 0 };

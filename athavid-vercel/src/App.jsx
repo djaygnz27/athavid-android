@@ -5534,13 +5534,25 @@ function AdminPanel({ currentUser }) {
   };
 
   const deleteVideo = async (video) => {
-    if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
+    // Use inline confirm to avoid mobile browser blocking window.confirm
+    setConfirmDelete(video);
+  };
+
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const doConfirmDelete = async () => {
+    const video = confirmDelete;
+    setConfirmDelete(null);
+    if (!video) return;
     setSaving(video.id);
     try {
       await request("DELETE", `${APP_BASE}/entities/SachiVideo/${video.id}`);
       setAllVideos(prev => prev.filter(v => v.id !== video.id));
-    } catch(e) { alert("Failed to delete: " + e.message); }
-    setSaving(null);
+    } catch(e) {
+      alert("Delete failed: " + (e.message || "Unknown error"));
+    } finally {
+      setSaving(null);
+    }
   };
 
   const flagAI = async (video) => {
@@ -6092,6 +6104,30 @@ function AdminPanel({ currentUser }) {
         </div>
       )}
       </>)}
+
+      {/* ── DELETE CONFIRM DIALOG ── */}
+      {confirmDelete && (
+        <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div style={{ background:"#1a1a2e", borderRadius:20, padding:28, maxWidth:340, width:"100%", textAlign:"center" }}>
+            <div style={{ fontSize:32, marginBottom:12 }}>🗑️</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:8 }}>Delete this post?</div>
+            <div style={{ color:"#aaa", fontSize:13, marginBottom:20, wordBreak:"break-word" }}>
+              "{confirmDelete.caption || "This video"}" by @{confirmDelete.username || "unknown"}
+            </div>
+            <div style={{ color:"#ff6b6b", fontSize:12, marginBottom:24 }}>This cannot be undone. The creator will need to re-upload.</div>
+            <div style={{ display:"flex", gap:12 }}>
+              <button onClick={() => setConfirmDelete(null)}
+                style={{ flex:1, padding:"12px 0", borderRadius:12, border:"1px solid rgba(255,255,255,0.15)", background:"transparent", color:"#aaa", fontSize:14, fontWeight:600, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={doConfirmDelete}
+                style={{ flex:1, padding:"12px 0", borderRadius:12, border:"none", background:"#ff4444", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── FOUNDING CREATORS TAB ── */}
       {modTab === "founders" && (
