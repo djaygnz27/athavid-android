@@ -2789,7 +2789,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
-              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
+              style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
             />
             {/* Counter badge top-left */}
             {photoUrls.length > 1 && (
