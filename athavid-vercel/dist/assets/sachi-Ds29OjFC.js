@@ -13739,7 +13739,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       el2.muted = video.sound_url ? true : currentlyMuted;
       el2.play().catch(() => {
       });
-      setPlaying(true);
       if (!currentlyMuted && soundRef.current && video.sound_url) {
         soundRef.current.play().catch(() => {
         });
@@ -14236,13 +14235,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             preload: "auto",
             muted: muted || !!video.sound_url,
             onPlay: () => {
-              setPlaying(true);
-              hideUIAfterDelay(1500);
               window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
               if (soundRef.current && video.sound_url && !muted) {
                 soundRef.current.play().catch(() => {
                 });
               }
+            },
+            onPlaying: () => {
+              setPlaying(true);
+              hideUIAfterDelay(1500);
             },
             onPause: () => {
               setPlaying(false);

@@ -2558,8 +2558,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const tryPlay = () => {
       const currentlyMuted = getMuted();
       el.muted = video.sound_url ? true : currentlyMuted;
+      // Do NOT setPlaying(true) here — wait for actual onPlaying event
+      // so thumbnail stays visible until first real frame is rendered
       el.play().catch(() => {});
-      setPlaying(true);
       if (!currentlyMuted && soundRef.current && video.sound_url) {
         soundRef.current.play().catch(() => {});
       }
@@ -2913,11 +2914,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               loop playsInline preload="auto"
               muted={muted || !!video.sound_url}
               onPlay={() => {
-                setPlaying(true); hideUIAfterDelay(1500);
                 window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
                 if (soundRef.current && video.sound_url && !muted) {
                   soundRef.current.play().catch(() => {});
                 }
+              }}
+              onPlaying={() => {
+                // onPlaying fires only when actual video frames start rendering
+                // This is the correct moment to hide the thumbnail background
+                setPlaying(true); hideUIAfterDelay(1500);
               }}
               onPause={() => {
                 setPlaying(false);
