@@ -14334,27 +14334,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       ] });
     })(),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
-    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-      position: "absolute",
-      bottom: "51%",
-      left: 12,
-      pointerEvents: "none",
-      zIndex: 15,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-start",
-      gap: 2
-    }, children: [
+    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         position: "absolute",
-        top: -20,
-        left: -12,
-        right: -20,
-        bottom: -50,
-        background: "linear-gradient(to right, rgba(11,12,26,0.96) 0%, rgba(11,12,26,0.85) 70%, rgba(11,12,26,0.0) 100%)",
-        pointerEvents: "none"
+        top: "15%",
+        left: 0,
+        bottom: 140,
+        width: 220,
+        background: "linear-gradient(to right, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.88) 55%, rgba(11,12,26,0.0) 100%)",
+        pointerEvents: "none",
+        zIndex: 14
       } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", display: "flex", alignItems: "center", gap: 6 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        position: "absolute",
+        bottom: "35%",
+        left: 12,
+        pointerEvents: "none",
+        zIndex: 15,
+        display: "flex",
+        alignItems: "center",
+        gap: 6
+      }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: { width: 28, height: 28, borderRadius: 7, flexShrink: 0 }, alt: "Sachi" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#F5C842", fontWeight: 800, fontSize: 14, lineHeight: 1, letterSpacing: 0.3 }, children: "Sachi" }),
