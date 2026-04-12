@@ -57,9 +57,32 @@
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.8; transform: scale(0.96); }
       }
+      #static-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        padding: 8px;
+        background: transparent;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 11px;
+        z-index: 1;
+      }
+      #static-footer a {
+        color: rgba(245,200,66,0.6);
+        text-decoration: none;
+        margin: 0 8px;
+      }
     </style>
   </head>
   <body>
+    <!-- Static footer — visible to crawlers before JS loads -->
+    <div id="static-footer">
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+    </div>
+
     <!-- Inline splash shown while JS loads -->
     <div id="splash">
       <img src="/sachi-logo-512.png" alt="Sachi" />
