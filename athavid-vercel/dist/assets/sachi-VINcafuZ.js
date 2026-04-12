@@ -7023,6 +7023,13 @@ const STARS = Array.from({ length: 55 }, (_, i) => ({
 function Landing({ onEnter }) {
   const [phase, setPhase] = reactExports.useState("idle");
   const [leaving, setLeaving] = reactExports.useState(false);
+  const leavingRef = React.useRef(false);
+  const handleEnter = React.useCallback(() => {
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    setLeaving(true);
+    setTimeout(() => onEnter(), 700);
+  }, [onEnter]);
   reactExports.useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
     const t2 = setTimeout(() => handleEnter(), 8e3);
@@ -7030,12 +7037,7 @@ function Landing({ onEnter }) {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, []);
-  const handleEnter = () => {
-    if (leaving) return;
-    setLeaving(true);
-    setTimeout(() => onEnter(), 700);
-  };
+  }, [handleEnter]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: handleEnter, style: {
     position: "fixed",
     inset: 0,
@@ -7301,6 +7303,7 @@ function Landing({ onEnter }) {
 }
 const APP_ID$5 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$3 = "https://sachi-c7f0261c.base44.app/api";
+const APP_BASE$3 = `/apps/${APP_ID$5}`;
 let sessionToken = null;
 function setToken(t2) {
   sessionToken = t2;
@@ -7314,54 +7317,73 @@ function clearToken() {
   localStorage.removeItem("sachi_token");
   localStorage.removeItem("sachi_user");
 }
-async function request$1(method, path, body) {
+async function request$1(method, path, body, retries = 2) {
+  var _a, _b;
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${BASE_URL$3}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : void 0
-  });
-  let data;
-  try {
-    data = await res.json();
-  } catch {
-    data = {};
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${BASE_URL$3}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : void 0
+      });
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
+      if (res.status === 401) {
+        clearToken();
+        throw new Error("Session expired. Please sign in again.");
+      }
+      if (!res.ok) throw new Error(data.message || data.detail || data.error || `Error ${res.status}`);
+      return data;
+    } catch (e) {
+      lastErr = e;
+      if (((_a = e.message) == null ? void 0 : _a.includes("Session expired")) || ((_b = e.message) == null ? void 0 : _b.match(/Error 4\d\d/))) break;
+      if (attempt < retries) await new Promise((r2) => setTimeout(r2, 600 * (attempt + 1)));
+    }
   }
-  if (!res.ok) throw new Error(data.message || data.detail || data.error || `Error ${res.status}`);
-  return data;
+  throw lastErr;
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/login`, { email, password });
+    const data = await request$1("POST", `${APP_BASE$3}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `${APP_BASE$3}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `${APP_BASE$3}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/resend-otp`, { email });
+    return request$1("POST", `${APP_BASE$3}/auth/resend-otp`, { email });
   },
   getUser() {
-    const u2 = localStorage.getItem("sachi_user");
-    return u2 ? JSON.parse(u2) : null;
+    try {
+      const u2 = localStorage.getItem("sachi_user");
+      return u2 ? JSON.parse(u2) : null;
+    } catch {
+      return null;
+    }
   },
   async forgotPassword(email) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password-request`, { email });
+    return request$1("POST", `${APP_BASE$3}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password`, {
+    return request$1("POST", `${APP_BASE$3}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -7372,20 +7394,20 @@ const auth = {
 };
 const videos = {
   async list(limit = 30, skip = 0) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+    return request$1("GET", `${APP_BASE$3}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiVideo`, data);
+    return request$1("POST", `${APP_BASE$3}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `${APP_BASE$3}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `${APP_BASE$3}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `${APP_BASE$3}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen = /* @__PURE__ */ new Set();
@@ -7395,36 +7417,29 @@ const videos = {
       return !v2.is_archived;
     });
   },
+  // Fixed: was fetching ALL videos in a loop then filtering client-side (N+1 problem).
+  // Now filters server-side by user_id directly.
   async byUser(userId) {
-    let all = [];
-    let skip = 0;
-    const limit = 100;
-    while (true) {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
-      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
-      all = all.concat(items);
-      if (items.length < limit) break;
-      skip += limit;
-      if (skip > 500) break;
-    }
-    return all.filter((v2) => v2.user_id === userId && !v2.is_archived);
+    const res = await request$1("GET", `${APP_BASE$3}/entities/SachiVideo?user_id=${encodeURIComponent(userId)}&limit=500&sort=-created_date`);
+    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
+    return items.filter((v2) => !v2.is_archived);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `${APP_BASE$3}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    return request$1("GET", `${APP_BASE$3}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiComment`, data);
+    return request$1("POST", `${APP_BASE$3}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `${APP_BASE$3}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `${APP_BASE$3}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file) {
@@ -7434,7 +7449,7 @@ async function uploadFile(file) {
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(
-    `https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/integration-endpoints/Core/UploadFile`,
+    `${BASE_URL$3}${APP_BASE$3}/integration-endpoints/Core/UploadFile`,
     { method: "POST", headers, body: form }
   );
   const text = await res.text();
@@ -7449,7 +7464,7 @@ async function uploadFile(file) {
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/Follow`, {
+    return request$1("POST", `${APP_BASE$3}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -7457,52 +7472,52 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `${APP_BASE$3}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/Follow?follower_id=${follower_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$3}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/Follow?following_id=${following_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$3}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const reports = {
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiReport`, data);
+    return request$1("POST", `${APP_BASE$3}/entities/SachiReport`, data);
   },
   async list() {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiReport?sort=-created_date&limit=200`);
+    return request$1("GET", `${APP_BASE$3}/entities/SachiReport?sort=-created_date&limit=200`);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiReport/${id2}`, data);
+    return request$1("PUT", `${APP_BASE$3}/entities/SachiReport/${id2}`, data);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `${APP_BASE$3}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `${APP_BASE$3}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$3}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `${APP_BASE$3}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `${APP_BASE$3}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$3}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `${APP_BASE$3}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -7518,13 +7533,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request$1("PUT", `/apps/${APP_ID$5}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `${APP_BASE$3}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request$1("POST", `/apps/${APP_ID$5}/entities/UserInterest`, {
+        await request$1("POST", `${APP_BASE$3}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -7579,14 +7594,17 @@ function getLikesCache() {
   }
 }
 function setLikesCache(cache) {
-  localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(cache));
+  try {
+    localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+  }
 }
 function getCacheKey(video_id, user_id) {
   return `${user_id}__${video_id}`;
 }
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    const rec = await request$1("POST", `/apps/${APP_ID$5}/entities/SachiLike`, {
+    const rec = await request$1("POST", `${APP_BASE$3}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
@@ -7599,13 +7617,13 @@ const likes = {
     return rec;
   },
   async remove(id2, video_id, user_id) {
-    await request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiLike/${id2}`);
+    await request$1("DELETE", `${APP_BASE$3}/entities/SachiLike/${id2}`);
     const cache = getLikesCache();
     delete cache[getCacheKey(video_id, user_id)];
     setLikesCache(cache);
   },
   async getByVideo(video_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&limit=500`);
+    return request$1("GET", `${APP_BASE$3}/entities/SachiLike?video_id=${video_id}&limit=500`);
   },
   async checkUserLiked(video_id, user_id) {
     const cache = getLikesCache();
@@ -7614,7 +7632,7 @@ const likes = {
       return { id: cache[cacheKey], video_id, user_id, _fromCache: true };
     }
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const res = await request$1("GET", `${APP_BASE$3}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
       if (items.length > 0) {
         cache[cacheKey] = items[0].id;
@@ -7628,7 +7646,7 @@ const likes = {
       if (storedUser) {
         const u2 = JSON.parse(storedUser);
         if (u2.username) {
-          const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
+          const res2 = await request$1("GET", `${APP_BASE$3}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(u2.username)}&limit=1`);
           const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.records) || (res2 == null ? void 0 : res2.items) || [];
           if (items2.length > 0) {
             cache[cacheKey] = items2[0].id;
@@ -7643,15 +7661,15 @@ const likes = {
   }
 };
 const messages = {
-  send: (data) => request$1("POST", `/apps/${APP_ID$5}/entities/SachiMessage`, data),
+  send: (data) => request$1("POST", `${APP_BASE$3}/entities/SachiMessage`, data),
   getThread: (user1_id, user2_id) => {
     const thread_id = [user1_id, user2_id].sort().join("_");
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
+    return request$1("GET", `${APP_BASE$3}/entities/SachiMessage?thread_id=${thread_id}&limit=100`);
   },
-  getInbox: (user_id) => request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
-  markRead: (id2) => request$1("PATCH", `/apps/${APP_ID$5}/entities/SachiMessage/${id2}`, { is_read: true }),
+  getInbox: (user_id) => request$1("GET", `${APP_BASE$3}/entities/SachiMessage?recipient_id=${user_id}&limit=50`),
+  markRead: (id2) => request$1("PATCH", `${APP_BASE$3}/entities/SachiMessage/${id2}`, { is_read: true }),
   getUnreadCount: async (user_id) => {
-    const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
+    const res = await request$1("GET", `${APP_BASE$3}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=100`);
     const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
     return items.length;
   }
@@ -7769,12 +7787,14 @@ const COUNTRIES = [
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID$4 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL$2 = "https://sachi-c7f0261c.base44.app/api";
+const APP_BASE$2 = `/apps/${APP_ID$4}`;
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL$2}${APP_BASE$2}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
+    if (!res.ok) return null;
     const data = await res.json();
     const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || [];
     return items.find((u2) => u2.email === email) || null;
@@ -7800,6 +7820,13 @@ function decodeJwt(token) {
     return null;
   }
 }
+function safeParse(str) {
+  try {
+    return str ? JSON.parse(str) : null;
+  } catch {
+    return null;
+  }
+}
 async function handleGoogleRedirectCallback() {
   const hash = window.location.hash;
   if (!hash || !hash.includes("id_token=")) return null;
@@ -7821,7 +7848,7 @@ async function handleGoogleRedirectCallback() {
   return { payload, needsProfile: true };
 }
 function loadGSI() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     var _a, _b;
     if ((_b = (_a = window.google) == null ? void 0 : _a.accounts) == null ? void 0 : _b.id) {
       resolve(window.google);
@@ -7830,6 +7857,7 @@ function loadGSI() {
     const existing = document.getElementById("google-gsi-script");
     if (existing) {
       existing.addEventListener("load", () => resolve(window.google));
+      existing.addEventListener("error", () => reject(new Error("GSI load failed")));
       return;
     }
     const s = document.createElement("script");
@@ -7838,6 +7866,7 @@ function loadGSI() {
     s.async = true;
     s.defer = true;
     s.onload = () => resolve(window.google);
+    s.onerror = () => reject(new Error("Failed to load Google Sign-In script"));
     document.head.appendChild(s);
   });
 }
@@ -7874,7 +7903,9 @@ function FinishStep({ googlePayload, onSuccess }) {
   const { email, name, picture } = googlePayload;
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
   const [username, setUsername] = reactExports.useState(suggested);
-  const [dob, setDob] = reactExports.useState("");
+  const [dobMonth, setDobMonth] = reactExports.useState("");
+  const [dobDay, setDobDay] = reactExports.useState("");
+  const [dobYear, setDobYear] = reactExports.useState("");
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
   const [is18, setIs18] = reactExports.useState(false);
@@ -7907,7 +7938,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     cursor: "pointer",
     marginBottom: 10
   };
-  React.useEffect(() => {
+  reactExports.useEffect(() => {
     fetch("https://ipapi.co/json/").then((r2) => r2.json()).then((d) => {
       if (d.city && !city) setCity(d.city);
       if (d.country_name && !country) setCountry(d.country_name);
@@ -7916,20 +7947,22 @@ function FinishStep({ googlePayload, onSuccess }) {
   }, []);
   const handleFinish = async () => {
     if (!username.trim()) return setError("Please enter a username.");
-    if (!dob || dob.split("-").some((p2) => !p2 || p2 === "")) return setError("Please select your full birthday (month, day, year).");
+    if (!dobMonth || !dobDay || !dobYear) return setError("Please select your full birthday (month, day, year).");
     if (!country.trim()) return setError("Please select your country.");
     if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
+    const dob = `${dobYear}-${dobMonth}-${dobDay}`;
     const birthDate = new Date(dob);
+    if (isNaN(birthDate.getTime())) return setError("Please select a valid birthday.");
     const today = /* @__PURE__ */ new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m2 = today.getMonth() - birthDate.getMonth();
     if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
-    if (age < 13) return setError("⚠️ Incorrect birthday! Your birth year appears wrong — please go back and select the correct year.");
+    if (age < 13) return setError("⚠️ You must be 13 or older to join Sachi.");
     setLoading(true);
     setError("");
     try {
-      const created = await fetch(
-        `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser`,
+      const res = await fetch(
+        `${BASE_URL$2}${APP_BASE$2}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -7939,7 +7972,7 @@ function FinishStep({ googlePayload, onSuccess }) {
             display_name: name || username.trim(),
             avatar_url: picture || "",
             is_verified: true,
-            is_18_plus: true,
+            is_18_plus: age >= 18,
             status: "active",
             followers_count: 0,
             following_count: 0,
@@ -7947,7 +7980,10 @@ function FinishStep({ googlePayload, onSuccess }) {
             location: city && country ? city + ", " + country : city || country || ""
           })
         }
-      ).then((r2) => r2.json());
+      );
+      const created = await res.json();
+      if (!res.ok) throw new Error(created.message || created.error || "Profile creation failed");
+      if (!created.id) throw new Error("Server did not return a user ID. Please try again.");
       localStorage.setItem("sachi_dob", dob);
       if (country) localStorage.setItem("sachi_country", country);
       if (city) localStorage.setItem("sachi_city", city);
@@ -7965,15 +8001,15 @@ function FinishStep({ googlePayload, onSuccess }) {
       localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
       onSuccess(sessionUser);
     } catch (e) {
-      console.error(e);
-      setError("Could not create your profile. Try again.");
+      console.error("Profile creation error:", e);
+      setError(e.message || "Could not create your profile. Try again.");
     } finally {
       setLoading(false);
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }, children: [
-      picture && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: picture, style: { width: 72, height: 72, borderRadius: "50%", border: "3px solid #F5C842", marginBottom: 10 } }),
+      picture && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: picture, style: { width: 72, height: 72, borderRadius: "50%", border: "3px solid #F5C842", marginBottom: 10 }, alt: "" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 17 }, children: name }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13 }, children: email }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(80,200,80,0.12)", border: "1px solid rgba(80,200,80,0.3)", borderRadius: 20, padding: "4px 14px", marginTop: 8, color: "#6fcf6f", fontSize: 12, fontWeight: 700 }, children: "✓ Verified with Google" })
@@ -7997,12 +8033,8 @@ function FinishStep({ googlePayload, onSuccess }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "select",
         {
-          value: dob ? dob.split("-")[1] : "",
-          onChange: (e) => {
-            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
-            parts[1] = e.target.value;
-            setDob(parts.join("-"));
-          },
+          value: dobMonth,
+          onChange: (e) => setDobMonth(e.target.value),
           style: { ...inp, marginBottom: 0, flex: 1 },
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Month" }),
@@ -8015,12 +8047,8 @@ function FinishStep({ googlePayload, onSuccess }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "select",
         {
-          value: dob ? dob.split("-")[2] : "",
-          onChange: (e) => {
-            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
-            parts[2] = e.target.value;
-            setDob(parts.join("-"));
-          },
+          value: dobDay,
+          onChange: (e) => setDobDay(e.target.value),
           style: { ...inp, marginBottom: 0, flex: 1 },
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Day" }),
@@ -8033,12 +8061,8 @@ function FinishStep({ googlePayload, onSuccess }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "select",
         {
-          value: dob ? dob.split("-")[0] : "",
-          onChange: (e) => {
-            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
-            parts[0] = e.target.value;
-            setDob(parts.join("-"));
-          },
+          value: dobYear,
+          onChange: (e) => setDobYear(e.target.value),
           style: { ...inp, marginBottom: 0, flex: 1.2 },
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Year" }),
@@ -8119,19 +8143,14 @@ function FinishStep({ googlePayload, onSuccess }) {
   ] });
 }
 function AuthModal({ onClose, onSuccess }) {
-  const pendingRaw = localStorage.getItem("sachi_pending_google");
-  const pending = pendingRaw ? (() => {
-    try {
-      return JSON.parse(pendingRaw);
-    } catch {
-      return null;
-    }
-  })() : null;
+  const pending = safeParse(localStorage.getItem("sachi_pending_google"));
   const [step, setStep] = reactExports.useState(pending ? "finish" : "signin");
   const [googlePayload, setGooglePayload] = reactExports.useState(pending || null);
   const [loading, setLoading] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState("");
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    setError("");
     try {
       await signInWithGooglePopup((result) => {
         if (result.sessionUser) {
@@ -8145,6 +8164,7 @@ function AuthModal({ onClose, onSuccess }) {
       });
     } catch (e) {
       console.error("Google sign in error:", e);
+      setError("Could not connect to Google. Please check your connection and try again.");
       setLoading(false);
     }
   };
@@ -8213,7 +8233,7 @@ function AuthModal({ onClose, onSuccess }) {
             color: "#1a1a2e",
             boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
             transition: "transform 0.15s, box-shadow 0.15s",
-            marginBottom: 20
+            marginBottom: 12
           },
           onMouseEnter: (e) => {
             e.currentTarget.style.transform = "scale(1.02)";
@@ -8230,10 +8250,11 @@ function AuthModal({ onClose, onSuccess }) {
               /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fill: "#FBBC05", d: "M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.5 26.9 36 24 36c-5.2 0-9.5-3.2-11.3-7.8l-6.5 5C9.6 39.5 16.4 44 24 44z" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fill: "#EA4335", d: "M43.6 20.5H42V20H24v8h11.3c-0.8 2.4-2.4 4.4-4.5 5.8l6.2 5.2C41.2 36 44 30.5 44 24c0-1.2-.1-2.4-.4-3.5z" })
             ] }),
-            "Continue with Google"
+            loading ? "Connecting…" : "Continue with Google"
           ]
         }
       ),
+      error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, textAlign: "center", marginBottom: 12 }, children: error }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center", marginBottom: 20 }, children: "Free to join. No spam. No BS." }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#444", fontSize: 11, textAlign: "center", lineHeight: 1.6 }, children: [
         "By continuing you agree to our",
@@ -9028,30 +9049,37 @@ function HostEarningsPanel({ currentUser, onClose }) {
 }
 const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-function apiReq(method, path, body) {
-  return fetch(BASE_URL + path, {
+const APP_BASE$1 = `/apps/${APP_ID$2}`;
+async function apiReq(method, path, body) {
+  const token = localStorage.getItem("sachi_token");
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(BASE_URL + path, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: body ? JSON.stringify(body) : void 0
-  }).then((r2) => r2.json());
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || data.error || `Error ${res.status}`);
+  return data;
 }
 const liveRooms = {
-  list: () => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
-  get: (id2) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiLiveRoom/${id2}`),
-  create: (data) => apiReq("POST", `/apps/${APP_ID$2}/entities/SachiLiveRoom`, data),
-  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$2}/entities/SachiLiveRoom/${id2}`, d)
+  list: () => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
+  get: (id2) => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveRoom/${id2}`),
+  create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiLiveRoom`, data),
+  update: (id2, d) => apiReq("PUT", `${APP_BASE$1}/entities/SachiLiveRoom/${id2}`, d)
 };
 const liveComments = {
-  list: (rid) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
-  create: (data) => apiReq("POST", `/apps/${APP_ID$2}/entities/SachiLiveComment`, data)
+  list: (rid) => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
+  create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiLiveComment`, data)
 };
 const guestReqs = {
-  list: (rid) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiGuestRequest?room_id=${rid}&limit=20`),
-  create: (data) => apiReq("POST", `/apps/${APP_ID$2}/entities/SachiGuestRequest`, data),
-  update: (id2, d) => apiReq("PUT", `/apps/${APP_ID$2}/entities/SachiGuestRequest/${id2}`, d)
+  list: (rid) => apiReq("GET", `${APP_BASE$1}/entities/SachiGuestRequest?room_id=${rid}&limit=20`),
+  create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiGuestRequest`, data),
+  update: (id2, d) => apiReq("PUT", `${APP_BASE$1}/entities/SachiGuestRequest/${id2}`, d)
 };
 const sachiGifts = {
-  list: (rid) => apiReq("GET", `/apps/${APP_ID$2}/entities/SachiGift?room_id=${rid}&sort=-created_date&limit=30`)
+  list: (rid) => apiReq("GET", `${APP_BASE$1}/entities/SachiGift?room_id=${rid}&sort=-created_date&limit=30`)
 };
 const NEWS_CHANNELS = [
   { id: "dn", name: "Democracy Now", emoji: "🗽", url: "https://www.youtube.com/embed/live_stream?channel=UCzuqE7-t13O4NIDYJfakERg&autoplay=1", color: "#c62828" },
@@ -9666,6 +9694,7 @@ function NewsViewer({ channel, onClose }) {
   ] });
 }
 function LiveRoomCard({ room, onClick }) {
+  React.useMemo(() => GIFTS[room.id ? room.id.charCodeAt(0) % 3 : 0], [room.id]);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick, style: { background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(124,77,255,0.2)", borderRadius: 18, padding: 0, cursor: "pointer", textAlign: "left", overflow: "hidden", width: "100%", position: "relative" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 3, background: "linear-gradient(90deg,#7c4dff,#00bcd4,#F5C842)", width: "100%" } }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 12px 12px" }, children: [
