@@ -5463,7 +5463,6 @@ function App() {
   };
 
   useEffect(() => { loadVideos(); }, []);
-  useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
 
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
