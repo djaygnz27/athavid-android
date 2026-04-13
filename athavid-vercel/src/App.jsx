@@ -11,6 +11,30 @@ import MusicPicker from "./MusicPicker.jsx";
 
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 
+// ── SachiLike API helpers ─────────────────────────────────────────────────
+const likes = {
+  async add(video_id, user_id, username, display_name, avatar_url) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiLike`, {
+      video_id, user_id, username, display_name, avatar_url
+    });
+  },
+  async remove(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
+  },
+  async getByVideo(video_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&limit=200`);
+      return Array.isArray(res) ? res : (res?.items || []);
+    } catch { return []; }
+  },
+  async getByUser(user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?user_id=${user_id}&limit=500`);
+      return Array.isArray(res) ? res : (res?.items || []);
+    } catch { return []; }
+  },
+};
+
 // Module-level mute store — avoids window globals, survives stale closures
 const muteStore = {
   _muted: true,
@@ -2139,6 +2163,10 @@ function getUserAge() {
 }
 
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
+  const [showLikers, setShowLikers] = React.useState(false);
+  const [likersList, setLikersList] = React.useState([]);
+  const [likersLoading, setLikersLoading] = React.useState(false);
+  const [myLikeId, setMyLikeId] = React.useState(null); // SachiLike record ID for unlike
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
@@ -2286,16 +2314,30 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   };
 
   const likeLockedRef = React.useRef(false);
-  const doLike = () => {
+  const doLike = async () => {
     if (!currentUser) { onNeedAuth(); return; }
     if (likeLockedRef.current) return;
     likeLockedRef.current = true;
-    setTimeout(() => { likeLockedRef.current = false; }, 500);
-    setLiked(prev => {
-      const newLiked = !prev;
-      onLike(video.id, newLiked ? 1 : -1);
-      return newLiked;
-    });
+    setTimeout(() => { likeLockedRef.current = false; }, 800);
+    const newLiked = !liked;
+    setLiked(newLiked);
+    onLike(video.id, newLiked ? 1 : -1);
+    try {
+      if (newLiked) {
+        const rec = await likes.add(video.id, currentUser.id, currentUser.username || currentUser.email?.split("@")[0], currentUser.full_name || currentUser.display_name || "", currentUser.avatar_url || "");
+        setMyLikeId(rec?.id || null);
+      } else {
+        if (myLikeId) {
+          await likes.remove(myLikeId);
+          setMyLikeId(null);
+        } else {
+          // Find and delete by user+video
+          const existing = await likes.getByVideo(video.id);
+          const mine = existing.find(l => l.user_id === currentUser.id);
+          if (mine) await likes.remove(mine.id);
+        }
+      }
+    } catch(e) { console.error("Like record error:", e); }
   };
 
   const doFollow = async () => {
@@ -2706,8 +2748,49 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
             </svg>
           </div>
-          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.likes_count||0)}</div>
+          <div
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (!video.likes_count) return;
+              setShowLikers(true);
+              setLikersLoading(true);
+              setLikersList([]);
+              const items = await likes.getByVideo(video.id);
+              setLikersList(items);
+              setLikersLoading(false);
+            }}
+            style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600, cursor: video.likes_count > 0 ? "pointer" : "default" }}>
+            {formatCount(video.likes_count||0)}
+          </div>
         </button>
+
+        {/* Likers Modal */}
+        {showLikers && (
+          <div onClick={() => setShowLikers(false)}
+            style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-end" }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ width:"100%", maxHeight:"60vh", background:"#1a1a2e", borderRadius:"20px 20px 0 0", padding:"20px 0 40px", overflowY:"auto" }}>
+              <div style={{ textAlign:"center", padding:"0 20px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+                <div style={{ width:40, height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", margin:"0 auto 16px" }} />
+                <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>❤️ {formatCount(video.likes_count||0)} Likes</div>
+              </div>
+              {likersLoading ? (
+                <div style={{ textAlign:"center", padding:32, color:"#555" }}>Loading…</div>
+              ) : likersList.length === 0 ? (
+                <div style={{ textAlign:"center", padding:32, color:"#555" }}>No like records found</div>
+              ) : likersList.map((l,i) => (
+                <div key={l.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px" }}>
+                  <img src={l.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.display_name||l.username||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                    style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+                  <div>
+                    <div style={{ color:"#fff", fontWeight:600, fontSize:14 }}>{l.display_name || l.username || "Sachi User"}</div>
+                    <div style={{ color:"#555", fontSize:12 }}>@{l.username || "user"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Comment */}
         <button onClick={tap(() => onCommentOpen(video))}
@@ -4529,6 +4612,23 @@ function AdminPanel({ currentUser }) {
   const [founders, setFounders] = useState([]);
   const [foundersLoading, setFoundersLoading] = useState(false);
   const [founderNote, setFounderNote] = useState("");
+
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
+    } catch(e) { console.error(e); }
+    setFoundersLoading(false);
+  };
+
+  const updateFounder = async (founder, status) => {
+    try {
+      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
+      setFounderNote("");
+    } catch(e) { toast.error("Failed to update: " + e.message); }
+  };
 
   const loadVideos = async () => {
     setLoading(true);
