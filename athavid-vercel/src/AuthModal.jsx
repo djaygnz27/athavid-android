@@ -14,7 +14,7 @@ const COUNTRIES = [
   "Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zimbabwe"
 ];
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 export const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
@@ -153,6 +153,19 @@ function FinishStep({ googlePayload, onSuccess }) {
 
     setLoading(true); setError("");
     try {
+      // Check username isn't already taken
+      const checkRes = await fetch(
+        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      const checkData = await checkRes.json();
+      const existing = Array.isArray(checkData) ? checkData : (checkData?.items || []);
+      if (existing.length > 0) {
+        setError("That username is already taken. Please choose another.");
+        setLoading(false);
+        return;
+      }
+
       const created = await fetch(
         `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
         {
@@ -179,6 +192,10 @@ function FinishStep({ googlePayload, onSuccess }) {
       if (city) localStorage.setItem("sachi_city", city);
       localStorage.removeItem("sachi_pending_google");
 
+      if (!created?.id) {
+        setError("Profile creation failed. Please try again.");
+        return;
+      }
       const sessionUser = {
         id: created.id,
         email,
