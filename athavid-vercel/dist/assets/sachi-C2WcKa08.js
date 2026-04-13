@@ -7676,14 +7676,12 @@ const COUNTRIES = [
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-const APP_BASE$1 = `/apps/${APP_ID$2}`;
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}${APP_BASE$1}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL}/apps/${APP_ID$2}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
-    if (!res.ok) return null;
     const data = await res.json();
     const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || [];
     return items.find((u2) => u2.email === email) || null;
@@ -7709,12 +7707,17 @@ function decodeJwt(token) {
     return null;
   }
 }
-function safeParse(str) {
-  try {
-    return str ? JSON.parse(str) : null;
-  } catch {
-    return null;
-  }
+function buildGoogleAuthUrl() {
+  const origin = window.location.origin;
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID$1,
+    redirect_uri: origin,
+    response_type: "id_token",
+    scope: "openid email profile",
+    nonce: Math.random().toString(36).slice(2),
+    prompt: "select_account"
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 async function handleGoogleRedirectCallback() {
   const hash = window.location.hash;
@@ -7736,69 +7739,14 @@ async function handleGoogleRedirectCallback() {
   }
   return { payload, needsProfile: true };
 }
-function loadGSI() {
-  return new Promise((resolve, reject) => {
-    var _a, _b;
-    if ((_b = (_a = window.google) == null ? void 0 : _a.accounts) == null ? void 0 : _b.id) {
-      resolve(window.google);
-      return;
-    }
-    const existing = document.getElementById("google-gsi-script");
-    if (existing) {
-      existing.addEventListener("load", () => resolve(window.google));
-      existing.addEventListener("error", () => reject(new Error("GSI load failed")));
-      return;
-    }
-    const s = document.createElement("script");
-    s.id = "google-gsi-script";
-    s.src = "https://accounts.google.com/gsi/client";
-    s.async = true;
-    s.defer = true;
-    s.onload = () => resolve(window.google);
-    s.onerror = () => reject(new Error("Failed to load Google Sign-In script"));
-    document.head.appendChild(s);
-  });
-}
-async function signInWithGooglePopup(onSuccess) {
-  const google = await loadGSI();
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID$1,
-    callback: async (response) => {
-      const payload = decodeJwt(response.credential);
-      if (!(payload == null ? void 0 : payload.email)) return;
-      localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
-      const found = await lookupSachiUser(payload.email);
-      if (found) {
-        const sessionUser = buildSessionUser(found, payload);
-        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-        localStorage.removeItem("sachi_pending_google");
-        onSuccess({ sessionUser, needsProfile: false });
-      } else {
-        onSuccess({ payload, needsProfile: true });
-      }
-    },
-    ux_mode: "popup",
-    cancel_on_tap_outside: false
-  });
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      const div = document.getElementById("sachi-google-btn-hidden");
-      if (div) google.accounts.id.renderButton(div, { theme: "outline", size: "large" });
-    }
-  });
-}
 function FinishStep({ googlePayload, onSuccess }) {
   const { email, name, picture } = googlePayload;
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
   const [username, setUsername] = reactExports.useState(suggested);
-  const [dobMonth, setDobMonth] = reactExports.useState("");
-  const [dobDay, setDobDay] = reactExports.useState("");
-  const [dobYear, setDobYear] = reactExports.useState("");
+  const [dob, setDob] = reactExports.useState("");
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
   const [is18, setIs18] = reactExports.useState(false);
-  const [agreedToTerms, setAgreedToTerms] = reactExports.useState(false);
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
   const inp = {
@@ -7827,7 +7775,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     cursor: "pointer",
     marginBottom: 10
   };
-  reactExports.useEffect(() => {
+  React.useEffect(() => {
     fetch("https://ipapi.co/json/").then((r2) => r2.json()).then((d) => {
       if (d.city && !city) setCity(d.city);
       if (d.country_name && !country) setCountry(d.country_name);
@@ -7836,22 +7784,30 @@ function FinishStep({ googlePayload, onSuccess }) {
   }, []);
   const handleFinish = async () => {
     if (!username.trim()) return setError("Please enter a username.");
-    if (!dobMonth || !dobDay || !dobYear) return setError("Please select your full birthday (month, day, year).");
-    if (!country.trim()) return setError("Please select your country.");
-    if (!agreedToTerms) return setError("Please agree to the Terms of Service and Privacy Policy to continue.");
-    const dob = `${dobYear}-${dobMonth}-${dobDay}`;
+    if (!dob) return setError("Please enter your birthday.");
+    if (!is18) return setError("You must confirm you are 18 years or older.");
     const birthDate = new Date(dob);
-    if (isNaN(birthDate.getTime())) return setError("Please select a valid birthday.");
     const today = /* @__PURE__ */ new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m2 = today.getMonth() - birthDate.getMonth();
     if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
-    if (age < 13) return setError("⚠️ You must be 13 or older to join Sachi.");
+    if (age < 13) return setError("You must be at least 13 years old to join Sachi.");
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(
-        `${BASE_URL}${APP_BASE$1}/entities/AthaVidUser`,
+      const checkRes = await fetch(
+        `${BASE_URL}/apps/${APP_ID$2}/entities/AthaVidUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
+        { headers: { "Content-Type": "application/json" } }
+      );
+      const checkData = await checkRes.json();
+      const existing = Array.isArray(checkData) ? checkData : (checkData == null ? void 0 : checkData.items) || [];
+      if (existing.length > 0) {
+        setError("That username is already taken. Please choose another.");
+        setLoading(false);
+        return;
+      }
+      const created = await fetch(
+        `${BASE_URL}/apps/${APP_ID$2}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -7861,7 +7817,7 @@ function FinishStep({ googlePayload, onSuccess }) {
             display_name: name || username.trim(),
             avatar_url: picture || "",
             is_verified: true,
-            is_18_plus: age >= 18,
+            is_18_plus: true,
             status: "active",
             followers_count: 0,
             following_count: 0,
@@ -7869,14 +7825,15 @@ function FinishStep({ googlePayload, onSuccess }) {
             location: city && country ? city + ", " + country : city || country || ""
           })
         }
-      );
-      const created = await res.json();
-      if (!res.ok) throw new Error(created.message || created.error || "Profile creation failed");
-      if (!created.id) throw new Error("Server did not return a user ID. Please try again.");
+      ).then((r2) => r2.json());
       localStorage.setItem("sachi_dob", dob);
       if (country) localStorage.setItem("sachi_country", country);
       if (city) localStorage.setItem("sachi_city", city);
       localStorage.removeItem("sachi_pending_google");
+      if (!(created == null ? void 0 : created.id)) {
+        setError("Profile creation failed. Please try again.");
+        return;
+      }
       const sessionUser = {
         id: created.id,
         email,
@@ -7890,15 +7847,15 @@ function FinishStep({ googlePayload, onSuccess }) {
       localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
       onSuccess(sessionUser);
     } catch (e) {
-      console.error("Profile creation error:", e);
-      setError(e.message || "Could not create your profile. Try again.");
+      console.error(e);
+      setError("Could not create your profile. Try again.");
     } finally {
       setLoading(false);
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }, children: [
-      picture && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: picture, style: { width: 72, height: 72, borderRadius: "50%", border: "3px solid #F5C842", marginBottom: 10 }, alt: "" }),
+      picture && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: picture, style: { width: 72, height: 72, borderRadius: "50%", border: "3px solid #F5C842", marginBottom: 10 } }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 17 }, children: name }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13 }, children: email }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(80,200,80,0.12)", border: "1px solid rgba(80,200,80,0.3)", borderRadius: 20, padding: "4px 14px", marginTop: 8, color: "#6fcf6f", fontSize: 12, fontWeight: 700 }, children: "✓ Verified with Google" })
@@ -7918,51 +7875,16 @@ function FinishStep({ googlePayload, onSuccess }) {
       "Birthday ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, marginBottom: 10 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
-        {
-          value: dobMonth,
-          onChange: (e) => setDobMonth(e.target.value),
-          style: { ...inp, marginBottom: 0, flex: 1 },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Month" }),
-            ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map(
-              (m2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: m2, children: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i] }, m2)
-            )
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
-        {
-          value: dobDay,
-          onChange: (e) => setDobDay(e.target.value),
-          style: { ...inp, marginBottom: 0, flex: 1 },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Day" }),
-            Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map(
-              (d) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: d, children: parseInt(d) }, d)
-            )
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
-        {
-          value: dobYear,
-          onChange: (e) => setDobYear(e.target.value),
-          style: { ...inp, marginBottom: 0, flex: 1.2 },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Year" }),
-            Array.from({ length: 100 }, (_, i) => String((/* @__PURE__ */ new Date()).getFullYear() - 13 - i)).map(
-              (y2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: y2, children: y2 }, y2)
-            )
-          ]
-        }
-      )
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: -6, marginBottom: 8 }, children: "Must be 13 or older to join" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        value: dob,
+        onChange: (e) => setDob(e.target.value),
+        type: "date",
+        max: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
+        style: { ...inp, colorScheme: "dark" }
+      }
+    ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
       "City ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
@@ -7979,14 +7901,14 @@ function FinishStep({ googlePayload, onSuccess }) {
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
       "Country ",
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "select",
       {
         value: country,
         onChange: (e) => setCountry(e.target.value),
-        style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: country ? "1px solid rgba(245,200,66,0.6)" : "1px solid rgba(255,107,107,0.5)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
+        style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
         children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
           COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
@@ -8003,59 +7925,36 @@ function FinishStep({ googlePayload, onSuccess }) {
           style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0 }
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 13 years or older" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 18 years or older" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "input",
-        {
-          type: "checkbox",
-          checked: agreedToTerms,
-          onChange: (e) => setAgreedToTerms(e.target.checked),
-          style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0, marginTop: 2 }
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ccc", fontSize: 13, lineHeight: 1.5 }, children: [
-        "I have read and agree to Sachi's",
-        " ",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842", fontWeight: 700 }, onClick: (e) => e.stopPropagation(), children: "Terms of Service" }),
-        " ",
-        "and",
-        " ",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842", fontWeight: 700 }, onClick: (e) => e.stopPropagation(), children: "Privacy Policy" }),
-        " ",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
-      ] })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, marginBottom: 14, lineHeight: 1.5 }, children: [
+      "By joining you agree to our",
+      " ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/terms", target: "_blank", style: { color: "#F5C842" }, children: "Terms" }),
+      " &",
+      " ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
+      "."
     ] }),
     error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 12 }, children: error }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleFinish, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Setting up your profile…" : "Let's Go 🚀" })
   ] });
 }
 function AuthModal({ onClose, onSuccess }) {
-  const pending = safeParse(localStorage.getItem("sachi_pending_google"));
+  const pendingRaw = localStorage.getItem("sachi_pending_google");
+  const pending = pendingRaw ? (() => {
+    try {
+      return JSON.parse(pendingRaw);
+    } catch {
+      return null;
+    }
+  })() : null;
   const [step, setStep] = reactExports.useState(pending ? "finish" : "signin");
   const [googlePayload, setGooglePayload] = reactExports.useState(pending || null);
   const [loading, setLoading] = reactExports.useState(false);
-  const [error, setError] = reactExports.useState("");
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      await signInWithGooglePopup((result) => {
-        if (result.sessionUser) {
-          onSuccess(result.sessionUser);
-          onClose();
-        } else if (result.needsProfile && result.payload) {
-          setGooglePayload(result.payload);
-          setStep("finish");
-        }
-        setLoading(false);
-      });
-    } catch (e) {
-      console.error("Google sign in error:", e);
-      setError("Could not connect to Google. Please check your connection and try again.");
-      setLoading(false);
-    }
+  const handleGoogleRedirect = () => {
+    localStorage.setItem("sachi_auth_intent", "1");
+    window.location.href = buildGoogleAuthUrl();
   };
   if (step === "finish" && googlePayload) {
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }, children: [
@@ -8104,7 +8003,7 @@ function AuthModal({ onClose, onSuccess }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
-          onClick: handleGoogleSignIn,
+          onClick: handleGoogleRedirect,
           disabled: loading,
           style: {
             display: "flex",
@@ -8122,7 +8021,7 @@ function AuthModal({ onClose, onSuccess }) {
             color: "#1a1a2e",
             boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
             transition: "transform 0.15s, box-shadow 0.15s",
-            marginBottom: 12
+            marginBottom: 20
           },
           onMouseEnter: (e) => {
             e.currentTarget.style.transform = "scale(1.02)";
@@ -8139,11 +8038,10 @@ function AuthModal({ onClose, onSuccess }) {
               /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fill: "#FBBC05", d: "M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.5 26.9 36 24 36c-5.2 0-9.5-3.2-11.3-7.8l-6.5 5C9.6 39.5 16.4 44 24 44z" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("path", { fill: "#EA4335", d: "M43.6 20.5H42V20H24v8h11.3c-0.8 2.4-2.4 4.4-4.5 5.8l6.2 5.2C41.2 36 44 30.5 44 24c0-1.2-.1-2.4-.4-3.5z" })
             ] }),
-            loading ? "Connecting…" : "Continue with Google"
+            "Continue with Google"
           ]
         }
       ),
-      error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, textAlign: "center", marginBottom: 12 }, children: error }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center", marginBottom: 20 }, children: "Free to join. No spam. No BS." }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#444", fontSize: 11, textAlign: "center", lineHeight: 1.6 }, children: [
         "By continuing you agree to our",
@@ -8154,8 +8052,7 @@ function AuthModal({ onClose, onSuccess }) {
         " ",
         /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
         "."
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "sachi-google-btn-hidden", style: { display: "none" } })
+      ] })
     ] })
   ] });
 }
@@ -8920,6 +8817,15 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
   const audioRef = reactExports.useRef(null);
   const searchTimer = reactExports.useRef(null);
   reactExports.useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      clearTimeout(searchTimer.current);
+    };
+  }, []);
+  reactExports.useEffect(() => {
     if (tab !== "trending") return;
     setLoading(true);
     fetchTrending(genre).then(setTracks).catch(() => setTracks([])).finally(() => setLoading(false));
@@ -8938,8 +8844,10 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
   }, [searchQuery, tab]);
   reactExports.useEffect(() => {
     if (tab !== "original") return;
-    fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
-      headers: { "Content-Type": "application/json" }
+    const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
+    const token = localStorage.getItem("sachi_token");
+    fetch(`https://sachi-c7f0261c.base44.app/api/apps/${APP_ID2}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
+      headers: { "Content-Type": "application/json", ...token ? { "Authorization": `Bearer ${token}` } : {} }
     }).then((r2) => r2.json()).then((d) => {
       const all = Array.isArray(d) ? d : d.records || d.data || [];
       const withSound = all.filter((v2) => v2.sound_url || v2.video_url);
@@ -8959,13 +8867,17 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
       return;
     }
     stopAudio();
-    const audio = new Audio(getStreamUrl(track.id));
-    audio.volume = 0.7;
-    audio.play().catch(() => {
-    });
-    audio.onended = () => setPlaying(null);
-    audioRef.current = audio;
-    setPlaying(track.id);
+    try {
+      const audio = new Audio(getStreamUrl(track.id));
+      audio.volume = 0.7;
+      audio.play().catch(() => setPlaying(null));
+      audio.onended = () => setPlaying(null);
+      audio.onerror = () => setPlaying(null);
+      audioRef.current = audio;
+      setPlaying(track.id);
+    } catch {
+      setPlaying(null);
+    }
   };
   const selectAudiusTrack = (track) => {
     var _a, _b;
@@ -9136,6 +9048,77 @@ function safeParsePhotoUrls(raw) {
   } catch {
     return null;
   }
+}
+const toastBus = {
+  _listeners: [],
+  emit(msg, type = "error") {
+    this._listeners.forEach((fn) => fn({ msg, type, id: Date.now() + Math.random() }));
+  },
+  on(fn) {
+    this._listeners.push(fn);
+    return () => {
+      this._listeners = this._listeners.filter((l2) => l2 !== fn);
+    };
+  }
+};
+const toast = {
+  error: (msg) => toastBus.emit(msg, "error"),
+  success: (msg) => toastBus.emit(msg, "success"),
+  info: (msg) => toastBus.emit(msg, "info"),
+  warn: (msg) => toastBus.emit(msg, "warn")
+};
+function ToastContainer() {
+  const [toasts, setToasts] = React.useState([]);
+  React.useEffect(() => {
+    return toastBus.on((t2) => {
+      setToasts((prev) => [...prev.slice(-3), t2]);
+      setTimeout(() => setToasts((prev) => prev.filter((x2) => x2.id !== t2.id)), 3500);
+    });
+  }, []);
+  if (!toasts.length) return null;
+  const colors = {
+    error: { bg: "rgba(220,38,38,0.92)", icon: "✕" },
+    success: { bg: "rgba(22,163,74,0.92)", icon: "✓" },
+    info: { bg: "rgba(37,99,235,0.92)", icon: "ℹ" },
+    warn: { bg: "rgba(202,138,4,0.92)", icon: "⚠" }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+    position: "fixed",
+    top: 24,
+    left: "50%",
+    transform: "translateX(-50%)",
+    zIndex: 99999,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    alignItems: "center",
+    pointerEvents: "none",
+    width: "90vw",
+    maxWidth: 380
+  }, children: [
+    toasts.map((t2) => {
+      const c = colors[t2.type] || colors.error;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        background: c.bg,
+        backdropFilter: "blur(12px)",
+        borderRadius: 14,
+        padding: "12px 18px",
+        color: "#fff",
+        fontSize: 14,
+        fontWeight: 500,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+        width: "100%",
+        animation: "sachiToastIn 0.25s ease"
+      }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 700, fontSize: 16 }, children: c.icon }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { flex: 1 }, children: t2.msg })
+      ] }, t2.id);
+    }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }` })
+  ] });
 }
 function formatDate(d) {
   if (!d) return "";
@@ -9411,7 +9394,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         setTimeout(() => onClose(), 600);
       }
     } catch (e) {
-      alert("Error: " + e.message);
+      toast.error("Error: " + e.message);
     } finally {
       setPosting(false);
     }
@@ -10530,7 +10513,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }, 1e3);
       }
     } catch (e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      toast.error("Upload failed: " + (e.message || "Please try again"));
       setUploading(false);
       setProgress(0);
       setStep("");
@@ -10540,15 +10523,15 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     var _a;
     if (!file) return;
     if (checkForExplicitContent(file, caption)) {
-      alert("🔞 Sexual or explicit content is not allowed on Sachi.");
+      toast.warn("🔞 Sexual or explicit content is not allowed on Sachi.");
       return;
     }
     if (aiBlocked || checkForAiSignatures(file, caption)) {
-      alert("🚫 This video appears to be AI-generated and cannot be posted on Sachi.");
+      toast.warn("🚫 AI-generated content is not allowed on Sachi.");
       return;
     }
     if (!notAiConfirmed && !isAiGenerated) {
-      alert("⚠️ Please confirm your video is NOT AI-generated before posting.");
+      toast.warn("⚠️ Please confirm your video is NOT AI-generated before posting.");
       return;
     }
     try {
@@ -10563,7 +10546,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         v2.src = URL.createObjectURL(file);
       });
       if (dur > maxDuration) {
-        alert(`⚠️ Your video is ${Math.round(dur)}s long. The limit for this format is ${maxDuration === 600 ? "10 minutes" : maxDuration + " seconds"}. Please trim it and try again.`);
+        toast.warn(`⚠️ Video is ${Math.round(dur)}s — limit is ${maxDuration === 600 ? "10 min" : maxDuration + "s"}. Please trim it.`);
         return;
       }
     } catch {
@@ -10625,7 +10608,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }, 1e3);
       }
     } catch (e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      toast.error("Upload failed: " + (e.message || "Please try again"));
       setUploading(false);
       setProgress(0);
       setStep("");
@@ -10673,7 +10656,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const uploadTextPost = async () => {
     var _a;
     if (!textPostContent.trim()) {
-      alert("Please write something first!");
+      toast.warn("Please write something first!");
       return;
     }
     setUploading(true);
@@ -10800,7 +10783,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         onClose();
       }, 1e3);
     } catch (e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      toast.error("Upload failed: " + (e.message || "Please try again"));
       setUploading(false);
       setProgress(0);
       setStep("");
@@ -11029,7 +11012,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           {
             onClick: () => {
               if (!postLocation) {
-                alert("📍 Please allow location access to post on Sachi.");
+                toast.warn("📍 Please allow location access to post on Sachi.");
                 detectLocation();
                 return;
               }
@@ -11232,7 +11215,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   const f2 = e.target.files[0];
                   if (!f2) return;
                   if (f2.size > 150 * 1024 * 1024) {
-                    alert("Video must be under 150MB. Please trim or compress your video before uploading.");
+                    toast.warn("Video must be under 150MB — please trim or compress it first.");
                     e.target.value = "";
                     return;
                   }
@@ -11839,7 +11822,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       await videos.delete(video.id);
       onDelete && onDelete(video.id);
     } catch (err) {
-      alert("Failed to delete. Try again.");
+      toast.error("Failed to delete. Try again.");
     }
   };
   const tap = (fn) => (e) => {
@@ -12502,7 +12485,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               navigator.share({ title: video.caption || "Check this out on Sachi", url: shareUrl });
             } else {
               (_a2 = navigator.clipboard) == null ? void 0 : _a2.writeText(shareUrl);
-              alert("Link copied!");
+              toast.success("Link copied to clipboard!");
             }
             try {
               const newCount = (video.shares_count || 0) + 1;
@@ -12861,7 +12844,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
       }
       onSelect(dataUrl);
     } catch (e) {
-      alert("Could not save avatar. Try again.");
+      toast.error("Could not save avatar. Try again.");
     } finally {
       setUploading(false);
     }
@@ -13350,7 +13333,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       setConfirmDelete(null);
       onRefresh();
     } catch (e) {
-      alert("Delete failed: " + e.message);
+      toast.error("Delete failed: " + e.message);
     } finally {
       setSaving(false);
     }
@@ -13362,7 +13345,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       setEditVideo(null);
       onRefresh();
     } catch (e) {
-      alert("Save failed: " + e.message);
+      toast.error("Save failed: " + e.message);
     } finally {
       setSaving(false);
     }
@@ -13688,7 +13671,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [registerForm, setRegisterForm] = reactExports.useState({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
   const [registering, setRegistering] = reactExports.useState(false);
   const [registerDone, setRegisterDone] = reactExports.useState(false);
-  const [toast, setToast] = reactExports.useState(null);
+  const [toast2, setToast] = reactExports.useState(null);
   const [goingLive, setGoingLive] = reactExports.useState(false);
   const [endingLive, setEndingLive] = reactExports.useState(false);
   const [editingStream, setEditingStream] = reactExports.useState(false);
@@ -13852,7 +13835,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
     const coverEmoji = selectedPodcast.cover_emoji || "🎙️";
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
-      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
+      toast2 && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast2.msg, type: toast2.type }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", height: 240, background: coverBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
@@ -14148,7 +14131,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   if (showRegister) {
     const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
-      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
+      toast2 && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast2.msg, type: toast2.type }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px", paddingTop: "calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom: 60 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowRegister(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 20, cursor: "pointer", flexShrink: 0 }, children: "←" }),
@@ -14579,7 +14562,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   ] });
 }
 function AdminPanel({ currentUser }) {
-  const [modTab, setModTab] = reactExports.useState("videos");
+  const [modTab2, setModTab] = reactExports.useState("videos");
   const [allVideos, setAllVideos] = reactExports.useState([]);
   const [allUsers, setAllUsers] = reactExports.useState([]);
   const [loading, setLoading] = reactExports.useState(true);
@@ -14588,13 +14571,13 @@ function AdminPanel({ currentUser }) {
   const [saving, setSaving] = reactExports.useState(null);
   const [filter, setFilter] = reactExports.useState("all");
   const [search, setSearch] = reactExports.useState("");
-  const [founders, setFounders] = reactExports.useState([]);
-  const [foundersLoading, setFoundersLoading] = reactExports.useState(false);
-  const [founderNote, setFounderNote] = reactExports.useState("");
+  const [founders, setFounders2] = reactExports.useState([]);
+  const [foundersLoading, setFoundersLoading2] = reactExports.useState(false);
+  const [founderNote2, setFounderNote2] = reactExports.useState("");
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$1}/entities/SachiVideo?limit=500&sort=-created_date`);
+      const res = await request$1("GET", "/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch (e) {
       console.error(e);
@@ -14623,8 +14606,8 @@ function AdminPanel({ currentUser }) {
       const knownEmails = new Set(allUsersFetched.map((u2) => (u2.email || "").toLowerCase()));
       const normalizedLegacy = legacyUsers.filter((u2) => u2.email && !knownEmails.has(u2.email.toLowerCase())).map((u2) => ({ id: u2.id, email: u2.email, username: u2.full_name || u2.email.split("@")[0], display_name: u2.full_name || u2.email.split("@")[0], created_date: u2.created_date, status: "active", _source: "legacy" }));
       const [vRes, cRes] = await Promise.all([
-        request$1("GET", `/apps/${APP_ID$1}/entities/SachiVideo?limit=500&sort=-created_date`),
-        request$1("GET", `/apps/${APP_ID$1}/entities/SachiComment?limit=500&sort=-created_date`)
+        request$1("GET", "/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date"),
+        request$1("GET", "/apps/${APP_ID}/entities/SachiComment?limit=500&sort=-created_date")
       ]);
       const videos2 = vRes.items || vRes || [];
       const users = [...allUsersFetched, ...normalizedLegacy];
@@ -14682,20 +14665,20 @@ function AdminPanel({ currentUser }) {
     setAnalyticsLoading(false);
   };
   const loadFounders = async () => {
-    setFoundersLoading(true);
+    setFoundersLoading2(true);
     try {
       const res = await request$1("GET", `/apps/${APP_ID$1}/entities/FoundingCreator?sort=-created_date&limit=100`);
-      setFounders(Array.isArray(res == null ? void 0 : res.items) ? res.items : Array.isArray(res) ? res : []);
+      setFounders2(Array.isArray(res == null ? void 0 : res.items) ? res.items : Array.isArray(res) ? res : []);
     } catch (e) {
       console.error(e);
     }
-    setFoundersLoading(false);
+    setFoundersLoading2(false);
   };
   const updateFounder = async (founder, status) => {
     try {
-      await request$1("PUT", `/apps/${APP_ID$1}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
-      setFounders((prev) => prev.map((f2) => f2.id === founder.id ? { ...f2, status, notes: founderNote || f2.notes } : f2));
-      setFounderNote("");
+      await request$1("PUT", `/apps/${APP_ID$1}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote2 || founder.notes });
+      setFounders2((prev) => prev.map((f2) => f2.id === founder.id ? { ...f2, status, notes: founderNote2 || f2.notes } : f2));
+      setFounderNote2("");
     } catch (e) {
       alert("Failed: " + e.message);
     }
@@ -14704,14 +14687,14 @@ function AdminPanel({ currentUser }) {
     loadVideos();
   }, []);
   reactExports.useEffect(() => {
-    if (modTab === "founders") loadFounders();
-  }, [modTab]);
+    if (modTab2 === "founders") loadFounders();
+  }, [modTab2]);
   reactExports.useEffect(() => {
-    if (modTab === "analytics") loadAnalytics();
-  }, [modTab]);
+    if (modTab2 === "analytics") loadAnalytics();
+  }, [modTab2]);
   reactExports.useEffect(() => {
-    if (modTab === "users") loadRegisteredUsers();
-  }, [modTab]);
+    if (modTab2 === "users") loadRegisteredUsers();
+  }, [modTab2]);
   const [registeredUsers, setRegisteredUsers] = reactExports.useState([]);
   const [usersLoading, setUsersLoading] = reactExports.useState(false);
   const loadRegisteredUsers = async () => {
@@ -14763,7 +14746,7 @@ function AdminPanel({ currentUser }) {
       });
       setAllVideos((prev) => prev.map((v2) => v2.id === video.id ? { ...v2, is_mature: newMature, mature_reason: newMature ? reason || "other" : null } : v2));
     } catch (e) {
-      alert("Failed to update: " + e.message);
+      toast.error("Failed to update: " + e.message);
     }
     setSaving(null);
   };
@@ -14774,7 +14757,7 @@ function AdminPanel({ currentUser }) {
       await request$1("DELETE", `/apps/${APP_ID$1}/entities/SachiVideo/${video.id}`);
       setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
     } catch (e) {
-      alert("Failed to delete: " + e.message);
+      toast.error("Failed to delete: " + e.message);
     }
     setSaving(null);
   };
@@ -14785,7 +14768,7 @@ function AdminPanel({ currentUser }) {
       await request$1("PUT", `/apps/${APP_ID$1}/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
       setAllVideos((prev) => prev.map((v2) => v2.id === video.id ? { ...v2, is_ai_detected: newFlag } : v2));
     } catch (e) {
-      alert("Failed to update: " + e.message);
+      toast.error("Failed to update: " + e.message);
     }
     setSaving(null);
   };
@@ -14803,13 +14786,13 @@ function AdminPanel({ currentUser }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => modTab === "analytics" ? loadAnalytics() : modTab === "users" ? loadRegisteredUsers() : modTab === "founders" ? loadFounders() : loadVideos(),
+            onClick: () => modTab2 === "analytics" ? loadAnalytics() : modTab2 === "users" ? loadRegisteredUsers() : modTab2 === "founders" ? loadFounders() : loadVideos(),
             style: { background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 20, padding: "7px 14px", color: "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" },
             children: "↻ Refresh"
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: modTab === "videos" ? 10 : 0 }, children: [["videos", "🎬 Videos"], ["ai", "🤖 AI Flagged"], ["users", "👥 Users"], ["founders", "🌟 Creators"], ["analytics", "📊 Analytics"]].map(([val, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: modTab2 === "videos" ? 10 : 0 }, children: [["videos", "🎬 Videos"], ["ai", "🤖 AI Flagged"], ["users", "👥 Users"], ["founders", "🌟 Creators"], ["analytics", "📊 Analytics"]].map(([val, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
           onClick: () => setModTab(val),
@@ -14820,15 +14803,100 @@ function AdminPanel({ currentUser }) {
             cursor: "pointer",
             fontSize: 13,
             fontWeight: 700,
-            background: modTab === val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
-            color: modTab === val ? "#0B0C1A" : "#888",
+            background: modTab2 === val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
+            color: modTab2 === val ? "#0B0C1A" : "#888",
             transition: "all 0.2s"
           },
           children: label
         },
         val
       )) }),
-      modTab === "videos" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      modTab2 === "founders" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
+        (() => {
+          const counts = { Pending: 0, Approved: 0, Rejected: 0, Contacted: 0, Waitlisted: 0 };
+          founders.forEach((f2) => {
+            if (counts[f2.status] !== void 0) counts[f2.status]++;
+            else counts.Pending++;
+          });
+          return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, marginBottom: 16 }, children: [
+            ["Pending", "🟡", counts.Pending, "rgba(245,200,66,0.15)", "#F5C842"],
+            ["Approved", "✅", counts.Approved, "rgba(76,175,80,0.15)", "#4caf50"],
+            ["Contacted", "📩", counts.Contacted, "rgba(100,181,246,0.15)", "#64b5f6"],
+            ["Waitlisted", "⏳", counts.Waitlisted, "rgba(255,152,0,0.15)", "#ff9800"],
+            ["Rejected", "❌", counts.Rejected, "rgba(229,57,53,0.15)", "#ef5350"]
+          ].map(([label, icon, count, bg2, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: bg2, border: `1px solid ${color}44`, borderRadius: 12, padding: "10px 4px", textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16 }, children: icon }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 18 }, children: count }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 9 }, children: label })
+          ] }, label)) });
+        })(),
+        foundersLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#888", padding: 40 }, children: "Loading applications…" }),
+        !foundersLoading && founders.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12 }, children: "🌟" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No applications yet" })
+        ] }),
+        founders.map((f2) => {
+          const statusColors = { Approved: "#4caf50", Rejected: "#ef5350", Contacted: "#64b5f6", Waitlisted: "#ff9800", Pending: "#F5C842" };
+          const sc2 = statusColors[f2.status] || "#F5C842";
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 16, marginBottom: 12, border: `1px solid ${sc2}33` }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: f2.full_name }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12 }, children: [
+                  f2.email,
+                  f2.phone ? ` · ${f2.phone}` : ""
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 12 }, children: [
+                  f2.location,
+                  " · ",
+                  f2.content_type
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: `${sc2}22`, color: sc2, fontWeight: 800, fontSize: 11, padding: "4px 10px", borderRadius: 20 }, children: f2.status || "Pending" })
+            ] }),
+            f2.follower_count && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 12, marginBottom: 6 }, children: [
+              "👥 ",
+              f2.follower_count,
+              " followers"
+            ] }),
+            f2.why_sachi && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#ccc", fontSize: 13, marginBottom: 8, fontStyle: "italic" }, children: [
+              '"',
+              f2.why_sachi,
+              '"'
+            ] }),
+            f2.social_links && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#6B8AFF", fontSize: 12, marginBottom: 8 }, children: f2.social_links }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "textarea",
+              {
+                placeholder: "Add note…",
+                defaultValue: f2.notes || "",
+                onChange: (e) => setFounderNote2(e.target.value),
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: 8, color: "#fff", fontSize: 12, resize: "vertical", marginBottom: 8, boxSizing: "border-box" },
+                rows: 2
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" }, children: ["Approved", "Contacted", "Waitlisted", "Rejected"].map((s) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => updateFounder(f2, s),
+                style: {
+                  padding: "6px 12px",
+                  borderRadius: 20,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  background: f2.status === s ? statusColors[s] : "rgba(255,255,255,0.08)",
+                  color: f2.status === s ? "#000" : "#aaa"
+                },
+                children: s
+              },
+              s
+            )) })
+          ] }, f2.id);
+        })
+      ] }),
+      modTab2 === "videos" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "input",
           {
@@ -14858,7 +14926,7 @@ function AdminPanel({ currentUser }) {
         )) })
       ] })
     ] }),
-    modTab === "analytics" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 20px" }, children: analyticsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "Loading analytics…" }) : !analyticsData ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "No data yet." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    modTab2 === "analytics" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 20px" }, children: analyticsLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "Loading analytics…" }) : !analyticsData ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "No data yet." }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }, children: [
         ["👥", "Users", analyticsData.totalUsers, "#6B8AFF"],
         ["🎬", "Videos", analyticsData.totalVideos, "#F5C842"],
@@ -14958,7 +15026,7 @@ function AdminPanel({ currentUser }) {
         ] }, i))
       ] })
     ] }) }),
-    modTab === "users" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 20px" }, children: usersLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "Loading users…" }) : (() => {
+    modTab2 === "users" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 20px" }, children: usersLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 60, fontSize: 14 }, children: "Loading users…" }) : (() => {
       const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
       const weekAgo = /* @__PURE__ */ new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
@@ -15044,7 +15112,7 @@ function AdminPanel({ currentUser }) {
         ] })
       ] });
     })() }),
-    modTab === "ai" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
+    modTab2 === "ai" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, marginBottom: 16 }, children: [
         ["⏳ Pending Review", allVideos.filter((v2) => v2.is_ai_detected && !v2.is_approved).length, "#FF9500"],
         ["🤖 Live AI Posts", allVideos.filter((v2) => v2.is_ai_detected && v2.is_approved).length, "#ffcc44"],
@@ -15176,97 +15244,7 @@ function AdminPanel({ currentUser }) {
         ] })
       ] }, video.id)) })
     ] }),
-    modTab === "founders" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px" }, children: [
-      (() => {
-        const counts = { Pending: 0, Approved: 0, Rejected: 0, Contacted: 0, Waitlisted: 0 };
-        founders.forEach((f2) => {
-          if (counts[f2.status] !== void 0) counts[f2.status]++;
-          else counts.Pending++;
-        });
-        return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, marginBottom: 16 }, children: [
-          ["Pending", "🟡", counts.Pending, "rgba(245,200,66,0.15)", "#F5C842"],
-          ["Approved", "✅", counts.Approved, "rgba(76,175,80,0.15)", "#4caf50"],
-          ["Contacted", "📩", counts.Contacted, "rgba(100,181,246,0.15)", "#64b5f6"],
-          ["Waitlisted", "⏳", counts.Waitlisted, "rgba(255,152,0,0.15)", "#ff9800"],
-          ["Rejected", "❌", counts.Rejected, "rgba(229,57,53,0.15)", "#ef5350"]
-        ].map(([label, icon, count, bg2, color]) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: bg2, border: `1px solid ${color}44`, borderRadius: 12, padding: "10px 4px", textAlign: "center" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16 }, children: icon }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color, fontWeight: 900, fontSize: 18 }, children: count }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 9 }, children: label })
-        ] }, label)) });
-      })(),
-      foundersLoading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#888", padding: 40 }, children: "Loading applications…" }),
-      !foundersLoading && founders.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12 }, children: "🌟" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No applications yet" })
-      ] }),
-      founders.map((f2) => {
-        const statusColors = { Approved: "#4caf50", Rejected: "#ef5350", Contacted: "#64b5f6", Waitlisted: "#ff9800", Pending: "#F5C842" };
-        const sc2 = statusColors[f2.status] || "#F5C842";
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 16, marginBottom: 12, border: `1px solid ${sc2}33` }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: f2.full_name }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12 }, children: [
-                f2.email,
-                " ",
-                f2.phone ? `· ${f2.phone}` : ""
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 12 }, children: [
-                f2.location,
-                " · ",
-                f2.content_type
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: `${sc2}22`, color: sc2, fontWeight: 800, fontSize: 11, padding: "4px 10px", borderRadius: 20 }, children: f2.status || "Pending" })
-          ] }),
-          f2.follower_count && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 12, marginBottom: 6 }, children: [
-            "👥 ",
-            f2.follower_count,
-            " followers"
-          ] }),
-          f2.why_sachi && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#ccc", fontSize: 13, marginBottom: 8, fontStyle: "italic" }, children: [
-            '"',
-            f2.why_sachi,
-            '"'
-          ] }),
-          f2.social_links && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#6B8AFF", fontSize: 12, marginBottom: 8 }, children: f2.social_links }),
-          f2.notes && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginBottom: 8 }, children: [
-            "📝 ",
-            f2.notes
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "textarea",
-            {
-              placeholder: "Add note…",
-              defaultValue: f2.notes || "",
-              onChange: (e) => setFounderNote(e.target.value),
-              style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: 8, color: "#fff", fontSize: 12, resize: "vertical", marginBottom: 8, boxSizing: "border-box" },
-              rows: 2
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" }, children: ["Approved", "Contacted", "Waitlisted", "Rejected"].map((s) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => updateFounder(f2, s),
-              style: {
-                padding: "6px 12px",
-                borderRadius: 20,
-                border: "none",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 700,
-                background: f2.status === s ? statusColors[s] : "rgba(255,255,255,0.08)",
-                color: f2.status === s ? "#000" : "#aaa"
-              },
-              children: s
-            },
-            s
-          )) })
-        ] }, f2.id);
-      })
-    ] }),
-    modTab === "videos" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    modTab2 === "videos" && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, padding: "12px 20px" }, children: [
         ["Total", allVideos.length, "#F5C842"],
         ["Mature", allVideos.filter((v2) => v2.is_mature).length, "#ff6b6b"],
@@ -15379,6 +15357,8 @@ function App() {
   (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
   const feedContainerRef = reactExports.useRef(null);
+  const feedSentinelRef = reactExports.useRef(null);
+  const loadingMoreRef = reactExports.useRef(false);
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = reactExports.useState(true);
   const [activeTab, setActiveTab] = reactExports.useState("feed");
@@ -15443,6 +15423,22 @@ function App() {
   const [showEditProfile, setShowEditProfile] = reactExports.useState(false);
   const [editProfileName, setEditProfileName] = reactExports.useState("");
   const [editProfileSaving, setEditProfileSaving] = reactExports.useState(false);
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request$1("GET", `/apps/${APP_ID$1}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      setFounders(Array.isArray(res == null ? void 0 : res.items) ? res.items : Array.isArray(res) ? res : []);
+    } catch (e) {
+      console.error(e);
+    }
+    setFoundersLoading(false);
+  };
+  reactExports.useEffect(() => {
+    loadVideos();
+  }, []);
+  reactExports.useEffect(() => {
+    if (modTab === "founders") loadFounders();
+  }, [modTab]);
   reactExports.useEffect(() => {
     const handleSachiShare = (e) => {
       const { type, uri, url } = e.detail || {};
@@ -15540,14 +15536,9 @@ function App() {
     } catch (err) {
       console.error("loadVideos error:", err);
       if (!append) setVideoList([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
-  const loadMoreVideos = () => {
-    if (!feedHasMore || loading) return;
-    const nextPage = feedPage + 1;
-    setFeedPage(nextPage);
-    loadVideos(currentUser, true, nextPage);
   };
   reactExports.useEffect(() => {
     if (!currentUser) {
@@ -15662,6 +15653,25 @@ function App() {
       });
     }
   }, [currentUser, feedContainerRef]);
+  reactExports.useEffect(() => {
+    const sentinel = feedSentinelRef.current;
+    if (!sentinel) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && feedHasMore && !loading && !loadingMoreRef.current) {
+          loadingMoreRef.current = true;
+          const nextPage = feedPage + 1;
+          setFeedPage(nextPage);
+          loadVideos(currentUser, true, nextPage).finally(() => {
+            loadingMoreRef.current = false;
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, [feedHasMore, loading, feedPage, currentUser]);
   const handleView = (videoId) => {
     var _a2;
     setVideoList((vs) => vs.map((v2) => v2.id === videoId ? { ...v2, views_count: (v2.views_count || 0) + 1 } : v2));
@@ -15692,6 +15702,7 @@ function App() {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Landing, { onEnter: () => setHasEntered(true) });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0B0C1A", minHeight: "100svh", maxWidth: 480, margin: "0 auto", position: "relative", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(ToastContainer, {}),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, paddingTop: "env(safe-area-inset-top,0px)", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px", pointerEvents: "auto" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", alt: "Sachi", style: { width: 30, height: 30, borderRadius: 8, filter: "drop-shadow(0 0 6px rgba(245,200,66,0.5))" } }),
@@ -15835,7 +15846,7 @@ function App() {
         },
         v2.id
       )),
-      feedTab === "forYou" && feedHasMore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: "24px 0 40px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: loadMoreVideos, style: { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 20, padding: "10px 28px", color: "#fff", fontSize: 14, cursor: "pointer", fontWeight: 600 }, children: "Load more" }) }),
+      feedTab === "forYou" && feedHasMore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: feedSentinelRef, style: { height: 1, marginBottom: 80 } }),
       feedTab === "following" && followingVideos.length === 0 && !loading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 24px", color: "rgba(255,255,255,0.3)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 16 }, children: "👀" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 8 }, children: "Nothing here yet" }),
@@ -16584,7 +16595,7 @@ function App() {
                         setCurrentUser((u2) => ({ ...u2, full_name: editProfileName.trim() }));
                         setShowEditProfile(false);
                       } catch (e) {
-                        alert("Save failed: " + e.message);
+                        toast.error("Save failed: " + e.message);
                       } finally {
                         setEditProfileSaving(false);
                       }
@@ -16685,7 +16696,7 @@ function PodcastHost() {
   const [endingLive, setEndingLive] = reactExports.useState(false);
   const [streamUrl, setStreamUrl] = reactExports.useState("");
   const [editingUrl, setEditingUrl] = reactExports.useState(false);
-  const [toast, setToast] = reactExports.useState(null);
+  const [toast2, setToast] = reactExports.useState(null);
   const [regForm, setRegForm] = reactExports.useState({ title: "", host_name: "", description: "", category: "Business", coverIdx: 0 });
   const [registering, setRegistering] = reactExports.useState(false);
   const [epForm, setEpForm] = reactExports.useState({ title: "", description: "", video_url: "", episode_number: "" });
@@ -16973,7 +16984,7 @@ function PodcastHost() {
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, marginTop: 20 }, children: "Use the same Google account you registered your podcast with" })
   ] }) });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.page, children: [
-    toast && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#e53935" : toast.type === "live" ? "#e53935" : "#2e7d32", color: "#fff", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600, zIndex: 999, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }, children: toast.msg }),
+    toast2 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast2.type === "error" ? "#e53935" : toast2.type === "live" ? "#e53935" : "#2e7d32", color: "#fff", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600, zIndex: 999, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }, children: toast2.msg }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.header, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: s.logo }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
