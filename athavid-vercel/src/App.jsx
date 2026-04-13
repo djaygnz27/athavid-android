@@ -5722,8 +5722,8 @@ function AdminPanel({ currentUser }) {
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(245,200,66,0.1)" }}>
                 <div style={{ color:"#F5C842", fontWeight:800, fontSize:14, marginBottom:12 }}>📈 Daily Videos (14 days)</div>
                 <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
-                  {analyticsData.dailyVideos.map(({date,count},i) => {
-                    const maxV = Math.max(...analyticsData.dailyVideos.map(d=>d.count), 1);
+                  {(analyticsData.dailyVideos||[]).map(({date,count},i) => {
+                    const maxV = Math.max(...(analyticsData.dailyVideos||[]).map(d=>d.count), 1);
                     const h = Math.max((count/maxV)*56, count>0?4:1);
                     return (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -5742,8 +5742,8 @@ function AdminPanel({ currentUser }) {
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.15)" }}>
                 <div style={{ color:"#6B8AFF", fontWeight:800, fontSize:14, marginBottom:12 }}>👥 Daily New Users (14 days)</div>
                 <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
-                  {analyticsData.dailyUsers.map(({date,count},i) => {
-                    const maxV = Math.max(...analyticsData.dailyUsers.map(d=>d.count), 1);
+                  {(analyticsData.dailyUsers||[]).map(({date,count},i) => {
+                    const maxV = Math.max(...(analyticsData.dailyUsers||[]).map(d=>d.count), 1);
                     const h = Math.max((count/maxV)*56, count>0?4:1);
                     return (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -5761,7 +5761,7 @@ function AdminPanel({ currentUser }) {
               {/* Top Creators */}
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,255,184,0.1)" }}>
                 <div style={{ color:"#6BFFB8", fontWeight:800, fontSize:14, marginBottom:10 }}>🏆 Top Creators</div>
-                {analyticsData.topCreators.map(({username,count},i) => (
+                {(analyticsData.topCreators||[]).map(({username,count},i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
                     <div style={{ flex:1, color:"#fff", fontSize:13 }}>@{username}</div>
@@ -5773,7 +5773,7 @@ function AdminPanel({ currentUser }) {
               {/* Top Videos */}
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", border:"1px solid rgba(255,107,107,0.1)" }}>
                 <div style={{ color:"#FF6B6B", fontWeight:800, fontSize:14, marginBottom:10 }}>🔥 Top Videos by Views</div>
-                {analyticsData.topVideos.map((v,i) => (
+                {(analyticsData.topVideos||[]).map((v,i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
                     <div style={{ width:36, height:44, borderRadius:8, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
