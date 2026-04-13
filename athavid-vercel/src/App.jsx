@@ -3156,20 +3156,16 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      // Always try to upload to CDN (works for all login types)
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-      try {
-        const url = await uploadFile(file);
-        onSelect(url);
-        return;
-      } catch(e) {
-        console.warn("CDN upload failed, falling back to base64:", e);
-      }
-      // Last resort fallback
-      onSelect(dataUrl);
-    } catch(e) { toast.error("Could not save avatar. Try again."); }
+      const url = await uploadFile(file);
+      if (!url) throw new Error("No URL returned from upload");
+      onSelect(url);
+    } catch(e) {
+      console.error("Avatar upload failed:", e);
+      toast.error("Avatar upload failed. Check your connection and try again.");
+    }
     finally { setUploading(false); }
   };
 
