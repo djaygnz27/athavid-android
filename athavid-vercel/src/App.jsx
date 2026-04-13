@@ -5455,7 +5455,7 @@ function AdminPanel({ currentUser }) {
     setLoading(true);
     try {
       const res = await request("GET", "${APP_BASE}/entities/SachiVideo?limit=500&sort=-created_date");
-      setAllVideos(res.items || res || []);
+      setAllVideos(Array.isArray(res.items) ? res.items : Array.isArray(res) ? res : []);
     } catch(e) { console.error(e); }
     setLoading(false);
   };
