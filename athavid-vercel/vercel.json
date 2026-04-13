@@ -1,5 +1,5 @@
 {
-  "buildCommand": "echo 'Using pre-built dist'",
+  "buildCommand": "npm install && npm run build",
   "outputDirectory": "dist",
   "framework": null,
   "headers": [
