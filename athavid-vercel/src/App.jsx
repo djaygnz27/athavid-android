@@ -1,4 +1,4 @@
-// Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
+// Sachi v2.2.1 - bulletproof build, mod panel fixed, toast system
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
