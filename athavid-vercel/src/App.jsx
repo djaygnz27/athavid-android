@@ -5967,8 +5967,10 @@ function App() {
                       setShowFollowersList(true);
                       setFollowListLoading(true);
                       try {
+                        const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
                         const r1 = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
-                        const all = r1?.items || r1 || [];
+                        const r2 = await request("GET", `/apps/${APP_ID}/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+                        const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
                         const unique = [...new Map(all.map(f=>[f.id,f])).values()];
                         setFollowersList(unique);
                       } catch(e) { setFollowersList([]); }
