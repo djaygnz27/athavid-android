@@ -16,6 +16,17 @@ jobs:
       - name: Install dependencies
         run: npm install @capacitor/core@6 @capacitor/android@6 @capacitor/cli@6
 
+      - name: Create dist folder with index.html
+        run: |
+          mkdir -p dist
+          echo '<html><body>Sachi</body></html>' > dist/index.html
+
+      - name: Init Capacitor if needed
+        run: |
+          if [ ! -f "capacitor.config.json" ]; then
+            npx cap init Sachi com.ldna.sachi --web-dir dist
+          fi
+
       - name: Add android platform if missing
         run: |
           if [ ! -f "android/app/build.gradle" ]; then
@@ -29,7 +40,7 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - uses: android-actions/setup-android@v3
