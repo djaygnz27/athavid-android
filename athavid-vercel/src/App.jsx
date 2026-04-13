@@ -5496,7 +5496,7 @@ function AdminPanel({ currentUser }) {
     setFoundersLoading(true);
     try {
       const res = await request("GET", `${APP_BASE}/entities/FoundingCreator?sort=-created_date&limit=100`);
-      setFounders(res.items || res || []);
+      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
     } catch(e) { console.error(e); }
     setFoundersLoading(false);
   };
