@@ -72,7 +72,7 @@ function ToastContainer() {
           </div>
         );
       })}
-      <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }`}</style>
+      <style>{\`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }\`}</style>
     </div>
   );
 }
@@ -4530,9 +4530,6 @@ function AdminPanel({ currentUser }) {
   const [saving, setSaving] = useState(null);
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
-  const [founders, setFounders] = useState([]);
-  const [foundersLoading, setFoundersLoading] = useState(false);
-  const [founderNote, setFounderNote] = useState("");
 
   const loadVideos = async () => {
     setLoading(true);
@@ -4639,26 +4636,7 @@ function AdminPanel({ currentUser }) {
     setAnalyticsLoading(false);
   };
 
-
-  const loadFounders = async () => {
-    setFoundersLoading(true);
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
-      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
-    } catch(e) { console.error(e); }
-    setFoundersLoading(false);
-  };
-
-  const updateFounder = async (founder, status) => {
-    try {
-      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
-      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
-      setFounderNote("");
-    } catch(e) { alert("Failed: " + e.message); }
-  };
-
   useEffect(() => { loadVideos(); }, []);
-  useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
   useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
   useEffect(() => { if (modTab === "users") loadRegisteredUsers(); }, [modTab]);
 
@@ -4756,14 +4734,14 @@ function AdminPanel({ currentUser }) {
       <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 10px", position:"sticky", top:0, zIndex:100 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div style={{ color:"#F5C842", fontWeight:900, fontSize:20 }}>🛡️ Mod Panel</div>
-          <button onClick={() => modTab==="analytics" ? loadAnalytics() : modTab==="users" ? loadRegisteredUsers() : modTab==="founders" ? loadFounders() : loadVideos()}
+          <button onClick={() => modTab==="analytics" ? loadAnalytics() : loadVideos()}
             style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:20, padding:"7px 14px", color:"#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
             ↻ Refresh
           </button>
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Creators"],["analytics","📊 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["analytics","📊 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
@@ -4773,78 +4751,7 @@ function AdminPanel({ currentUser }) {
           ))}
         </div>
         {/* Search + filter — only on videos tab */}
-  
-      {/* ── FOUNDING CREATORS TAB ── */}
-      {modTab === "founders" && (
-        <div style={{ padding:"16px" }}>
-          {(() => {
-            const counts = { Pending:0, Approved:0, Rejected:0, Contacted:0, Waitlisted:0 };
-            founders.forEach(f => { if (counts[f.status] !== undefined) counts[f.status]++; else counts.Pending++; });
-            return (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8, marginBottom:16 }}>
-                {[
-                  ["Pending","🟡",counts.Pending,"rgba(245,200,66,0.15)","#F5C842"],
-                  ["Approved","✅",counts.Approved,"rgba(76,175,80,0.15)","#4caf50"],
-                  ["Contacted","📩",counts.Contacted,"rgba(100,181,246,0.15)","#64b5f6"],
-                  ["Waitlisted","⏳",counts.Waitlisted,"rgba(255,152,0,0.15)","#ff9800"],
-                  ["Rejected","❌",counts.Rejected,"rgba(229,57,53,0.15)","#ef5350"],
-                ].map(([label,icon,count,bg,color]) => (
-                  <div key={label} style={{ background:bg, border:`1px solid ${color}44`, borderRadius:12, padding:"10px 4px", textAlign:"center" }}>
-                    <div style={{ fontSize:16 }}>{icon}</div>
-                    <div style={{ color, fontWeight:900, fontSize:18 }}>{count}</div>
-                    <div style={{ color:"#888", fontSize:9 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-          {foundersLoading && <div style={{ textAlign:"center", color:"#888", padding:40 }}>Loading applications…</div>}
-          {!foundersLoading && founders.length === 0 && (
-            <div style={{ textAlign:"center", color:"#555", padding:40 }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>🌟</div>
-              <div>No applications yet</div>
-            </div>
-          )}
-          {founders.map(f => {
-            const statusColors = { Approved:"#4caf50", Rejected:"#ef5350", Contacted:"#64b5f6", Waitlisted:"#ff9800", Pending:"#F5C842" };
-            const sc = statusColors[f.status] || "#F5C842";
-            return (
-              <div key={f.id} style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:16, marginBottom:12, border:`1px solid ${sc}33` }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-                  <div>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{f.full_name}</div>
-                    <div style={{ color:"#888", fontSize:12 }}>{f.email}{f.phone ? ` · ${f.phone}` : ""}</div>
-                    <div style={{ color:"#aaa", fontSize:12 }}>{f.location} · {f.content_type}</div>
-                  </div>
-                  <div style={{ background:`${sc}22`, color:sc, fontWeight:800, fontSize:11, padding:"4px 10px", borderRadius:20 }}>{f.status||"Pending"}</div>
-                </div>
-                {f.follower_count && <div style={{ color:"#aaa", fontSize:12, marginBottom:6 }}>👥 {f.follower_count} followers</div>}
-                {f.why_sachi && <div style={{ color:"#ccc", fontSize:13, marginBottom:8, fontStyle:"italic" }}>"{f.why_sachi}"</div>}
-                {f.social_links && <div style={{ color:"#6B8AFF", fontSize:12, marginBottom:8 }}>{f.social_links}</div>}
-                <textarea
-                  placeholder="Add note…"
-                  defaultValue={f.notes||""}
-                  onChange={e => setFounderNote(e.target.value)}
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:8, color:"#fff", fontSize:12, resize:"vertical", marginBottom:8, boxSizing:"border-box" }}
-                  rows={2}
-                />
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                  {["Approved","Contacted","Waitlisted","Rejected"].map(s => (
-                    <button key={s} onClick={() => updateFounder(f, s)}
-                      style={{ padding:"6px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
-                        background: f.status===s ? statusColors[s] : "rgba(255,255,255,0.08)",
-                        color: f.status===s ? "#000" : "#aaa" }}>
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {modTab === "videos" && (<>
+        {modTab === "videos" && (<>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption or username…"
             style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10 }} />
           <div style={{ display:"flex", gap:8 }}>
@@ -4927,8 +4834,8 @@ function AdminPanel({ currentUser }) {
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(245,200,66,0.1)" }}>
                 <div style={{ color:"#F5C842", fontWeight:800, fontSize:14, marginBottom:12 }}>📈 Daily Videos (14 days)</div>
                 <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
-                  {(analyticsData.dailyVideos||[]).map(({date,count},i) => {
-                    const maxV = Math.max(...(analyticsData.dailyVideos||[]).map(d=>d.count), 1);
+                  {analyticsData.dailyVideos.map(({date,count},i) => {
+                    const maxV = Math.max(...analyticsData.dailyVideos.map(d=>d.count), 1);
                     const h = Math.max((count/maxV)*56, count>0?4:1);
                     return (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -4947,8 +4854,8 @@ function AdminPanel({ currentUser }) {
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.15)" }}>
                 <div style={{ color:"#6B8AFF", fontWeight:800, fontSize:14, marginBottom:12 }}>👥 Daily New Users (14 days)</div>
                 <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
-                  {(analyticsData.dailyUsers||[]).map(({date,count},i) => {
-                    const maxV = Math.max(...(analyticsData.dailyUsers||[]).map(d=>d.count), 1);
+                  {analyticsData.dailyUsers.map(({date,count},i) => {
+                    const maxV = Math.max(...analyticsData.dailyUsers.map(d=>d.count), 1);
                     const h = Math.max((count/maxV)*56, count>0?4:1);
                     return (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -4966,7 +4873,7 @@ function AdminPanel({ currentUser }) {
               {/* Top Creators */}
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,255,184,0.1)" }}>
                 <div style={{ color:"#6BFFB8", fontWeight:800, fontSize:14, marginBottom:10 }}>🏆 Top Creators</div>
-                {(analyticsData.topCreators||[]).map(({username,count},i) => (
+                {analyticsData.topCreators.map(({username,count},i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
                     <div style={{ flex:1, color:"#fff", fontSize:13 }}>@{username}</div>
@@ -4978,7 +4885,7 @@ function AdminPanel({ currentUser }) {
               {/* Top Videos */}
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", border:"1px solid rgba(255,107,107,0.1)" }}>
                 <div style={{ color:"#FF6B6B", fontWeight:800, fontSize:14, marginBottom:10 }}>🔥 Top Videos by Views</div>
-                {(analyticsData.topVideos||[]).map((v,i) => (
+                {analyticsData.topVideos.map((v,i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
                     <div style={{ width:36, height:44, borderRadius:8, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
@@ -5407,26 +5314,7 @@ function App() {
   const [editProfileName, setEditProfileName] = useState('');
   const [editProfileSaving, setEditProfileSaving] = useState(false);
 
-
-  const loadFounders = async () => {
-    setFoundersLoading(true);
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
-      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
-    } catch(e) { console.error(e); }
-    setFoundersLoading(false);
-  };
-
-  const updateFounder = async (founder, status) => {
-    try {
-      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
-      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
-      setFounderNote("");
-    } catch(e) { alert("Failed: " + e.message); }
-  };
-
   useEffect(() => { loadVideos(); }, []);
-  useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
 
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
