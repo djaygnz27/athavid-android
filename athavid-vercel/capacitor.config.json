@@ -1,5 +1,8 @@
 {
-  "appId": "com.jaygnz.athavid",
+  "appId": "com.ldna.sachi",
   "appName": "Sachi",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
 }
