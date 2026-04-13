@@ -6383,17 +6383,24 @@ function App() {
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
             // Match by email (works for Google users)
-            const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+            const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
             const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
             const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) await request("PATCH", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+            if (match) await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, avatar_url: url });
           } catch(e) { console.warn("User entity update failed:", e); }
           try {
-            const vidsData = await request("GET", `/apps/${APP_ID}/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
-            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
-            await Promise.all(vids.map(v => request("PATCH", `/apps/${APP_ID}/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
+            // Fetch all user videos by user_id AND created_by to catch all posts
+            const [vRes1, vRes2] = await Promise.all([
+              request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${currentUser.id}&limit=500`).catch(()=>null),
+              request("GET", `/apps/${APP_ID}/entities/SachiVideo?created_by=${encodeURIComponent(currentUser.email)}&limit=500`).catch(()=>null),
+            ]);
+            const all = [...(Array.isArray(vRes1)?vRes1:(vRes1?.items||[])), ...(Array.isArray(vRes2)?vRes2:(vRes2?.items||[]))];
+            const seen = new Set();
+            const vids = all.filter(v => { if(seen.has(v.id)) return false; seen.add(v.id); return true; });
+            await Promise.all(vids.map(v => request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${v.id}`, { ...v, avatar_url: url }).catch(()=>{})));
+            // Update feed in real time
             setVideoList(vs => vs.map(v =>
-              (v.user_id === currentUser.id || v.created_by === currentUser.id)
+              (v.user_id === currentUser.id || v.created_by === currentUser.id || v.created_by === currentUser.email)
                 ? { ...v, avatar_url: url } : v
             ));
           } catch(e) { console.warn("Video avatar sync failed:", e); }
