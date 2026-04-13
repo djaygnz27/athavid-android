@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "name": "SachiLike",
+  "properties": {
+    "video_id": {
+      "type": "string",
+      "description": "ID of the video that was liked"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user who liked"
+    },
+    "username": {
+      "type": "string",
+      "description": "Username of the liker"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Display name of the liker"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "Avatar URL of the liker"
+    }
+  },
+  "required": ["video_id", "user_id"]
+}
