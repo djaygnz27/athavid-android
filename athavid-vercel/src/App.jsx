@@ -4636,23 +4636,6 @@ function AdminPanel({ currentUser }) {
   };
 
 
-  const loadFounders = async () => {
-    setFoundersLoading(true);
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
-      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
-    } catch(e) { console.error(e); }
-    setFoundersLoading(false);
-  };
-
-  const updateFounder = async (founder, status) => {
-    try {
-      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
-      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
-      setFounderNote("");
-    } catch(e) { toast.error("Failed: " + e.message); }
-  };
-
   useEffect(() => { loadVideos(); }, []);
   useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
   useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
@@ -5445,22 +5428,7 @@ function App() {
   const [editProfileSaving, setEditProfileSaving] = useState(false);
 
 
-  const loadFounders = async () => {
-    setFoundersLoading(true);
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
-      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
-    } catch(e) { console.error(e); }
-    setFoundersLoading(false);
-  };
 
-  const updateFounder = async (founder, status) => {
-    try {
-      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
-      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
-      setFounderNote("");
-    } catch(e) { toast.error("Failed: " + e.message); }
-  };
 
   useEffect(() => { loadVideos(); }, []);
 
