@@ -42,6 +42,14 @@ export default function MusicPicker({ onSelect, onClose, currentSound }) {
   const audioRef = useRef(null);
   const searchTimer = useRef(null);
 
+  // Cleanup audio and timers on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+      clearTimeout(searchTimer.current);
+    };
+  }, []);
+
   // Load trending on mount / genre change
   useEffect(() => {
     if (tab !== "trending") return;
@@ -70,8 +78,10 @@ export default function MusicPicker({ onSelect, onClose, currentSound }) {
   useEffect(() => {
     if (tab !== "original") return;
     // Fetch from Sachi API
-    fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
-      headers: { "Content-Type": "application/json" }
+    const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+    const token = localStorage.getItem("sachi_token");
+    fetch(`https://sachi-c7f0261c.base44.app/api/apps/${APP_ID}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
+      headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) }
     })
       .then(r => r.json())
       .then(d => {
@@ -91,12 +101,15 @@ export default function MusicPicker({ onSelect, onClose, currentSound }) {
   const previewTrack = (track) => {
     if (playing === track.id) { stopAudio(); return; }
     stopAudio();
-    const audio = new Audio(getStreamUrl(track.id));
-    audio.volume = 0.7;
-    audio.play().catch(() => {});
-    audio.onended = () => setPlaying(null);
-    audioRef.current = audio;
-    setPlaying(track.id);
+    try {
+      const audio = new Audio(getStreamUrl(track.id));
+      audio.volume = 0.7;
+      audio.play().catch(() => setPlaying(null));
+      audio.onended = () => setPlaying(null);
+      audio.onerror = () => setPlaying(null);
+      audioRef.current = audio;
+      setPlaying(track.id);
+    } catch { setPlaying(null); }
   };
 
   const selectAudiusTrack = (track) => {

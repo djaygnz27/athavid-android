@@ -9,6 +9,74 @@ import ChildSafety from "./ChildSafety.jsx";
 import FoundingCreatorPage from "./FoundingCreator.jsx";
 import MusicPicker from "./MusicPicker.jsx";
 
+const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+
+// Module-level mute store — avoids window globals, survives stale closures
+const muteStore = {
+  _muted: true,
+  get() { return this._muted; },
+  set(val) { this._muted = val; },
+};
+
+// Safe JSON parse for photo_urls that may come back as string or array
+function safeParsePhotoUrls(raw) {
+  if (!raw) return null;
+  if (Array.isArray(raw)) return raw;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+// ── Toast notification system ─────────────────────────────────────────────
+const toastBus = {
+  _listeners: [],
+  emit(msg, type = "error") {
+    this._listeners.forEach(fn => fn({ msg, type, id: Date.now() + Math.random() }));
+  },
+  on(fn) { this._listeners.push(fn); return () => { this._listeners = this._listeners.filter(l => l !== fn); }; }
+};
+const toast = {
+  error: (msg) => toastBus.emit(msg, "error"),
+  success: (msg) => toastBus.emit(msg, "success"),
+  info: (msg) => toastBus.emit(msg, "info"),
+  warn: (msg) => toastBus.emit(msg, "warn"),
+};
+
+function ToastContainer() {
+  const [toasts, setToasts] = React.useState([]);
+  React.useEffect(() => {
+    return toastBus.on(t => {
+      setToasts(prev => [...prev.slice(-3), t]);
+      setTimeout(() => setToasts(prev => prev.filter(x => x.id !== t.id)), 3500);
+    });
+  }, []);
+  if (!toasts.length) return null;
+  const colors = {
+    error:   { bg: "rgba(220,38,38,0.92)",  icon: "✕" },
+    success: { bg: "rgba(22,163,74,0.92)",  icon: "✓" },
+    info:    { bg: "rgba(37,99,235,0.92)",  icon: "ℹ" },
+    warn:    { bg: "rgba(202,138,4,0.92)",  icon: "⚠" },
+  };
+  return (
+    <div style={{ position:"fixed", top:24, left:"50%", transform:"translateX(-50%)", zIndex:99999,
+      display:"flex", flexDirection:"column", gap:8, alignItems:"center", pointerEvents:"none", width:"90vw", maxWidth:380 }}>
+      {toasts.map(t => {
+        const c = colors[t.type] || colors.error;
+        return (
+          <div key={t.id} style={{
+            background: c.bg, backdropFilter:"blur(12px)", borderRadius:14, padding:"12px 18px",
+            color:"#fff", fontSize:14, fontWeight:500, display:"flex", alignItems:"center", gap:10,
+            boxShadow:"0 4px 24px rgba(0,0,0,0.4)", width:"100%",
+            animation:"sachiToastIn 0.25s ease"
+          }}>
+            <span style={{ fontWeight:700, fontSize:16 }}>{c.icon}</span>
+            <span style={{ flex:1 }}>{t.msg}</span>
+          </div>
+        );
+      })}
+      <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }`}</style>
+    </div>
+  );
+}
+
 function formatDate(d) {
   if (!d) return "";
   const dt = new Date(d);
@@ -216,7 +284,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
       }
-    } catch(e) { alert("Error: " + e.message); }
+    } catch(e) { toast.error("Error: " + e.message); }
     finally { setPosting(false); }
   };
 
@@ -1076,20 +1144,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setTimeout(() => { onUploaded(); onClose(); }, 1000);
       }
     } catch(e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      toast.error("Upload failed: " + (e.message || "Please try again"));
       setUploading(false); setProgress(0); setStep("");
     }
   };
 
   const upload = async () => {
     if (!file) return;
-    if (checkForExplicitContent(file, caption)) { alert("🔞 Sexual or explicit content is not allowed on Sachi."); return; }
+    if (checkForExplicitContent(file, caption)) { toast.warn("🔞 Sexual or explicit content is not allowed on Sachi."); return; }
     if (aiBlocked || checkForAiSignatures(file, caption)) {
-      alert("🚫 This video appears to be AI-generated and cannot be posted on Sachi.");
+      toast.warn("🚫 AI-generated content is not allowed on Sachi.");
       return;
     }
     if (!notAiConfirmed && !isAiGenerated) {
-      alert("⚠️ Please confirm your video is NOT AI-generated before posting.");
+      toast.warn("⚠️ Please confirm your video is NOT AI-generated before posting.");
       return;
     }
     // Check video duration
@@ -1102,7 +1170,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         v.src = URL.createObjectURL(file);
       });
       if (dur > maxDuration) {
-        alert(`⚠️ Your video is ${Math.round(dur)}s long. The limit for this format is ${maxDuration === 600 ? "10 minutes" : maxDuration + " seconds"}. Please trim it and try again.`);
+        toast.warn(`⚠️ Video is ${Math.round(dur)}s — limit is ${maxDuration === 600 ? "10 min" : maxDuration + "s"}. Please trim it.`);
         return;
       }
     } catch {}
@@ -1147,7 +1215,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setTimeout(() => { onUploaded(); onClose(); }, 1000);
       }
     } catch(e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      toast.error("Upload failed: " + (e.message || "Please try again"));
       setUploading(false); setProgress(0); setStep("");
     }
   };
@@ -1171,14 +1239,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
       let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
       if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
-      console.log("[Sachi Music] Fetching via proxy:", apiUrl);
       let tracks = [];
       try {
         const resp = await fetch(apiUrl);
         if (resp.ok) {
           const data = await resp.json();
           tracks = data.tracks || [];
-          console.log("[Sachi Music] Proxy results:", tracks.length);
         }
       } catch(proxyErr) {
         console.warn("[Sachi Music] Proxy failed, trying direct:", proxyErr);
@@ -1188,7 +1254,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         let directUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
         if (tag)    directUrl += `&tags=${encodeURIComponent(tag)}`;
         if (search) directUrl += `&namesearch=${encodeURIComponent(search)}`;
-        console.log("[Sachi Music] Trying direct:", directUrl);
         const resp2 = await fetch(directUrl);
         if (resp2.ok) {
           const data2 = await resp2.json();
@@ -1202,7 +1267,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             duration: t.duration,
             image:    t.image,
           })).filter(t => t.url);
-          console.log("[Sachi Music] Direct results:", tracks.length);
         }
       }
       if (tracks.length > 0) {
@@ -1264,7 +1328,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   };
 
   const uploadTextPost = async () => {
-    if (!textPostContent.trim()) { alert("Please write something first!"); return; }
+    if (!textPostContent.trim()) { toast.warn("Please write something first!"); return; }
     setUploading(true); setProgress(10);
     try {
       setStep("Creating text post...");
@@ -1382,7 +1446,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setProgress(100); setStep("Posted! 🎉");
       setTimeout(() => { onUploaded(); onClose(); }, 1000);
     } catch(e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      toast.error("Upload failed: " + (e.message || "Please try again"));
       setUploading(false); setProgress(0); setStep("");
     }
   };
@@ -1570,7 +1634,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </button>
           <button
             onClick={() => {
-              if (!postLocation) { alert('📍 Please allow location access to post on Sachi.'); detectLocation(); return; }
+              if (!postLocation) { toast.warn('📍 Please allow location access to post on Sachi.'); detectLocation(); return; }
               if (uploadTab === "text") uploadTextPost();
               else if (uploadTab === "photo") uploadPhotos();
               else upload();
@@ -1686,7 +1750,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               const f = e.target.files[0];
               if (!f) return;
               if (f.size > 150 * 1024 * 1024) {
-                alert("Video must be under 150MB. Please trim or compress your video before uploading.");
+                toast.warn("Video must be under 150MB — please trim or compress it first.");
                 e.target.value = "";
                 return;
               }
@@ -2080,12 +2144,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
-  // Global mute stored on window — readable by stale closures, no prop-drilling
-  if (window.__sachiMuted === undefined) window.__sachiMuted = true;
-  const [muted, _setMutedLocal] = useState(() => window.__sachiMuted);
+  // Global mute stored in module-level store — readable by stale closures, no prop-drilling
+  const [muted, _setMutedLocal] = useState(() => muteStore.get());
   const setMuted = (val) => {
-    const newVal = typeof val === 'function' ? val(window.__sachiMuted) : val;
-    window.__sachiMuted = newVal;
+    const newVal = typeof val === 'function' ? val(muteStore.get()) : val;
+    muteStore.set(newVal);
     _setMutedLocal(newVal);
     // Broadcast to all other mounted VideoCards
     window.dispatchEvent(new CustomEvent('sachi-mute-change', { detail: newVal }));
@@ -2108,7 +2171,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   // Derived from video prop — must be declared before useEffect that references it
   const photoUrls = video.is_photo && video.photo_urls
-    ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
+    ? safeParsePhotoUrls(video.photo_urls)
     : null;
 
   // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
@@ -2155,7 +2218,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        const currentlyMuted = window.__sachiMuted !== undefined ? window.__sachiMuted : true;
+        const currentlyMuted = muteStore.get();
         el.muted = video.sound_url ? true : currentlyMuted;
         el.play().catch(() => {});
         setPlaying(true);
@@ -2277,7 +2340,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     try {
       await videos.delete(video.id);
       onDelete && onDelete(video.id);
-    } catch(err) { alert("Failed to delete. Try again."); }
+    } catch(err) { toast.error("Failed to delete. Try again."); }
   };
 
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
@@ -2662,7 +2725,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         <button onClick={tap(async () => {
             const shareUrl = `${window.location.origin}?v=${video.id}`;
             if(navigator.share){ navigator.share({ title: video.caption||"Check this out on Sachi", url: shareUrl }); }
-            else { navigator.clipboard?.writeText(shareUrl); alert("Link copied!"); }
+            else { navigator.clipboard?.writeText(shareUrl); toast.success("Link copied to clipboard!"); }
             // Increment share count in DB
             try {
               const newCount = (video.shares_count || 0) + 1;
@@ -3023,7 +3086,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
       }
       // Last resort fallback
       onSelect(dataUrl);
-    } catch(e) { alert("Could not save avatar. Try again."); }
+    } catch(e) { toast.error("Could not save avatar. Try again."); }
     finally { setUploading(false); }
   };
 
@@ -3211,12 +3274,12 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
+      request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
       // Live following count: how many people this profile follows
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
+      request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = userRes?.items || userRes || [];
       const u = allUsers.find(x => x.id === userId || x.created_by === userId) || null;
@@ -3255,7 +3318,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       }
       // Refresh live following count for the current user's Me tab too
       try {
-        const myFollowingRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingRes = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${currentUser.id}&limit=500`);
         const myFollowingCount = (myFollowingRes?.items || myFollowingRes || []).length;
         setProfile(p => p ? { ...p } : p); // trigger re-render if needed
         // store for Me tab
@@ -3395,7 +3458,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       await videos.delete(confirmDelete.id);
       setConfirmDelete(null);
       onRefresh();
-    } catch(e) { alert("Delete failed: " + e.message); }
+    } catch(e) { toast.error("Delete failed: " + e.message); }
     finally { setSaving(false); }
   };
 
@@ -3405,7 +3468,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       await videos.update(editVideo.id, { caption: editCaption });
       setEditVideo(null);
       onRefresh();
-    } catch(e) { alert("Save failed: " + e.message); }
+    } catch(e) { toast.error("Save failed: " + e.message); }
     finally { setSaving(false); }
   };
 
@@ -3661,7 +3724,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadPodcasts = async () => {
     setLoadingPodcasts(true);
     try {
-      const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+
       const data = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast?status=Active`);
       const list = Array.isArray(data) ? data : (data.records || data.items || []);
       setPodcasts(list);
@@ -3675,7 +3738,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadMyShows = async () => {
     if (!currentUser) return;
     try {
-      const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+
       const data = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast`);
       const all = Array.isArray(data) ? data : (data.records || data.items || []);
       const mine = all.filter(p =>
@@ -3698,7 +3761,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     setRegistering(true);
     try {
       const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
+      await request("POST", `/apps/${APP_ID}/entities/SachiPodcast`, {
         title: registerForm.title,
         host_name: registerForm.host_name,
         description: registerForm.description,
@@ -3875,7 +3938,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                           style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }} />
                         <button onClick={async () => {
                           try {
-                            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                            await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                             setSelectedPodcast(p => ({...p, live_stream_url: newStreamUrl}));
                             setEditingStream(false);
                             showToast("✅ Stream URL saved!", "success");
@@ -3903,7 +3966,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
                       }).catch(()=>{});
-                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 }); } catch {}
+                      try { await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 }); } catch {}
                       setSelectedPodcast(p => ({...p, is_live:false, listener_count:0}));
                       setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:false} : p));
                       showToast("✅ Live session ended successfully", "success");
@@ -3926,7 +3989,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                           style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }} />
                         <button onClick={async () => {
                           try {
-                            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                            await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                             setSelectedPodcast(p => ({...p, live_stream_url: newStreamUrl}));
                             setEditingStream(false);
                             showToast("✅ Stream URL saved!", "success");
@@ -3956,7 +4019,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
                       });
                       // Also try direct PATCH (works if user has token)
-                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true }); } catch {}
+                      try { await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true }); } catch {}
                       setSelectedPodcast(p => ({...p, is_live:true}));
                       setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:true} : p));
                       showToast("🔴 You are LIVE! Users are being notified.", "live");
@@ -4254,14 +4317,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const token = localStorage.getItem("token");
-                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                    const json = await res.json();
-                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
-                    const filtered = items.filter(ep => ep.podcast_id === p.id);
-                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
-                    setPodcastEpisodes(sorted);
+                    const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcastEpisode?podcast_id=${p.id}&limit=100&sort=-episode_number`);
+                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+                    setPodcastEpisodes(items);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
                 }}
@@ -4334,14 +4392,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const token = localStorage.getItem("token");
-                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                    const json = await res.json();
-                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
-                    const filtered = items.filter(ep => ep.podcast_id === p.id);
-                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
-                    setPodcastEpisodes(sorted);
+                    const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcastEpisode?podcast_id=${p.id}&limit=100&sort=-episode_number`);
+                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+                    setPodcastEpisodes(items);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
                 }}
@@ -4383,14 +4436,9 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   setEpisodesLoading(true);
                   setPodcastEpisodes([]);
                   try {
-                    const token = localStorage.getItem("token");
-                    const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                    const json = await res.json();
-                    const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
-                    const filtered = items.filter(ep => ep.podcast_id === p.id);
-                    const sorted = filtered.sort((a,b) => (b.episode_number||0)-(a.episode_number||0));
-                    setPodcastEpisodes(sorted);
+                    const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcastEpisode?podcast_id=${p.id}&limit=100&sort=-episode_number`);
+                    const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+                    setPodcastEpisodes(items);
                   } catch(e) { setPodcastEpisodes([]); }
                   finally { setEpisodesLoading(false); }
                 }}
@@ -4478,12 +4526,15 @@ function AdminPanel({ currentUser }) {
   const [saving, setSaving] = useState(null);
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
+  const [founders, setFounders] = useState([]);
+  const [foundersLoading, setFoundersLoading] = useState(false);
+  const [founderNote, setFounderNote] = useState("");
 
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
-      setAllVideos(res.items || res || []);
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`);
+      setAllVideos(Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []));
     } catch(e) { console.error(e); }
     setLoading(false);
   };
@@ -4494,7 +4545,7 @@ function AdminPanel({ currentUser }) {
       // Paginate through ALL users (AthaVidUser + legacy User entity merged)
       let allUsersFetched = [], uSkip = 0, uMore = true;
       while (uMore) {
-        const uRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
+        const uRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
         const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
         allUsersFetched = [...allUsersFetched, ...uItems];
         uMore = uRes.has_more === true && uItems.length === 500;
@@ -4502,7 +4553,7 @@ function AdminPanel({ currentUser }) {
       }
       let legacyUsers = [], lSkip = 0, lMore = true;
       while (lMore) {
-        const lRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
+        const lRes = await request("GET", `/apps/${APP_ID}/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
         const lItems = lRes.items || (Array.isArray(lRes) ? lRes : []);
         legacyUsers = [...legacyUsers, ...lItems];
         lMore = lRes.has_more === true && lItems.length === 500;
@@ -4513,12 +4564,12 @@ function AdminPanel({ currentUser }) {
         .filter(u => u.email && !knownEmails.has(u.email.toLowerCase()))
         .map(u => ({ id: u.id, email: u.email, username: u.full_name||u.email.split('@')[0], display_name: u.full_name||u.email.split('@')[0], created_date: u.created_date, status: 'active', _source: 'legacy' }));
       const [vRes, cRes] = await Promise.all([
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date"),
-        request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiComment?limit=500&sort=-created_date"),
+        request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`),
+        request("GET", `/apps/${APP_ID}/entities/SachiComment?limit=500&sort=-created_date`),
       ]);
-      const videos = vRes.items || vRes || [];
+      const videos = Array.isArray(vRes?.items) ? vRes.items : (Array.isArray(vRes) ? vRes : []);
       const users  = [...allUsersFetched, ...normalizedLegacy];
-      const comments = cRes.items || cRes || [];
+      const comments = Array.isArray(cRes?.items) ? cRes.items : (Array.isArray(cRes) ? cRes : []);
       setAllUsers(users);
 
       // Build daily buckets for last 14 days
@@ -4584,7 +4635,26 @@ function AdminPanel({ currentUser }) {
     setAnalyticsLoading(false);
   };
 
+
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
+    } catch(e) { console.error(e); }
+    setFoundersLoading(false);
+  };
+
+  const updateFounder = async (founder, status) => {
+    try {
+      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
+      setFounderNote("");
+    } catch(e) { toast.error("Failed: " + e.message); }
+  };
+
   useEffect(() => { loadVideos(); }, []);
+  useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
   useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
   useEffect(() => { if (modTab === "users") loadRegisteredUsers(); }, [modTab]);
 
@@ -4597,7 +4667,7 @@ function AdminPanel({ currentUser }) {
       // Fetch AthaVidUser (Google auth) - paginated
       let athavid = [], skip = 0, hasMore = true;
       while (hasMore) {
-        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
+        const res = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
         const items = res.items || (Array.isArray(res) ? res : []);
         athavid = [...athavid, ...items];
         hasMore = res.has_more === true && items.length === 500;
@@ -4606,7 +4676,7 @@ function AdminPanel({ currentUser }) {
       // Fetch User entity (old OTP auth users)
       let oldUsers = [], skip2 = 0, hasMore2 = true;
       while (hasMore2) {
-        const res2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
+        const res2 = await request("GET", `/apps/${APP_ID}/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
         const items2 = res2.items || (Array.isArray(res2) ? res2 : []);
         oldUsers = [...oldUsers, ...items2];
         hasMore2 = res2.has_more === true && items2.length === 500;
@@ -4638,12 +4708,12 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newMature = !video.is_mature;
-      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, {
+      await request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${video.id}`, {
         is_mature: newMature,
         mature_reason: newMature ? (reason || "other") : null,
       });
       setAllVideos(prev => prev.map(v => v.id === video.id ? { ...v, is_mature: newMature, mature_reason: newMature ? (reason || "other") : null } : v));
-    } catch(e) { alert("Failed to update: " + e.message); }
+    } catch(e) { toast.error("Failed to update: " + e.message); }
     setSaving(null);
   };
 
@@ -4651,9 +4721,9 @@ function AdminPanel({ currentUser }) {
     if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
     setSaving(video.id);
     try {
-      await request("DELETE", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`);
+      await request("DELETE", `/apps/${APP_ID}/entities/SachiVideo/${video.id}`);
       setAllVideos(prev => prev.filter(v => v.id !== video.id));
-    } catch(e) { alert("Failed to delete: " + e.message); }
+    } catch(e) { toast.error("Failed to delete: " + e.message); }
     setSaving(null);
   };
 
@@ -4661,9 +4731,9 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newFlag = !video.is_ai_detected;
-      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      await request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
       setAllVideos(prev => prev.map(v => v.id === video.id ? { ...v, is_ai_detected: newFlag } : v));
-    } catch(e) { alert("Failed to update: " + e.message); }
+    } catch(e) { toast.error("Failed to update: " + e.message); }
     setSaving(null);
   };
 
@@ -4682,14 +4752,14 @@ function AdminPanel({ currentUser }) {
       <div style={{ background:"rgba(14,14,28,0.98)", borderBottom:"1px solid rgba(245,200,66,0.15)", padding:"16px 20px 10px", position:"sticky", top:0, zIndex:100 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
           <div style={{ color:"#F5C842", fontWeight:900, fontSize:20 }}>🛡️ Mod Panel</div>
-          <button onClick={() => modTab==="analytics" ? loadAnalytics() : loadVideos()}
+          <button onClick={() => modTab==="analytics" ? loadAnalytics() : modTab==="users" ? loadRegisteredUsers() : modTab==="founders" ? loadFounders() : loadVideos()}
             style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:20, padding:"7px 14px", color:"#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>
             ↻ Refresh
           </button>
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["analytics","📊 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Founders"],["creators","📊 Creators"],["analytics","📈 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
@@ -4699,7 +4769,78 @@ function AdminPanel({ currentUser }) {
           ))}
         </div>
         {/* Search + filter — only on videos tab */}
-        {modTab === "videos" && (<>
+  
+      {/* ── FOUNDING CREATORS TAB ── */}
+      {modTab === "founders" && (
+        <div style={{ padding:"16px" }}>
+          {(() => {
+            const counts = { Pending:0, Approved:0, Rejected:0, Contacted:0, Waitlisted:0 };
+            founders.forEach(f => { if (counts[f.status] !== undefined) counts[f.status]++; else counts.Pending++; });
+            return (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8, marginBottom:16 }}>
+                {[
+                  ["Pending","🟡",counts.Pending,"rgba(245,200,66,0.15)","#F5C842"],
+                  ["Approved","✅",counts.Approved,"rgba(76,175,80,0.15)","#4caf50"],
+                  ["Contacted","📩",counts.Contacted,"rgba(100,181,246,0.15)","#64b5f6"],
+                  ["Waitlisted","⏳",counts.Waitlisted,"rgba(255,152,0,0.15)","#ff9800"],
+                  ["Rejected","❌",counts.Rejected,"rgba(229,57,53,0.15)","#ef5350"],
+                ].map(([label,icon,count,bg,color]) => (
+                  <div key={label} style={{ background:bg, border:`1px solid ${color}44`, borderRadius:12, padding:"10px 4px", textAlign:"center" }}>
+                    <div style={{ fontSize:16 }}>{icon}</div>
+                    <div style={{ color, fontWeight:900, fontSize:18 }}>{count}</div>
+                    <div style={{ color:"#888", fontSize:9 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          {foundersLoading && <div style={{ textAlign:"center", color:"#888", padding:40 }}>Loading applications…</div>}
+          {!foundersLoading && founders.length === 0 && (
+            <div style={{ textAlign:"center", color:"#555", padding:40 }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>🌟</div>
+              <div>No applications yet</div>
+            </div>
+          )}
+          {founders.map(f => {
+            const statusColors = { Approved:"#4caf50", Rejected:"#ef5350", Contacted:"#64b5f6", Waitlisted:"#ff9800", Pending:"#F5C842" };
+            const sc = statusColors[f.status] || "#F5C842";
+            return (
+              <div key={f.id} style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:16, marginBottom:12, border:`1px solid ${sc}33` }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                  <div>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:15 }}>{f.full_name}</div>
+                    <div style={{ color:"#888", fontSize:12 }}>{f.email}{f.phone ? ` · ${f.phone}` : ""}</div>
+                    <div style={{ color:"#aaa", fontSize:12 }}>{f.location} · {f.content_type}</div>
+                  </div>
+                  <div style={{ background:`${sc}22`, color:sc, fontWeight:800, fontSize:11, padding:"4px 10px", borderRadius:20 }}>{f.status||"Pending"}</div>
+                </div>
+                {f.follower_count && <div style={{ color:"#aaa", fontSize:12, marginBottom:6 }}>👥 {f.follower_count} followers</div>}
+                {f.why_sachi && <div style={{ color:"#ccc", fontSize:13, marginBottom:8, fontStyle:"italic" }}>"{f.why_sachi}"</div>}
+                {f.social_links && <div style={{ color:"#6B8AFF", fontSize:12, marginBottom:8 }}>{f.social_links}</div>}
+                <textarea
+                  placeholder="Add note…"
+                  value={f.notes||""}
+                  onChange={e => setFounderNote(e.target.value)}
+                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:8, color:"#fff", fontSize:12, resize:"vertical", marginBottom:8, boxSizing:"border-box" }}
+                  rows={2}
+                />
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {["Approved","Contacted","Waitlisted","Rejected"].map(s => (
+                    <button key={s} onClick={() => updateFounder(f, s)}
+                      style={{ padding:"6px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                        background: f.status===s ? statusColors[s] : "rgba(255,255,255,0.08)",
+                        color: f.status===s ? "#000" : "#aaa" }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {modTab === "videos" && (<>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by caption or username…"
             style={{ width:"100%", boxSizing:"border-box", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", color:"#fff", fontSize:14, outline:"none", marginBottom:10 }} />
           <div style={{ display:"flex", gap:8 }}>
@@ -4782,8 +4923,8 @@ function AdminPanel({ currentUser }) {
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(245,200,66,0.1)" }}>
                 <div style={{ color:"#F5C842", fontWeight:800, fontSize:14, marginBottom:12 }}>📈 Daily Videos (14 days)</div>
                 <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
-                  {analyticsData.dailyVideos.map(({date,count},i) => {
-                    const maxV = Math.max(...analyticsData.dailyVideos.map(d=>d.count), 1);
+                  {(analyticsData.dailyVideos||[]).map(({date,count},i) => {
+                    const maxV = Math.max(...(analyticsData.dailyVideos||[]).map(d=>d.count), 1);
                     const h = Math.max((count/maxV)*56, count>0?4:1);
                     return (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -4802,8 +4943,8 @@ function AdminPanel({ currentUser }) {
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,138,255,0.15)" }}>
                 <div style={{ color:"#6B8AFF", fontWeight:800, fontSize:14, marginBottom:12 }}>👥 Daily New Users (14 days)</div>
                 <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60 }}>
-                  {analyticsData.dailyUsers.map(({date,count},i) => {
-                    const maxV = Math.max(...analyticsData.dailyUsers.map(d=>d.count), 1);
+                  {(analyticsData.dailyUsers||[]).map(({date,count},i) => {
+                    const maxV = Math.max(...(analyticsData.dailyUsers||[]).map(d=>d.count), 1);
                     const h = Math.max((count/maxV)*56, count>0?4:1);
                     return (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -4821,7 +4962,7 @@ function AdminPanel({ currentUser }) {
               {/* Top Creators */}
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", marginBottom:14, border:"1px solid rgba(107,255,184,0.1)" }}>
                 <div style={{ color:"#6BFFB8", fontWeight:800, fontSize:14, marginBottom:10 }}>🏆 Top Creators</div>
-                {analyticsData.topCreators.map(({username,count},i) => (
+                {(analyticsData.topCreators||[]).map(({username,count},i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
                     <div style={{ flex:1, color:"#fff", fontSize:13 }}>@{username}</div>
@@ -4833,7 +4974,7 @@ function AdminPanel({ currentUser }) {
               {/* Top Videos */}
               <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, padding:"14px 16px", border:"1px solid rgba(255,107,107,0.1)" }}>
                 <div style={{ color:"#FF6B6B", fontWeight:800, fontSize:14, marginBottom:10 }}>🔥 Top Videos by Views</div>
-                {analyticsData.topVideos.map((v,i) => (
+                {(analyticsData.topVideos||[]).map((v,i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ color:"#F5C842", fontWeight:900, fontSize:13, width:18 }}>#{i+1}</div>
                     <div style={{ width:36, height:44, borderRadius:8, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
@@ -5008,7 +5149,7 @@ function AdminPanel({ currentUser }) {
                       </div>
                     </div>
                     <div style={{ display:"flex", gap:0, borderTop:"1px solid rgba(255,255,255,0.05)" }}>
-                      <button onClick={async () => { setSaving(video.id); await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true }); setAllVideos(p => p.map(v => v.id===video.id ? {...v, is_approved:true} : v)); setSaving(null); }}
+                      <button onClick={async () => { setSaving(video.id); await request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${video.id}`, { is_approved: true }); setAllVideos(p => p.map(v => v.id===video.id ? {...v, is_approved:true} : v)); setSaving(null); }}
                         disabled={saving===video.id}
                         style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                           borderRight:"1px solid rgba(255,255,255,0.05)",
@@ -5074,6 +5215,47 @@ function AdminPanel({ currentUser }) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── CREATORS TAB ── */}
+      {modTab === "creators" && (
+        <div style={{ padding:"16px" }}>
+          <div style={{ color:"#F5C842", fontWeight:800, fontSize:15, marginBottom:16 }}>🌟 Top Creators</div>
+          {loading ? (
+            <div style={{ textAlign:"center", color:"#555", padding:40 }}>Loading…</div>
+          ) : (() => {
+            const creatorMap = {};
+            allVideos.forEach(v => {
+              const key = v.user_id || v.username || "unknown";
+              if (!creatorMap[key]) creatorMap[key] = { username: v.username || "unknown", display_name: v.display_name || v.username || "—", avatar_url: v.avatar_url || "", videos: 0, views: 0, likes: 0 };
+              creatorMap[key].videos++;
+              creatorMap[key].views += v.views_count || 0;
+              creatorMap[key].likes += v.likes_count || 0;
+            });
+            const creators = Object.values(creatorMap).sort((a,b) => b.videos - a.videos);
+            if (!creators.length) return <div style={{ textAlign:"center", color:"#555", padding:40 }}>No creators yet.</div>;
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {creators.map((c, i) => (
+                  <div key={c.username} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 14px", border:"1px solid rgba(245,200,66,0.08)", display:"flex", alignItems:"center", gap:12 }}>
+                    <div style={{ color:"#F5C842", fontWeight:900, fontSize:14, width:22, flexShrink:0 }}>#{i+1}</div>
+                    <img src={c.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.display_name)}&background=random&color=fff&size=64&bold=true&format=png`}
+                      style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ color:"#fff", fontWeight:700, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.display_name}</div>
+                      <div style={{ color:"#555", fontSize:11 }}>@{c.username}</div>
+                    </div>
+                    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
+                      <div style={{ color:"#F5C842", fontWeight:800, fontSize:13 }}>{c.videos} 🎬</div>
+                      <div style={{ color:"#555", fontSize:11 }}>👁 {c.views.toLocaleString()}</div>
+                      <div style={{ color:"#555", fontSize:11 }}>❤️ {c.likes.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -5196,6 +5378,8 @@ function App() {
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
+  const feedSentinelRef = useRef(null);
+  const loadingMoreRef = useRef(false);
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feed");
@@ -5260,7 +5444,26 @@ function App() {
   const [editProfileName, setEditProfileName] = useState('');
   const [editProfileSaving, setEditProfileSaving] = useState(false);
 
+
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
+    } catch(e) { console.error(e); }
+    setFoundersLoading(false);
+  };
+
+  const updateFounder = async (founder, status) => {
+    try {
+      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
+      setFounderNote("");
+    } catch(e) { toast.error("Failed: " + e.message); }
+  };
+
   useEffect(() => { loadVideos(); }, []);
+  useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
 
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
@@ -5282,7 +5485,7 @@ function App() {
         // Try to load avatar from DB first (most up to date)
         try {
           // Use authenticated request (with Bearer token) to fetch user profile
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           // DB takes priority — always use latest CDN avatar_url
@@ -5351,12 +5554,16 @@ function App() {
       } else {
         setVideoList(ranked);
         requestAnimationFrame(() => {
-          const el = feedContainerRef.current || window.__sachiEl;
+          const el = feedContainerRef.current;
           if (el) el.scrollTo({ top: 0, behavior: 'instant' });
         });
       }
-    } catch(err) { console.error('loadVideos error:', err); if (!append) setVideoList([]); }
-    setLoading(false);
+    } catch(err) {
+      console.error('loadVideos error:', err);
+      if (!append) setVideoList([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadMoreVideos = () => {
@@ -5420,8 +5627,8 @@ function App() {
       const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
-          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const r1 = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/${APP_ID}/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
           const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
           const unique = [...new Map(all.map(f => [f.id, f])).values()];
           setMeFollowersCount(unique.length);
@@ -5429,8 +5636,8 @@ function App() {
       })();
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
-          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const r1 = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
           const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
           const unique = [...new Map(all.map(f => [f.id, f])).values()];
           setMeFollowingCount(unique.length);
@@ -5463,6 +5670,27 @@ function App() {
     }
   }, [currentUser, feedContainerRef]);
 
+  // Auto-load more when sentinel scrolls into view
+  useEffect(() => {
+    const sentinel = feedSentinelRef.current;
+    if (!sentinel) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && feedHasMore && !loading && !loadingMoreRef.current) {
+          loadingMoreRef.current = true;
+          const nextPage = feedPage + 1;
+          setFeedPage(nextPage);
+          loadVideos(currentUser, true, nextPage).finally(() => {
+            loadingMoreRef.current = false;
+          });
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    obs.observe(sentinel);
+    return () => obs.disconnect();
+  }, [feedHasMore, loading, feedPage, currentUser]);
+
   const handleView = (videoId) => {
     setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, views_count: (v.views_count||0)+1 } : v));
     const vid = videoList.find(v => v.id === videoId);
@@ -5489,6 +5717,7 @@ function App() {
 
   return (
     <div style={{ background:"#0B0C1A", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+      <ToastContainer />
 
       {/* Header — Sachi original */}
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
@@ -5544,7 +5773,7 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div key={feedKey} ref={el => { feedContainerRef.current = el; window.__sachiEl = el; }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y" }}>
+        <div key={feedKey} ref={el => { feedContainerRef.current = el; }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
@@ -5605,11 +5834,7 @@ function App() {
               />
           ))}
           {feedTab === "forYou" && feedHasMore && (
-            <div style={{ textAlign:"center", padding:"24px 0 40px" }}>
-              <button onClick={loadMoreVideos} style={{ background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:20, padding:"10px 28px", color:"#fff", fontSize:14, cursor:"pointer", fontWeight:600 }}>
-                Load more
-              </button>
-            </div>
+            <div ref={feedSentinelRef} style={{ height:1, marginBottom:80 }} />
           )}
           {feedTab === "following" && followingVideos.length === 0 && !loading && (
             <div style={{ textAlign:"center", padding:"60px 24px", color:"rgba(255,255,255,0.3)" }}>
@@ -5675,7 +5900,7 @@ function App() {
                       setShowFollowersList(true);
                       setFollowListLoading(true);
                       try {
-                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const r1 = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
                         const all = r1?.items || r1 || [];
                         const unique = [...new Map(all.map(f=>[f.id,f])).values()];
                         setFollowersList(unique);
@@ -5690,7 +5915,7 @@ function App() {
                       setShowFollowingList(true);
                       setFollowListLoading(true);
                       try {
-                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const r1 = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
                         const all = r1?.items || r1 || [];
                         const unique = [...new Map(all.map(f=>[f.id,f])).values()];
                         setFollowingList(unique);
@@ -6037,7 +6262,6 @@ function App() {
               value={editProfileName}
               onChange={e => setEditProfileName(e.target.value)}
               placeholder={currentUser?.full_name || username || "Your display name"}
-              defaultValue={currentUser?.full_name || ""}
               style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
                 borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:15, outline:"none",
                 fontFamily:"inherit", boxSizing:"border-box" }}
@@ -6052,10 +6276,10 @@ function App() {
                   if (!editProfileName.trim()) return;
                   setEditProfileSaving(true);
                   try {
-                    await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                    await request("PUT", `/apps/${APP_ID}/auth/me`, { full_name: editProfileName.trim() });
                     setCurrentUser(u => ({ ...u, full_name: editProfileName.trim() }));
                     setShowEditProfile(false);
-                  } catch(e) { alert("Save failed: " + e.message); }
+                  } catch(e) { toast.error("Save failed: " + e.message); }
                   finally { setEditProfileSaving(false); }
                 }}
                 disabled={editProfileSaving}
@@ -6086,19 +6310,19 @@ function App() {
         // Background sync to DB — only for CDN URLs (not base64, too large for DB)
         if (currentUser && !url.startsWith("data:")) {
           try {
-            await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+            await request("PUT", `/apps/${APP_ID}/auth/me`, { avatar_url: url });
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
             // Match by email (works for Google users)
-            const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+            const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
             const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
             const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+            if (match) await request("PATCH", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           } catch(e) { console.warn("User entity update failed:", e); }
           try {
-            const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
+            const vidsData = await request("GET", `/apps/${APP_ID}/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
             const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
-            await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
+            await Promise.all(vids.map(v => request("PATCH", `/apps/${APP_ID}/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
             setVideoList(vs => vs.map(v =>
               (v.user_id === currentUser.id || v.created_by === currentUser.id)
                 ? { ...v, avatar_url: url } : v

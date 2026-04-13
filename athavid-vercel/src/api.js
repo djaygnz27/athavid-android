@@ -86,18 +86,9 @@ export const videos = {
     });
   },
   async byUser(userId) {
-    let all = [];
-    let skip = 0;
-    const limit = 100;
-    while (true) {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=${limit}&skip=${skip}&sort=-created_date`);
-      const items = Array.isArray(res) ? res : (res?.items || []);
-      all = all.concat(items);
-      if (items.length < limit) break;
-      skip += limit;
-      if (skip > 500) break;
-    }
-    return all.filter(v => v.user_id === userId && !v.is_archived);
+    const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const items = Array.isArray(res) ? res : (res?.items || []);
+    return items.filter(v => !v.is_archived);
   },
   async delete(id) {
     return request("DELETE", `/apps/${APP_ID}/entities/SachiVideo/${id}`);
