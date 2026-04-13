@@ -1132,7 +1132,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Uploading photos...");
       const urls = [];
       for (let i = 0; i < photos.length; i++) {
-        const url = await uploadFile(photos[i]);
+        const photo = photos[i];
+        // Check file size — 20MB limit per photo
+        if (photo.size > 20 * 1024 * 1024) {
+          throw new Error(`Photo ${i+1} is too large. Max 20MB per photo.`);
+        }
+        setStep(`Uploading photo ${i+1} of ${photos.length}...`);
+        const url = await uploadFile(photo);
+        if (!url) throw new Error(`Failed to upload photo ${i+1}. Please try again.`);
         urls.push(url);
         setProgress(10 + Math.round(((i+1)/photos.length)*70));
       }
@@ -1146,7 +1153,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: urls[0],
         thumbnail_url: urls[0],
-        photo_urls: JSON.stringify(urls),
+        photo_urls: urls,
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
@@ -1456,7 +1463,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url, thumbnail_url: img_url,
-        photo_urls: JSON.stringify([img_url]), is_photo: true,
+        photo_urls: [img_url], is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
         likes_count:0, comments_count:0, views_count:0, shares_count:0,
