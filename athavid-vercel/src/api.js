@@ -110,16 +110,13 @@ export const comments = {
   },
 };
 
+// Cloudflare R2 upload via Worker — replaces Base44 file storage
+const R2_WORKER_URL = "https://sachi-upload.jaygnz27.workers.dev";
+
 export async function uploadFile(file) {
-  const token = getToken();
   const form = new FormData();
   form.append("file", file);
-  const headers = {};
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(
-    `https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/integration-endpoints/Core/UploadFile`,
-    { method: "POST", headers, body: form }
-  );
+  const res = await fetch(R2_WORKER_URL, { method: "POST", body: form });
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); } catch(_) { throw new Error(`Upload error ${res.status}: ${text.slice(0,100)}`); }
