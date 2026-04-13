@@ -6341,9 +6341,19 @@ function App() {
                   if (!editProfileName.trim()) return;
                   setEditProfileSaving(true);
                   try {
-                    await request("PUT", `/apps/${APP_ID}/auth/me`, { full_name: editProfileName.trim() });
-                    setCurrentUser(u => ({ ...u, full_name: editProfileName.trim() }));
+                    const newName = editProfileName.trim();
+                    // Update AthaVidUser entity (Base44 auth/me doesn't support PUT)
+                    const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
+                    const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
+                    const match = users.find(u => u.email === currentUser.email);
+                    if (match) {
+                      await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, display_name: newName, full_name: newName });
+                    }
+                    // Update locally
+                    setCurrentUser(u => ({ ...u, full_name: newName, display_name: newName }));
+                    localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, full_name: newName, display_name: newName }));
                     setShowEditProfile(false);
+                    toast.success("Display name updated!");
                   } catch(e) { toast.error("Save failed: " + e.message); }
                   finally { setEditProfileSaving(false); }
                 }}
@@ -6375,7 +6385,7 @@ function App() {
         // Background sync to DB — only for CDN URLs (not base64, too large for DB)
         if (currentUser && !url.startsWith("data:")) {
           try {
-            await request("PUT", `/apps/${APP_ID}/auth/me`, { avatar_url: url });
+            // Skip auth/me — Base44 doesn't allow PUT on auth endpoint
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
             // Match by email (works for Google users)
