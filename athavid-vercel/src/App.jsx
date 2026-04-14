@@ -2425,8 +2425,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )}
 
       {/* ── MEDIA ── */}
-      {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
+      {photoUrls ? (() => {
+        // Swipe gesture state
+        const swipeRef = React.useRef({ startX: 0, startY: 0, swiping: false });
+        return (
+        <div
+          style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
+          onTouchStart={e => {
+            swipeRef.current = { startX: e.touches[0].clientX, startY: e.touches[0].clientY, swiping: true };
+          }}
+          onTouchEnd={e => {
+            if (!swipeRef.current.swiping) return;
+            const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
+            const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
+            swipeRef.current.swiping = false;
+            // Only swipe if horizontal movement > 40px and more horizontal than vertical
+            if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+              if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1)); // swipe left = next
+              else setPhotoIdx(p => Math.max(p - 1, 0)); // swipe right = prev
+            }
+          }}
+        >
           {/* Photo takes up most of the space */}
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
@@ -2445,55 +2464,21 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
           {/* ── CAROUSEL NAV: ‹ dots › all in one row ── */}
           {photoUrls.length > 1 && (
+            {/* DOTS only — swipe left/right to navigate */}
             <div style={{
               position:"absolute", bottom:70, left:"50%", transform:"translateX(-50%)",
-              display:"flex", alignItems:"center", gap:16, zIndex:400,
-              background:"rgba(0,0,0,0.6)", borderRadius:40, padding:"10px 20px",
+              display:"flex", alignItems:"center", gap:8, zIndex:400,
+              background:"rgba(0,0,0,0.5)", borderRadius:40, padding:"8px 16px",
               backdropFilter:"blur(4px)"
             }}>
-              {/* PREV */}
-              <button
-                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
-                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
-                disabled={photoIdx === 0}
-                style={{
-                  background: photoIdx===0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
-                  border:"none", borderRadius:"50%",
-                  width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:28, fontWeight:900, lineHeight:1,
-                  color: photoIdx===0 ? "rgba(255,255,255,0.25)" : "#fff",
-                  cursor: photoIdx===0 ? "default" : "pointer",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
-                  transition:"all 0.2s"
-                }}>‹</button>
-
-              {/* DOTS */}
-              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                {photoUrls.map((_,i) => (
-                  <div key={i} style={{
-                    width: i===photoIdx ? 28 : 10, height:10, borderRadius:99,
-                    background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
-                    transition:"all 0.25s ease",
-                    boxShadow: i===photoIdx ? "0 0 10px rgba(245,200,66,0.9)" : "none"
-                  }} />
-                ))}
-              </div>
-
-              {/* NEXT */}
-              <button
-                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-                onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-                disabled={photoIdx === photoUrls.length-1}
-                style={{
-                  background: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
-                  border:"none", borderRadius:"50%",
-                  width:44, height:44, display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:28, fontWeight:900, lineHeight:1,
-                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.25)" : "#fff",
-                  cursor: photoIdx===photoUrls.length-1 ? "default" : "pointer",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
-                  transition:"all 0.2s"
-                }}>›</button>
+              {photoUrls.map((_,i) => (
+                <div key={i} style={{
+                  width: i===photoIdx ? 28 : 8, height:8, borderRadius:99,
+                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
+                  transition:"all 0.25s ease",
+                  boxShadow: i===photoIdx ? "0 0 10px rgba(245,200,66,0.9)" : "none"
+                }} />
+              ))}
             </div>
           )}
 
@@ -2527,7 +2512,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </>
           )}
         </div>
-      ) : (() => {
+        );
+      })()) : (() => {
         const resolvedVideoUrl = resolveMediaUrl(video.video_url);
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
@@ -2554,16 +2540,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               <audio ref={soundRef} src={video.sound_url} loop preload="none"
                 style={{ display:"none" }} />
             )}
-            {muted && (
-              <div onTouchStart={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
-                onClick={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
-                style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
-                  background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
-                  padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
-                  display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
-                🔇 Tap to unmute
-              </div>
-            )}
+
           </>
         );
       })()}
@@ -2573,21 +2550,36 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* Tap hint removed — content-first UI */}
 
-      {/* ── TAP: toggle UI visibility on images/photos, toggle play/pause on videos ── */}
-      {!photoUrls && (
-        <div onClick={tap(() => {
-          const resolvedVideoUrl = resolveMediaUrl(video.video_url);
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
-          if (isImg || !(video.video_url)) {
-            setShowUI(v => !v);
-            if (!showUI) setShowFullCaption(true);
-          } else {
-            // Always toggle play/pause on tap (TikTok-style)
-            doTogglePlay();
-          }
-        })}
-          style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
-      )}
+      {/* ── TAP: toggle play/pause on single tap, toggle mute on double tap ── */}
+      {!photoUrls && (() => {
+        let tapTimer = null;
+        return (
+          <div
+            onClick={tap(() => {
+              const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+              const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+              if (isImg || !(video.video_url)) {
+                setShowUI(v => !v);
+                if (!showUI) setShowFullCaption(true);
+              } else {
+                doTogglePlay();
+              }
+            })}
+            onDoubleClick={e => {
+              e.stopPropagation();
+              // Double tap toggles mute
+              const newMuted = !muted;
+              setMuted(newMuted);
+              const el = videoRef.current;
+              if (el) el.muted = newMuted;
+              if (soundRef.current) {
+                if (newMuted) soundRef.current.pause();
+                else if (playing && video.sound_url) soundRef.current.play().catch(()=>{});
+              }
+            }}
+            style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+        );
+      })()}
 
       {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
       {!playing && !photoUrls && (
@@ -2722,28 +2714,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         </button>
 
-        {/* Flag AI */}
-        <button onClick={tap(async () => {
-          if (!currentUser) { onNeedAuth(); return; }
-          if (!window.confirm(video.is_ai_detected ? "Clear AI flag from this post?" : "Flag this post as AI-generated content?")) return;
-          try {
-            const newFlag = !video.is_ai_detected;
-            await videos.update(video.id, { is_ai_detected: newFlag });
-            onLike(video.id, 0); // trigger re-render via parent
-          } catch(e) {}
-        })}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:28, height:28, borderRadius:8,
-            background: video.is_ai_detected ? "rgba(0,255,120,0.12)" : "rgba(255,255,255,0.08)",
-            backdropFilter:"blur(12px)",
-            border: video.is_ai_detected ? "2px solid rgba(0,255,120,0.9)" : "1px solid rgba(255,255,255,0.1)",
-            boxShadow: video.is_ai_detected ? "0 0 10px 3px rgba(0,255,120,0.5), 0 0 20px 6px rgba(0,255,120,0.2)" : "none",
-            display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.3s" }}>
-            <span style={{ fontSize:13 }}>{video.is_ai_detected ? "🤖" : "🚩"}</span>
-          </div>
-          <div style={{ color: video.is_ai_detected ? "#00ff78" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>{video.is_ai_detected ? "AI" : "Flag"}</div>
-        </button>
+
 
         {/* Like */}
         <button onClick={tap(doLike)}
