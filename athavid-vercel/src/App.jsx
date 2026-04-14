@@ -2795,33 +2795,46 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
 
-        {/* Hype */}
+        {/* LIT — animated SVG flame */}
         {(() => {
-          // Fire level based on hype count
-          const lvl = hypeCount >= 100 ? 5 : hypeCount >= 50 ? 4 : hypeCount >= 20 ? 3 : hypeCount >= 5 ? 2 : hypeCount >= 1 ? 1 : 0;
-          const fireEmoji = ["🔥","🔥","🔥🔥","🔥🔥","🔥🔥🔥","🔥🔥🔥"][lvl];
-          const fireSize = [13, 15, 16, 18, 20, 22][lvl];
-          const fireBg = hyped
-            ? ["rgba(255,100,0,0.25)","rgba(255,100,0,0.3)","rgba(255,80,0,0.35)","rgba(255,60,0,0.4)","rgba(255,40,0,0.45)","rgba(255,20,0,0.5)"][lvl]
-            : "rgba(255,255,255,0.08)";
-          const fireBorder = hyped
-            ? ["rgba(255,120,0,0.6)","rgba(255,100,0,0.7)","rgba(255,80,0,0.8)","rgba(255,60,0,0.9)","rgba(255,40,0,1)","rgba(255,20,0,1)"][lvl]
-            : "rgba(255,255,255,0.1)";
+          const lvl = hypeCount >= 100 ? 4 : hypeCount >= 50 ? 3 : hypeCount >= 20 ? 2 : hypeCount >= 5 ? 1 : 0;
+          const flameH = [22, 26, 28, 32, 36][lvl];
+          const flameW = [14, 16, 18, 20, 22][lvl];
+          const glow = hyped ? `drop-shadow(0 0 ${[4,6,8,10,14][lvl]}px rgba(255,${[140,100,70,40,10][lvl]},0,0.9))` : "none";
+          const fId = `f${video.id}`;
           return (
             <button onClick={tap(doHype)}
-              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
                 WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-              <div style={{ width:28, height:28, borderRadius:8, background:fireBg,
-                backdropFilter:"blur(12px)", border:`1px solid ${fireBorder}`,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                animation: hypeAnim ? "firepop 0.6s ease forwards" : hyped ? "fireflicker 2s ease-in-out infinite" : "none",
-                transformOrigin:"center", transition:"background 0.3s, border 0.3s" }}>
-                <span style={{ 
-                  fontSize:fireSize, lineHeight:1, transition:"font-size 0.3s",
-                  display:"inline-block",
-                  animation: hyped ? "firerise 0.8s ease-in-out infinite" : "none",
-                  transformOrigin:"bottom center"
-                }}>{fireEmoji || "🔥"}</span>
+              <div style={{ width:30, height:34, display:"flex", alignItems:"flex-end", justifyContent:"center",
+                filter: glow,
+                animation: hypeAnim ? "firepop 0.5s ease forwards" : "none",
+                transformOrigin:"bottom center" }}>
+                <svg width={flameW} height={flameH} viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg" style={{ overflow:"visible" }}>
+                  <defs>
+                    <linearGradient id={fId} x1="50%" y1="0%" x2="50%" y2="100%">
+                      <stop offset="0%" stopColor="#fff176"/>
+                      <stop offset="35%" stopColor="#ffb300"/>
+                      <stop offset="70%" stopColor="#f4511e"/>
+                      <stop offset="100%" stopColor="#b71c1c"/>
+                    </linearGradient>
+                    <linearGradient id={fId+"i"} x1="50%" y1="0%" x2="50%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff"/>
+                      <stop offset="50%" stopColor="#fff9c4"/>
+                      <stop offset="100%" stopColor="#ffcc02" stopOpacity="0.6"/>
+                    </linearGradient>
+                  </defs>
+                  {/* Outer flame body */}
+                  <path d="M10 27 C4 27 1 22 1 17 C1 12 4 8 6 5 C7 3 7 1 7 1 C9 4 8 7 10 9 C11 6 13 3 14 1 C15 4 19 9 19 16 C19 22 15 27 10 27Z"
+                    fill={`url(#${fId})`}
+                    style={{ animation:"flameWave 1.8s ease-in-out infinite", transformOrigin:"10px 27px" }}
+                  />
+                  {/* Inner bright core */}
+                  <path d="M10 24 C7 24 6 21 6 18 C6 16 8 13 9 11 C10 13 10 15 11 16 C12 14 13 11 14 10 C15 13 14 17 14 18 C14 22 13 24 10 24Z"
+                    fill={`url(#${fId+"i"})`}
+                    style={{ animation:"flameWave 1.2s ease-in-out infinite reverse", transformOrigin:"10px 24px" }}
+                  />
+                </svg>
               </div>
               <div style={{ color: hyped ? "#FF6B00" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>
                 {hypeCount > 0 ? hypeCount : "LIT"}
@@ -3074,7 +3087,13 @@ spinStyle.textContent = `
     56%  { transform: scale(1); }
     100% { transform: scale(1); }
   }
-  @keyframes firepop {
+  @keyframes flameWave {
+  0%, 100% { transform: scaleX(1) scaleY(1) rotate(-1deg); }
+  25% { transform: scaleX(0.92) scaleY(1.06) rotate(1.5deg); }
+  50% { transform: scaleX(1.06) scaleY(0.96) rotate(-0.5deg); }
+  75% { transform: scaleX(0.95) scaleY(1.04) rotate(2deg); }
+}
+@keyframes firepop {
   0%   { transform: scale(1) rotate(0deg); filter: brightness(1); }
   20%  { transform: scale(1.7) rotate(-12deg); filter: brightness(1.4); }
   40%  { transform: scale(1.4) rotate(10deg); filter: brightness(1.2); }
