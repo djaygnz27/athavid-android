@@ -5617,7 +5617,9 @@ function App() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileName, setEditProfileName] = useState('');
+  const [editProfileBio, setEditProfileBio] = useState('');
   const [editProfileSaving, setEditProfileSaving] = useState(false);
+  const [userBio, setUserBio] = useState(currentUser?.bio || '');
 
 
 
@@ -6050,11 +6052,16 @@ function App() {
                   </button>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, cursor:"pointer" }}
-                  onClick={() => { setEditProfileName(currentUser?.full_name || ''); setShowEditProfile(true); }}>
+                  onClick={() => { setEditProfileName(currentUser?.full_name || ''); setEditProfileBio(currentUser?.bio || userBio || ''); setShowEditProfile(true); }}>
                   <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
                   <div style={{ fontSize:13, color:"#888" }}>✏️</div>
                 </div>
                 <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
+                {(userBio || currentUser?.bio) && (
+                  <div style={{ color:"#aaa", fontSize:14, marginTop:8, lineHeight:1.6, maxWidth:300, textAlign:"center" }}>
+                    {userBio || currentUser?.bio}
+                  </div>
+                )}
                 <div style={{ display:"flex", justifyContent:"center", gap:0, marginTop:20, marginBottom:20, pointerEvents:"auto" }}>
                   <div style={{ textAlign:"center", padding:"10px 24px" }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{myVideos.length}</div>
@@ -6424,16 +6431,31 @@ function App() {
           onClick={() => setShowEditProfile(false)}>
           <div style={{ background:"#1a1a2e", borderRadius:20, padding:24, width:"100%", maxWidth:420 }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:16 }}>✏️ Edit Display Name</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:16 }}>✏️ Edit Profile</div>
+            
+            <div style={{ color:"#888", fontSize:12, fontWeight:600, marginBottom:6, textTransform:"uppercase", letterSpacing:0.8 }}>Display Name</div>
             <input
               value={editProfileName}
               onChange={e => setEditProfileName(e.target.value)}
               placeholder={currentUser?.full_name || username || "Your display name"}
               style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
                 borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:15, outline:"none",
-                fontFamily:"inherit", boxSizing:"border-box" }}
+                fontFamily:"inherit", boxSizing:"border-box", marginBottom:16 }}
             />
-            <div style={{ display:"flex", gap:10, marginTop:14 }}>
+
+            <div style={{ color:"#888", fontSize:12, fontWeight:600, marginBottom:6, textTransform:"uppercase", letterSpacing:0.8 }}>Bio</div>
+            <textarea
+              value={editProfileBio}
+              onChange={e => setEditProfileBio(e.target.value.slice(0, 150))}
+              placeholder="Tell people who you are — influencer, trainer, mom, dad, musician... 🌸"
+              rows={3}
+              style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
+                borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:14, outline:"none",
+                fontFamily:"inherit", boxSizing:"border-box", resize:"none", lineHeight:1.5 }}
+            />
+            <div style={{ color:"#555", fontSize:11, textAlign:"right", marginBottom:16 }}>{editProfileBio.length}/150</div>
+
+            <div style={{ display:"flex", gap:10, marginTop:4 }}>
               <button onClick={() => setShowEditProfile(false)}
                 style={{ flex:1, padding:"12px 0", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)",
                   borderRadius:12, color:"#aaa", fontSize:14, cursor:"pointer" }}>
@@ -6444,18 +6466,18 @@ function App() {
                   setEditProfileSaving(true);
                   try {
                     const newName = editProfileName.trim();
-                    // Update AthaVidUser entity (Base44 auth/me doesn't support PUT)
+                    const newBio = editProfileBio.trim();
                     const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
                     const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
                     const match = users.find(u => u.email === currentUser.email);
                     if (match) {
-                      await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, display_name: newName, full_name: newName });
+                      await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, display_name: newName, full_name: newName, bio: newBio });
                     }
-                    // Update locally
-                    setCurrentUser(u => ({ ...u, full_name: newName, display_name: newName }));
-                    localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, full_name: newName, display_name: newName }));
+                    setCurrentUser(u => ({ ...u, full_name: newName, display_name: newName, bio: newBio }));
+                    setUserBio(newBio);
+                    localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, full_name: newName, display_name: newName, bio: newBio }));
                     setShowEditProfile(false);
-                    toast.success("Display name updated!");
+                    toast.success("Profile updated!");
                   } catch(e) { toast.error("Save failed: " + e.message); }
                   finally { setEditProfileSaving(false); }
                 }}
@@ -6463,7 +6485,7 @@ function App() {
                 style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#e91e63,#9c27b0)",
                   border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700,
                   cursor:editProfileSaving?"not-allowed":"pointer" }}>
-                {editProfileSaving ? "Saving..." : "Save Name"}
+                {editProfileSaving ? "Saving..." : "Save Profile"}
               </button>
             </div>
           </div>
