@@ -86,7 +86,7 @@ const likes = {
 
 // Module-level mute store — avoids window globals, survives stale closures
 const muteStore = {
-  _muted: true,
+  _muted: false,
   get() { return this._muted; },
   set(val) { this._muted = val; },
 };
@@ -2504,19 +2504,28 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* ── MEDIA ── */}
       {photoUrls ? (
         <div
-          style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
+          style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"none" }}
           onTouchStart={e => {
             swipeRef.current = { startX: e.touches[0].clientX, startY: e.touches[0].clientY, swiping: true };
+          }}
+          onTouchMove={e => {
+            if (!swipeRef.current.swiping) return;
+            const dx = e.touches[0].clientX - swipeRef.current.startX;
+            const dy = e.touches[0].clientY - swipeRef.current.startY;
+            // If clearly horizontal swipe, prevent default scroll
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+              e.stopPropagation();
+            }
           }}
           onTouchEnd={e => {
             if (!swipeRef.current.swiping) return;
             const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
             const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
             swipeRef.current.swiping = false;
-            // Only swipe if horizontal movement > 40px and more horizontal than vertical
-            if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-              if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1)); // swipe left = next
-              else setPhotoIdx(p => Math.max(p - 1, 0)); // swipe right = prev
+            // Only swipe if horizontal movement > 30px and more horizontal than vertical
+            if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
+              if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1));
+              else setPhotoIdx(p => Math.max(p - 1, 0));
             }
           }}
         >
