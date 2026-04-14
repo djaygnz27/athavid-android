@@ -40,6 +40,9 @@
     "shares_count": {
       "type": "number"
     },
+    "hype_count": {
+      "type": "number"
+    },
     "is_archived": {
       "type": "boolean"
     },
