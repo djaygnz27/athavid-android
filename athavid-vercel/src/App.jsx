@@ -2259,8 +2259,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const uiTimerRef = useRef(null);
 
   // Derived from video prop — must be declared before useEffect that references it
-  const photoUrls = video.is_photo && video.photo_urls
+  // Detect photos — either by is_photo flag OR by video_url being an image
+  const videoUrlIsImage = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+  const photoUrls = (video.is_photo || videoUrlIsImage) && video.photo_urls
     ? safeParsePhotoUrls(video.photo_urls)
+    : (videoUrlIsImage && video.video_url)
+    ? [video.video_url]
     : null;
 
   // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
@@ -2505,23 +2509,33 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {photoUrls ? (
         <div
           style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
+          onPointerDown={e => {
+            swipeRef.current = { startX: e.clientX, startY: e.clientY, swiping: true };
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerUp={e => {
+            if (!swipeRef.current.swiping) return;
+            const dx = e.clientX - swipeRef.current.startX;
+            const dy = e.clientY - swipeRef.current.startY;
+            swipeRef.current.swiping = false;
+            if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
+              if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1));
+              else setPhotoIdx(p => Math.max(p - 1, 0));
+            }
+          }}
+          onPointerCancel={() => { swipeRef.current.swiping = false; }}
         >
-          {/* Left tap zone — go to previous photo */}
-          {photoIdx > 0 && (
-            <div onClick={() => setPhotoIdx(p => Math.max(p - 1, 0))}
-              style={{ position:"absolute", left:0, top:0, width:"35%", height:"100%", zIndex:100, cursor:"pointer" }} />
-          )}
-          {/* Right tap zone — go to next photo */}
-          {photoIdx < photoUrls.length - 1 && (
-            <div onClick={() => setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1))}
-              style={{ position:"absolute", right:0, top:0, width:"35%", height:"100%", zIndex:100, cursor:"pointer" }} />
-          )}
           {/* Photo takes up most of the space */}
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
               style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
+              onError={e => { e.target.style.display="none"; e.target.nextSibling && (e.target.nextSibling.style.display="flex"); }}
             />
+            <div style={{ display:"none", position:"absolute", inset:0, alignItems:"center", justifyContent:"center", flexDirection:"column", gap:8, color:"#555" }}>
+              <div style={{ fontSize:48 }}>🖼️</div>
+              <div style={{ fontSize:13 }}>Image could not load</div>
+            </div>
             {/* Counter badge top-left */}
             {photoUrls.length > 1 && (
               <div style={{ position:"absolute", top:12, left:12, background:"rgba(0,0,0,0.7)",
@@ -2802,7 +2816,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 display:"flex", alignItems:"center", justifyContent:"center",
                 animation: hypeAnim ? "firepop 0.6s ease forwards" : hyped ? "fireflicker 2s ease-in-out infinite" : "none",
                 transformOrigin:"center", transition:"background 0.3s, border 0.3s" }}>
-                <span style={{ fontSize:fireSize, lineHeight:1, transition:"font-size 0.3s" }}>{fireEmoji || "🔥"}</span>
+                <span style={{ 
+                  fontSize:fireSize, lineHeight:1, transition:"font-size 0.3s",
+                  display:"inline-block",
+                  animation: hyped ? "firerise 0.8s ease-in-out infinite" : "none",
+                  transformOrigin:"bottom center"
+                }}>{fireEmoji || "🔥"}</span>
               </div>
               <div style={{ color: hyped ? "#FF6B00" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>
                 {hypeCount > 0 ? hypeCount : "LIT"}
@@ -3056,14 +3075,29 @@ spinStyle.textContent = `
     100% { transform: scale(1); }
   }
   @keyframes firepop {
-  0% { transform: scale(1); }
-  30% { transform: scale(1.6) rotate(-10deg); }
-  60% { transform: scale(1.3) rotate(8deg); }
-  100% { transform: scale(1); }
+  0%   { transform: scale(1) rotate(0deg); filter: brightness(1); }
+  20%  { transform: scale(1.7) rotate(-12deg); filter: brightness(1.4); }
+  40%  { transform: scale(1.4) rotate(10deg); filter: brightness(1.2); }
+  60%  { transform: scale(1.6) rotate(-8deg); filter: brightness(1.5); }
+  80%  { transform: scale(1.2) rotate(5deg); filter: brightness(1.1); }
+  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
 }
 @keyframes fireflicker {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.85; transform: scale(1.05); }
+  0%   { transform: scale(1) rotate(0deg) translateY(0px); filter: brightness(1); }
+  15%  { transform: scale(1.08) rotate(-3deg) translateY(-1px); filter: brightness(1.2); }
+  30%  { transform: scale(0.95) rotate(3deg) translateY(1px); filter: brightness(0.9); }
+  45%  { transform: scale(1.1) rotate(-2deg) translateY(-2px); filter: brightness(1.3); }
+  60%  { transform: scale(1.03) rotate(4deg) translateY(0px); filter: brightness(1.1); }
+  75%  { transform: scale(0.97) rotate(-3deg) translateY(1px); filter: brightness(0.95); }
+  90%  { transform: scale(1.06) rotate(2deg) translateY(-1px); filter: brightness(1.15); }
+  100% { transform: scale(1) rotate(0deg) translateY(0px); filter: brightness(1); }
+}
+@keyframes firerise {
+  0%   { transform: scaleY(1) translateY(0px); }
+  25%  { transform: scaleY(1.1) translateY(-2px); }
+  50%  { transform: scaleY(0.95) translateY(1px); }
+  75%  { transform: scaleY(1.08) translateY(-1px); }
+  100% { transform: scaleY(1) translateY(0px); }
 }
 @keyframes heartpop {
     0%   { transform: scale(1); }
