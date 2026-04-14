@@ -2403,10 +2403,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   const doHype = async () => {
     if (!currentUser) { onNeedAuth(); return; }
-    if (hyped) { toast.info("You already pushed this! 🔥"); return; }
+    if (hyped) { toast.info("You already lit this! 🔥"); return; }
     // Check daily limit — 5 hypes per day
     const todayCount = await hypes.countToday(currentUser.id);
-    if (todayCount >= 5) { toast.warn("You've used all 5 pushes for today! Come back tomorrow 🔥"); return; }
+    if (todayCount >= 5) { toast.warn("You've used all 5 lits for today! Come back tomorrow 🔥"); return; }
     try {
       setHyped(true);
       setHypeCount(c => c + 1);
@@ -2416,11 +2416,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       setMyHypeId(rec?.id || null);
       // Update hype_count on the video
       await videos.update(video.id, { hype_count: (video.hype_count || 0) + 1 });
-      toast.success("🔥 Pushed! This post is getting boosted to more feeds!");
+      toast.success("🔥 Lit! This post is getting boosted to more feeds!");
     } catch(e) {
       setHyped(false);
       setHypeCount(c => Math.max(0, c - 1));
-      toast.error("Push failed: " + e.message);
+      toast.error("Lit failed: " + e.message);
     }
   };
 
@@ -2818,7 +2818,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 <span style={{ fontSize:fireSize, lineHeight:1, transition:"font-size 0.3s" }}>{fireEmoji || "🔥"}</span>
               </div>
               <div style={{ color: hyped ? "#FF6B00" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>
-                {hypeCount > 0 ? hypeCount : "Push"}
+                {hypeCount > 0 ? hypeCount : "Lit"}
               </div>
             </button>
           );
