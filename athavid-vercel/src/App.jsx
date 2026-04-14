@@ -2227,6 +2227,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [likersList, setLikersList] = React.useState([]);
   const [likersLoading, setLikersLoading] = React.useState(false);
   const [myLikeId, setMyLikeId] = React.useState(null); // SachiLike record ID for unlike
+  const swipeRef = React.useRef({ startX: 0, startY: 0, swiping: false });
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
