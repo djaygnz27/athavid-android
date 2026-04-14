@@ -1,4 +1,3 @@
-
 // Sachi v2.2.1 - bulletproof build, mod panel fixed, toast system
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
@@ -4736,18 +4735,7 @@ function AdminPanel({ currentUser }) {
         uMore = uRes.has_more === true && uItems.length === 500;
         uSkip += 500;
       }
-      let legacyUsers = [], lSkip = 0, lMore = true;
-      while (lMore) {
-        const lRes = await request("GET", `/apps/${APP_ID}/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
-        const lItems = lRes.items || (Array.isArray(lRes) ? lRes : []);
-        legacyUsers = [...legacyUsers, ...lItems];
-        lMore = lRes.has_more === true && lItems.length === 500;
-        lSkip += 500;
-      }
-      const knownEmails = new Set(allUsersFetched.map(u => (u.email||'').toLowerCase()));
-      const normalizedLegacy = legacyUsers
-        .filter(u => u.email && !knownEmails.has(u.email.toLowerCase()))
-        .map(u => ({ id: u.id, email: u.email, username: u.full_name||u.email.split('@')[0], display_name: u.full_name||u.email.split('@')[0], created_date: u.created_date, status: 'active', _source: 'legacy' }));
+      const normalizedLegacy = []; // Legacy User entity removed — 401 Unauthorized
       const [vRes, cRes] = await Promise.all([
         request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`),
         request("GET", `/apps/${APP_ID}/entities/SachiComment?limit=500&sort=-created_date`),
@@ -4816,7 +4804,10 @@ function AdminPanel({ currentUser }) {
         topVideos,
         recentUsers,
       });
-    } catch(e) { console.error("analytics error", e); }
+    } catch(e) {
+      console.error("analytics error", e);
+      toast.error("Analytics failed to load: " + e.message);
+    }
     setAnalyticsLoading(false);
   };
 
@@ -4841,32 +4832,8 @@ function AdminPanel({ currentUser }) {
         hasMore = res.has_more === true && items.length === 500;
         skip += 500;
       }
-      // Fetch User entity (old OTP auth users)
-      let oldUsers = [], skip2 = 0, hasMore2 = true;
-      while (hasMore2) {
-        const res2 = await request("GET", `/apps/${APP_ID}/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
-        const items2 = res2.items || (Array.isArray(res2) ? res2 : []);
-        oldUsers = [...oldUsers, ...items2];
-        hasMore2 = res2.has_more === true && items2.length === 500;
-        skip2 += 500;
-      }
-      // Merge: normalize old users to same shape, deduplicate by email
-      const athavid_emails = new Set(athavid.map(u => (u.email||'').toLowerCase()));
-      const normalized = oldUsers
-        .filter(u => u.email && !athavid_emails.has(u.email.toLowerCase()))
-        .map(u => ({
-          id: u.id,
-          email: u.email,
-          username: u.full_name || u.email.split('@')[0],
-          display_name: u.full_name || u.email.split('@')[0],
-          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name||u.email)}&background=random&color=fff&size=128&bold=true&format=png`,
-          status: u.disabled ? 'disabled' : 'active',
-          is_verified: u.is_verified,
-          created_date: u.created_date,
-          updated_date: u.updated_date,
-          _source: 'legacy'
-        }));
-      const merged = [...athavid, ...normalized].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
+      // Only use AthaVidUser — legacy User entity returns 401
+      const merged = [...athavid].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
       setRegisteredUsers(merged);
     } catch(e) { console.error(e); }
     setUsersLoading(false);
@@ -5030,7 +4997,13 @@ function AdminPanel({ currentUser }) {
           {analyticsLoading ? (
             <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>Loading analytics…</div>
           ) : !analyticsData ? (
-            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>No data yet.</div>
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>
+              <div style={{ fontSize:36, marginBottom:12 }}>📊</div>
+              <div>Failed to load analytics.</div>
+              <button onClick={loadAnalytics} style={{ marginTop:16, background:"rgba(245,200,66,0.15)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20, padding:"8px 20px", color:"#F5C842", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                ↻ Try Again
+              </button>
+            </div>
           ) : (
             <>
               {/* KPI Cards */}
