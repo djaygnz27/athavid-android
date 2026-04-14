@@ -2178,7 +2178,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     ? safeParsePhotoUrls(video.photo_urls)
     : null;
 
-  // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
+  // Carousel swipe support — detects horizontal vs vertical to avoid feed conflict
+  const swipeTouchStartX = useRef(null);
+  const swipeTouchStartY = useRef(null);
+  const handleCarouselTouchStart = (e) => {
+    swipeTouchStartX.current = e.touches[0].clientX;
+    swipeTouchStartY.current = e.touches[0].clientY;
+  };
+  const handleCarouselTouchEnd = (e) => {
+    if (swipeTouchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeTouchStartX.current;
+    const dy = e.changedTouches[0].clientY - swipeTouchStartY.current;
+    swipeTouchStartX.current = null;
+    swipeTouchStartY.current = null;
+    if (Math.abs(dx) < 30) return; // too short
+    if (Math.abs(dy) > Math.abs(dx)) return; // vertical swipe — let feed handle it
+    e.stopPropagation();
+    if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1)); // swipe left = next
+    else setPhotoIdx(p => Math.max(p - 1, 0)); // swipe right = prev
+  };
 
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || (currentUser.username && currentUser.username === video.username));
@@ -2381,7 +2399,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
+        <div onTouchStart={handleCarouselTouchStart} onTouchEnd={handleCarouselTouchEnd} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
           {/* Photo takes up most of the space */}
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
