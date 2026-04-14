@@ -2462,9 +2462,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
           </div>
 
-          {/* ── CAROUSEL NAV: ‹ dots › all in one row ── */}
+          {/* Dots only — swipe left/right to navigate */}
           {photoUrls.length > 1 && (
-            {/* DOTS only — swipe left/right to navigate */}
             <div style={{
               position:"absolute", bottom:70, left:"50%", transform:"translateX(-50%)",
               display:"flex", alignItems:"center", gap:8, zIndex:400,
