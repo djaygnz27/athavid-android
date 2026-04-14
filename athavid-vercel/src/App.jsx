@@ -11,6 +11,31 @@ import MusicPicker from "./MusicPicker.jsx";
 
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 
+// ── Audio Preloader Cache ─────────────────────────────────────────────────
+// Pre-fetches audio for upcoming videos so playback starts instantly
+const audioCache = new Map();
+const MAX_CACHE = 5;
+
+function preloadAudio(url) {
+  if (!url || audioCache.has(url)) return;
+  if (audioCache.size >= MAX_CACHE) {
+    // Evict oldest entry
+    const firstKey = audioCache.keys().next().value;
+    const old = audioCache.get(firstKey);
+    old.pause();
+    old.src = "";
+    audioCache.delete(firstKey);
+  }
+  const audio = new Audio(url);
+  audio.preload = "auto";
+  audio.load();
+  audioCache.set(url, audio);
+}
+
+function getCachedAudio(url) {
+  return audioCache.get(url) || null;
+}
+
 // ── SachiHype API helpers ─────────────────────────────────────────────────
 const hypes = {
   async add(video_id, user_id, username) {
@@ -5949,7 +5974,12 @@ function App() {
           )}
           {(feedTab === "forYou" ? videoList : followingVideos)
             .filter(v => !blockedIds.has(v.user_id))
-            .map(v => (
+            .map((v, idx, arr) => {
+              // Preload audio for next 2 videos in background
+              if (v.sound_url) preloadAudio(v.sound_url);
+              const next1 = arr[idx + 1]; if (next1?.sound_url) preloadAudio(next1.sound_url);
+              const next2 = arr[idx + 2]; if (next2?.sound_url) preloadAudio(next2.sound_url);
+              return (
             <VideoCard key={v.id} video={v} currentUser={currentUser}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
@@ -5963,7 +5993,7 @@ function App() {
               onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
               blockedIds={blockedIds}
               />
-          ))}
+          );})}
           {feedTab === "forYou" && feedHasMore && (
             <div ref={feedSentinelRef} style={{ height:1, marginBottom:80 }} />
           )}
