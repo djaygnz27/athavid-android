@@ -2218,6 +2218,109 @@ function getUserAge() {
   return age;
 }
 
+function FlameIcon({ views = 0 }) {
+  const canvasRef = React.useRef(null);
+  const animRef = React.useRef(null);
+  const tRef = React.useRef(0);
+  const lvl = views >= 10000 ? 3 : views >= 1000 ? 2 : views >= 100 ? 1 : 0;
+  const configs = [
+    { wind: 0.14, layers: [
+      { cols: [[80,160,230],[30,100,200]], a: 0.9, mh: 0.74, mw: 0.30, amp: 4, freq: 1.2, phase: 0 },
+      { cols: [[180,220,255],[120,180,245]], a: 0.55, mh: 0.56, mw: 0.18, amp: 2.5, freq: 1.8, phase: 1.1 },
+    ], sparks: [] },
+    { wind: 0.20, layers: [
+      { cols: [[80,155,225],[30,95,195]], a: 0.88, mh: 0.76, mw: 0.36, amp: 5, freq: 1.1, phase: 0 },
+      { cols: [[220,140,20],[190,100,10]], a: 0.82, mh: 0.62, mw: 0.26, amp: 6, freq: 1.4, phase: 0.8 },
+      { cols: [[255,215,100],[240,175,50]], a: 0.50, mh: 0.45, mw: 0.16, amp: 4, freq: 2.0, phase: 1.5 },
+    ], sparks: [{x:0.55,y:0.42,vx:0.7,vy:-1.1,life:0,max:55,col:[220,140,20]}] },
+    { wind: 0.27, layers: [
+      { cols: [[215,85,20],[170,40,8]], a: 0.92, mh: 0.80, mw: 0.42, amp: 7, freq: 1.0, phase: 0 },
+      { cols: [[240,155,35],[210,110,15]], a: 0.78, mh: 0.65, mw: 0.30, amp: 8, freq: 1.3, phase: 0.7 },
+      { cols: [[255,215,100],[245,185,55]], a: 0.55, mh: 0.50, mw: 0.20, amp: 5, freq: 1.8, phase: 1.4 },
+    ], sparks: [{x:0.52,y:0.44,vx:0.8,vy:-1.2,life:0,max:50,col:[240,155,35]},{x:0.35,y:0.52,vx:0.5,vy:-0.8,life:22,max:65,col:[215,85,20]}] },
+    { wind: 0.38, layers: [
+      { cols: [[175,22,22],[128,10,10]], a: 0.93, mh: 0.84, mw: 0.48, amp: 11, freq: 0.9, phase: 0 },
+      { cols: [[225,70,18],[190,42,8]], a: 0.82, mh: 0.70, mw: 0.36, amp: 9, freq: 1.2, phase: 0.6 },
+      { cols: [[248,160,35],[220,120,15]], a: 0.68, mh: 0.56, mw: 0.26, amp: 7, freq: 1.6, phase: 1.2 },
+      { cols: [[255,225,140],[250,205,90]], a: 0.45, mh: 0.42, mw: 0.16, amp: 5, freq: 2.1, phase: 1.9 },
+    ], sparks: [{x:0.54,y:0.38,vx:1.0,vy:-1.3,life:0,max:48,col:[248,160,35]},{x:0.32,y:0.50,vx:0.6,vy:-1.0,life:18,max:62,col:[225,70,18]},{x:0.62,y:0.46,vx:1.2,vy:-0.9,life:36,max:44,col:[255,225,140]}] },
+  ];
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cfg = configs[lvl];
+    const w = canvas.width, h = canvas.height;
+    const sparks = cfg.sparks.map(s => ({...s}));
+    function flamePath(cx, baseY, maxH, maxW, t, windPx, amp, freq, phase) {
+      const steps = 50;
+      ctx.beginPath();
+      ctx.moveTo(cx - maxW * 0.1, baseY);
+      for (let i = 1; i <= steps; i++) {
+        const p = i / steps;
+        const taper = Math.pow(1 - p, 0.45);
+        const sway = Math.sin(p * Math.PI * freq + t + phase) * amp * (1 - p * 0.5);
+        const lean = windPx * p * p;
+        const x = cx + sway + lean + maxW * taper * Math.sin(p * Math.PI * 0.5);
+        const y = baseY - maxH * Math.sin(p * Math.PI * 0.5);
+        ctx.lineTo(x, y);
+      }
+      for (let i = steps; i >= 0; i--) {
+        const p = i / steps;
+        const taper = Math.pow(1 - p, 0.45);
+        const sway = Math.sin(p * Math.PI * freq + t + phase + 0.6) * amp * (1 - p * 0.5);
+        const lean = windPx * p * p;
+        const x = cx + sway + lean - maxW * taper * Math.sin(p * Math.PI * 0.5);
+        const y = baseY - maxH * Math.sin(p * Math.PI * 0.5);
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    }
+    function frame() {
+      tRef.current += 0.04;
+      const t = tRef.current;
+      ctx.clearRect(0, 0, w, h);
+      const cx = w * 0.46, baseY = h * 0.93;
+      const gust = cfg.wind * (0.85 + 0.15 * Math.sin(t * 0.4));
+      const windPx = gust * w;
+      cfg.layers.forEach(l => {
+        flamePath(cx, baseY, h * l.mh, w * l.mw, t, windPx * 0.9, l.amp, l.freq, l.phase);
+        const grad = ctx.createLinearGradient(cx, baseY, cx + windPx * 0.4, baseY - h * l.mh);
+        grad.addColorStop(0, `rgba(${l.cols[0].join(',')},${l.a})`);
+        grad.addColorStop(0.55, `rgba(${l.cols[0].map((c,i)=>Math.round((c+l.cols[1][i])/2)).join(',')},${l.a*0.8})`);
+        grad.addColorStop(1, `rgba(${l.cols[1].join(',')},0)`);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      });
+      sparks.forEach(s => {
+        s.life++;
+        if (s.life > s.max) s.life = 0;
+        const p = s.life / s.max;
+        const sx = cx + w * (s.x - 0.46) + s.vx * s.life * 0.9 + windPx * p * 1.2;
+        const sy = baseY - h * s.y + s.vy * s.life * 0.9 + 0.015 * s.life * s.life;
+        if (sy < 2 || sx < 0 || sx > w) { s.life = 0; return; }
+        const alpha = Math.sin(p * Math.PI) * 0.95;
+        const r = 1.8 * (1 - p * 0.6);
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${s.col.join(',')},${alpha})`;
+        ctx.fill();
+      });
+      animRef.current = requestAnimationFrame(frame);
+    }
+    animRef.current = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [lvl]);
+  return (
+    <canvas
+      ref={canvasRef}
+      width={38}
+      height={52}
+      style={{ display: 'block' }}
+    />
+  );
+}
+
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
   const [showLikers, setShowLikers] = React.useState(false);
   const [hyped, setHyped] = React.useState(false);
@@ -2509,7 +2612,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {photoUrls ? (
         <div
           style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
+          onTouchStart={e => { swipeRef.current.startX = e.touches[0].clientX; swipeRef.current.startY = e.touches[0].clientY; swipeRef.current.swiping = true; }}
+          onTouchEnd={e => {
+            if (!swipeRef.current.swiping) return;
+            swipeRef.current.swiping = false;
+            const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
+            const dy = e.changedTouches[0].clientY - swipeRef.current.startY;
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+              e.stopPropagation();
+              if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1));
+              else setPhotoIdx(p => Math.max(p - 1, 0));
+            }
+          }}
         >
+          {/* Flame icon — top right corner */}
+          <div style={{ position:"absolute", top:8, right:8, zIndex:350, pointerEvents:"none" }}>
+            <FlameIcon views={video.views_count || video.view_count || 0} />
+          </div>
           {/* Tap left third = previous photo */}
           {photoUrls.length > 1 && photoIdx > 0 && (
             <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1, 0)); }}
