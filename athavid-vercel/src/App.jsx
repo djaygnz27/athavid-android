@@ -2505,22 +2505,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {photoUrls ? (
         <div
           style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
-          onPointerDown={e => {
-            swipeRef.current = { startX: e.clientX, startY: e.clientY, swiping: true, pointerId: e.pointerId };
-            e.currentTarget.setPointerCapture(e.pointerId);
-          }}
-          onPointerUp={e => {
-            if (!swipeRef.current.swiping) return;
-            const dx = e.clientX - swipeRef.current.startX;
-            const dy = e.clientY - swipeRef.current.startY;
-            swipeRef.current.swiping = false;
-            if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
-              if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1));
-              else setPhotoIdx(p => Math.max(p - 1, 0));
-            }
-          }}
-          onPointerCancel={() => { swipeRef.current.swiping = false; }}
         >
+          {/* Left tap zone — go to previous photo */}
+          {photoIdx > 0 && (
+            <div onClick={() => setPhotoIdx(p => Math.max(p - 1, 0))}
+              style={{ position:"absolute", left:0, top:0, width:"35%", height:"100%", zIndex:100, cursor:"pointer" }} />
+          )}
+          {/* Right tap zone — go to next photo */}
+          {photoIdx < photoUrls.length - 1 && (
+            <div onClick={() => setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1))}
+              style={{ position:"absolute", right:0, top:0, width:"35%", height:"100%", zIndex:100, cursor:"pointer" }} />
+          )}
           {/* Photo takes up most of the space */}
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
