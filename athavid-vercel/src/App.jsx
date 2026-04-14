@@ -2509,22 +2509,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {photoUrls ? (
         <div
           style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
-          onPointerDown={e => {
-            swipeRef.current = { startX: e.clientX, startY: e.clientY, swiping: true };
-            e.currentTarget.setPointerCapture(e.pointerId);
-          }}
-          onPointerUp={e => {
-            if (!swipeRef.current.swiping) return;
-            const dx = e.clientX - swipeRef.current.startX;
-            const dy = e.clientY - swipeRef.current.startY;
-            swipeRef.current.swiping = false;
-            if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
-              if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1));
-              else setPhotoIdx(p => Math.max(p - 1, 0));
-            }
-          }}
-          onPointerCancel={() => { swipeRef.current.swiping = false; }}
         >
+          {/* Tap left third = previous photo */}
+          {photoUrls.length > 1 && photoIdx > 0 && (
+            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1, 0)); }}
+              style={{ position:"absolute", left:0, top:0, width:"33%", height:"100%", zIndex:300, cursor:"pointer" }} />
+          )}
+          {/* Tap right third = next photo */}
+          {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
+            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+              style={{ position:"absolute", right:0, top:0, width:"33%", height:"100%", zIndex:300, cursor:"pointer" }} />
+          )}
           {/* Photo takes up most of the space */}
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
@@ -3102,12 +3097,12 @@ spinStyle.textContent = `
   100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
 }
 @keyframes fireflicker {
-  0%   { transform: scale(1) rotate(0deg) translateY(0px); filter: brightness(1); }
-  15%  { transform: scale(1.08) rotate(-3deg) translateY(-1px); filter: brightness(1.2); }
-  30%  { transform: scale(0.95) rotate(3deg) translateY(1px); filter: brightness(0.9); }
-  45%  { transform: scale(1.1) rotate(-2deg) translateY(-2px); filter: brightness(1.3); }
-  60%  { transform: scale(1.03) rotate(4deg) translateY(0px); filter: brightness(1.1); }
-  75%  { transform: scale(0.97) rotate(-3deg) translateY(1px); filter: brightness(0.95); }
+  0%   { transform: scale(1)    rotate(-2deg) translateY(0px);  filter: brightness(1.1)  drop-shadow(0 0 4px #ff6600)  drop-shadow(0 0 8px #ff2200); }
+  15%  { transform: scale(1.1)  rotate(2deg)  translateY(-2px); filter: brightness(1.4)  drop-shadow(0 0 8px #ff8800)  drop-shadow(0 0 16px #ff4400); }
+  30%  { transform: scale(0.95) rotate(-3deg) translateY(1px);  filter: brightness(0.95) drop-shadow(0 0 6px #ff4400)  drop-shadow(0 0 10px #ff1100); }
+  45%  { transform: scale(1.12) rotate(2deg)  translateY(-3px); filter: brightness(1.5)  drop-shadow(0 0 10px #ffaa00) drop-shadow(0 0 20px #ff5500); }
+  60%  { transform: scale(1.04) rotate(-2deg) translateY(0px);  filter: brightness(1.2)  drop-shadow(0 0 7px #ff6600)  drop-shadow(0 0 14px #ff3300); }
+  75%  { transform: scale(0.97) rotate(3deg)  translateY(1px);  filter: brightness(1.0)  drop-shadow(0 0 5px #ff4400)  drop-shadow(0 0 10px #ff2200); }
   90%  { transform: scale(1.06) rotate(2deg) translateY(-1px); filter: brightness(1.15); }
   100% { transform: scale(1) rotate(0deg) translateY(0px); filter: brightness(1); }
 }
