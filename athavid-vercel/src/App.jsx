@@ -21,9 +21,9 @@ function preloadAudio(url) {
   if (audioCache.size >= MAX_CACHE) {
     // Evict oldest entry
     const firstKey = audioCache.keys().next().value;
-    const old = audioCache.get(firstKey);
-    old.pause();
-    old.src = "";
+    const evicted = audioCache.get(firstKey);
+    evicted.pause();
+    evicted.src = "";
     audioCache.delete(firstKey);
   }
   const audio = new Audio(url);
@@ -2501,10 +2501,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )}
 
       {/* ── MEDIA ── */}
-      {photoUrls ? (() => {
-        // Swipe gesture state
-        const swipeRef = React.useRef({ startX: 0, startY: 0, swiping: false });
-        return (
+      {photoUrls ? (
         <div
           style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
           onTouchStart={e => {
@@ -2587,8 +2584,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </>
           )}
         </div>
-        );
-      })()) : (() => {
+      ) : (() => {
         const resolvedVideoUrl = resolveMediaUrl(video.video_url);
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
@@ -2626,9 +2622,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* Tap hint removed — content-first UI */}
 
       {/* ── TAP: toggle play/pause on single tap, toggle mute on double tap ── */}
-      {!photoUrls && (() => {
-        let tapTimer = null;
-        return (
+      {!photoUrls && (
           <div
             onClick={tap(() => {
               const resolvedVideoUrl = resolveMediaUrl(video.video_url);
@@ -2653,8 +2647,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               }
             }}
             style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
-        );
-      })()}
+      )}
 
       {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
       {!playing && !photoUrls && (
@@ -5980,20 +5973,21 @@ function App() {
               const next1 = arr[idx + 1]; if (next1?.sound_url) preloadAudio(next1.sound_url);
               const next2 = arr[idx + 2]; if (next2?.sound_url) preloadAudio(next2.sound_url);
               return (
-            <VideoCard key={v.id} video={v} currentUser={currentUser}
-              onCommentOpen={setCommentVideo}
-              onLike={handleLike}
-              onView={handleView}
-              onNeedAuth={() => setShowAuth(true)}
-              onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
-              onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
-              followedUserIds={followedUserIds}
-              onFollowChange={handleFollowChange}
-              onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
-              onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
-              blockedIds={blockedIds}
-              />
-          );})}
+                <VideoCard key={v.id} video={v} currentUser={currentUser}
+                  onCommentOpen={setCommentVideo}
+                  onLike={handleLike}
+                  onView={handleView}
+                  onNeedAuth={() => setShowAuth(true)}
+                  onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
+                  onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
+                  followedUserIds={followedUserIds}
+                  onFollowChange={handleFollowChange}
+                  onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
+                  onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
+                  blockedIds={blockedIds}
+                />
+              );
+            })}
           {feedTab === "forYou" && feedHasMore && (
             <div ref={feedSentinelRef} style={{ height:1, marginBottom:80 }} />
           )}
