@@ -11,6 +11,30 @@ import MusicPicker from "./MusicPicker.jsx";
 
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 
+// ── SachiHype API helpers ─────────────────────────────────────────────────
+const hypes = {
+  async add(video_id, user_id, username) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiHype`, { video_id, user_id, username });
+  },
+  async remove(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiHype/${id}`);
+  },
+  async getByUserAndVideo(video_id, user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiHype?video_id=${video_id}&user_id=${user_id}&limit=5`);
+      return Array.isArray(res) ? res : (res?.items || []);
+    } catch { return []; }
+  },
+  async countToday(user_id) {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiHype?user_id=${user_id}&limit=100`);
+      const all = Array.isArray(res) ? res : (res?.items || []);
+      return all.filter(h => h.created_date?.startsWith(today)).length;
+    } catch { return 0; }
+  }
+};
+
 // ── SachiLike API helpers ─────────────────────────────────────────────────
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
@@ -2171,6 +2195,10 @@ function getUserAge() {
 
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
   const [showLikers, setShowLikers] = React.useState(false);
+  const [hyped, setHyped] = React.useState(false);
+  const [hypeCount, setHypeCount] = React.useState(video.hype_count || 0);
+  const [hypeAnim, setHypeAnim] = React.useState(false);
+  const [myHypeId, setMyHypeId] = React.useState(null);
   const [likersList, setLikersList] = React.useState([]);
   const [likersLoading, setLikersLoading] = React.useState(false);
   const [myLikeId, setMyLikeId] = React.useState(null); // SachiLike record ID for unlike
@@ -2345,6 +2373,29 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       }
     } catch(e) { console.error("Like record error:", e); }
+  };
+
+  const doHype = async () => {
+    if (!currentUser) { onNeedAuth(); return; }
+    if (hyped) { toast.info("You already hyped this! 🔥"); return; }
+    // Check daily limit — 5 hypes per day
+    const todayCount = await hypes.countToday(currentUser.id);
+    if (todayCount >= 5) { toast.warn("You've used all 5 hypes for today! Come back tomorrow 🔥"); return; }
+    try {
+      setHyped(true);
+      setHypeCount(c => c + 1);
+      setHypeAnim(true);
+      setTimeout(() => setHypeAnim(false), 600);
+      const rec = await hypes.add(video.id, currentUser.id, currentUser.username || currentUser.email?.split("@")[0]);
+      setMyHypeId(rec?.id || null);
+      // Update hype_count on the video
+      await videos.update(video.id, { hype_count: (video.hype_count || 0) + 1 });
+      toast.success("🔥 Hyped! This post is getting pushed to more feeds!");
+    } catch(e) {
+      setHyped(false);
+      setHypeCount(c => Math.max(0, c - 1));
+      toast.error("Hype failed: " + e.message);
+    }
   };
 
   const doFollow = async () => {
@@ -2715,6 +2766,36 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
 
+        {/* Hype */}
+        {(() => {
+          // Fire level based on hype count
+          const lvl = hypeCount >= 100 ? 5 : hypeCount >= 50 ? 4 : hypeCount >= 20 ? 3 : hypeCount >= 5 ? 2 : hypeCount >= 1 ? 1 : 0;
+          const fireEmoji = ["🔥","🔥","🔥🔥","🔥🔥","🔥🔥🔥","🔥🔥🔥"][lvl];
+          const fireSize = [13, 15, 16, 18, 20, 22][lvl];
+          const fireBg = hyped
+            ? ["rgba(255,100,0,0.25)","rgba(255,100,0,0.3)","rgba(255,80,0,0.35)","rgba(255,60,0,0.4)","rgba(255,40,0,0.45)","rgba(255,20,0,0.5)"][lvl]
+            : "rgba(255,255,255,0.08)";
+          const fireBorder = hyped
+            ? ["rgba(255,120,0,0.6)","rgba(255,100,0,0.7)","rgba(255,80,0,0.8)","rgba(255,60,0,0.9)","rgba(255,40,0,1)","rgba(255,20,0,1)"][lvl]
+            : "rgba(255,255,255,0.1)";
+          return (
+            <button onClick={tap(doHype)}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+              <div style={{ width:28, height:28, borderRadius:8, background:fireBg,
+                backdropFilter:"blur(12px)", border:`1px solid ${fireBorder}`,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                animation: hypeAnim ? "firepop 0.6s ease forwards" : hyped ? "fireflicker 2s ease-in-out infinite" : "none",
+                transformOrigin:"center", transition:"background 0.3s, border 0.3s" }}>
+                <span style={{ fontSize:fireSize, lineHeight:1, transition:"font-size 0.3s" }}>{fireEmoji || "🔥"}</span>
+              </div>
+              <div style={{ color: hyped ? "#FF6B00" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>
+                {hypeCount > 0 ? hypeCount : "Hype"}
+              </div>
+            </button>
+          );
+        })()}
+
         {/* Like */}
         <button onClick={tap(doLike)}
           style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
@@ -2959,7 +3040,17 @@ spinStyle.textContent = `
     56%  { transform: scale(1); }
     100% { transform: scale(1); }
   }
-  @keyframes heartpop {
+  @keyframes firepop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.6) rotate(-10deg); }
+  60% { transform: scale(1.3) rotate(8deg); }
+  100% { transform: scale(1); }
+}
+@keyframes fireflicker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+@keyframes heartpop {
     0%   { transform: scale(1); }
     30%  { transform: scale(1.5); }
     60%  { transform: scale(0.9); }
