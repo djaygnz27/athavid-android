@@ -5091,11 +5091,16 @@ function AdminPanel({ currentUser }) {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [saving, setSaving] = useState(null);
+  const [modToast, setModToast] = useState(null);
+  const showToast = (msg, type="success") => { setModToast({msg,type}); setTimeout(()=>setModToast(null),3000); };
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
   const [founders, setFounders] = useState([]);
   const [foundersLoading, setFoundersLoading] = useState(false);
   const [founderNote, setFounderNote] = useState("");
+  const [podcasts, setPodcasts] = useState([]);
+  const [podcastsLoading, setPodcastsLoading] = useState(false);
+  const [podcastConfirmDelete, setPodcastConfirmDelete] = useState(null);
 
   const loadVideos = async () => {
     setLoading(true);
@@ -5224,6 +5229,28 @@ function AdminPanel({ currentUser }) {
   useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
   useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
   useEffect(() => { if (modTab === "users") loadRegisteredUsers(); }, [modTab]);
+  useEffect(() => { if (modTab === "podcasts") loadPodcasts(); }, [modTab]);
+
+  const loadPodcasts = async () => {
+    setPodcastsLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast?limit=200&sort=-created_date`);
+      const items = res.items || (Array.isArray(res) ? res : res.records || []);
+      setPodcasts(items);
+    } catch(e) { console.error("loadPodcasts:", e); }
+    setPodcastsLoading(false);
+  };
+
+  const handleDeletePodcast = async (id) => {
+    try {
+      await request("DELETE", `/apps/${APP_ID}/entities/SachiPodcast/${id}`);
+      setPodcasts(p => p.filter(x => x.id !== id));
+      setPodcastConfirmDelete(null);
+      showToast("Podcast deleted.", "success");
+    } catch(e) {
+      showToast("Delete failed. Try again.", "error");
+    }
+  };
 
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -5325,8 +5352,9 @@ function AdminPanel({ currentUser }) {
           </button>
         </div>
         {/* Tab switcher */}
+        {modToast && <div style={{ position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", zIndex:9999, background: modToast.type==="error" ? "#c62828" : "#2e7d32", color:"#fff", padding:"10px 20px", borderRadius:12, fontWeight:700, fontSize:14, boxShadow:"0 4px 20px rgba(0,0,0,0.4)" }}>{modToast.msg}</div>}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Creators"],["analytics","📊 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Creators"],["podcasts","🎙️ Podcasts"],["analytics","📊 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
