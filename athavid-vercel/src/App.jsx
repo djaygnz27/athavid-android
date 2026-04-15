@@ -5750,6 +5750,8 @@ function App() {
       const raw = rawAll.filter(v => {
         if (v.is_archived) return false;
         if (v.archive_date && new Date(v.archive_date) < now) return false;
+        // Treat null/missing post_visibility as "everyone" — never exclude these
+        if (v.post_visibility && v.post_visibility === "only_me") return false;
         return true;
       });
       setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
