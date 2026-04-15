@@ -2206,7 +2206,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     ? safeParsePhotoUrls(video.photo_urls)
     : null;
 
-  // Carousel swipe support — detects horizontal vs vertical to avoid feed conflict
+  // Carousel swipe support
   const swipeTouchStartX = useRef(null);
   const swipeTouchStartY = useRef(null);
   const swipeIsHorizontal = useRef(false);
@@ -2219,9 +2219,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (swipeTouchStartX.current === null) return;
     const dx = Math.abs(e.touches[0].clientX - swipeTouchStartX.current);
     const dy = Math.abs(e.touches[0].clientY - swipeTouchStartY.current);
-    if (dx > dy && dx > 10) {
+    if (dx > 8) {
       swipeIsHorizontal.current = true;
-      e.stopPropagation(); // stop feed from scrolling
+      e.stopPropagation();
+      e.preventDefault();
     }
   };
   const handleCarouselTouchEnd = (e) => {
@@ -2230,8 +2231,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const dy = e.changedTouches[0].clientY - swipeTouchStartY.current;
     swipeTouchStartX.current = null;
     swipeTouchStartY.current = null;
-    if (Math.abs(dx) < 30) return; // too short
-    if (Math.abs(dy) > Math.abs(dx)) return; // vertical swipe — let feed handle it
+    if (Math.abs(dx) < 30) return;
+    if (!swipeIsHorizontal.current && Math.abs(dy) > Math.abs(dx)) return;
     e.stopPropagation();
     if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1)); // swipe left = next
     else setPhotoIdx(p => Math.max(p - 1, 0)); // swipe right = prev
@@ -2438,7 +2439,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div onTouchStart={handleCarouselTouchStart} onTouchMove={handleCarouselTouchMove} onTouchEnd={handleCarouselTouchEnd} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
+        <div onTouchStart={handleCarouselTouchStart} onTouchMove={handleCarouselTouchMove} onTouchEnd={handleCarouselTouchEnd} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"none" }}>
           {/* Photo takes up most of the space */}
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"all" }}>
             <img
@@ -2458,7 +2459,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {/* ── CAROUSEL NAV: Both arrows on LEFT side stacked ── */}
           {photoUrls.length > 1 && (
             <div style={{
-              position:"absolute", left:10, top:"35%", transform:"translateY(-50%)",
+              position:"absolute", left:10, top:100,
               display:"flex", flexDirection:"column", gap:10, zIndex:9999
             }}>
               {/* PREV — only show if not first */}
