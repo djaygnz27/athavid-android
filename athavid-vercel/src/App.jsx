@@ -1118,10 +1118,53 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     });
   };
 
+  // Resize to max 1200px longest side + compress to under 300KB
+  const compressImage = (file, maxPx = 1200, maxBytes = 300 * 1024) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          // Scale down if either dimension exceeds maxPx
+          if (width > maxPx || height > maxPx) {
+            if (width >= height) { height = Math.round(height * maxPx / width); width = maxPx; }
+            else { width = Math.round(width * maxPx / height); height = maxPx; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+          // Binary search for the right quality to hit < maxBytes
+          const tryCompress = (quality, attempts = 0) => {
+            canvas.toBlob((blob) => {
+              if (!blob) { resolve(file); return; }
+              if (blob.size <= maxBytes || quality <= 0.3 || attempts > 6) {
+                const ext = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                resolve(new File([blob], ext, { type: 'image/jpeg' }));
+              } else {
+                tryCompress(quality - 0.12, attempts + 1);
+              }
+            }, 'image/jpeg', quality);
+          };
+          tryCompress(0.85);
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handlePhotoSelect = async (e) => {
     const rawFiles = Array.from(e.target.files);
     if (!rawFiles.length) return;
-    const converted = await Promise.all(rawFiles.map(f => convertHeicToJpeg(f)));
+    // Step 1: HEIC → JPEG. Step 2: resize + compress
+    const converted = await Promise.all(rawFiles.map(async f => {
+      const heicFixed = await convertHeicToJpeg(f);
+      return compressImage(heicFixed);
+    }));
     setPhotos(prev => {
       const combined = [...prev, ...converted];
       return combined.slice(0, 6);
@@ -1455,7 +1498,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.92));
       const imgFile = new File([blob], `textpost_${Date.now()}.jpg`, { type:"image/jpeg" });
       setStep("Uploading...");
-      const img_url = await uploadFile(imgFile);
+      const compressedImgFile = await compressImage(imgFile);
+      const img_url = await uploadFile(compressedImgFile);
       setProgress(75); setStep("Posting...");
       const textGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
