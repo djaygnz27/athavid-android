@@ -91,6 +91,8 @@ function formatCount(n) {
   return String(n);
 }
 
+// Proxy image URLs through wsrv.nl for on-the-fly resize + WebP compression
+// Videos are passed through unchanged
 const resolveMediaUrl = (url, isVideo) => {
   if (!url) return url;
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
@@ -98,7 +100,14 @@ const resolveMediaUrl = (url, isVideo) => {
     const filename = match[2];
     const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
     const bucket = isVideoFile ? 'videos' : 'images';
-    return `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
+    const directUrl = `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
+    if (isVideoFile) return directUrl;
+    // Route images through wsrv.nl — resize to 1200px wide, 75% quality, WebP output
+    return `https://wsrv.nl/?url=${encodeURIComponent(directUrl)}&w=1200&q=75&output=webp&n=-1`;
+  }
+  // Also proxy any raw media.base44.com image URLs not matching the pattern
+  if (!isVideo && url.includes('media.base44.com/images')) {
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp&n=-1`;
   }
   return url;
 };
