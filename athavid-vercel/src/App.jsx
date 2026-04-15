@@ -2456,39 +2456,46 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
           </div>
 
-          {/* ── CAROUSEL NAV: Both arrows on LEFT side stacked ── */}
+          {/* ── CAROUSEL NAV: invisible tap zones on left/right of photo center ── */}
           {photoUrls.length > 1 && (
-            <div style={{
-              position:"absolute", left:10, top:100,
-              display:"flex", flexDirection:"column", gap:10, zIndex:9999
-            }}>
-              {/* PREV — only show if not first */}
+            <>
+              {/* LEFT tap zone - prev */}
               <div
                 onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
                 onClick={e => { e.stopPropagation(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
                 style={{
-                  background: photoIdx===0 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
-                  borderRadius:"50%", width:50, height:50,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:28, fontWeight:900,
-                  color: photoIdx===0 ? "rgba(255,255,255,0.2)" : "#fff",
-                  border:"2px solid rgba(255,255,255,0.4)",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
-                }}>‹</div>
-              {/* NEXT — only show if not last */}
+                  position:"absolute", left:0, top:"20%", width:"30%", height:"50%",
+                  zIndex:9999, WebkitTapHighlightColor:"transparent", cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center"
+                }}>
+                {photoIdx > 0 && (
+                  <div style={{
+                    background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:46, height:46,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:26, fontWeight:900, color:"#fff",
+                    border:"2px solid rgba(255,255,255,0.5)", pointerEvents:"none"
+                  }}>‹</div>
+                )}
+              </div>
+              {/* RIGHT tap zone - next (stop before action buttons) */}
               <div
                 onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
                 onClick={e => { e.stopPropagation(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
                 style={{
-                  background: photoIdx===photoUrls.length-1 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
-                  borderRadius:"50%", width:50, height:50,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:28, fontWeight:900,
-                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
-                  border:"2px solid rgba(255,255,255,0.4)",
-                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
-                }}>›</div>
-            </div>
+                  position:"absolute", right:72, top:"20%", width:"30%", height:"50%",
+                  zIndex:9999, WebkitTapHighlightColor:"transparent", cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center"
+                }}>
+                {photoIdx < photoUrls.length-1 && (
+                  <div style={{
+                    background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:46, height:46,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:26, fontWeight:900, color:"#fff",
+                    border:"2px solid rgba(255,255,255,0.5)", pointerEvents:"none"
+                  }}>›</div>
+                )}
+              </div>
+            </>
           )}
 
           {/* ── CAROUSEL DOTS ── */}
