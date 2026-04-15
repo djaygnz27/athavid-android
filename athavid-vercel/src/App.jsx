@@ -4437,55 +4437,141 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   // ── REGISTER FORM ──
   if (showRegister) {
     const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+    const [wizardStep, setWizardStep] = React.useState(1); // 1=create, 2=stream key, 3=obs, 4=done
+    const [generatingKey, setGeneratingKey] = React.useState(false);
+    const [newPodcast, setNewPodcast] = React.useState(null);
+    const [streamCopied, setStreamCopied] = React.useState(null); // "key" | "url" | null
+    const totalSteps = 4;
+
+    const copyToClipboard = (text, type) => {
+      navigator.clipboard.writeText(text).then(() => {
+        setStreamCopied(type);
+        setTimeout(() => setStreamCopied(null), 2500);
+      }).catch(() => {
+        // fallback
+        const el = document.createElement("textarea");
+        el.value = text; document.body.appendChild(el); el.select();
+        document.execCommand("copy"); document.body.removeChild(el);
+        setStreamCopied(type);
+        setTimeout(() => setStreamCopied(null), 2500);
+      });
+    };
+
+    const handleRegisterAndNext = async () => {
+      if (!registerForm.title || !registerForm.host_name) return;
+      setRegistering(true);
+      try {
+        const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+        const res = await request("POST", `/apps/${APP_ID}/entities/SachiPodcast`, {
+          title: registerForm.title,
+          host_name: registerForm.host_name,
+          description: registerForm.description,
+          category: registerForm.category,
+          live_stream_url: "",
+          cover_color: cover.bg,
+          cover_emoji: cover.emoji,
+          status: "Active",
+          is_live: false,
+          listener_count: 0,
+          episode_count: 0,
+          follower_count: 0,
+          host_user_id: currentUser?.id || "",
+          host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "",
+        });
+        const pod = res?.record || res;
+        setNewPodcast(pod);
+        await loadPodcasts();
+        await loadMyShows();
+        fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            host_email: currentUser?.email || "",
+            host_name: registerForm.host_name,
+            podcast_title: registerForm.title,
+            category: registerForm.category,
+          })
+        }).catch(() => {});
+        setWizardStep(2);
+      } catch(e) {
+        console.error(e);
+        showToast("Something went wrong. Please try again.", "error");
+      }
+      setRegistering(false);
+    };
+
+    const handleGenerateStreamKey = async () => {
+      if (!newPodcast?.id) return;
+      setGeneratingKey(true);
+      try {
+        const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ podcast_id: newPodcast.id, podcast_title: newPodcast.title || registerForm.title, host_username: currentUser?.full_name || "" })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          setNewPodcast(p => ({...p, stream_key: data.stream_key, rtmp_url: data.rtmp_url, live_stream_url: data.playback_url }));
+          setWizardStep(3);
+        } else {
+          showToast("Failed to generate stream key. Try again.", "error");
+        }
+      } catch(e) {
+        showToast("Connection error. Try again.", "error");
+      }
+      setGeneratingKey(false);
+    };
+
+    const StepDot = ({n}) => (
+      <div style={{ display:"flex", alignItems:"center", gap:0 }}>
+        <div style={{ width:28, height:28, borderRadius:"50%", background: wizardStep >= n ? "#F5C842" : "rgba(255,255,255,0.1)", color: wizardStep >= n ? "#0B0C1A" : "rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13, flexShrink:0 }}>{n}</div>
+        {n < totalSteps && <div style={{ width:32, height:2, background: wizardStep > n ? "#F5C842" : "rgba(255,255,255,0.08)" }} />}
+      </div>
+    );
+
     return (
       <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
         {toast && <Toast msg={toast.msg} type={toast.type} />}
-        <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom:60 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
-            <button onClick={() => setShowRegister(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", flexShrink:0 }}>←</button>
-            <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>🎙️ Register Your Podcast</div>
-          </div>
-          {registerDone ? (
-            <div style={{ textAlign:"center", padding:"40px 20px" }}>
-              <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:24, marginBottom:10 }}>You are on the list!</div>
-              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:15, marginBottom:8, lineHeight:1.6 }}>
-                Your show is <strong style={{ color:"#81c784" }}>live on Sachi right now.</strong><br/>No waiting. No approval needed.
-              </div>
-              <div style={{ background:"rgba(46,125,50,0.1)", border:"1px solid rgba(46,125,50,0.3)", borderRadius:14, padding:16, margin:"20px 0 28px", textAlign:"left" }}>
-                <div style={{ color:"#81c784", fontWeight:700, fontSize:13, marginBottom:8 }}>⚡ You are all set — here's how to go live:</div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.7 }}>
-                  1. Go to <strong style={{ color:"#fff" }}>Podcasts tab</strong> and find your show under "My Shows"<br/>
-                  2. Tap your show to open it<br/>
-                  3. (Optional) Add your stream link — YouTube Live, Twitch, etc.<br/>
-                  4. Tap <strong style={{ color:"#e53935" }}>🔴 Go Live Now</strong> — all Sachi users get notified instantly
-                </div>
-              </div>
-              <button onClick={() => { setRegisterDone(false); setShowRegister(false); }}
-                style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"14px 36px", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>
-                Back to Podcasts
-              </button>
+        <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom:80, maxWidth:480, margin:"0 auto" }}>
+
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+            <button onClick={() => { setShowRegister(false); setWizardStep(1); setNewPodcast(null); setRegisterForm({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 }); }}
+              style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", flexShrink:0 }}>←</button>
+            <div>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:19 }}>🎙️ Start Your Podcast</div>
+              <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Step {wizardStep} of {totalSteps}</div>
             </div>
-          ) : (
+          </div>
+
+          {/* Step dots */}
+          <div style={{ display:"flex", alignItems:"center", marginBottom:28 }}>
+            {[1,2,3,4].map(n => <StepDot key={n} n={n} />)}
+          </div>
+
+          {/* ── STEP 1: Create your show ── */}
+          {wizardStep === 1 && (
             <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
-              {/* COVER PICKER */}
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px", marginBottom:4 }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🎯 Step 1 — Tell us about your show</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Fill in the details below. You can always edit them later.</div>
+              </div>
+
+              {/* Cover picker */}
               <div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:10, fontWeight:600 }}>Choose Your Show Cover</div>
-                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:8, fontWeight:600 }}>Choose a cover colour</div>
+                <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:12 }}>
                   {PODCAST_COVER_COLORS.map((c, i) => (
                     <button key={i} onClick={() => setRegisterForm(p => ({...p, coverIdx:i}))}
-                      style={{ width:52, height:52, borderRadius:14, background:c.bg, border: registerForm.coverIdx===i ? "3px solid #F5C842":"3px solid transparent", cursor:"pointer", fontSize:22, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      style={{ width:48, height:48, borderRadius:12, background:c.bg, border: registerForm.coverIdx===i ? "3px solid #F5C842":"3px solid transparent", cursor:"pointer", fontSize:20, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       {c.emoji}
                     </button>
                   ))}
                 </div>
-                <div style={{ marginTop:12, width:"100%", height:70, borderRadius:16, background:selectedCover.bg, display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
-                  <span style={{ fontSize:32 }}>{selectedCover.emoji}</span>
-                  <span style={{ color:"#fff", fontWeight:800, fontSize:15, opacity: registerForm.title ? 1 : 0.4 }}>{registerForm.title || "Your Show Name"}</span>
+                <div style={{ height:64, borderRadius:14, background:selectedCover.bg, display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
+                  <span style={{ fontSize:28 }}>{selectedCover.emoji}</span>
+                  <span style={{ color:"#fff", fontWeight:800, fontSize:14, opacity: registerForm.title ? 1 : 0.4 }}>{registerForm.title || "Your Show Name"}</span>
                 </div>
               </div>
 
-              {/* TITLE */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Podcast Title <span style={{ color:"#e53935" }}>*</span></div>
                 <input value={registerForm.title} onChange={e => setRegisterForm(p => ({...p, title:e.target.value}))}
@@ -4493,7 +4579,6 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
               </div>
 
-              {/* HOST NAME */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Your Name <span style={{ color:"#e53935" }}>*</span></div>
                 <input value={registerForm.host_name} onChange={e => setRegisterForm(p => ({...p, host_name:e.target.value}))}
@@ -4501,16 +4586,14 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
               </div>
 
-              {/* DESCRIPTION */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>What is your podcast about?</div>
                 <textarea value={registerForm.description} onChange={e => setRegisterForm(p => ({...p, description:e.target.value}))}
-                  placeholder="Tell listeners what to expect — topics, guests, vibe..."
+                  placeholder="Topics, guests, vibe — tell listeners what to expect..."
                   rows={3}
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", resize:"none", boxSizing:"border-box" }} />
               </div>
 
-              {/* CATEGORY */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Category</div>
                 <select value={registerForm.category} onChange={e => setRegisterForm(p => ({...p, category:e.target.value}))}
@@ -4521,30 +4604,150 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 </select>
               </div>
 
-              {/* STREAM URL - OPTIONAL */}
-              <div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>
-                  Stream URL <span style={{ color:"rgba(255,255,255,0.25)", fontWeight:400 }}>(optional — add later too)</span>
-                </div>
-                <input value={registerForm.live_stream_url} onChange={e => setRegisterForm(p => ({...p, live_stream_url:e.target.value}))}
-                  placeholder="https://youtube.com/live/... or Twitch link"
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
-                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, marginTop:5 }}>Where listeners will tune in when you go live. You can update this anytime.</div>
-              </div>
-
-              <button onClick={handleRegister} disabled={registering || !registerForm.title || !registerForm.host_name}
-                style={{ width:"100%", padding:"16px 0", background: (!registerForm.title || !registerForm.host_name) ? "rgba(108,60,247,0.3)" : registering ? "rgba(108,60,247,0.5)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: (!registerForm.title || !registerForm.host_name) ? "not-allowed" : "pointer", marginTop:4 }}>
-                {registering ? "⏳ Submitting..." : "Submit My Podcast →"}
+              <button onClick={handleRegisterAndNext} disabled={registering || !registerForm.title || !registerForm.host_name}
+                style={{ width:"100%", padding:"16px 0", background: (!registerForm.title || !registerForm.host_name) ? "rgba(108,60,247,0.3)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: (!registerForm.title || !registerForm.host_name) ? "not-allowed" : "pointer", marginTop:4 }}>
+                {registering ? "⏳ Creating your show..." : "Create My Show →"}
               </button>
-              <div style={{ color:"rgba(255,255,255,0.2)", fontSize:12, textAlign:"center" }}>Reviewed and approved within 24 hours</div>
             </div>
           )}
+
+          {/* ── STEP 2: Generate stream key ── */}
+          {wizardStep === 2 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🔑 Step 2 — Get your Stream Key</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Your show <strong style={{ color:"#fff" }}>"{registerForm.title}"</strong> is created ✅<br/>Now we need to generate a private stream key for you to go live with OBS or any streaming app.</div>
+              </div>
+
+              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding:20, textAlign:"center" }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>📡</div>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:8 }}>What is a Stream Key?</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.7 }}>
+                  Think of it like a <strong style={{ color:"#F5C842" }}>private password</strong> for your broadcast.<br/>
+                  You paste it into OBS or your streaming app so Sachi knows it&apos;s really you going live.
+                  <br/><br/>
+                  <strong style={{ color:"#ff6b6b" }}>⚠️ Never share it publicly.</strong>
+                </div>
+              </div>
+
+              <button onClick={handleGenerateStreamKey} disabled={generatingKey}
+                style={{ width:"100%", padding:"18px 0", background: generatingKey ? "rgba(108,60,247,0.4)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: generatingKey ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                {generatingKey ? (
+                  <><span style={{ animation:"spin 1s linear infinite", display:"inline-block" }}>⏳</span> Generating...</>
+                ) : "🔑 Generate My Stream Key"}
+              </button>
+
+              <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, textAlign:"center" }}>Takes 2–3 seconds. Free forever.</div>
+            </div>
+          )}
+
+          {/* ── STEP 3: OBS Setup ── */}
+          {wizardStep === 3 && newPodcast && (
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>✅ Step 3 — Copy your OBS settings</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Copy these two values into OBS Studio (or any RTMP streaming app) to connect your broadcast to Sachi.</div>
+              </div>
+
+              {/* RTMP Server */}
+              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:16 }}>
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>📡 RTMP Server URL</div>
+                <div style={{ fontFamily:"monospace", color:"#a78bfa", fontSize:13, wordBreak:"break-all", background:"rgba(108,60,247,0.08)", borderRadius:10, padding:"10px 12px", marginBottom:10, lineHeight:1.6 }}>
+                  {newPodcast.rtmp_url || "rtmps://live.cloudflare.com:443/live/"}
+                </div>
+                <button onClick={() => copyToClipboard(newPodcast.rtmp_url || "rtmps://live.cloudflare.com:443/live/", "url")}
+                  style={{ width:"100%", padding:"10px 0", background: streamCopied==="url" ? "rgba(46,125,50,0.3)" : "rgba(108,60,247,0.2)", border:"1px solid " + (streamCopied==="url" ? "rgba(46,125,50,0.5)" : "rgba(108,60,247,0.4)"), borderRadius:10, color: streamCopied==="url" ? "#81c784" : "#a78bfa", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                  {streamCopied==="url" ? "✅ Copied!" : "📋 Copy Server URL"}
+                </button>
+              </div>
+
+              {/* Stream Key */}
+              <div style={{ background:"rgba(229,57,53,0.04)", border:"1px solid rgba(229,57,53,0.2)", borderRadius:14, padding:16 }}>
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>🔑 Your Stream Key (PIN)</div>
+                <div style={{ fontFamily:"monospace", color:"#FF6B6B", fontSize:12, wordBreak:"break-all", background:"rgba(229,57,53,0.08)", borderRadius:10, padding:"10px 12px", marginBottom:10, lineHeight:1.6, filter: streamCopied !== "key" ? "blur(4px)" : "none", transition:"filter 0.3s" }}>
+                  {newPodcast.stream_key || "••••••••••••••••••••••••"}
+                </div>
+                <div style={{ color:"rgba(255,100,100,0.6)", fontSize:11, marginBottom:10, textAlign:"center" }}>👆 Tap Copy to reveal & copy your key</div>
+                <button onClick={() => copyToClipboard(newPodcast.stream_key || "", "key")}
+                  style={{ width:"100%", padding:"12px 0", background: streamCopied==="key" ? "rgba(46,125,50,0.3)" : "rgba(229,57,53,0.2)", border:"1px solid " + (streamCopied==="key" ? "rgba(46,125,50,0.5)" : "rgba(229,57,53,0.4)"), borderRadius:10, color: streamCopied==="key" ? "#81c784" : "#FF6B6B", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+                  {streamCopied==="key" ? "✅ Copied! Key is visible above" : "🔑 Copy Stream Key (PIN)"}
+                </button>
+              </div>
+
+              {/* OBS instructions */}
+              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:16 }}>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:13, marginBottom:12 }}>📺 How to paste into OBS Studio</div>
+                {[
+                  { n:"1", text: "Open OBS → click Settings (bottom right)" },
+                  { n:"2", text: 'Go to the "Stream" tab' },
+                  { n:"3", text: 'Set Service to "Custom..." ' },
+                  { n:"4", text: "Paste the Server URL into the Server field" },
+                  { n:"5", text: "Paste the Stream Key into the Stream Key field" },
+                  { n:"6", text: 'Hit Apply → OK → then click "Start Streaming" in OBS' },
+                ].map(step => (
+                  <div key={step.n} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
+                    <div style={{ width:22, height:22, borderRadius:"50%", background:"rgba(108,60,247,0.3)", color:"#a78bfa", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:11, flexShrink:0 }}>{step.n}</div>
+                    <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.5 }}>{step.text}</div>
+                  </div>
+                ))}
+                <a href="https://obsproject.com/download" target="_blank" rel="noopener noreferrer"
+                  style={{ display:"block", textAlign:"center", marginTop:8, color:"#a78bfa", fontSize:13, textDecoration:"underline" }}>
+                  📥 Don't have OBS? Download it free here
+                </a>
+              </div>
+
+              <button onClick={() => setWizardStep(4)}
+                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#F5C842,#e0a800)", border:"none", borderRadius:16, color:"#0B0C1A", fontWeight:800, fontSize:17, cursor:"pointer" }}>
+                I've copied my settings → Next
+              </button>
+            </div>
+          )}
+
+          {/* ── STEP 4: All done ── */}
+          {wizardStep === 4 && (
+            <div style={{ textAlign:"center", padding:"10px 0" }}>
+              <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:26, marginBottom:8 }}>You're all set!</div>
+              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:15, marginBottom:24, lineHeight:1.7 }}>
+                Your show <strong style={{ color:"#F5C842" }}>"{registerForm.title}"</strong> is live on Sachi.<br/>
+                When you're ready to broadcast, just follow these steps:
+              </div>
+
+              {[
+                { emoji:"🎛️", title:"Open OBS", desc:"Make sure your stream key is pasted in. Hit Start Streaming." },
+                { emoji:"📱", title:"Open Sachi → Podcasts", desc:'Find your show under "My Shows" and tap it.' },
+                { emoji:"🔴", title:'Tap "Go Live Now"', desc:"This notifies ALL Sachi users instantly that you're on air." },
+                { emoji:"🎙️", title:"You're live!", desc:"Listeners can tune in directly inside Sachi." },
+              ].map((s, i) => (
+                <div key={i} style={{ display:"flex", gap:14, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:"14px 16px", marginBottom:12, textAlign:"left" }}>
+                  <div style={{ fontSize:28, flexShrink:0 }}>{s.emoji}</div>
+                  <div>
+                    <div style={{ color:"#fff", fontWeight:700, fontSize:14, marginBottom:3 }}>{s.title}</div>
+                    <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ background:"rgba(46,125,50,0.1)", border:"1px solid rgba(46,125,50,0.25)", borderRadius:14, padding:14, marginBottom:24, textAlign:"left" }}>
+                <div style={{ color:"#81c784", fontWeight:700, fontSize:13, marginBottom:6 }}>💡 Pro tip</div>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, lineHeight:1.6 }}>
+                  Start OBS streaming <strong style={{ color:"#fff" }}>BEFORE</strong> tapping Go Live on Sachi — that way listeners join an already-running stream instantly.
+                </div>
+              </div>
+
+              <button onClick={() => { setShowRegister(false); setWizardStep(1); setNewPodcast(null); setRegisterForm({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 }); }}
+                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", marginBottom:12 }}>
+                Go to My Show →
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     );
   }
 
-  // ── MAIN PODCAST LIST ──
+    // ── MAIN PODCAST LIST ──
   return (
     <>
     <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
