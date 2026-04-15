@@ -2455,44 +2455,39 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
           </div>
 
-          {/* ── CAROUSEL TAP ZONES: tap left 40% = prev, tap right 40% = next ── */}
+          {/* ── CAROUSEL NAV: Both arrows on LEFT side stacked ── */}
           {photoUrls.length > 1 && (
-            <>
-              {/* LEFT tap zone */}
-              {photoIdx > 0 && (
-                <div
-                  onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
-                  onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
-                  style={{
-                    position:"absolute", left:0, top:80, width:"40%", bottom:180,
-                    zIndex:9999, cursor:"pointer", WebkitTapHighlightColor:"transparent",
-                    display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:12
-                  }}>
-                  <div style={{
-                    background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:44, height:44,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:26, fontWeight:900, color:"#fff", border:"1.5px solid rgba(255,255,255,0.35)"
-                  }}>‹</div>
-                </div>
-              )}
-              {/* RIGHT tap zone */}
-              {photoIdx < photoUrls.length - 1 && (
-                <div
-                  onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-                  onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-                  style={{
-                    position:"absolute", right:0, top:80, width:"40%", bottom:180,
-                    zIndex:9999, cursor:"pointer", WebkitTapHighlightColor:"transparent",
-                    display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:12
-                  }}>
-                  <div style={{
-                    background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:44, height:44,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:26, fontWeight:900, color:"#fff", border:"1.5px solid rgba(255,255,255,0.35)"
-                  }}>›</div>
-                </div>
-              )}
-            </>
+            <div style={{
+              position:"absolute", left:10, top:"50%", transform:"translateY(-50%)",
+              display:"flex", flexDirection:"column", gap:10, zIndex:9999
+            }}>
+              {/* PREV — only show if not first */}
+              <div
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
+                onClick={e => { e.stopPropagation(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
+                style={{
+                  background: photoIdx===0 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
+                  borderRadius:"50%", width:50, height:50,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, fontWeight:900,
+                  color: photoIdx===0 ? "rgba(255,255,255,0.2)" : "#fff",
+                  border:"2px solid rgba(255,255,255,0.4)",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+                }}>‹</div>
+              {/* NEXT — only show if not last */}
+              <div
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
+                onClick={e => { e.stopPropagation(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
+                style={{
+                  background: photoIdx===photoUrls.length-1 ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.6)",
+                  borderRadius:"50%", width:50, height:50,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, fontWeight:900,
+                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
+                  border:"2px solid rgba(255,255,255,0.4)",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+                }}>›</div>
+            </div>
           )}
 
           {/* ── CAROUSEL DOTS ── */}
