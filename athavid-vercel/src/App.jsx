@@ -2215,6 +2215,36 @@ function getUserAge() {
   return age;
 }
 
+// ── LazyVideoCard: only renders full VideoCard when within 1 screen of viewport ──
+function LazyVideoCard(props) {
+  const ref = React.useRef(null);
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { rootMargin: "200% 0px" } // preload 2 screens ahead
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} style={{ height:"100svh", scrollSnapAlign:"start", flexShrink:0, scrollSnapStop:"always" }}>
+      {visible
+        ? <VideoCard {...props} />
+        : <div style={{ width:"100%", height:"100%",
+            background:"linear-gradient(135deg,#1B1535 0%,#0B0C1A 50%,#2A1E00 100%)",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:40, height:40, borderRadius:"50%",
+              border:"3px solid rgba(245,200,66,0.2)", borderTopColor:"#F5C842",
+              animation:"spin 0.9s linear infinite" }} />
+          </div>
+      }
+    </div>
+  );
+}
+
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, nextVideoUrl }) {
   const videoRef = useRef(null);
   const soundRef = useRef(null);
@@ -5351,7 +5381,7 @@ function AdminPanel({ currentUser }) {
                     <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
                       <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
                         {video.thumbnail_url
-                          ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          ? <img src={video.thumbnail_url} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                           : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
@@ -5398,7 +5428,7 @@ function AdminPanel({ currentUser }) {
                   <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
                     <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
                       {video.thumbnail_url
-                        ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                        ? <img src={video.thumbnail_url} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
@@ -5463,7 +5493,7 @@ function AdminPanel({ currentUser }) {
                 {/* Thumbnail */}
                 <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
                   {video.thumbnail_url ? (
-                    <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    <img src={video.thumbnail_url} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   ) : (
                     <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>
                   )}
@@ -5591,7 +5621,7 @@ function App() {
   const [blockedIds, setBlockedIds] = useState(new Set()); // blocked user ids
   const [feedPage, setFeedPage] = useState(1);
   const [feedHasMore, setFeedHasMore] = useState(true);
-  const FEED_PAGE_SIZE = 200;
+  const FEED_PAGE_SIZE = 15;
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
@@ -6008,7 +6038,7 @@ function App() {
           {(feedTab === "forYou" ? videoList : followingVideos)
             .filter(v => !blockedIds.has(v.user_id))
             .map((v, idx, arr) => (
-            <VideoCard key={v.id} video={v} currentUser={currentUser}
+            <LazyVideoCard key={v.id} video={v} currentUser={currentUser}
               nextVideoUrl={arr[idx+1]?.video_url || null}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
