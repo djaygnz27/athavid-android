@@ -1207,7 +1207,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_approved: true,
         is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
@@ -1275,7 +1275,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_approved: true,
         is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
@@ -2567,7 +2567,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {/* Arrow nav — prev */}
           {photoUrls.length > 1 && photoIdx > 0 && (
             <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1, 0)); }}
-              style={{ position:"absolute", left:8, top:"50%", transform:"translateY(-50%)", zIndex:350,
+              style={{ position:"absolute", left:8, bottom:"38%", zIndex:350,
                 width:36, height:36, borderRadius:"50%", background:"rgba(0,0,0,0.55)",
                 display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
                 border:"1px solid rgba(255,255,255,0.2)" }}>
@@ -2579,7 +2579,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {/* Arrow nav — next */}
           {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
             <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-              style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", zIndex:350,
+              style={{ position:"absolute", right:48, bottom:"38%", zIndex:350,
                 width:36, height:36, borderRadius:"50%", background:"rgba(0,0,0,0.55)",
                 display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
                 border:"1px solid rgba(255,255,255,0.2)" }}>
@@ -5703,6 +5703,23 @@ function App() {
 
   useEffect(() => { loadVideos(); }, []);
 
+  // One-time fix: bulk-approve any posts stuck with is_approved=false that aren't AI-detected
+  useEffect(() => {
+    const fixUnapproved = async () => {
+      try {
+        const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`);
+        const all = Array.isArray(res) ? res : (res?.items || res?.records || []);
+        const stuck = all.filter(v => v.is_approved === false && !v.is_ai_detected);
+        if (stuck.length === 0) return;
+        console.log(`Approving ${stuck.length} stuck posts...`);
+        await Promise.all(stuck.map(v => request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${v.id}`, { is_approved: true }).catch(() => {})));
+        console.log('Bulk approval done — reloading feed');
+        loadVideos(currentUser, false, 1);
+      } catch(e) { console.error('Bulk approval error:', e); }
+    };
+    fixUnapproved();
+  }, []);
+
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
     const handleSachiShare = (e) => {
@@ -5758,8 +5775,8 @@ function App() {
       const ids = items.map(r => r.following_id);
       setFollowingIds(ids);
       if (ids.length === 0) { setFollowingVideos([]); return; }
-      const allVids = await videos.list();
-      const vids = (allVids.items || allVids || []).filter(v => ids.includes(v.user_id));
+      const allVids = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=200&sort=-created_date`);
+      const vids = ((allVids?.items || allVids) || []).filter(v => ids.includes(v.user_id));
       setFollowingVideos(vids);
     } catch(e) { console.error(e); }
   };
@@ -5767,35 +5784,17 @@ function App() {
   const loadVideos = async (user, append = false, page = 1) => {
     if (!append) setLoading(true);
     try {
-      const skip = (page - 1) * FEED_PAGE_SIZE;
-      const data = await videos.list(FEED_PAGE_SIZE, skip);
+      const data = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`);
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const raw = rawAll.filter(v => !v.is_archived);
-      setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
+      const raw = rawAll.filter(v => !v.is_archived && v.post_visibility !== "only_me");
+      setFeedHasMore(false);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
-      // Sort: newest first, with a mild boost for high-engagement videos
-      const sorted = [...raw].sort((a,b) => {
-        const ageDiffHours = (new Date(b.created_date||0) - new Date(a.created_date||0)) / 3600000;
-        const engA = (a.likes_count||0)*2 + (a.comments_count||0)*3 + (a.views_count||0)*0.01;
-        const engB = (b.likes_count||0)*2 + (b.comments_count||0)*3 + (b.views_count||0)*0.01;
-        // Only let engagement override if >24h apart AND significantly more engaging
-        if (Math.abs(ageDiffHours) > 48 && (engB - engA) > 50) return 1;
-        if (Math.abs(ageDiffHours) > 48 && (engA - engB) > 50) return -1;
-        return new Date(b.created_date||0) - new Date(a.created_date||0);
+      const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
+      setVideoList(sorted);
+      requestAnimationFrame(() => {
+        const el = feedContainerRef.current;
+        if (el) el.scrollTo({ top: 0, behavior: 'instant' });
       });
-      const ranked = sorted;
-      if (append) {
-        setVideoList(prev => {
-          const existing = new Set(prev.map(v => v.id));
-          return [...prev, ...ranked.filter(v => !existing.has(v.id))];
-        });
-      } else {
-        setVideoList(ranked);
-        requestAnimationFrame(() => {
-          const el = feedContainerRef.current;
-          if (el) el.scrollTo({ top: 0, behavior: 'instant' });
-        });
-      }
     } catch(err) {
       console.error('loadVideos error:', err);
       if (!append) setVideoList([]);
