@@ -5740,39 +5740,66 @@ function App() {
     } catch(e) { console.error(e); }
   };
 
+  // Smart feed algorithm — loads 200 posts, scores them, caps per-user at 3,
+  // then shuffles with recency + engagement weighting for variety at any scale
+  const buildSmartFeed = (rawAll, existingIds = new Set()) => {
+    const now = new Date();
+    const filtered = rawAll.filter(v => {
+      if (existingIds.has(v.id)) return false;
+      if (v.is_archived) return false;
+      if (v.archive_date && new Date(v.archive_date) < now) return false;
+      if (v.post_visibility && v.post_visibility === "only_me") return false;
+      return true;
+    });
+    // Score each post: recency (0-100) + engagement boost (0-30)
+    const nowMs = now.getTime();
+    const oldest = Math.min(...filtered.map(v => new Date(v.created_date||0).getTime()));
+    const range = nowMs - oldest || 1;
+    const scored = filtered.map(v => {
+      const ageScore = ((new Date(v.created_date||0).getTime() - oldest) / range) * 100;
+      const eng = (v.likes_count||0)*2 + (v.comments_count||0)*3 + (v.views_count||0)*0.01 + (v.hype_count||0)*1.5;
+      const engScore = Math.min(eng / 10, 30);
+      // Add small random jitter so feed feels fresh every session
+      const jitter = Math.random() * 15;
+      return { ...v, _score: ageScore + engScore + jitter };
+    });
+    // Sort by score descending
+    scored.sort((a, b) => b._score - a._score);
+    // Cap any single user at 3 posts — prevents one prolific creator dominating
+    const userCounts = {};
+    const capped = [];
+    for (const v of scored) {
+      const uid = v.user_id || v.username;
+      userCounts[uid] = (userCounts[uid] || 0) + 1;
+      if (userCounts[uid] <= 3) capped.push(v);
+    }
+    // If we capped too aggressively (< 15 posts), let the overflow back in
+    if (capped.length < 15) {
+      const cappedIds = new Set(capped.map(v => v.id));
+      const overflow = scored.filter(v => !cappedIds.has(v.id));
+      capped.push(...overflow);
+    }
+    return capped;
+  };
+
   const loadVideos = async (user, append = false, page = 1) => {
     if (!append) setLoading(true);
     try {
-      const skip = (page - 1) * FEED_PAGE_SIZE;
-      const data = await videos.list(FEED_PAGE_SIZE, skip);
+      // Load a large pool — algorithm handles variety, not pagination size
+      const POOL_SIZE = 200;
+      const skip = (page - 1) * POOL_SIZE;
+      const data = await videos.list(POOL_SIZE, skip);
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const now = new Date();
-      const raw = rawAll.filter(v => {
-        if (v.is_archived) return false;
-        if (v.archive_date && new Date(v.archive_date) < now) return false;
-        // Treat null/missing post_visibility as "everyone" — never exclude these
-        if (v.post_visibility && v.post_visibility === "only_me") return false;
-        return true;
-      });
-      setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
-      if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
-      // Sort: newest first, with a mild boost for high-engagement videos
-      const sorted = [...raw].sort((a,b) => {
-        const ageDiffHours = (new Date(b.created_date||0) - new Date(a.created_date||0)) / 3600000;
-        const engA = (a.likes_count||0)*2 + (a.comments_count||0)*3 + (a.views_count||0)*0.01;
-        const engB = (b.likes_count||0)*2 + (b.comments_count||0)*3 + (b.views_count||0)*0.01;
-        // Only let engagement override if >24h apart AND significantly more engaging
-        if (Math.abs(ageDiffHours) > 48 && (engB - engA) > 50) return 1;
-        if (Math.abs(ageDiffHours) > 48 && (engA - engB) > 50) return -1;
-        return new Date(b.created_date||0) - new Date(a.created_date||0);
-      });
-      const ranked = sorted;
+      setFeedHasMore(rawAll.length === POOL_SIZE);
+      if (!rawAll.length && !append) { setVideoList([]); setLoading(false); return; }
       if (append) {
         setVideoList(prev => {
-          const existing = new Set(prev.map(v => v.id));
-          return [...prev, ...ranked.filter(v => !existing.has(v.id))];
+          const existingIds = new Set(prev.map(v => v.id));
+          const ranked = buildSmartFeed(rawAll, existingIds);
+          return [...prev, ...ranked];
         });
       } else {
+        const ranked = buildSmartFeed(rawAll);
         setVideoList(ranked);
         // Eagerly preload first video so it plays instantly
         if (ranked.length > 0 && ranked[0].video_url) {
