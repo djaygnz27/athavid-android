@@ -1,5 +1,6 @@
 // Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import heic2any from "heic2any";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
@@ -1102,30 +1103,35 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   // Convert HEIC/HEIF files to JPEG for cross-browser compatibility
   const convertHeicToJpeg = async (file) => {
-    if (!file.type.includes('heic') && !file.type.includes('heif') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
-      return file;
-    }
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob((blob) => {
-            const converted = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
-            resolve(converted);
-          }, 'image/jpeg', 0.92);
+    const isHeic = file.type.includes('heic') || file.type.includes('heif') ||
+                   file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+    if (!isHeic) return file;
+    try {
+      const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+      const outBlob = Array.isArray(blob) ? blob[0] : blob;
+      return new File([outBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+    } catch (e) {
+      console.warn('heic2any failed, falling back to canvas method:', e);
+      // canvas fallback for any edge cases
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            canvas.toBlob((b) => {
+              resolve(new File([b], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
+            }, 'image/jpeg', 0.92);
+          };
+          img.onerror = () => resolve(file);
+          img.src = ev.target.result;
         };
-        img.onerror = () => resolve(file); // fallback: use original
-        img.src = e.target.result;
-      };
-      reader.onerror = () => resolve(file);
-      reader.readAsDataURL(file);
-    });
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
   };
 
   // Resize to max 1200px longest side + compress to under 300KB
