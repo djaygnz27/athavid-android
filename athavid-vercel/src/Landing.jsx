@@ -23,6 +23,7 @@ export default function Landing({ onEnter }) {
   const [phase, setPhase] = useState("idle");
   const [leaving, setLeaving] = useState(false);
   const leavingRef = React.useRef(false);
+  const preloadRef = React.useRef(null);
 
   const handleEnter = React.useCallback(() => {
     if (leavingRef.current) return;
@@ -30,6 +31,34 @@ export default function Landing({ onEnter }) {
     setLeaving(true);
     setTimeout(() => onEnter(), 700);
   }, [onEnter]);
+
+  // Start fetching & buffering the first video immediately while splash is showing
+  useEffect(() => {
+    const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+    fetch(`https://sachi-c7f0261c.base44.app/api/apps/${APP_ID}/entities/SachiVideo?limit=10&sort=-created_date`, {
+      headers: { "x-api-key": "public" }
+    })
+      .then(r => r.json())
+      .then(data => {
+        const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
+        const first = items.find(v => !v.is_archived && v.video_url);
+        if (first?.video_url) {
+          const el = document.createElement("video");
+          el.src = first.video_url;
+          el.preload = "auto";
+          el.muted = true;
+          el.playsInline = true;
+          el.style.display = "none";
+          el.load();
+          document.body.appendChild(el);
+          preloadRef.current = el;
+        }
+      })
+      .catch(() => {});
+    return () => {
+      // Leave preloaded video in DOM — the VideoCard will reuse the cached bytes
+    };
+  }, []);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
