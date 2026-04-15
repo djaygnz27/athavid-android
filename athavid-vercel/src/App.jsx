@@ -5792,8 +5792,20 @@ function App() {
       // Load a large pool — algorithm handles variety, not pagination size
       const POOL_SIZE = 200;
       const skip = (page - 1) * POOL_SIZE;
-      const data = await videos.list(POOL_SIZE, skip);
-      const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      // Use service-role backend function — bypasses RLS so ALL public posts show
+      // regardless of created_by value (fixes "anonymous" created_by issue)
+      let rawAll = [];
+      try {
+        const res = await fetch(`https://sachi-c7f0261c.base44.app/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
+        if (res.ok) {
+          const json = await res.json();
+          rawAll = Array.isArray(json) ? json : (json?.items || json?.records || []);
+        } else { throw new Error("feed fallback"); }
+      } catch {
+        // Fallback to direct entity API if backend function unavailable
+        const data = await videos.list(POOL_SIZE, skip);
+        rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      }
       setFeedHasMore(rawAll.length === POOL_SIZE);
       if (!rawAll.length && !append) { setVideoList([]); setLoading(false); return; }
       if (append) {
