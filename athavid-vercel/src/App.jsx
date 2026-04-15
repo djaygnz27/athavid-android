@@ -2198,6 +2198,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [showUI, setShowUI] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
 
@@ -2300,7 +2301,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           preloadEl.style.display = "none";
           preloadEl.load();
           document.body.appendChild(preloadEl);
-          setTimeout(() => { try { document.body.removeChild(preloadEl); } catch(e){} }, 8000);
+          setTimeout(() => { try { document.body.removeChild(preloadEl); } catch(e){} }, 10000);
         }
       } else {
         el.pause();
@@ -2553,11 +2554,21 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         return (
           <>
+            {/* Thumbnail shown until video is ready */}
+            {!videoLoaded && video.thumbnail_url && (
+              <img
+                src={resolveMediaUrl(video.thumbnail_url)}
+                style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", zIndex:1 }}
+              />
+            )}
             <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
               loop playsInline preload="auto"
               muted={muted || !!video.sound_url}
+              onLoadedData={() => setVideoLoaded(true)}
+              onCanPlay={() => setVideoLoaded(true)}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
+                setVideoLoaded(true);
                 if (soundRef.current && video.sound_url && !muted) {
                   soundRef.current.play().catch(() => {});
                 }
@@ -5658,6 +5669,15 @@ function App() {
         });
       } else {
         setVideoList(ranked);
+        // Eagerly preload first video so it plays instantly
+        if (ranked.length > 0 && ranked[0].video_url) {
+          const firstUrl = ranked[0].video_url;
+          const el = document.createElement("video");
+          el.src = firstUrl; el.preload = "auto"; el.muted = true;
+          el.style.display = "none"; el.load();
+          document.body.appendChild(el);
+          setTimeout(() => { try { document.body.removeChild(el); } catch(e){} }, 15000);
+        }
         requestAnimationFrame(() => {
           const el = feedContainerRef.current;
           if (el) el.scrollTo({ top: 0, behavior: 'instant' });
