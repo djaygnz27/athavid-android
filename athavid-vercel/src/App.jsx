@@ -5763,8 +5763,12 @@ function App() {
       const jitter = Math.random() * 15;
       return { ...v, _score: ageScore + engScore + jitter };
     });
-    // Sort by score descending
-    scored.sort((a, b) => b._score - a._score);
+    // Fisher-Yates shuffle weighted by score — true randomness with recency bias
+    for (let i = scored.length - 1; i > 0; i--) {
+      // Weight: higher scored items more likely to stay near top
+      const j = Math.floor(Math.random() * Math.min(i + 1, Math.ceil(i * 0.6) + 1));
+      [scored[i], scored[j]] = [scored[j], scored[i]];
+    }
     // Cap any single user at 3 posts — prevents one prolific creator dominating
     const userCounts = {};
     const capped = [];
