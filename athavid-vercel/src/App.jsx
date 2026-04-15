@@ -2458,7 +2458,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {/* ── CAROUSEL NAV: Both arrows on LEFT side stacked ── */}
           {photoUrls.length > 1 && (
             <div style={{
-              position:"absolute", left:10, top:"50%", transform:"translateY(-50%)",
+              position:"absolute", left:10, top:"35%", transform:"translateY(-50%)",
               display:"flex", flexDirection:"column", gap:10, zIndex:9999
             }}>
               {/* PREV — only show if not first */}
