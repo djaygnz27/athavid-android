@@ -58,7 +58,7 @@ export const auth = {
 };
 
 export const videos = {
-  async list(limit = 30, skip = 0) {
+  async list(limit = 100, skip = 0) {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
