@@ -170,7 +170,13 @@ const resolveMediaUrl = (url, isVideo) => {
     const filename = match[2];
     const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
     const bucket = isVideoFile ? 'videos' : 'images';
-    return `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
+    const directUrl = `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
+    if (isVideoFile) return directUrl;
+    return `https://wsrv.nl/?url=${encodeURIComponent(directUrl)}&w=1200&q=75&output=webp`;
+  }
+  if (url.includes('media.base44.com/images/')) {
+    const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
+    if (!isVideoFile) return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp`;
   }
   return url;
 };
