@@ -3312,26 +3312,26 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
 
 // ─── User Profile Sheet ───────────────────────────────────────────────────────
 function UserProfileSheet({ userId, username, currentUser, onClose }) {
+  const [view, setView] = React.useState("profile"); // "profile" | "followers" | "following"
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [followRecord, setFollowRecord] = React.useState(null);
   const [followLoading, setFollowLoading] = React.useState(false);
   const [playerIndex, setPlayerIndex] = React.useState(null);
-  const [followersList, setFollowersList] = React.useState(null); // null=hidden, []=loaded
-  const [followingList, setFollowingList] = React.useState(null);
+  const [followersList, setFollowersList] = React.useState([]);
+  const [followingList, setFollowingList] = React.useState([]);
   const [listsLoading, setListsLoading] = React.useState(false);
 
   const isOwnProfile = currentUser && currentUser.id === userId;
 
   React.useEffect(() => {
     setLoading(true);
+    setView("profile");
     Promise.all([
       request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
-      // Live follower count: how many people follow this profile
       request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
-      // Live following count: how many people this profile follows
       request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = userRes?.items || userRes || [];
@@ -3339,8 +3339,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       const liveFollowers = (followersRes?.items || followersRes || []).length;
       const liveFollowing = (followingRes?.items || followingRes || []).length;
       setProfile(u ? { ...u, followers_count: liveFollowers, following_count: liveFollowing } : { followers_count: liveFollowers, following_count: liveFollowing });
-      const vidList = Array.isArray(vids) ? vids : (vids?.items || []);
-      setUserVideos(vidList);
+      setUserVideos(Array.isArray(vids) ? vids : (vids?.items || []));
       setLoading(false);
     });
     if (currentUser && !isOwnProfile) {
@@ -3350,6 +3349,20 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       }).catch(() => {});
     }
   }, [userId]);
+
+  const loadFollowers = async () => {
+    setListsLoading(true);
+    const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null);
+    setFollowersList(res?.items || res || []);
+    setListsLoading(false);
+  };
+
+  const loadFollowing = async () => {
+    setListsLoading(true);
+    const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null);
+    setFollowingList(res?.items || res || []);
+    setListsLoading(false);
+  };
 
   const doFollow = async () => {
     if (!currentUser || isOwnProfile) return;
@@ -3363,20 +3376,11 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         const rec = await follows.follow(
           currentUser.id,
           currentUser.username || currentUser.email?.split("@")[0],
-          userId,
-          username
+          userId, username
         );
         setFollowRecord(rec);
         setProfile(p => p ? { ...p, followers_count: (p.followers_count || 0) + 1 } : p);
       }
-      // Refresh live following count for the current user's Me tab too
-      try {
-        const myFollowingRes = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${currentUser.id}&limit=500`);
-        const myFollowingCount = (myFollowingRes?.items || myFollowingRes || []).length;
-        setProfile(p => p ? { ...p } : p); // trigger re-render if needed
-        // store for Me tab
-        localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
-      } catch(e) {}
     } catch(e) { console.error(e); }
     setFollowLoading(false);
   };
@@ -3384,195 +3388,163 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   const displayName = profile?.display_name || username || "User";
   const avatarUrl = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`;
 
+  // ── FULLSCREEN PLAYER ──
+  if (playerIndex !== null && userVideos.length > 0) {
+    return (
+      <ProfileVideoPlayer
+        videos={userVideos}
+        startIndex={playerIndex}
+        profile={profile}
+        username={username}
+        onClose={() => setPlayerIndex(null)}
+      />
+    );
+  }
+
   return (
-    <>
-      {/* Backdrop — separate from sheet so it never intercepts sheet taps */}
-      <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:4000, background:"rgba(0,0,0,0.75)" }} />
+    <div style={{ position:"fixed", inset:0, zIndex:4000, background:"rgba(0,0,0,0.75)" }}
+      onClick={onClose}>
+      <div
+        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)",
+          width:"100%", maxWidth:480, maxHeight:"88vh", background:"#0f0f1a",
+          borderRadius:"24px 24px 0 0", display:"flex", flexDirection:"column", overflow:"hidden" }}
+        onClick={e => e.stopPropagation()}>
 
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", zIndex:4001,
-        width:"100%", maxWidth:480, display:"flex", flexDirection:"column" }}>
-        {/* Sheet */}
-        <div style={{ background:"#0f0f1a", borderRadius:"24px 24px 0 0",
-          width:"100%", maxHeight:"88vh", display:"flex", flexDirection:"column",
-          overflow:"hidden" }}>
+        {/* Handle + Close */}
+        <div style={{ position:"relative", padding:"14px 20px 0", flexShrink:0 }}>
+          <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"0 auto 0" }} />
+          <button onClick={onClose}
+            style={{ position:"absolute", top:8, right:16, background:"none", border:"none",
+              color:"#888", fontSize:22, cursor:"pointer", lineHeight:1, padding:4 }}>✕</button>
+        </div>
 
-          {/* Handle */}
-          <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"14px auto 0", flexShrink:0 }} />
-
-          {/* Close */}
-          <button onClick={onClose} style={{ position:"absolute", top:12, right:16, background:"none", border:"none",
-            color:"#888", fontSize:22, cursor:"pointer", zIndex:1 }}>✕</button>
-
-          {loading ? (
+        {/* ── VIEW: PROFILE ── */}
+        {view === "profile" && (
+          loading ? (
             <div style={{ textAlign:"center", padding:60, color:"#555" }}>
-              <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>
-              <div>Loading profile...</div>
+              <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>Loading...
             </div>
           ) : (
-            <>
+            <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", flex:1 }}>
               {/* Header */}
-              <div style={{ padding:"16px 20px 20px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
-                <img src={avatarUrl}
-                  style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", marginBottom:10, background:"#1a1a2e" }} />
+              <div style={{ padding:"12px 20px 16px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
+                <img src={avatarUrl} style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #F5C842", marginBottom:10, background:"#1a1a2e" }} />
                 <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{displayName}</div>
                 <div style={{ color:"#666", fontSize:13, marginBottom:4 }}>@{username}</div>
-                {profile?.bio && <div style={{ color:"#aaa", fontSize:13, marginBottom:8, lineHeight:1.5 }}>{profile.bio}</div>}
-                {profile?.location && <div style={{ color:"#666", fontSize:12, marginBottom:8 }}>📍 {profile.location}</div>}
+                {profile?.bio && <div style={{ color:"#aaa", fontSize:13, marginBottom:6, lineHeight:1.5 }}>{profile.bio}</div>}
 
-                {/* Stats */}
-                <div style={{ display:"flex", justifyContent:"center", gap:28, marginTop:12, marginBottom:14 }}>
-                  <div style={{ textAlign:"center" }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{userVideos.length}</div>
-                    <div style={{ color:"#666", fontSize:11 }}>Videos</div>
+                {/* Stats row */}
+                <div style={{ display:"flex", justifyContent:"center", marginTop:12, marginBottom:14 }}>
+                  <div style={{ textAlign:"center", padding:"8px 20px" }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{userVideos.length}</div>
+                    <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
-                  <button
-                    onTouchEnd={async (e) => { e.stopPropagation(); e.preventDefault(); setListsLoading(true); setFollowersList([]); const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(()=>null); setFollowersList(res?.items||res||[]); setListsLoading(false); }}
-                    onClick={async (e) => { e.stopPropagation(); setListsLoading(true); setFollowersList([]); const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(()=>null); setFollowersList(res?.items||res||[]); setListsLoading(false); }}
-                    style={{ textAlign:"center", background:"none", border:"none", cursor:"pointer", padding:"8px 12px", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.followers_count || 0}</div>
+                  <div
+                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer", borderLeft:"1px solid rgba(255,255,255,0.08)" }}
+                    onClick={() => { loadFollowers(); setView("followers"); }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{profile?.followers_count || 0}</div>
                     <div style={{ color:"#F5C842", fontSize:12, fontWeight:700 }}>Followers</div>
-                  </button>
-                  <button
-                    onTouchEnd={async (e) => { e.stopPropagation(); e.preventDefault(); setListsLoading(true); setFollowingList([]); const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`).catch(()=>null); setFollowingList(res?.items||res||[]); setListsLoading(false); }}
-                    onClick={async (e) => { e.stopPropagation(); setListsLoading(true); setFollowingList([]); const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`).catch(()=>null); setFollowingList(res?.items||res||[]); setListsLoading(false); }}
-                    style={{ textAlign:"center", background:"none", border:"none", cursor:"pointer", padding:"8px 12px", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.following_count || 0}</div>
+                  </div>
+                  <div
+                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer", borderLeft:"1px solid rgba(255,255,255,0.08)" }}
+                    onClick={() => { loadFollowing(); setView("following"); }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{profile?.following_count || 0}</div>
                     <div style={{ color:"#F5C842", fontSize:12, fontWeight:700 }}>Following</div>
-                  </button>
+                  </div>
                 </div>
 
                 {!isOwnProfile && currentUser && (
                   <button onClick={doFollow} disabled={followLoading}
                     style={{ padding:"10px 40px", borderRadius:24,
-                      background: followRecord ? "#22c55e" : "#ff0000",
-                      border: "none",
-                      color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
-                      opacity: followLoading ? 0.6 : 1,
-                      boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
-                      transition:"background 0.25s, box-shadow 0.25s",
-                      WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                      background: followRecord ? "#22c55e" : "#e53935",
+                      border:"none", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
+                      opacity: followLoading ? 0.6 : 1 }}>
                     {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
                   </button>
                 )}
               </div>
 
-              {/* Video Grid */}
+              {/* Video grid */}
               <div style={{ overflowY:"auto", flex:1, padding:2 }}>
                 {userVideos.length === 0 ? (
                   <div style={{ textAlign:"center", padding:40, color:"#444" }}>
-                    <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
-                    <div>No videos yet</div>
+                    <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>No videos yet
                   </div>
                 ) : (
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:2 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:2 }}>
                     {userVideos.map((v, i) => (
                       <div key={v.id} onClick={() => setPlayerIndex(i)}
-                        style={{ position:"relative", aspectRatio:"1/1", background:"#111", overflow:"hidden", cursor:"pointer" }}>
-                        {v.thumbnail_url ? (
-                          <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                        ) : (
-                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                        )}
-                        {/* Play icon overlay */}
-                        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                          <div style={{ fontSize:22, opacity:0.8 }}>▶</div>
-                        </div>
-                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
-                        <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
-                          ❤️ {v.likes_count || 0}
-                        </div>
+                        style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}>
+                        {v.thumbnail_url
+                          ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />}
+                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(0,0,0,0.5) 0%,transparent 60%)" }} />
+                        <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>❤️ {v.likes_count||0}</div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Full screen TikTok-style player */}
-      {playerIndex !== null && userVideos.length > 0 && (
-        <ProfileVideoPlayer
-          videos={userVideos}
-          startIndex={playerIndex}
-          profile={profile}
-          username={username}
-          onClose={() => setPlayerIndex(null)} />
-      )}
-
-      {/* ── Followers List Modal ── */}
-      {followersList !== null && (
-        <div style={{ position:"fixed", inset:0, zIndex:9000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
-          onTouchMove={e => e.stopPropagation()}>
-          <div onTouchEnd={() => setFollowersList(null)} onClick={() => setFollowersList(null)}
-            style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
-          <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"20px 20px 0 0", width:"100%", maxWidth:480,
-            maxHeight:"70vh", display:"flex", flexDirection:"column", zIndex:9001, overflow:"hidden" }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ width:36, height:4, background:"#333", borderRadius:99, margin:"12px auto 0", flexShrink:0 }} />
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px 10px", borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Followers ({followersList.length})</div>
-              <button onTouchEnd={() => setFollowersList(null)} onClick={() => setFollowersList(null)}
-                style={{ background:"none", border:"none", color:"#888", fontSize:22, cursor:"pointer", padding:8 }}>✕</button>
             </div>
-            <div style={{ overflowY:"auto", flex:1, padding:"8px 0" }}>
+          )
+        )}
+
+        {/* ── VIEW: FOLLOWERS ── */}
+        {view === "followers" && (
+          <div style={{ display:"flex", flexDirection:"column", flex:1, overflow:"hidden" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+              <button onClick={() => setView("profile")}
+                style={{ background:"none", border:"none", color:"#F5C842", fontSize:20, cursor:"pointer", lineHeight:1 }}>‹</button>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Followers ({followersList.length})</div>
+            </div>
+            <div style={{ overflowY:"auto", flex:1 }}>
               {listsLoading
                 ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>Loading...</div>
                 : followersList.length === 0
                   ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>No followers yet</div>
                   : followersList.map(f => (
-                    <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px",
-                      cursor:"pointer", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                    <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
                       <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.follower_username||'U')}&background=random&color=fff&size=64&bold=true`}
-                        style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #333", flexShrink:0 }} />
+                        style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #222", flexShrink:0 }} />
                       <div>
-                        <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>{f.follower_username || "Unknown"}</div>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{f.follower_username || "Unknown"}</div>
                         <div style={{ color:"#666", fontSize:12 }}>@{f.follower_username}</div>
                       </div>
                     </div>
                   ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Following List Modal ── */}
-      {followingList !== null && (
-        <div style={{ position:"fixed", inset:0, zIndex:9000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}
-          onTouchMove={e => e.stopPropagation()}>
-          <div onTouchEnd={() => setFollowingList(null)} onClick={() => setFollowingList(null)}
-            style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
-          <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"20px 20px 0 0", width:"100%", maxWidth:480,
-            maxHeight:"70vh", display:"flex", flexDirection:"column", zIndex:9001, overflow:"hidden" }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ width:36, height:4, background:"#333", borderRadius:99, margin:"12px auto 0", flexShrink:0 }} />
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px 10px", borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+        {/* ── VIEW: FOLLOWING ── */}
+        {view === "following" && (
+          <div style={{ display:"flex", flexDirection:"column", flex:1, overflow:"hidden" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+              <button onClick={() => setView("profile")}
+                style={{ background:"none", border:"none", color:"#F5C842", fontSize:20, cursor:"pointer", lineHeight:1 }}>‹</button>
               <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Following ({followingList.length})</div>
-              <button onTouchEnd={() => setFollowingList(null)} onClick={() => setFollowingList(null)}
-                style={{ background:"none", border:"none", color:"#888", fontSize:22, cursor:"pointer", padding:8 }}>✕</button>
             </div>
-            <div style={{ overflowY:"auto", flex:1, padding:"8px 0" }}>
+            <div style={{ overflowY:"auto", flex:1 }}>
               {listsLoading
                 ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>Loading...</div>
                 : followingList.length === 0
                   ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>Not following anyone yet</div>
                   : followingList.map(f => (
-                    <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px",
-                      cursor:"pointer", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>
+                    <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
                       <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.following_username||'U')}&background=random&color=fff&size=64&bold=true`}
-                        style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #333", flexShrink:0 }} />
+                        style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #222", flexShrink:0 }} />
                       <div>
-                        <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>{f.following_username || "Unknown"}</div>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{f.following_username || "Unknown"}</div>
                         <div style={{ color:"#666", fontSize:12 }}>@{f.following_username}</div>
                       </div>
                     </div>
                   ))}
             </div>
           </div>
-        </div>
-      )}
-    </>
+        )}
+
+      </div>
+    </div>
   );
 }
 
