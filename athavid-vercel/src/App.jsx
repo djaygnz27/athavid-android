@@ -523,7 +523,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         caption: caption || "🔴 Live recording",
         hashtags: ["live"],
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
-        is_approved: true, is_archived: false, is_ai_detected: false,
+        is_approved: true, is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: false,
         duration_seconds: elapsed,
         ...liveGeo,
       });
@@ -1157,7 +1157,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: !isAiGenerated && postVisibility !== "only_me",
-        is_archived: false, is_ai_detected: isAiGenerated,
+        is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
@@ -1225,7 +1225,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: !isAiGenerated && postVisibility !== "only_me",
-        is_archived: false, is_ai_detected: isAiGenerated,
+        is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
@@ -1469,7 +1469,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
         likes_count:0, comments_count:0, views_count:0, shares_count:0,
-        is_approved: postVisibility !== "only_me", is_archived: false, is_ai_detected: false, is_mature: false,
+        is_approved: postVisibility !== "only_me", is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: false, is_mature: false,
         sound_title: "Text Post", sound_artist: "sachi",
         post_visibility: postVisibility,
         post_location_name: postLocation?.name || null,
@@ -5616,7 +5616,12 @@ function App() {
       const skip = (page - 1) * FEED_PAGE_SIZE;
       const data = await videos.list(FEED_PAGE_SIZE, skip);
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const raw = rawAll.filter(v => !v.is_archived);
+      const now = new Date();
+      const raw = rawAll.filter(v => {
+        if (v.is_archived) return false;
+        if (v.archive_date && new Date(v.archive_date) < now) return false;
+        return true;
+      });
       setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
       // Sort: newest first, with a mild boost for high-engagement videos
