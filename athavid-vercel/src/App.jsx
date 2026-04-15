@@ -3532,19 +3532,26 @@ function VideoManageGrid({ videos: vids, onRefresh, onWatch }) {
   return (
     <>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-        {vids.map(v => (
+        {vids.map((v, i) => (
           <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
-            onClick={() => setMenuVideo({ ...v, _idx: i })}>
+            onClick={() => { if (onWatch) onWatch(i); }}>
             {v.thumbnail_url
               ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
-            {/* Three-dot indicator */}
-            <div style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
-              width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:14, color:"#fff", lineHeight:1 }}>⋮</div>
+            {/* Three-dot button — opens manage menu */}
+            <div
+              style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
+                width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:16, color:"#fff", lineHeight:1, zIndex:10, cursor:"pointer" }}
+              onClick={e => { e.stopPropagation(); setMenuVideo({ ...v, _idx: i }); }}>⋮</div>
             {/* Views badge */}
             {v.views_count > 0 && <div style={{ position:"absolute", bottom:4, left:4, background:"rgba(0,0,0,0.6)",
               borderRadius:8, padding:"2px 6px", fontSize:10, color:"#fff" }}>👁 {v.views_count}</div>}
+            {/* Play icon overlay */}
+            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+              opacity:0.0 }} className="play-overlay">
+              <div style={{ fontSize:36 }}>▶️</div>
+            </div>
           </div>
         ))}
       </div>
