@@ -2170,7 +2170,7 @@ function getUserAge() {
   return age;
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, nextVideoUrl }) {
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
@@ -2291,6 +2291,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setShowUI(true);
         hideUIAfterDelay(1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
+        // Preload next video in background
+        if (nextVideoUrl) {
+          const preloadEl = document.createElement("video");
+          preloadEl.src = nextVideoUrl;
+          preloadEl.preload = "auto";
+          preloadEl.muted = true;
+          preloadEl.style.display = "none";
+          preloadEl.load();
+          document.body.appendChild(preloadEl);
+          setTimeout(() => { try { document.body.removeChild(preloadEl); } catch(e){} }, 8000);
+        }
       } else {
         el.pause();
         setPlaying(false);
@@ -2556,7 +2567,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         return (
           <>
             <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
-              loop playsInline
+              loop playsInline preload="auto"
               muted={muted || !!video.sound_url}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
@@ -5925,8 +5936,9 @@ function App() {
           )}
           {(feedTab === "forYou" ? videoList : followingVideos)
             .filter(v => !blockedIds.has(v.user_id))
-            .map(v => (
+            .map((v, idx, arr) => (
             <VideoCard key={v.id} video={v} currentUser={currentUser}
+              nextVideoUrl={arr[idx+1]?.video_url || null}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
               onView={handleView}
