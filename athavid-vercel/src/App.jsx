@@ -3439,18 +3439,22 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{userVideos.length}</div>
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
-                  <div
-                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer", borderLeft:"1px solid rgba(255,255,255,0.08)" }}
-                    onClick={() => { loadFollowers(); setView("followers"); }}>
+                  <button
+                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer", borderLeft:"1px solid rgba(255,255,255,0.08)",
+                      background:"none", border:"none", borderLeft:"1px solid rgba(255,255,255,0.08)", color:"inherit",
+                      WebkitTapHighlightColor:"rgba(245,200,66,0.2)", touchAction:"manipulation", minWidth:80 }}
+                    onClick={(e) => { e.stopPropagation(); console.log("FOLLOWERS CLICKED"); loadFollowers(); setView("followers"); }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{profile?.followers_count || 0}</div>
                     <div style={{ color:"#F5C842", fontSize:12, fontWeight:700 }}>Followers</div>
-                  </div>
-                  <div
-                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer", borderLeft:"1px solid rgba(255,255,255,0.08)" }}
-                    onClick={() => { loadFollowing(); setView("following"); }}>
+                  </button>
+                  <button
+                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer",
+                      background:"none", border:"none", borderLeft:"1px solid rgba(255,255,255,0.08)", color:"inherit",
+                      WebkitTapHighlightColor:"rgba(245,200,66,0.2)", touchAction:"manipulation", minWidth:80 }}
+                    onClick={(e) => { e.stopPropagation(); console.log("FOLLOWING CLICKED"); loadFollowing(); setView("following"); }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{profile?.following_count || 0}</div>
                     <div style={{ color:"#F5C842", fontSize:12, fontWeight:700 }}>Following</div>
-                  </div>
+                  </button>
                 </div>
 
                 {!isOwnProfile && currentUser && (
