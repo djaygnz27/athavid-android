@@ -269,7 +269,7 @@ export default function Landing({ onEnter }) {
           color:"rgba(220,180,255,0.7)", maxWidth:320, fontWeight:600,
           textAlign:"center",
         }}>
-          Real moments. Real people. No filters.
+          Real moments. Real people.<br/>No AI, just the truth.
         </div>
 
         {/* Founding creator sentence */}
