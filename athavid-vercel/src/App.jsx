@@ -96,6 +96,8 @@ function formatCount(n) {
 // Videos are passed through unchanged
 const resolveMediaUrl = (url, isVideo) => {
   if (!url) return url;
+  // Skip wsrv for already-proxied URLs
+  if (url.includes('wsrv.nl')) return url;
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
   if (match) {
     const filename = match[2];
@@ -103,12 +105,18 @@ const resolveMediaUrl = (url, isVideo) => {
     const bucket = isVideoFile ? 'videos' : 'images';
     const directUrl = `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
     if (isVideoFile) return directUrl;
-    // Route images through wsrv.nl — resize to 1200px wide, 75% quality, WebP output
     return `https://wsrv.nl/?url=${encodeURIComponent(directUrl)}&w=1200&q=75&output=webp&n=-1`;
   }
-  // Also proxy any raw media.base44.com image URLs not matching the pattern
+  // Proxy media.base44.com images
   if (!isVideo && url.includes('media.base44.com/images')) {
     return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp&n=-1`;
+  }
+  // Proxy Cloudflare R2 images (r2.dev) — these are raw unoptimized uploads
+  if (!isVideo && url.includes('r2.dev')) {
+    const isVideoFile = /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
+    if (!isVideoFile) {
+      return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp&n=-1`;
+    }
   }
   return url;
 };
