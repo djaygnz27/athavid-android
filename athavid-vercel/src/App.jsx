@@ -5881,7 +5881,7 @@ function App() {
     try {
       const data = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=50&sort=-created_date`);
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const raw = rawAll.filter(v => !v.is_archived && v.post_visibility !== "only_me");
+      const raw = rawAll.filter(v => !v.is_archived && (v.post_visibility == null || v.post_visibility !== "only_me"));
       setFeedHasMore(false);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
