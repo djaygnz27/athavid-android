@@ -93,11 +93,15 @@ function formatCount(n) {
 }
 
 // Proxy image URLs through wsrv.nl for on-the-fly resize + WebP compression
-// Videos are passed through unchanged
-const resolveMediaUrl = (url, isVideo) => {
+// width: 'feed' = 800px (fast scroll), 'full' = 1200px (expanded view), 'thumb' = 40px blur placeholder
+const resolveMediaUrl = (url, isVideo, size = 'feed') => {
   if (!url) return url;
-  // Skip wsrv for already-proxied URLs
   if (url.includes('wsrv.nl')) return url;
+  const widthMap = { thumb: 40, feed: 800, full: 1200 };
+  const qualityMap = { thumb: 20, feed: 72, full: 85 };
+  const w = widthMap[size] || 800;
+  const q = qualityMap[size] || 72;
+  const buildWsrv = (directUrl) => `https://wsrv.nl/?url=${encodeURIComponent(directUrl)}&w=${w}&q=${q}&output=webp&n=-1`;
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
   if (match) {
     const filename = match[2];
@@ -105,21 +109,27 @@ const resolveMediaUrl = (url, isVideo) => {
     const bucket = isVideoFile ? 'videos' : 'images';
     const directUrl = `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
     if (isVideoFile) return directUrl;
-    return `https://wsrv.nl/?url=${encodeURIComponent(directUrl)}&w=1200&q=75&output=webp&n=-1`;
+    return buildWsrv(directUrl);
   }
-  // Proxy media.base44.com images
-  if (!isVideo && url.includes('media.base44.com/images')) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp&n=-1`;
-  }
-  // Proxy Cloudflare R2 images (r2.dev) — these are raw unoptimized uploads
-  if (!isVideo && url.includes('r2.dev')) {
-    const isVideoFile = /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
-    if (!isVideoFile) {
-      return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp&n=-1`;
-    }
-  }
+  if (!isVideo && url.includes('media.base44.com/images')) return buildWsrv(url);
+  if (!isVideo && url.includes('r2.dev') && !/\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url)) return buildWsrv(url);
   return url;
 };
+
+// Progressive image: shows blurred thumbnail instantly, swaps to full once loaded
+function ProgressiveImg({ src, style, alt = "", size = "feed" }) {
+  const thumbSrc = resolveMediaUrl(src, false, 'thumb');
+  const fullSrc  = resolveMediaUrl(src, false, size);
+  const [loaded, setLoaded] = React.useState(false);
+  return (
+    <div style={{ position:'relative', width:'100%', height:'100%', overflow:'hidden', ...style }}>
+      {/* Blurred placeholder — loads instantly */}
+      <img src={thumbSrc} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', filter:'blur(12px)', transform:'scale(1.08)', transition:'opacity 0.3s', opacity: loaded ? 0 : 1, pointerEvents:'none' }} />
+      {/* Full quality image */}
+      <img src={fullSrc} alt={alt} onLoad={() => setLoaded(true)} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transition:'opacity 0.4s', opacity: loaded ? 1 : 0 }} />
+    </div>
+  );
+}
 // Get user's location for post geo-tagging
 async function getPostLocation() {
   const savedCode = localStorage.getItem('sachi_country_code');
@@ -2247,7 +2257,7 @@ function LazyVideoCard(props) {
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { rootMargin: "200% 0px" } // preload 2 screens ahead
+      { rootMargin: "400% 0px" } // preload 4 screens ahead for instant swipe
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -2268,7 +2278,7 @@ function LazyVideoCard(props) {
   );
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, nextVideoUrl }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, nextVideoUrl, next2VideoUrl }) {
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
@@ -2393,17 +2403,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setShowUI(true);
         hideUIAfterDelay(1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
-        // Preload next video in background
-        if (nextVideoUrl) {
-          const preloadEl = document.createElement("video");
-          preloadEl.src = nextVideoUrl;
-          preloadEl.preload = "auto";
-          preloadEl.muted = true;
-          preloadEl.style.display = "none";
-          preloadEl.load();
-          document.body.appendChild(preloadEl);
-          setTimeout(() => { try { document.body.removeChild(preloadEl); } catch(e){} }, 10000);
-        }
+        // Preload next 2 videos + images in background
+        const toPreload = [nextVideoUrl, next2VideoUrl].filter(Boolean);
+        toPreload.forEach((pUrl, idx) => {
+          const isVid = /\.(mp4|mov|webm|m4v)$/i.test(pUrl) || (!pUrl.includes('wsrv.nl') && !(/\.(png|jpe?g|gif|webp|bmp|heic)$/i.test(pUrl)));
+          if (isVid) {
+            const preloadEl = document.createElement("video");
+            preloadEl.src = pUrl;
+            preloadEl.preload = idx === 0 ? "auto" : "metadata";
+            preloadEl.muted = true;
+            preloadEl.style.display = "none";
+            preloadEl.load();
+            document.body.appendChild(preloadEl);
+            setTimeout(() => { try { document.body.removeChild(preloadEl); } catch(e){} }, 15000);
+          } else {
+            // Pre-fetch image into browser cache
+            const img = new Image();
+            img.src = resolveMediaUrl(pUrl, false, 'feed');
+          }
+        });
       } else {
         el.pause();
         setPlaying(false);
@@ -2567,13 +2585,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   animation:"spin 0.9s linear infinite" }} />
               </div>
             )}
-            <img
-              src={resolveMediaUrl(photoUrls[photoIdx])}
-              onLoad={() => setImgLoaded(true)}
-              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block",
-                userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none",
-                opacity: imgLoaded ? 1 : 0,
-                transition:"opacity 0.3s ease" }}
+            <ProgressiveImg
+              src={photoUrls[photoIdx]}
+              size="feed"
+              style={{ objectFit:"contain" }}
             />
             {/* Counter badge top-left */}
             {photoUrls.length > 1 && (
@@ -2666,17 +2681,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         const resolvedVideoUrl = resolveMediaUrl(video.video_url);
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
-          <img src={resolvedVideoUrl}
-            style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
+          <ProgressiveImg src={video.video_url} size="feed"
+            style={{ objectFit:"contain", background:"#000" }} />
         );
         return (
           <>
-            {/* Thumbnail shown until video is ready */}
+            {/* Progressive thumbnail shown until video is ready */}
             {!videoLoaded && video.thumbnail_url && (
-              <img
-                src={resolveMediaUrl(video.thumbnail_url)}
-                style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", zIndex:1 }}
-              />
+              <div style={{ position:"absolute", inset:0, zIndex:1 }}>
+                <ProgressiveImg src={video.thumbnail_url} size="feed" />
+              </div>
             )}
             <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
               loop playsInline preload="auto"
@@ -6447,6 +6461,7 @@ function App() {
             .map((v, idx, arr) => (
             <LazyVideoCard key={v.id} video={v} currentUser={currentUser}
               nextVideoUrl={arr[idx+1]?.video_url || null}
+              next2VideoUrl={arr[idx+2]?.video_url || null}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
               onView={handleView}
