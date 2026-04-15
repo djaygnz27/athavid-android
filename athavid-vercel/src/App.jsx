@@ -72,7 +72,8 @@ function ToastContainer() {
           </div>
         );
       })}
-      <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }`}</style>
+      <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
@@ -2236,6 +2237,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => window.removeEventListener('sachi-mute-change', handler);
   }, []);
   const [photoIdx, setPhotoIdx] = useState(0);
+  // Reset image loaded state when swiping to new photo
+  useEffect(() => { setImgLoaded(false); }, [photoIdx]);
   const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
   const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
@@ -2243,6 +2246,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [reportTarget, setReportTarget] = useState(null);
   const [showUI, setShowUI] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
 
@@ -2497,10 +2501,26 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {photoUrls ? (
         <div onTouchStart={handleCarouselTouchStart} onTouchMove={handleCarouselTouchMove} onTouchEnd={handleCarouselTouchEnd} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"none" }}>
           {/* Photo takes up most of the space */}
-          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"all" }}>
+          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"all",
+            background:"linear-gradient(135deg, #1B1535 0%, #0B0C1A 45%, #2A1E00 100%)" }}>
+            {/* Gold shimmer placeholder while image loads */}
+            {!imgLoaded && (
+              <div style={{ position:"absolute", inset:0, zIndex:2,
+                background:"linear-gradient(135deg, #1B1535 0%, #0B0C1A 45%, #2A1E00 100%)",
+                display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ width:48, height:48, borderRadius:"50%",
+                  border:"3px solid rgba(245,200,66,0.25)",
+                  borderTopColor:"#F5C842",
+                  animation:"spin 0.9s linear infinite" }} />
+              </div>
+            )}
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
-              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
+              onLoad={() => setImgLoaded(true)}
+              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block",
+                userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none",
+                opacity: imgLoaded ? 1 : 0,
+                transition:"opacity 0.3s ease" }}
             />
             {/* Counter badge top-left */}
             {photoUrls.length > 1 && (
