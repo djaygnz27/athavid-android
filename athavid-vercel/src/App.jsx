@@ -2455,36 +2455,44 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
           </div>
 
-          {/* ── CAROUSEL NAV: LEFT arrow ── */}
-          {photoUrls.length > 1 && photoIdx > 0 && (
-            <button
-              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
-              style={{
-                position:"absolute", left:10, top:"50%", transform:"translateY(-50%)",
-                background:"rgba(0,0,0,0.6)", border:"2px solid rgba(255,255,255,0.4)",
-                borderRadius:"50%", width:48, height:48,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:26, fontWeight:900, color:"#fff", zIndex:9999,
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
-                cursor:"pointer", backdropFilter:"blur(4px)"
-              }}>‹</button>
-          )}
-
-          {/* ── CAROUSEL NAV: RIGHT arrow ── */}
-          {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
-            <button
-              onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-              onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-              style={{
-                position:"absolute", right:70, top:"50%", transform:"translateY(-50%)",
-                background:"rgba(0,0,0,0.6)", border:"2px solid rgba(255,255,255,0.4)",
-                borderRadius:"50%", width:48, height:48,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:26, fontWeight:900, color:"#fff", zIndex:9999,
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation",
-                cursor:"pointer", backdropFilter:"blur(4px)"
-              }}>›</button>
+          {/* ── CAROUSEL TAP ZONES: tap left 40% = prev, tap right 40% = next ── */}
+          {photoUrls.length > 1 && (
+            <>
+              {/* LEFT tap zone */}
+              {photoIdx > 0 && (
+                <div
+                  onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                  onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1,0)); }}
+                  style={{
+                    position:"absolute", left:0, top:80, width:"40%", bottom:180,
+                    zIndex:9999, cursor:"pointer", WebkitTapHighlightColor:"transparent",
+                    display:"flex", alignItems:"center", justifyContent:"flex-start", paddingLeft:12
+                  }}>
+                  <div style={{
+                    background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:44, height:44,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:26, fontWeight:900, color:"#fff", border:"1.5px solid rgba(255,255,255,0.35)"
+                  }}>‹</div>
+                </div>
+              )}
+              {/* RIGHT tap zone */}
+              {photoIdx < photoUrls.length - 1 && (
+                <div
+                  onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                  onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
+                  style={{
+                    position:"absolute", right:0, top:80, width:"40%", bottom:180,
+                    zIndex:9999, cursor:"pointer", WebkitTapHighlightColor:"transparent",
+                    display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:12
+                  }}>
+                  <div style={{
+                    background:"rgba(0,0,0,0.45)", borderRadius:"50%", width:44, height:44,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:26, fontWeight:900, color:"#fff", border:"1.5px solid rgba(255,255,255,0.35)"
+                  }}>›</div>
+                </div>
+              )}
+            </>
           )}
 
           {/* ── CAROUSEL DOTS ── */}
