@@ -1,4 +1,4 @@
-import base44 from "../src/base44Client";
+import base44 from "../base44_sdk_stub.ts";
 
 const CF_ACCOUNT = "a346b1c78fc48549d2de3de99a789a2d";
 const CF_TOKEN = Deno.env.get("CLOUDFLARE_API_TOKEN") || "";
@@ -55,7 +55,6 @@ export default async function handler(req: Request): Promise<Response> {
     const input = cfData.result;
     const playback_url = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${input.uid}/manifest/video.m3u8`;
 
-    // Save to SachiPodcast entity directly
     await base44.asServiceRole.entities.SachiPodcast.update(podcast_id, {
       stream_key: input.rtmps?.streamKey,
       cf_input_id: input.uid,
