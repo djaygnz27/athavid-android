@@ -2592,6 +2592,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
+              loading="lazy"
               style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
               onError={e => { e.target.style.display="none"; e.target.nextSibling && (e.target.nextSibling.style.display="flex"); }}
             />
@@ -2663,6 +2664,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
           <img src={resolvedVideoUrl}
+            loading="lazy"
             style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
         );
         return (
@@ -2680,7 +2682,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 setPlaying(false);
                 if (soundRef.current) soundRef.current.pause();
               }}
-              style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+              loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
             {video.sound_url && (
               <audio ref={soundRef} src={video.sound_url} loop preload="none"
                 style={{ display:"none" }} />
@@ -5703,22 +5705,6 @@ function App() {
 
   useEffect(() => { loadVideos(); }, []);
 
-  // One-time fix: bulk-approve any posts stuck with is_approved=false that aren't AI-detected
-  useEffect(() => {
-    const fixUnapproved = async () => {
-      try {
-        const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`);
-        const all = Array.isArray(res) ? res : (res?.items || res?.records || []);
-        const stuck = all.filter(v => v.is_approved === false && !v.is_ai_detected);
-        if (stuck.length === 0) return;
-        console.log(`Approving ${stuck.length} stuck posts...`);
-        await Promise.all(stuck.map(v => request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${v.id}`, { is_approved: true }).catch(() => {})));
-        console.log('Bulk approval done — reloading feed');
-        loadVideos(currentUser, false, 1);
-      } catch(e) { console.error('Bulk approval error:', e); }
-    };
-    fixUnapproved();
-  }, []);
 
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
@@ -5775,7 +5761,7 @@ function App() {
       const ids = items.map(r => r.following_id);
       setFollowingIds(ids);
       if (ids.length === 0) { setFollowingVideos([]); return; }
-      const allVids = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=200&sort=-created_date`);
+      const allVids = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=50&sort=-created_date`);
       const vids = ((allVids?.items || allVids) || []).filter(v => ids.includes(v.user_id));
       setFollowingVideos(vids);
     } catch(e) { console.error(e); }
@@ -5784,7 +5770,7 @@ function App() {
   const loadVideos = async (user, append = false, page = 1) => {
     if (!append) setLoading(true);
     try {
-      const data = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`);
+      const data = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=50&sort=-created_date`);
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
       const raw = rawAll.filter(v => !v.is_archived && v.post_visibility !== "only_me");
       setFeedHasMore(false);
