@@ -3958,6 +3958,16 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [newStreamUrl, setNewStreamUrl] = useState("");
   const [liveNewsChannel, setLiveNewsChannel] = useState(null);
 
+  // Wizard state (must be at top level — React hooks rules)
+  const [wizardStep, setWizardStep] = useState(1);
+  const [generatingKey, setGeneratingKey] = useState(false);
+  const [newPodcast, setNewPodcast] = useState(null);
+  const [streamCopied, setStreamCopied] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+  const logoInputRef = useRef(null);
+
   const LIVE_NEWS_CHANNELS = [
     { id:"ctv",   name:"CTV News",      emoji:"🍁", desc:"Canada's #1 news network",     color:"linear-gradient(135deg,#c62828,#b71c1c)", url:"https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1" },
     { id:"abc",   name:"ABC News",      emoji:"🇺🇸", desc:"Live U.S. news coverage",      color:"linear-gradient(135deg,#1565c0,#0d47a1)", url:"https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1" },
@@ -4437,14 +4447,6 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   // ── REGISTER FORM ──
   if (showRegister) {
     const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-    const [wizardStep, setWizardStep] = React.useState(1); // 1=create, 2=logo, 3=stream key, 4=obs, 5=done
-    const [generatingKey, setGeneratingKey] = React.useState(false);
-    const [newPodcast, setNewPodcast] = React.useState(null);
-    const [streamCopied, setStreamCopied] = React.useState(null); // "key" | "url" | null
-    const [logoPreview, setLogoPreview] = React.useState(null);
-    const [logoUploading, setLogoUploading] = React.useState(false);
-    const [logoUrl, setLogoUrl] = React.useState(null);
-    const logoInputRef = React.useRef(null);
     const totalSteps = 5;
 
     const copyToClipboard = (text, type) => {
@@ -4862,7 +4864,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Sachi Podcasts</div>
         <div style={{ color:"#fff", fontWeight:800, fontSize:22, lineHeight:1.3, marginBottom:8 }}>Listen Live.<br/>Discover New Shows.</div>
         <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, marginBottom:16, lineHeight:1.5 }}>Tune into live sessions or browse on-demand — all in one place.</div>
-        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); }}
+        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); setWizardStep(1); setNewPodcast(null); setLogoPreview(null); setLogoUrl(null); setStreamCopied(null); }}
           style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:12, padding:"10px 20px", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" }}>
           🎙️ Register Your Podcast
         </button>
@@ -5027,7 +5029,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         <div style={{ fontSize:32, marginBottom:12 }}>🚀</div>
         <div style={{ color:"#fff", fontWeight:800, fontSize:18, marginBottom:8 }}>Have a podcast?</div>
         <div style={{ color:"rgba(255,255,255,0.5)", fontSize:14, marginBottom:16, lineHeight:1.5 }}>Join Sachi and reach new listeners through our For You feed every day.</div>
-        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); }}
+        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); setWizardStep(1); setNewPodcast(null); setLogoPreview(null); setLogoUrl(null); setStreamCopied(null); }}
           style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"13px 28px", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>
           Get Started Free →
         </button>
