@@ -1090,11 +1090,40 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     if (f.type.startsWith("video/") || f.type.startsWith("image/")) setShowEditor(true);
   };
 
-  const handlePhotoSelect = (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
+  // Convert HEIC/HEIF files to JPEG for cross-browser compatibility
+  const convertHeicToJpeg = async (file) => {
+    if (!file.type.includes('heic') && !file.type.includes('heif') && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+      return file;
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((blob) => {
+            const converted = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+            resolve(converted);
+          }, 'image/jpeg', 0.92);
+        };
+        img.onerror = () => resolve(file); // fallback: use original
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoSelect = async (e) => {
+    const rawFiles = Array.from(e.target.files);
+    if (!rawFiles.length) return;
+    const converted = await Promise.all(rawFiles.map(f => convertHeicToJpeg(f)));
     setPhotos(prev => {
-      const combined = [...prev, ...files];
+      const combined = [...prev, ...converted];
       return combined.slice(0, 6);
     });
   };
