@@ -2598,7 +2598,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             doTogglePlay();
           }
         })}
-          style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+          style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex: photoUrls ? 0 : 50, cursor:"pointer", pointerEvents: photoUrls ? "none" : "auto" }} />
       )}
 
       {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
