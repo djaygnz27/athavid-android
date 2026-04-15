@@ -4437,11 +4437,15 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   // ── REGISTER FORM ──
   if (showRegister) {
     const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-    const [wizardStep, setWizardStep] = React.useState(1); // 1=create, 2=stream key, 3=obs, 4=done
+    const [wizardStep, setWizardStep] = React.useState(1); // 1=create, 2=logo, 3=stream key, 4=obs, 5=done
     const [generatingKey, setGeneratingKey] = React.useState(false);
     const [newPodcast, setNewPodcast] = React.useState(null);
     const [streamCopied, setStreamCopied] = React.useState(null); // "key" | "url" | null
-    const totalSteps = 4;
+    const [logoPreview, setLogoPreview] = React.useState(null);
+    const [logoUploading, setLogoUploading] = React.useState(false);
+    const [logoUrl, setLogoUrl] = React.useState(null);
+    const logoInputRef = React.useRef(null);
+    const totalSteps = 5;
 
     const copyToClipboard = (text, type) => {
       navigator.clipboard.writeText(text).then(() => {
@@ -4510,7 +4514,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         const data = await resp.json();
         if (data.success) {
           setNewPodcast(p => ({...p, stream_key: data.stream_key, rtmp_url: data.rtmp_url, live_stream_url: data.playback_url }));
-          setWizardStep(3);
+          setWizardStep(4);
         } else {
           showToast("Failed to generate stream key. Try again.", "error");
         }
@@ -4522,10 +4526,49 @@ function PodcastPage({ currentUser, onNeedAuth }) {
 
     const StepDot = ({n}) => (
       <div style={{ display:"flex", alignItems:"center", gap:0 }}>
-        <div style={{ width:28, height:28, borderRadius:"50%", background: wizardStep >= n ? "#F5C842" : "rgba(255,255,255,0.1)", color: wizardStep >= n ? "#0B0C1A" : "rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:13, flexShrink:0 }}>{n}</div>
-        {n < totalSteps && <div style={{ width:32, height:2, background: wizardStep > n ? "#F5C842" : "rgba(255,255,255,0.08)" }} />}
+        <div style={{ width:26, height:26, borderRadius:"50%", background: wizardStep >= n ? "#F5C842" : "rgba(255,255,255,0.1)", color: wizardStep >= n ? "#0B0C1A" : "rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:12, flexShrink:0 }}>{n}</div>
+        {n < totalSteps && <div style={{ width:24, height:2, background: wizardStep > n ? "#F5C842" : "rgba(255,255,255,0.08)" }} />}
       </div>
     );
+
+    const handleLogoUpload = async (file) => {
+      if (!file) return;
+      setLogoUploading(true);
+      try {
+        // Preview immediately
+        const reader = new FileReader();
+        reader.onload = (e) => setLogoPreview(e.target.result);
+        reader.readAsDataURL(file);
+        // Convert to base64 and upload
+        const toBase64 = (f) => new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = rej;
+          r.readAsDataURL(f);
+        });
+        const b64 = await toBase64(file);
+        const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ image_base64: b64, mime_type: file.type || "image/jpeg", entity_id: null })
+        });
+        const data = await resp.json();
+        if (data.file_url) {
+          setLogoUrl(data.file_url);
+          setLogoPreview(data.file_url);
+          // Update podcast record if already created
+          if (newPodcast?.id) {
+            await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${newPodcast.id}`, { cover_image_url: data.file_url });
+            setNewPodcast(p => ({...p, cover_image_url: data.file_url}));
+          }
+          showToast("✅ Logo uploaded!", "success");
+        } else {
+          showToast("Upload failed. Try again.", "error");
+        }
+      } catch(e) {
+        showToast("Upload error. Try again.", "error");
+      }
+      setLogoUploading(false);
+    };
 
     return (
       <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
@@ -4538,13 +4581,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", flexShrink:0 }}>←</button>
             <div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:19 }}>🎙️ Start Your Podcast</div>
-              <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Step {wizardStep} of {totalSteps}</div>
+              <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Step {wizardStep} of {totalSteps} — {["Create Show","Upload Logo","Stream Key","OBS Setup","Done!"][wizardStep-1]}</div>
             </div>
           </div>
 
           {/* Step dots */}
           <div style={{ display:"flex", alignItems:"center", marginBottom:28 }}>
-            {[1,2,3,4].map(n => <StepDot key={n} n={n} />)}
+            {[1,2,3,4,5].map(n => <StepDot key={n} n={n} />)}
           </div>
 
           {/* ── STEP 1: Create your show ── */}
@@ -4611,11 +4654,74 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             </div>
           )}
 
-          {/* ── STEP 2: Generate stream key ── */}
+          {/* ── STEP 2: Upload podcast logo ── */}
           {wizardStep === 2 && (
             <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
               <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
-                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🔑 Step 2 — Get your Stream Key</div>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🖼️ Step 2 — Upload your Podcast Logo</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Give your show a professional face. Upload your logo or brand image — this is what listeners see when they find your podcast.</div>
+              </div>
+
+              {/* Logo preview / upload area */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+                <div style={{ position:"relative", width:140, height:140 }}>
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="logo" style={{ width:140, height:140, borderRadius:20, objectFit:"cover", border:"3px solid #F5C842" }} />
+                  ) : (
+                    <div style={{ width:140, height:140, borderRadius:20, background: selectedCover.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", border:"3px dashed rgba(245,200,66,0.3)", gap:8 }}>
+                      <span style={{ fontSize:40 }}>{selectedCover.emoji}</span>
+                      <span style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>No logo yet</span>
+                    </div>
+                  )}
+                  {logoUploading && (
+                    <div style={{ position:"absolute", inset:0, background:"rgba(11,12,26,0.7)", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ color:"#F5C842", fontSize:13, fontWeight:700 }}>Uploading...</span>
+                    </div>
+                  )}
+                </div>
+
+                <input ref={logoInputRef} type="file" accept="image/*" style={{ display:"none" }}
+                  onChange={e => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); }} />
+
+                <button onClick={() => logoInputRef.current?.click()} disabled={logoUploading}
+                  style={{ padding:"12px 28px", background:"rgba(245,200,66,0.15)", border:"2px solid rgba(245,200,66,0.4)", borderRadius:14, color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+                  {logoUploading ? "⏳ Uploading..." : logoPreview ? "🔄 Change Logo" : "📷 Upload Logo"}
+                </button>
+
+                <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center", lineHeight:1.6 }}>
+                  Supports JPG, PNG, HEIC<br/>Recommended: square image, at least 500×500px
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:14 }}>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:13, marginBottom:10 }}>💡 Logo tips</div>
+                {[
+                  "Use a square image — it looks best in the podcast grid",
+                  "Your logo + show name = instant brand recognition",
+                  "Use contrasting colours so it pops on dark backgrounds",
+                  "PNG with transparent background looks cleanest",
+                ].map((tip, i) => (
+                  <div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}>
+                    <span style={{ color:"#F5C842", fontSize:14, flexShrink:0 }}>✦</span>
+                    <span style={{ color:"rgba(255,255,255,0.5)", fontSize:13, lineHeight:1.5 }}>{tip}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={() => setWizardStep(3)}
+                style={{ width:"100%", padding:"16px 0", background: logoUrl ? "linear-gradient(135deg,#6c3cf7,#4527a0)" : "rgba(108,60,247,0.5)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer" }}>
+                {logoUrl ? "Logo uploaded — Next →" : "Skip for now →"}
+              </button>
+              {!logoUrl && <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, textAlign:"center" }}>You can add a logo later from your show settings</div>}
+            </div>
+          )}
+
+          {/* ── STEP 3: Generate stream key ── */}
+          {wizardStep === 3 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🔑 Step 3 — Get your Stream Key</div>
                 <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Your show <strong style={{ color:"#fff" }}>"{registerForm.title}"</strong> is created ✅<br/>Now we need to generate a private stream key for you to go live with OBS or any streaming app.</div>
               </div>
 
@@ -4641,11 +4747,11 @@ function PodcastPage({ currentUser, onNeedAuth }) {
             </div>
           )}
 
-          {/* ── STEP 3: OBS Setup ── */}
-          {wizardStep === 3 && newPodcast && (
+          {/* ── STEP 4: OBS Setup ── */}
+          {wizardStep === 4 && newPodcast && (
             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
               <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
-                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>✅ Step 3 — Copy your OBS settings</div>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>✅ Step 4 — Copy your OBS settings</div>
                 <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Copy these two values into OBS Studio (or any RTMP streaming app) to connect your broadcast to Sachi.</div>
               </div>
 
@@ -4696,15 +4802,15 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 </a>
               </div>
 
-              <button onClick={() => setWizardStep(4)}
+              <button onClick={() => setWizardStep(5)}
                 style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#F5C842,#e0a800)", border:"none", borderRadius:16, color:"#0B0C1A", fontWeight:800, fontSize:17, cursor:"pointer" }}>
                 I've copied my settings → Next
               </button>
             </div>
           )}
 
-          {/* ── STEP 4: All done ── */}
-          {wizardStep === 4 && (
+          {/* ── STEP 5: All done ── */}
+          {wizardStep === 5 && (
             <div style={{ textAlign:"center", padding:"10px 0" }}>
               <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:26, marginBottom:8 }}>You're all set!</div>
