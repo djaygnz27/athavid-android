@@ -2209,9 +2209,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   // Carousel swipe support — detects horizontal vs vertical to avoid feed conflict
   const swipeTouchStartX = useRef(null);
   const swipeTouchStartY = useRef(null);
+  const swipeIsHorizontal = useRef(false);
   const handleCarouselTouchStart = (e) => {
     swipeTouchStartX.current = e.touches[0].clientX;
     swipeTouchStartY.current = e.touches[0].clientY;
+    swipeIsHorizontal.current = false;
+  };
+  const handleCarouselTouchMove = (e) => {
+    if (swipeTouchStartX.current === null) return;
+    const dx = Math.abs(e.touches[0].clientX - swipeTouchStartX.current);
+    const dy = Math.abs(e.touches[0].clientY - swipeTouchStartY.current);
+    if (dx > dy && dx > 10) {
+      swipeIsHorizontal.current = true;
+      e.stopPropagation(); // stop feed from scrolling
+    }
   };
   const handleCarouselTouchEnd = (e) => {
     if (swipeTouchStartX.current === null) return;
@@ -2427,9 +2438,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div onTouchStart={handleCarouselTouchStart} onTouchEnd={handleCarouselTouchEnd} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
+        <div onTouchStart={handleCarouselTouchStart} onTouchMove={handleCarouselTouchMove} onTouchEnd={handleCarouselTouchEnd} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}>
           {/* Photo takes up most of the space */}
-          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
+          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"all" }}>
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
               style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
