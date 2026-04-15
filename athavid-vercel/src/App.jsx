@@ -3548,8 +3548,41 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   const [followRecord, setFollowRecord] = React.useState(null);
   const [followLoading, setFollowLoading] = React.useState(false);
   const [playerIndex, setPlayerIndex] = React.useState(null);
+  const [showFollowersList, setShowFollowersList] = React.useState(false);
+  const [showFollowingList, setShowFollowingList] = React.useState(false);
+  const [followersList, setFollowersList] = React.useState([]);
+  const [followingList, setFollowingList] = React.useState([]);
+  const [listLoading, setListLoading] = React.useState(false);
 
   const isOwnProfile = currentUser && currentUser.id === userId;
+
+  const openFollowers = async () => {
+    setShowFollowersList(true);
+    setListLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`);
+      const items = res?.items || res || [];
+      const userIds = items.map(r => r.follower_id).filter(Boolean);
+      const usersRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500`);
+      const allUsers = usersRes?.items || usersRes || [];
+      setFollowersList(allUsers.filter(u => userIds.includes(u.id)));
+    } catch(e) { setFollowersList([]); }
+    setListLoading(false);
+  };
+
+  const openFollowing = async () => {
+    setShowFollowingList(true);
+    setListLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`);
+      const items = res?.items || res || [];
+      const userIds = items.map(r => r.following_id).filter(Boolean);
+      const usersRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500`);
+      const allUsers = usersRes?.items || usersRes || [];
+      setFollowingList(allUsers.filter(u => userIds.includes(u.id)));
+    } catch(e) { setFollowingList([]); }
+    setListLoading(false);
+  };
 
   React.useEffect(() => {
     setLoading(true);
@@ -3651,13 +3684,13 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                     <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{userVideos.length}</div>
                     <div style={{ color:"#666", fontSize:11 }}>Videos</div>
                   </div>
-                  <div style={{ textAlign:"center" }}>
+                  <div style={{ textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"transparent" }} onClick={openFollowers}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.followers_count || 0}</div>
-                    <div style={{ color:"#666", fontSize:11 }}>Followers</div>
+                    <div style={{ color:"#F5C842", fontSize:11, fontWeight:600 }}>Followers</div>
                   </div>
-                  <div style={{ textAlign:"center" }}>
+                  <div style={{ textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"transparent" }} onClick={openFollowing}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.following_count || 0}</div>
-                    <div style={{ color:"#666", fontSize:11 }}>Following</div>
+                    <div style={{ color:"#F5C842", fontSize:11, fontWeight:600 }}>Following</div>
                   </div>
                 </div>
 
@@ -3676,6 +3709,54 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                 )}
               </div>
 
+              {/* Followers list modal */}
+              {showFollowersList && (
+                <div style={{ position:"absolute", inset:0, zIndex:200, background:"#0B0C1A", display:"flex", flexDirection:"column" }}>
+                  <div style={{ display:"flex", alignItems:"center", padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+                    <button onClick={() => setShowFollowersList(false)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", marginRight:12 }}>←</button>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Followers</div>
+                  </div>
+                  <div style={{ overflowY:"auto", flex:1 }}>
+                    {listLoading && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Loading...</div>}
+                    {!listLoading && followersList.length === 0 && <div style={{ color:"#666", textAlign:"center", padding:32 }}>No followers yet</div>}
+                    {followersList.map(u => (
+                      <div key={u.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                        <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.display_name||u.username||'U')}&background=random&color=fff&size=64&bold=true`}
+                          style={{ width:44, height:44, borderRadius:"50%", background:"#1a1a2e" }} loading="lazy" />
+                        <div>
+                          <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{u.display_name || u.username}</div>
+                          <div style={{ color:"#666", fontSize:12 }}>@{u.username}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Following list modal */}
+              {showFollowingList && (
+                <div style={{ position:"absolute", inset:0, zIndex:200, background:"#0B0C1A", display:"flex", flexDirection:"column" }}>
+                  <div style={{ display:"flex", alignItems:"center", padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+                    <button onClick={() => setShowFollowingList(false)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", marginRight:12 }}>←</button>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Following</div>
+                  </div>
+                  <div style={{ overflowY:"auto", flex:1 }}>
+                    {listLoading && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Loading...</div>}
+                    {!listLoading && followingList.length === 0 && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Not following anyone yet</div>}
+                    {followingList.map(u => (
+                      <div key={u.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                        <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.display_name||u.username||'U')}&background=random&color=fff&size=64&bold=true`}
+                          style={{ width:44, height:44, borderRadius:"50%", background:"#1a1a2e" }} loading="lazy" />
+                        <div>
+                          <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{u.display_name || u.username}</div>
+                          <div style={{ color:"#666", fontSize:12 }}>@{u.username}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Video Grid */}
               <div style={{ overflowY:"auto", flex:1, padding:2 }}>
                 {userVideos.length === 0 ? (
@@ -3689,7 +3770,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                       <div key={v.id} onClick={() => setPlayerIndex(i)}
                         style={{ position:"relative", aspectRatio:"1/1", background:"#111", overflow:"hidden", cursor:"pointer" }}>
                         {v.thumbnail_url ? (
-                          <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          <img src={resolveMediaUrl(v.thumbnail_url)} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         ) : (
                           <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         )}
@@ -5388,7 +5469,7 @@ function AdminPanel({ currentUser }) {
                     <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
                       <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
                         {video.thumbnail_url
-                          ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                          ? <img src={video.thumbnail_url} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                           : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
@@ -5435,7 +5516,7 @@ function AdminPanel({ currentUser }) {
                   <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
                     <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
                       {video.thumbnail_url
-                        ? <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                        ? <img src={video.thumbnail_url} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
@@ -5541,7 +5622,7 @@ function AdminPanel({ currentUser }) {
                 {/* Thumbnail */}
                 <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
                   {video.thumbnail_url ? (
-                    <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    <img src={video.thumbnail_url} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   ) : (
                     <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>
                   )}
