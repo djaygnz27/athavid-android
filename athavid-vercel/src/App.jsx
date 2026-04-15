@@ -5630,7 +5630,7 @@ function App() {
   const [blockedIds, setBlockedIds] = useState(new Set()); // blocked user ids
   const [feedPage, setFeedPage] = useState(1);
   const [feedHasMore, setFeedHasMore] = useState(true);
-  const FEED_PAGE_SIZE = 15;
+  const FEED_PAGE_SIZE = 50;
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
