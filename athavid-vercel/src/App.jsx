@@ -3386,14 +3386,15 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
 
   return (
     <>
-      <div style={{ position:"fixed", inset:0, zIndex:4000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-        {/* Backdrop */}
-        <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
+      {/* Backdrop — separate from sheet so it never intercepts sheet taps */}
+      <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:4000, background:"rgba(0,0,0,0.75)" }} />
 
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", zIndex:4001,
+        width:"100%", maxWidth:480, display:"flex", flexDirection:"column" }}>
         {/* Sheet */}
-        <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"24px 24px 0 0",
-          width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column",
-          zIndex:4001 }}>
+        <div style={{ background:"#0f0f1a", borderRadius:"24px 24px 0 0",
+          width:"100%", maxHeight:"88vh", display:"flex", flexDirection:"column",
+          overflow:"hidden" }}>
 
           {/* Handle */}
           <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"14px auto 0", flexShrink:0 }} />
