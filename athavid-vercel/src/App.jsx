@@ -2371,7 +2371,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         el.muted = video.sound_url ? true : currentlyMuted;
         el.play().catch(() => {});
         setPlaying(true);
-        // Start sound track if unmuted and post has music (video audio stays muted)
         if (!currentlyMuted && soundRef.current && video.sound_url) {
           soundRef.current.play().catch(() => {});
         }
@@ -2380,16 +2379,39 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
+        el.currentTime = 0;
         setPlaying(false);
-        if (soundRef.current) soundRef.current.pause();
+        if (soundRef.current) { soundRef.current.pause(); soundRef.current.currentTime = 0; }
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
         setShowUI(false);
         setUserTapped(false);
       }
-    }, { threshold: 0.6 });
+    }, { threshold: 0.75 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  // For photo posts — pause sound when card scrolls out of view
+  const cardRef = useRef(null);
+  useEffect(() => {
+    if (!photoUrls) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) {
+        if (soundRef.current) { soundRef.current.pause(); soundRef.current.currentTime = 0; }
+        setPlaying(false);
+      } else {
+        const currentlyMuted = muteStore.get();
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
+          soundRef.current.play().catch(() => {});
+        }
+        if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
+      }
+    }, { threshold: 0.75 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [photoUrls]);
 
   // Follow state is driven by the shared followedUserIds prop — no per-card API call needed
 
@@ -2532,7 +2554,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
   return (
-    <div style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start" }}>
+    <div ref={cardRef} style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start" }}>
 
       {/* ── AGE GATE OVERLAY ── */}
       {showMatureBlock && (
