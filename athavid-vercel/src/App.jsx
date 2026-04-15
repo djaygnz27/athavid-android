@@ -2458,10 +2458,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           {/* ── CAROUSEL NAV: ‹ dots › all in one row ── */}
           {photoUrls.length > 1 && (
             <div style={{
-              position:"absolute", bottom:150, left:"50%", transform:"translateX(-50%)",
-              display:"flex", alignItems:"center", gap:16, zIndex:400,
-              background:"rgba(0,0,0,0.6)", borderRadius:40, padding:"10px 20px",
-              backdropFilter:"blur(4px)"
+              position:"absolute", bottom:200, left:16,
+              display:"flex", alignItems:"center", gap:14, zIndex:600,
+              background:"rgba(0,0,0,0.65)", borderRadius:40, padding:"10px 18px",
+              backdropFilter:"blur(6px)", maxWidth:"65%"
             }}>
               {/* PREV */}
               <button
