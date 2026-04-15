@@ -2668,7 +2668,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         return (
           <>
             <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
-              loop playsInline
+              loop playsInline preload="auto"
               muted={muted || !!video.sound_url}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
@@ -6037,9 +6037,42 @@ function App() {
             </div>
           )}
           {loading && (
-            <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
-              <div style={{ fontSize:48 }}>🎬</div>
-              <div style={{ color:"rgba(245,200,66,0.7)", fontSize:14, letterSpacing:1, fontWeight:600 }}>Loading...</div>
+            <div style={{ height:"100svh", display:"flex", flexDirection:"column", background:"#0B0C1A", overflow:"hidden" }}>
+              <style>{`
+                @keyframes sachiShimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+                @keyframes sachiPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+                .sachi-skeleton { background:linear-gradient(90deg,#1a1a2e 25%,#252540 50%,#1a1a2e 75%); background-size:400px 100%; animation:sachiShimmer 1.4s infinite; border-radius:8px; }
+              `}</style>
+              {/* Branded logo pulse at top */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"16px 0 8px", gap:10 }}>
+                <div style={{ width:32, height:32, borderRadius:10, animation:"sachiPulse 1.5s ease-in-out infinite", background:"linear-gradient(135deg,#F5C842,#FF9500)" }} />
+                <div style={{ color:"#F5C842", fontWeight:900, fontSize:22, letterSpacing:0.5, animation:"sachiPulse 1.5s ease-in-out infinite" }}>Sachi</div>
+              </div>
+              {/* Skeleton video card */}
+              <div style={{ flex:1, position:"relative", margin:"0 0 4px", borderRadius:0, overflow:"hidden", background:"#111120" }}>
+                <div className="sachi-skeleton" style={{ position:"absolute", inset:0 }} />
+                {/* Skeleton avatar + name bottom left */}
+                <div style={{ position:"absolute", bottom:80, left:16, display:"flex", flexDirection:"column", gap:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div className="sachi-skeleton" style={{ width:40, height:40, borderRadius:"50%" }} />
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      <div className="sachi-skeleton" style={{ width:100, height:12 }} />
+                      <div className="sachi-skeleton" style={{ width:70, height:10 }} />
+                    </div>
+                  </div>
+                  <div className="sachi-skeleton" style={{ width:200, height:10, marginTop:4 }} />
+                  <div className="sachi-skeleton" style={{ width:150, height:10 }} />
+                </div>
+                {/* Skeleton action buttons right */}
+                <div style={{ position:"absolute", bottom:80, right:16, display:"flex", flexDirection:"column", gap:20, alignItems:"center" }}>
+                  {[1,2,3,4].map(i => (
+                    <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                      <div className="sachi-skeleton" style={{ width:28, height:28, borderRadius:8 }} />
+                      <div className="sachi-skeleton" style={{ width:16, height:8 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
           {!loading && videoList.length === 0 && (
