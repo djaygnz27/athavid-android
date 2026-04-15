@@ -2467,63 +2467,50 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
           </div>
 
-          {/* ── CAROUSEL NAV: invisible tap zones on left/right of photo center ── */}
+          {/* ── CAROUSEL DOTS + ARROWS inline at bottom ── */}
           {photoUrls.length > 1 && (
-            <>
-              {/* LEFT tap zone - prev */}
+            <div style={{
+              position:"absolute", bottom:160, left:"50%", transform:"translateX(-50%)",
+              display:"flex", gap:10, alignItems:"center", zIndex:9999,
+            }}>
+              {/* PREV arrow */}
               <div
                 onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
                 onClick={e => { e.stopPropagation(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
                 style={{
-                  position:"absolute", left:0, top:"20%", width:"30%", height:"50%",
-                  zIndex:9999, WebkitTapHighlightColor:"transparent", cursor:"pointer",
-                  display:"flex", alignItems:"center", justifyContent:"center"
-                }}>
-                {photoIdx > 0 && (
-                  <div style={{
-                    background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:46, height:46,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:26, fontWeight:900, color:"#fff",
-                    border:"2px solid rgba(255,255,255,0.5)", pointerEvents:"none"
-                  }}>‹</div>
-                )}
-              </div>
-              {/* RIGHT tap zone - next (stop before action buttons) */}
+                  background: photoIdx===0 ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.6)",
+                  borderRadius:"50%", width:36, height:36,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:22, fontWeight:900,
+                  color: photoIdx===0 ? "rgba(255,255,255,0.2)" : "#fff",
+                  border:"1.5px solid rgba(255,255,255,0.4)",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+                }}>‹</div>
+
+              {/* DOTS */}
+              {photoUrls.map((_,i) => (
+                <div key={i} style={{
+                  width: i===photoIdx ? 24 : 9, height:9, borderRadius:99,
+                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
+                  transition:"all 0.25s ease",
+                  boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.9)" : "none",
+                  pointerEvents:"none"
+                }} />
+              ))}
+
+              {/* NEXT arrow */}
               <div
                 onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
                 onClick={e => { e.stopPropagation(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
                 style={{
-                  position:"absolute", right:72, top:"20%", width:"30%", height:"50%",
-                  zIndex:9999, WebkitTapHighlightColor:"transparent", cursor:"pointer",
-                  display:"flex", alignItems:"center", justifyContent:"center"
-                }}>
-                {photoIdx < photoUrls.length-1 && (
-                  <div style={{
-                    background:"rgba(0,0,0,0.55)", borderRadius:"50%", width:46, height:46,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:26, fontWeight:900, color:"#fff",
-                    border:"2px solid rgba(255,255,255,0.5)", pointerEvents:"none"
-                  }}>›</div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* ── CAROUSEL DOTS ── */}
-          {photoUrls.length > 1 && (
-            <div style={{
-              position:"absolute", bottom:160, left:"50%", transform:"translateX(-50%)",
-              display:"flex", gap:8, alignItems:"center", zIndex:9999,
-              pointerEvents:"none"
-            }}>
-              {photoUrls.map((_,i) => (
-                <div key={i} style={{
-                  width: i===photoIdx ? 28 : 10, height:10, borderRadius:99,
-                  background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
-                  transition:"all 0.25s ease",
-                  boxShadow: i===photoIdx ? "0 0 10px rgba(245,200,66,0.9)" : "none"
-                }} />
-              ))}
+                  background: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.6)",
+                  borderRadius:"50%", width:36, height:36,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:22, fontWeight:900,
+                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
+                  border:"1.5px solid rgba(255,255,255,0.4)",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+                }}>›</div>
             </div>
           )}
 
