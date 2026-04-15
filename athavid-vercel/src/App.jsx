@@ -1667,20 +1667,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </button>
           <button
             onClick={() => {
-              if (!postLocation) { toast.warn('📍 Please allow location access to post on Sachi.'); detectLocation(); return; }
               if (uploadTab === "text") uploadTextPost();
               else if (uploadTab === "photo") uploadPhotos();
               else upload();
             }}
-            disabled={uploading || detectingLocation}
+            disabled={uploading}
             style={{ flex:2.5, padding:"14px 0",
-              background: uploading ? "#333" : (!postLocation || detectingLocation) ? "rgba(255,107,107,0.25)" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
-              border: (!postLocation && !uploading) ? "1.5px solid rgba(255,107,107,0.4)" : "none",
-              borderRadius:14, color: (!postLocation && !uploading) ? "rgba(255,255,255,0.4)" : "#fff",
-              fontWeight:900, fontSize:16, cursor: (uploading || detectingLocation) ? "default" : "pointer",
-              boxShadow: postLocation && !uploading ? "0 4px 20px rgba(255,107,107,0.35)" : "none",
+              background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border: "none",
+              borderRadius:14, color: "#fff",
+              fontWeight:900, fontSize:16, cursor: uploading ? "default" : "pointer",
+              boxShadow: uploading ? "none" : "0 4px 20px rgba(255,107,107,0.35)",
               display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            {uploading ? step : detectingLocation ? "📡 Detecting location..." : !postLocation ? "📍 Location required" : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
+            {uploading ? step : detectingLocation ? "📡 Getting location..." : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
           </button>
         </div>
       </div>
