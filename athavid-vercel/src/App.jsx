@@ -3495,7 +3495,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
 }
 
 // ─── VideoManageGrid ────────────────────────────────────────────────────────
-function VideoManageGrid({ videos: vids, onRefresh }) {
+function VideoManageGrid({ videos: vids, onRefresh, onWatch }) {
   const [menuVideo, setMenuVideo] = React.useState(null);
   const [editVideo, setEditVideo] = React.useState(null);
   const [editCaption, setEditCaption] = React.useState("");
@@ -3534,7 +3534,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
         {vids.map(v => (
           <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
-            onClick={() => setMenuVideo(v)}>
+            onClick={() => setMenuVideo({ ...v, _idx: i })}>
             {v.thumbnail_url
               ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
@@ -3567,6 +3567,17 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
                 <div style={{ color:"#888", fontSize:12, marginTop:4 }}>👁 {menuVideo.views_count || 0}  ❤️ {menuVideo.likes_count || 0}  💬 {menuVideo.comments_count || 0}</div>
               </div>
             </div>
+
+            {/* Watch button */}
+            {onWatch && (
+              <button onClick={() => { const idx = menuVideo._idx ?? 0; setMenuVideo(null); onWatch(idx); }}
+                style={{ width:"100%", padding:"14px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                  border:"1px solid rgba(245,200,66,0.4)", borderRadius:12, color:"#F5C842",
+                  fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:10,
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                ▶️ Watch
+              </button>
+            )}
 
             {/* Edit button */}
             <button onClick={() => { setEditCaption(menuVideo.caption || ""); setEditVideo(menuVideo); setMenuVideo(null); }}
@@ -5431,6 +5442,7 @@ function App() {
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
+  const [myVideosPlayer, setMyVideosPlayer] = useState(null); // index into myVideos for fullscreen
   const [meFollowersCount, setMeFollowersCount] = useState(0);
   const [meFollowingCount, setMeFollowingCount] = useState(0);
   const [showFollowersList, setShowFollowersList] = useState(false);
@@ -5934,7 +5946,18 @@ function App() {
                   </button>
                 </div>
               </div>
-              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
+              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} onWatch={(idx) => setMyVideosPlayer(idx)} />
+
+              {/* ── My Videos Fullscreen Player ── */}
+              {myVideosPlayer !== null && myVideos.length > 0 && (
+                <ProfileVideoPlayer
+                  key={'myplayer-' + myVideosPlayer}
+                  videos={myVideos}
+                  startIndex={myVideosPlayer}
+                  onClose={() => setMyVideosPlayer(null)}
+                  username={currentUser?.full_name || currentUser?.email?.split('@')[0] || 'Me'}
+                />
+              )}
 
               {/* Founding Creator CTA */}
               <div style={{ padding:"0 20px 12px" }}>
