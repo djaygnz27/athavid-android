@@ -12997,9 +12997,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     background: "#0B0C1A",
     flexShrink: 0,
     scrollSnapAlign: "start",
-    boxShadow: "inset 0 0 0 2px rgba(245,200,66,0.13), inset 0 0 60px rgba(245,200,66,0.04)",
-    borderTop: "1.5px solid rgba(245,200,66,0.10)",
-    borderBottom: "1.5px solid rgba(245,200,66,0.06)"
+    outline: "2.5px solid transparent",
+    boxShadow: "inset 0 0 0 3px rgba(245,200,66,0.55), inset 0 0 0 5px rgba(245,200,66,0.12), inset 0 0 40px rgba(245,200,66,0.06), 0 0 0 1.5px rgba(245,200,66,0.3)"
   }, children: [
     showMatureBlock && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       position: "absolute",
