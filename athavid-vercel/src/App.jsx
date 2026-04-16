@@ -181,7 +181,7 @@ function formatCount(n) {
 const resolveMediaUrl = (url, isVideo) => {
   if (!url) return url;
   // Cloudflare Stream HLS URLs — pass through directly, no proxy needed
-  if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.includes('customer-i1ij9522l179kiqc') || url.endsWith('.m3u8')) {
+  if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.endsWith('.m3u8')) {
     return url;
   }
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
@@ -243,7 +243,7 @@ const CF_STREAM_TOKEN = "cfut_q99HNXQZVyo68QBa5jIqaj8EXs1jXbkFOa0EQHQg0861d85d";
 
 async function uploadToCloudflareStream(file, onProgress) {
   // If credentials not set, fall back to Base44
-  // Cloudflare Stream configured — full HLS adaptive streaming enabled
+  // Cloudflare Stream active
   try {
     // Step 1: Get a one-time upload URL from Cloudflare Stream
     onProgress && onProgress(5, "Connecting to Cloudflare Stream...");
@@ -2374,14 +2374,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   );
 }
 
-
-// ── HLS Video Component — handles both regular and Cloudflare Stream HLS videos ──
+// ── HLS Video Component ─────────────────────────────────────────────────────────
 function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause }) {
   React.useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
     if (isHLS && !video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Non-Safari: load hls.js dynamically
       const loadHLS = async () => {
         if (!window.Hls) {
           await new Promise((resolve, reject) => {
@@ -2392,38 +2390,24 @@ function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause }) {
           });
         }
         if (window.Hls && window.Hls.isSupported()) {
-          // Destroy any existing HLS instance
           if (video._hls) { video._hls.destroy(); }
-          const hls = new window.Hls({
-            maxBufferLength: 30,
-            maxMaxBufferLength: 60,
-            startLevel: -1, // auto quality
-            abrEwmaDefaultEstimate: 500000,
-          });
+          const hls = new window.Hls({ maxBufferLength: 30, startLevel: -1 });
           hls.loadSource(src);
           hls.attachMedia(video);
-          hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-            video.play().catch(() => {});
-          });
+          hls.on(window.Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); });
           video._hls = hls;
         }
       };
       loadHLS().catch(console.error);
       return () => { if (video._hls) { video._hls.destroy(); video._hls = null; } };
     } else {
-      // Safari (native HLS) or regular video
       video.src = src;
     }
   }, [src]);
-
   return (
-    <video ref={videoRef} poster={poster}
-      loop playsInline preload="auto"
-      muted={muted}
-      onPlay={onPlay}
-      onPause={onPause}
-      style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }}
-    />
+    <video ref={videoRef} poster={poster} loop playsInline preload="auto" muted={muted}
+      onPlay={onPlay} onPause={onPause}
+      style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
   );
 }
 
@@ -2675,6 +2659,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const likeLockedRef = React.useRef(false);
   const doLike = async () => {
     if (!currentUser) { onNeedAuth(); return; }
+    if (liked) { toast.info("Dude, you already liked this video!"); return; }
     if (likeLockedRef.current) return;
     likeLockedRef.current = true;
     setTimeout(() => { likeLockedRef.current = false; }, 800);
@@ -2914,10 +2899,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         const isHLS = resolvedVideoUrl?.endsWith('.m3u8') || resolvedVideoUrl?.includes('cloudflarestream.com') || resolvedVideoUrl?.includes('customer-i1ij9522l179kiqc');
         return (
           <>
-            <HLSVideo
-              src={resolvedVideoUrl}
-              isHLS={isHLS}
-              videoRef={videoRef}
+            <HLSVideo src={resolvedVideoUrl} isHLS={isHLS} videoRef={videoRef}
               poster={resolveMediaUrl(video.thumbnail_url)}
               muted={muted || !!video.sound_url}
               onPlay={() => {
