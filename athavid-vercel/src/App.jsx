@@ -238,15 +238,12 @@ async function convertHeicToJpeg(file) {
 // ── Cloudflare Stream Upload ─────────────────────────────────────────────────
 // Routes video through Cloudflare Stream for HLS adaptive streaming & edge CDN
 // Falls back to direct Base44 upload if Stream is unavailable
-const CF_ACCOUNT_ID = "your_account_id_here"; // Replace with your Cloudflare Account ID
-const CF_STREAM_TOKEN = "your_stream_token_here"; // Replace with your Stream API Token
+const CF_ACCOUNT_ID = "a346b1c78fc48549d2de3de99a789a2d";
+const CF_STREAM_TOKEN = "cfut_q99HNXQZVyo68QBa5jIqaj8EXs1jXbkFOa0EQHQg0861d85d";
 
 async function uploadToCloudflareStream(file, onProgress) {
   // If credentials not set, fall back to Base44
-  if (CF_ACCOUNT_ID === "your_account_id_here") {
-    console.log("[Sachi] Cloudflare Stream not configured — using Base44 upload");
-    return null;
-  }
+  // Cloudflare Stream configured — full HLS adaptive streaming enabled
   try {
     // Step 1: Get a one-time upload URL from Cloudflare Stream
     onProgress && onProgress(5, "Connecting to Cloudflare Stream...");
