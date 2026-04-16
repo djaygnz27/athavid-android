@@ -74,7 +74,9 @@ function ToastContainer() {
         );
       })}
       <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
-@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes popIn { from { transform: scale(0.3); opacity:0; } to { transform: scale(1); opacity:1; } }
+@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }`}</style>
     </div>
   );
 }
@@ -2247,6 +2249,354 @@ function getUserAge() {
   if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
   return age;
 }
+
+
+// ── SwipeFeed: Tinder-style left/right swipe card deck for the main feed ──
+function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onView, onNeedAuth,
+  onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds,
+  onLoadMore, hasMore, loading }) {
+
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [dragX, setDragX] = useState(0);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [swipeDir, setSwipeDir] = useState(null); // 'left' | 'right' | null
+  const [exitAnim, setExitAnim] = useState(null); // 'exit-left' | 'exit-right' | null
+  const [likeFlash, setLikeFlash] = useState(false);
+  const [skipFlash, setSkipFlash] = useState(false);
+
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+  const touchStartTime = useRef(null);
+  const isDragHorizontal = useRef(false);
+  const cardRef = useRef(null);
+
+  const filteredVideos = useMemo(() =>
+    videoList.filter(v => !blockedIds?.has(v.user_id)),
+    [videoList, blockedIds]
+  );
+
+  // Load more when approaching the end
+  useEffect(() => {
+    if (filteredVideos.length - currentIdx <= 5 && hasMore && !loading) {
+      onLoadMore && onLoadMore();
+    }
+  }, [currentIdx, filteredVideos.length, hasMore, loading]);
+
+  const advanceCard = (direction) => {
+    setExitAnim(direction === 'right' ? 'exit-right' : 'exit-left');
+    if (direction === 'right') {
+      setLikeFlash(true);
+      setTimeout(() => setLikeFlash(false), 600);
+    } else {
+      setSkipFlash(true);
+      setTimeout(() => setSkipFlash(false), 400);
+    }
+    setTimeout(() => {
+      setCurrentIdx(i => i + 1);
+      setExitAnim(null);
+      setDragX(0);
+      setDragY(0);
+      setSwipeDir(null);
+    }, 320);
+  };
+
+  // Touch handlers
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+    isDragHorizontal.current = false;
+    setIsDragging(false);
+  };
+
+  const handleTouchMove = (e) => {
+    if (touchStartX.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (!isDragHorizontal.current) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 0.8) {
+        isDragHorizontal.current = true;
+      } else if (Math.abs(dy) > 12) {
+        return; // vertical scroll — don't hijack
+      }
+    }
+    if (isDragHorizontal.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+      setDragX(dx);
+      setDragY(dy * 0.15); // subtle tilt
+      setSwipeDir(dx > 20 ? 'right' : dx < -20 ? 'left' : null);
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!isDragHorizontal.current) { touchStartX.current = null; return; }
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const elapsed = Date.now() - touchStartTime.current;
+    const velocity = Math.abs(dx) / elapsed;
+    touchStartX.current = null;
+    setIsDragging(false);
+    // Threshold: 100px drag OR fast flick (velocity > 0.4)
+    if (dx > 100 || (dx > 40 && velocity > 0.4)) {
+      advanceCard('right');
+    } else if (dx < -100 || (dx < -40 && velocity > 0.4)) {
+      advanceCard('left');
+    } else {
+      // Snap back
+      setDragX(0); setDragY(0); setSwipeDir(null);
+    }
+  };
+
+  // Mouse drag support for desktop
+  const mouseStartX = useRef(null);
+  const mouseStartY = useRef(null);
+  const isMouseDragging = useRef(false);
+
+  const handleMouseDown = (e) => {
+    mouseStartX.current = e.clientX;
+    mouseStartY.current = e.clientY;
+    isMouseDragging.current = false;
+  };
+  const handleMouseMove = (e) => {
+    if (mouseStartX.current === null) return;
+    const dx = e.clientX - mouseStartX.current;
+    const dy = e.clientY - mouseStartY.current;
+    if (Math.abs(dx) > 5) isMouseDragging.current = true;
+    if (!isMouseDragging.current) return;
+    setIsDragging(true);
+    setDragX(dx);
+    setDragY(dy * 0.1);
+    setSwipeDir(dx > 20 ? 'right' : dx < -20 ? 'left' : null);
+  };
+  const handleMouseUp = (e) => {
+    if (!isMouseDragging.current) { mouseStartX.current = null; return; }
+    const dx = e.clientX - mouseStartX.current;
+    mouseStartX.current = null;
+    isMouseDragging.current = false;
+    setIsDragging(false);
+    if (dx > 80) advanceCard('right');
+    else if (dx < -80) advanceCard('left');
+    else { setDragX(0); setDragY(0); setSwipeDir(null); }
+  };
+
+  const currentVideo = filteredVideos[currentIdx];
+  const nextVideo = filteredVideos[currentIdx + 1];
+  const next2Video = filteredVideos[currentIdx + 2];
+
+  // Rotation + position from drag
+  const rotation = dragX * 0.06; // degrees
+  const opacity = exitAnim ? 0 : 1;
+
+  // Exit animation transform
+  let exitTransform = '';
+  if (exitAnim === 'exit-right') exitTransform = 'translateX(110vw) rotate(20deg)';
+  if (exitAnim === 'exit-left') exitTransform = 'translateX(-110vw) rotate(-20deg)';
+
+  // Current card transform
+  const currentTransform = exitAnim
+    ? exitTransform
+    : isDragging || dragX !== 0
+      ? `translateX(${dragX}px) translateY(${dragY}px) rotate(${rotation}deg)`
+      : 'translateX(0) translateY(0) rotate(0deg)';
+
+  if (!currentVideo) {
+    return (
+      <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"#0B0C1A", gap:16 }}>
+        <div style={{ fontSize:64 }}>✨</div>
+        <div style={{ color:"#fff", fontWeight:800, fontSize:22 }}>You're all caught up!</div>
+        <div style={{ color:"#888", fontSize:15, textAlign:"center", padding:"0 40px" }}>Check back later for new posts</div>
+      </div>
+    );
+  }
+
+  const SWIPE_THRESHOLD = 60;
+  const likeOpacity = Math.min(Math.max(dragX / SWIPE_THRESHOLD, 0), 1);
+  const skipOpacity = Math.min(Math.max(-dragX / SWIPE_THRESHOLD, 0), 1);
+
+  return (
+    <div style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", overflow:"hidden", userSelect:"none" }}>
+
+      {/* LIKE flash overlay */}
+      {likeFlash && (
+        <div style={{ position:"absolute", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center",
+          background:"rgba(80,220,100,0.12)", pointerEvents:"none", animation:"fadeOut 0.5s ease forwards" }}>
+          <div style={{ fontSize:90, filter:"drop-shadow(0 0 20px rgba(80,220,100,0.8))", animation:"popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>❤️</div>
+        </div>
+      )}
+      {/* SKIP flash overlay */}
+      {skipFlash && (
+        <div style={{ position:"absolute", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center",
+          background:"rgba(255,80,80,0.08)", pointerEvents:"none", animation:"fadeOut 0.4s ease forwards" }}>
+          <div style={{ fontSize:80, filter:"drop-shadow(0 0 16px rgba(255,100,100,0.6))", animation:"popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}>👋</div>
+        </div>
+      )}
+
+      {/* Card stack — back card (peek) */}
+      {nextVideo && (
+        <div style={{
+          position:"absolute", inset:0, zIndex:1,
+          transform: `scale(${0.94 + Math.min(Math.abs(dragX) / 800, 0.06)}) translateY(${Math.max(0, 20 - Math.abs(dragX) * 0.1)}px)`,
+          transition: isDragging ? "none" : "transform 0.3s ease",
+          borderRadius: 20, overflow:"hidden"
+        }}>
+          <VideoCard video={nextVideo} currentUser={null}
+            onCommentOpen={()=>{}} onLike={()=>{}} onView={()=>{}} onNeedAuth={()=>{}}
+            onDelete={()=>{}} onProfileOpen={()=>{}} onShareCount={()=>{}}
+            onBookmark={{ isBookmarked:()=>false, handle:()=>{} }}
+            blockedIds={new Set()} />
+        </div>
+      )}
+
+      {/* LIKE indicator */}
+      <div style={{
+        position:"absolute", top:"35%", left:30, zIndex:20, opacity: likeOpacity,
+        transform:`rotate(-15deg) scale(${0.8 + likeOpacity * 0.4})`,
+        pointerEvents:"none", transition: isDragging ? "none" : "all 0.15s",
+        border:"3px solid #50DC64", borderRadius:12, padding:"8px 16px",
+        color:"#50DC64", fontWeight:900, fontSize:28, letterSpacing:2,
+        textShadow:"0 0 20px rgba(80,220,100,0.8)", background:"rgba(0,0,0,0.3)"
+      }}>❤️ LIKE</div>
+
+      {/* NOPE indicator */}
+      <div style={{
+        position:"absolute", top:"35%", right:30, zIndex:20, opacity: skipOpacity,
+        transform:`rotate(15deg) scale(${0.8 + skipOpacity * 0.4})`,
+        pointerEvents:"none", transition: isDragging ? "none" : "all 0.15s",
+        border:"3px solid #FF5050", borderRadius:12, padding:"8px 16px",
+        color:"#FF5050", fontWeight:900, fontSize:28, letterSpacing:2,
+        textShadow:"0 0 20px rgba(255,80,80,0.8)", background:"rgba(0,0,0,0.3)"
+      }}>SKIP 👋</div>
+
+      {/* Main card */}
+      <div
+        ref={cardRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        style={{
+          position:"absolute", inset:0, zIndex:10,
+          transform: currentTransform,
+          transition: (isDragging || exitAnim) ? (exitAnim ? "transform 0.32s cubic-bezier(0.4,0,0.2,1)" : "none") : "transform 0.35s cubic-bezier(0.34,1.2,0.64,1)",
+          cursor: isDragging ? "grabbing" : "grab",
+          borderRadius: dragX !== 0 ? 20 : 0,
+          overflow:"hidden",
+          willChange:"transform"
+        }}
+      >
+        <VideoCard
+          video={currentVideo}
+          currentUser={currentUser}
+          nextVideoUrl={nextVideo?.video_url || null}
+          next2VideoUrl={next2Video?.video_url || null}
+          onCommentOpen={onCommentOpen}
+          onLike={(id, delta) => {
+            // Auto-advance after like
+            onLike(id, delta);
+          }}
+          onView={onView}
+          onNeedAuth={onNeedAuth}
+          onDelete={onDelete}
+          onProfileOpen={onProfileOpen}
+          followedUserIds={followedUserIds}
+          onFollowChange={onFollowChange}
+          onShareCount={onShareCount}
+          onBookmark={onBookmark}
+          blockedIds={blockedIds}
+        />
+      </div>
+
+      {/* Bottom action bar — manual swipe buttons */}
+      <div style={{
+        position:"absolute", bottom:90, left:0, right:0, zIndex:30,
+        display:"flex", justifyContent:"center", alignItems:"center", gap:28,
+        pointerEvents:"none"
+      }}>
+        {/* Skip button */}
+        <button
+          onClick={() => advanceCard('left')}
+          style={{
+            width:60, height:60, borderRadius:"50%",
+            background:"rgba(255,80,80,0.15)", border:"2px solid rgba(255,80,80,0.5)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:26, cursor:"pointer", pointerEvents:"all",
+            boxShadow:"0 4px 20px rgba(255,80,80,0.2)",
+            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s",
+            backdropFilter:"blur(8px)"
+          }}
+          onTouchStart={e => e.currentTarget.style.transform="scale(0.9)"}
+          onTouchEnd={e => e.currentTarget.style.transform="scale(1)"}
+        >👋</button>
+
+        {/* Progress indicator */}
+        <div style={{
+          color:"rgba(255,255,255,0.4)", fontSize:12, fontWeight:600,
+          letterSpacing:0.5, textAlign:"center",
+          textShadow:"0 1px 4px rgba(0,0,0,0.8)", pointerEvents:"none"
+        }}>
+          {currentIdx + 1} / {filteredVideos.length}{hasMore ? "+" : ""}
+        </div>
+
+        {/* Like button */}
+        <button
+          onClick={() => { onLike(currentVideo.id, 1); advanceCard('right'); }}
+          style={{
+            width:60, height:60, borderRadius:"50%",
+            background:"rgba(80,220,100,0.15)", border:"2px solid rgba(80,220,100,0.5)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:26, cursor:"pointer", pointerEvents:"all",
+            boxShadow:"0 4px 20px rgba(80,220,100,0.2)",
+            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s",
+            backdropFilter:"blur(8px)"
+          }}
+          onTouchStart={e => e.currentTarget.style.transform="scale(0.9)"}
+          onTouchEnd={e => e.currentTarget.style.transform="scale(1)"}
+        >❤️</button>
+      </div>
+
+      {/* Swipe hint — shown only first time */}
+      <SwipeHint />
+    </div>
+  );
+}
+
+// One-time hint overlay
+function SwipeHint() {
+  const [visible, setVisible] = useState(() => {
+    try { return !localStorage.getItem('sachi-swipe-hint-seen'); } catch { return true; }
+  });
+  useEffect(() => {
+    if (visible) {
+      const t = setTimeout(() => {
+        setVisible(false);
+        try { localStorage.setItem('sachi-swipe-hint-seen', '1'); } catch {}
+      }, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [visible]);
+  if (!visible) return null;
+  return (
+    <div style={{
+      position:"absolute", inset:0, zIndex:50, pointerEvents:"none",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      gap:8, animation:"fadeOut 0.5s ease 2.5s forwards"
+    }}>
+      <div style={{ background:"rgba(0,0,0,0.7)", borderRadius:20, padding:"16px 28px",
+        display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+        backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ fontSize:36 }}>👈 👉</div>
+        <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Swipe to explore</div>
+        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12 }}>Right = ❤️ Like · Left = Skip</div>
+      </div>
+    </div>
+  );
+}
+
 
 // ── LazyVideoCard: only renders full VideoCard when within 1 screen of viewport ──
 function LazyVideoCard(props) {
@@ -6413,7 +6763,8 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div key={feedKey} ref={el => { feedContainerRef.current = el; }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y" }}>
+        <div key={feedKey} style={{ height:"100svh", position:"relative", overflow:"hidden" }}>
+          {/* Following tab — empty state */}
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
@@ -6439,13 +6790,15 @@ function App() {
               )}
             </div>
           )}
-          {loading && (
+          {/* Loading state */}
+          {loading && (feedTab === "forYou" ? videoList.length === 0 : followingVideos.length === 0) && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:48 }}>🎬</div>
               <div style={{ color:"rgba(245,200,66,0.7)", fontSize:14, letterSpacing:1, fontWeight:600 }}>Loading...</div>
             </div>
           )}
-          {!loading && videoList.length === 0 && (
+          {/* Empty state */}
+          {!loading && videoList.length === 0 && feedTab === "forYou" && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:64 }}>🎬</div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:22 }}>No videos yet</div>
@@ -6456,12 +6809,12 @@ function App() {
               </button>
             </div>
           )}
-          {(feedTab === "forYou" ? videoList : followingVideos)
-            .filter(v => !blockedIds.has(v.user_id))
-            .map((v, idx, arr) => (
-            <LazyVideoCard key={v.id} video={v} currentUser={currentUser}
-              nextVideoUrl={arr[idx+1]?.video_url || null}
-              next2VideoUrl={arr[idx+2]?.video_url || null}
+          {/* Swipe card deck feed */}
+          {!loading && (feedTab === "forYou" ? videoList.length > 0 : followingIds.length > 0 && followingVideos.length > 0) && (
+            <SwipeFeed
+              key={feedKey + "-" + feedTab}
+              videos={feedTab === "forYou" ? videoList : followingVideos}
+              currentUser={currentUser}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
               onView={handleView}
@@ -6473,17 +6826,10 @@ function App() {
               onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
               onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
               blockedIds={blockedIds}
-              />
-          ))}
-          {feedTab === "forYou" && feedHasMore && (
-            <div ref={feedSentinelRef} style={{ height:1, marginBottom:80 }} />
-          )}
-          {feedTab === "following" && followingVideos.length === 0 && !loading && (
-            <div style={{ textAlign:"center", padding:"60px 24px", color:"rgba(255,255,255,0.3)" }}>
-              <div style={{ fontSize:48, marginBottom:16 }}>👀</div>
-              <div style={{ fontSize:16, fontWeight:600, marginBottom:8 }}>Nothing here yet</div>
-              <div style={{ fontSize:13 }}>Follow creators to see their posts here</div>
-            </div>
+              onLoadMore={loadMoreVideos}
+              hasMore={feedHasMore}
+              loading={loading}
+            />
           )}
         </div>
       )}
