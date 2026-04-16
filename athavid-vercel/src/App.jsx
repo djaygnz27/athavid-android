@@ -2474,7 +2474,7 @@ function FlameIcon({ views = 0 }) {
   );
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, likedVideoIds, likeRecords, onLikeChange }) {
   const [showLikers, setShowLikers] = React.useState(false);
   const [hyped, setHyped] = React.useState(false);
   const [hypeCount, setHypeCount] = React.useState(video.hype_count || 0);
@@ -2482,13 +2482,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [myHypeId, setMyHypeId] = React.useState(null);
   const [likersList, setLikersList] = React.useState([]);
   const [likersLoading, setLikersLoading] = React.useState(false);
-  const [myLikeId, setMyLikeId] = React.useState(null); // SachiLike record ID for unlike
+  const [myLikeId, setMyLikeId] = React.useState(() => likeRecords?.[video.id] || null);
   const swipeRef = React.useRef({ startX: 0, startY: 0, swiping: false });
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(() => !!(likedVideoIds?.has(video.id)));
   // Global mute stored in module-level store — readable by stale closures, no prop-drilling
   const [muted, _setMutedLocal] = useState(() => muteStore.get());
   const setMuted = (val) => {
@@ -2670,10 +2670,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       if (newLiked) {
         const rec = await likes.add(video.id, currentUser.id, currentUser.username || currentUser.email?.split("@")[0], currentUser.full_name || currentUser.display_name || "", currentUser.avatar_url || "");
         setMyLikeId(rec?.id || null);
+        onLikeChange && onLikeChange(video.id, true, rec?.id || null);
       } else {
         if (myLikeId) {
           await likes.remove(myLikeId);
           setMyLikeId(null);
+          onLikeChange && onLikeChange(video.id, false, null);
         } else {
           // Find and delete by user+video
           const existing = await likes.getByVideo(video.id);
@@ -5984,6 +5986,8 @@ function App() {
     });
   };
   const [followingIds, setFollowingIds] = useState([]);
+  const [likedVideoIds, setLikedVideoIds] = useState(new Set()); // persisted like history
+  const [likeRecords, setLikeRecords] = useState({}); // video_id -> SachiLike record id
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set()); // video_id -> bookmark record id
   const [bookmarkRecords, setBookmarkRecords] = useState({}); // video_id -> bookmark record id
   const [blockedIds, setBlockedIds] = useState(new Set()); // blocked user ids
@@ -6116,9 +6120,17 @@ function App() {
     loadVideos(currentUser, true, nextPage);
   };
 
-  // Load bookmarks and blocks when user logs in
+  // Load likes, bookmarks and blocks when user logs in
   useEffect(() => {
-    if (!currentUser) { setBookmarkedIds(new Set()); setBookmarkRecords({}); setBlockedIds(new Set()); return; }
+    if (!currentUser) { setLikedVideoIds(new Set()); setLikeRecords({}); setBookmarkedIds(new Set()); setBookmarkRecords({}); setBlockedIds(new Set()); return; }
+    likes.getByUser(currentUser.id).then(res => {
+      const items = Array.isArray(res) ? res : (res?.items || []);
+      const ids = new Set(items.map(l => l.video_id));
+      const recs = {};
+      items.forEach(l => { recs[l.video_id] = l.id; });
+      setLikedVideoIds(ids);
+      setLikeRecords(recs);
+    }).catch(() => {});
     bookmarks.getByUser(currentUser.id).then(res => {
       const items = res.items || res || [];
       const ids = new Set(items.map(b => b.video_id));
@@ -6418,6 +6430,7 @@ function App() {
                   followedUserIds={followedUserIds}
                   onFollowChange={handleFollowChange}
                   onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
+                  likedVideoIds={likedVideoIds} likeRecords={likeRecords} onLikeChange={(videoId, liked, recId) => { setLikedVideoIds(prev => { const n = new Set(prev); liked ? n.add(videoId) : n.delete(videoId); return n; }); setLikeRecords(prev => { const n = {...prev}; liked ? n[videoId] = recId : delete n[videoId]; return n; }); }}
                   onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
                   blockedIds={blockedIds}
                 />
