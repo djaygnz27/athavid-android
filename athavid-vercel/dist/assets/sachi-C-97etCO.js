@@ -1,3 +1,22 @@
+function _mergeNamespaces(n2, m2) {
+  for (var i = 0; i < m2.length; i++) {
+    const e = m2[i];
+    if (typeof e !== "string" && !Array.isArray(e)) {
+      for (const k2 in e) {
+        if (k2 !== "default" && !(k2 in n2)) {
+          const d = Object.getOwnPropertyDescriptor(e, k2);
+          if (d) {
+            Object.defineProperty(n2, k2, d.get ? d : {
+              enumerable: true,
+              get: () => e[k2]
+            });
+          }
+        }
+      }
+    }
+  }
+  return Object.freeze(Object.defineProperty(n2, Symbol.toStringTag, { value: "Module" }));
+}
 (function polyfill() {
   const relList = document.createElement("link").relList;
   if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -7004,7 +7023,71 @@ var m = reactDomExports;
   client.createRoot = m.createRoot;
   client.hydrateRoot = m.hydrateRoot;
 }
-var heic2any$1 = { exports: {} };
+const scriptRel = "modulepreload";
+const assetsURL = function(dep) {
+  return "/" + dep;
+};
+const seen = {};
+const __vitePreload = function preload(baseModule, deps, importerUrl) {
+  let promise = Promise.resolve();
+  if (deps && deps.length > 0) {
+    document.getElementsByTagName("link");
+    const cspNonceMeta = document.querySelector(
+      "meta[property=csp-nonce]"
+    );
+    const cspNonce = (cspNonceMeta == null ? void 0 : cspNonceMeta.nonce) || (cspNonceMeta == null ? void 0 : cspNonceMeta.getAttribute("nonce"));
+    promise = Promise.allSettled(
+      deps.map((dep) => {
+        dep = assetsURL(dep);
+        if (dep in seen) return;
+        seen[dep] = true;
+        const isCss = dep.endsWith(".css");
+        const cssSelector = isCss ? '[rel="stylesheet"]' : "";
+        if (document.querySelector(`link[href="${dep}"]${cssSelector}`)) {
+          return;
+        }
+        const link = document.createElement("link");
+        link.rel = isCss ? "stylesheet" : scriptRel;
+        if (!isCss) {
+          link.as = "script";
+        }
+        link.crossOrigin = "";
+        link.href = dep;
+        if (cspNonce) {
+          link.setAttribute("nonce", cspNonce);
+        }
+        document.head.appendChild(link);
+        if (isCss) {
+          return new Promise((res, rej) => {
+            link.addEventListener("load", res);
+            link.addEventListener(
+              "error",
+              () => rej(new Error(`Unable to preload CSS for ${dep}`))
+            );
+          });
+        }
+      })
+    );
+  }
+  function handlePreloadError(err) {
+    const e = new Event("vite:preloadError", {
+      cancelable: true
+    });
+    e.payload = err;
+    window.dispatchEvent(e);
+    if (!e.defaultPrevented) {
+      throw err;
+    }
+  }
+  return promise.then((res) => {
+    for (const item of res || []) {
+      if (item.status !== "rejected") continue;
+      handlePreloadError(item.reason);
+    }
+    return baseModule().catch(handlePreloadError);
+  });
+};
+var heic2any$2 = { exports: {} };
 (function(module, exports$1) {
   !function(e, t2, r2, i) {
     function n2() {
@@ -7919,9 +8002,13 @@ onmessage = (message) => {
     }
     return heic2any2;
   });
-})(heic2any$1);
-var heic2anyExports = heic2any$1.exports;
+})(heic2any$2);
+var heic2anyExports = heic2any$2.exports;
 const heic2any = /* @__PURE__ */ getDefaultExportFromCjs(heic2anyExports);
+const heic2any$1 = /* @__PURE__ */ _mergeNamespaces({
+  __proto__: null,
+  default: heic2any
+}, [heic2anyExports]);
 const PETALS = Array.from({ length: 22 }, (_, i) => ({
   id: i,
   left: `${3 + Math.random() * 94}%`,
@@ -8337,10 +8424,10 @@ const videos = {
       const res2 = await request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
-    const seen = /* @__PURE__ */ new Set();
+    const seen2 = /* @__PURE__ */ new Set();
     return [...items1, ...items2].filter((v2) => {
-      if (seen.has(v2.id)) return false;
-      seen.add(v2.id);
+      if (seen2.has(v2.id)) return false;
+      seen2.add(v2.id);
       return !v2.is_archived;
     });
   },
@@ -14050,8 +14137,21 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [cropImageUrl, setCropImageUrl] = reactExports.useState(null);
   const fileRef = reactExports.useRef();
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
+    let file = e.target.files[0];
     if (!file) return;
+    const isHeic = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+    if (isHeic) {
+      try {
+        const heic2any2 = (await __vitePreload(async () => {
+          const { default: __vite_default__ } = await Promise.resolve().then(() => heic2any$1);
+          return { default: __vite_default__ };
+        }, true ? void 0 : void 0)).default;
+        const converted = await heic2any2({ blob: file, toType: "image/jpeg", quality: 0.92 });
+        file = new File([converted], file.name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
+      } catch (err) {
+        console.warn("HEIC conversion failed:", err);
+      }
+    }
     const url = URL.createObjectURL(file);
     setCropImageUrl(url);
   };
@@ -14071,7 +14171,8 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
       }
       onSelect(dataUrl);
     } catch (e) {
-      toast.error("Could not save avatar. Try again.");
+      console.error("Avatar save error:", e);
+      toast.error("Could not save photo. Please try a JPG or PNG file.");
     } finally {
       setUploading(false);
     }

@@ -3322,9 +3322,17 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
+    let file = e.target.files[0];
     if (!file) return;
-    // Show crop editor first
+    // Convert HEIC/HEIF to JPEG before crop editor
+    const isHeic = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+    if (isHeic) {
+      try {
+        const heic2any = (await import("heic2any")).default;
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+        file = new File([converted], file.name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
+      } catch(err) { console.warn("HEIC conversion failed:", err); }
+    }
     const url = URL.createObjectURL(file);
     setCropImageUrl(url);
   };
@@ -3346,7 +3354,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
       }
       // Last resort fallback
       onSelect(dataUrl);
-    } catch(e) { toast.error("Could not save avatar. Try again."); }
+    } catch(e) { console.error("Avatar save error:", e); toast.error("Could not save photo. Please try a JPG or PNG file."); }
     finally { setUploading(false); }
   };
 
