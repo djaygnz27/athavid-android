@@ -181,7 +181,7 @@ function formatCount(n) {
 const resolveMediaUrl = (url, isVideo) => {
   if (!url) return url;
   // Cloudflare Stream HLS URLs — pass through directly, no proxy needed
-  if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.endsWith('.m3u8')) {
+  if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.includes('customer-i1ij9522l179kiqc') || url.endsWith('.m3u8')) {
     return url;
   }
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
@@ -305,8 +305,8 @@ async function uploadToCloudflareStream(file, onProgress) {
       const { result: video } = await statusRes.json();
       if (video.readyToStream) {
         // HLS manifest URL — adaptive bitrate, edge delivered
-        streamUrl = video.playback?.hls || `https://videodelivery.net/${uid}/manifest/video.m3u8`;
-        thumbnailUrl = video.thumbnail || `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg`;
+        streamUrl = video.playback?.hls || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/manifest/video.m3u8`;
+        thumbnailUrl = video.thumbnail || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`;
         break;
       }
       attempts++;
@@ -2374,6 +2374,59 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   );
 }
 
+
+// ── HLS Video Component — handles both regular and Cloudflare Stream HLS videos ──
+function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause }) {
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !src) return;
+    if (isHLS && !video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Non-Safari: load hls.js dynamically
+      const loadHLS = async () => {
+        if (!window.Hls) {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js';
+            s.onload = resolve; s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        }
+        if (window.Hls && window.Hls.isSupported()) {
+          // Destroy any existing HLS instance
+          if (video._hls) { video._hls.destroy(); }
+          const hls = new window.Hls({
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+            startLevel: -1, // auto quality
+            abrEwmaDefaultEstimate: 500000,
+          });
+          hls.loadSource(src);
+          hls.attachMedia(video);
+          hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(() => {});
+          });
+          video._hls = hls;
+        }
+      };
+      loadHLS().catch(console.error);
+      return () => { if (video._hls) { video._hls.destroy(); video._hls = null; } };
+    } else {
+      // Safari (native HLS) or regular video
+      video.src = src;
+    }
+  }, [src]);
+
+  return (
+    <video ref={videoRef} poster={poster}
+      loop playsInline preload="auto"
+      muted={muted}
+      onPlay={onPlay}
+      onPause={onPause}
+      style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }}
+    />
+  );
+}
+
 // ── Video Card ────────────────────────────────────────────────────────────────
 // ─── Age Gate Helper ──────────────────────────────────────────────────────────
 function getUserAge() {
@@ -2858,14 +2911,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             loading="lazy"
             style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
         );
+        const isHLS = resolvedVideoUrl?.endsWith('.m3u8') || resolvedVideoUrl?.includes('cloudflarestream.com') || resolvedVideoUrl?.includes('customer-i1ij9522l179kiqc');
         return (
           <>
-            <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
-              loop playsInline preload="auto"
+            <HLSVideo
+              src={resolvedVideoUrl}
+              isHLS={isHLS}
+              videoRef={videoRef}
+              poster={resolveMediaUrl(video.thumbnail_url)}
               muted={muted || !!video.sound_url}
-              onCanPlay={() => {
-                if (videoRef.current && !videoRef.current.paused) return;
-              }}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
                 if (soundRef.current && video.sound_url && !muted) {
@@ -2876,7 +2930,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 setPlaying(false);
                 if (soundRef.current) soundRef.current.pause();
               }}
-              style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+            />
             {video.sound_url && (
               <audio ref={soundRef} src={video.sound_url} loop preload="none"
                 style={{ display:"none" }} />
