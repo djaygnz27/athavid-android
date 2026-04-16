@@ -74,7 +74,14 @@ function ToastContainer() {
         );
       })}
       <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
-@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes orbitPulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(245,200,66,0.5), inset 0 1px 0 rgba(255,255,255,0.3); transform: scale(1); }
+  50% { box-shadow: 0 0 28px rgba(245,200,66,0.85), 0 0 8px rgba(245,200,66,0.4), inset 0 1px 0 rgba(255,255,255,0.4); transform: scale(1.07); }
+}
+.nav-orb { transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1); }
+.nav-orb:active { transform: scale(0.85) !important; }
+.orb-active { animation: orbitPulse 2s ease-in-out infinite; }`}</style>
     </div>
   );
 }
@@ -6707,11 +6714,10 @@ function App() {
             </svg>
 
             {/* Home orb */}
-            <button onClick={goHome} style={{ background:"none", border:"none", cursor:"pointer",
+            <button onClick={goHome} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
               display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none",
-              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
-              <div style={{
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="feed" ? "orb-active" : ""} style={{
                 width: activeTab==="feed" ? 46 : 38, height: activeTab==="feed" ? 46 : 38,
                 borderRadius:"50%",
                 background: activeTab==="feed"
@@ -6733,11 +6739,10 @@ function App() {
             </button>
 
             {/* Explore orb */}
-            <button onClick={() => setActiveTab("explore")} style={{ background:"none", border:"none", cursor:"pointer",
+            <button onClick={() => setActiveTab("explore")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
               display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none",
-              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
-              <div style={{
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="explore" ? "orb-active" : ""} style={{
                 width: activeTab==="explore" ? 46 : 38, height: activeTab==="explore" ? 46 : 38,
                 borderRadius:"50%",
                 background: activeTab==="explore"
@@ -6779,11 +6784,10 @@ function App() {
             </button>
 
             {/* Podcasts orb */}
-            <button onClick={() => setActiveTab("podcast")} style={{ background:"none", border:"none", cursor:"pointer",
+            <button onClick={() => setActiveTab("podcast")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
               display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none",
-              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
-              <div style={{
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="podcast" ? "orb-active" : ""} style={{
                 width: activeTab==="podcast" ? 46 : 38, height: activeTab==="podcast" ? 46 : 38,
                 borderRadius:"50%",
                 background: activeTab==="podcast"
@@ -6808,11 +6812,10 @@ function App() {
             </button>
 
             {/* Profile orb */}
-            <button onClick={() => setActiveTab("profile")} style={{ background:"none", border:"none", cursor:"pointer",
+            <button onClick={() => setActiveTab("profile")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
               display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none",
-              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
-              <div style={{
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="profile" ? "orb-active" : ""} style={{
                 width: activeTab==="profile" ? 46 : 38, height: activeTab==="profile" ? 46 : 38,
                 borderRadius:"50%",
                 background: activeTab==="profile"
@@ -6835,10 +6838,10 @@ function App() {
 
             {/* Mod orb — owner only */}
             {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
-              <button onClick={() => setActiveTab("admin")} style={{ background:"none", border:"none", cursor:"pointer",
+              <button onClick={() => setActiveTab("admin")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
                 display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
                 WebkitTapHighlightColor:"transparent", outline:"none" }}>
-                <div style={{
+                <div className={activeTab==="admin" ? "orb-active" : ""} style={{
                   width: activeTab==="admin" ? 46 : 38, height: activeTab==="admin" ? 46 : 38,
                   borderRadius:"50%",
                   background: activeTab==="admin"
