@@ -1,4 +1,4 @@
-// Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
+// Sachi v3.0.0 - Constellation UI
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import heic2any from "heic2any";
 import Landing from "./Landing";
