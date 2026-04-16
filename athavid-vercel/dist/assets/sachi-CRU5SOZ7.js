@@ -14031,13 +14031,18 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
   const SIZE = 300;
   reactExports.useEffect(() => {
     const img = imgRef.current;
-    img.crossOrigin = "anonymous";
+    if (!imageUrl.startsWith("blob:") && !imageUrl.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    } else {
+      img.crossOrigin = null;
+    }
     img.onload = () => {
       const fit = Math.max(SIZE / img.width, SIZE / img.height);
       setScale(fit);
       setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
       draw(fit, { x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
     };
+    img.onerror = () => console.warn("AvatarCropEditor: image failed to load", imageUrl);
     img.src = imageUrl;
   }, [imageUrl]);
   const draw = (s = scale, o = offset) => {
@@ -14079,9 +14084,22 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
   };
   const onTouchEnd = () => setDragging(false);
   const handleSave = () => {
-    const canvas = canvasRef.current;
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    onSave(dataUrl);
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        alert("Canvas not ready, please try again.");
+        return;
+      }
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      if (!dataUrl || dataUrl === "data:,") {
+        alert("Could not process image. Please try a JPG or PNG file.");
+        return;
+      }
+      onSave(dataUrl);
+    } catch (err) {
+      console.error("toDataURL error:", err);
+      alert("Could not crop image. Please try selecting a JPG or PNG photo instead.");
+    }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 18, marginBottom: 8 }, children: "✂️ Crop your avatar" }),
@@ -14159,17 +14177,27 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
+      if (!dataUrl || dataUrl === "data:,") {
+        toast.error("Image processing failed. Try a JPG or PNG photo.");
+        setUploading(false);
+        return;
+      }
       const res = await fetch(dataUrl);
       const blob = await res.blob();
+      if (blob.size < 100) {
+        toast.error("Image appears empty. Please try selecting a different photo.");
+        setUploading(false);
+        return;
+      }
       const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
       try {
         const url = await uploadFile(file);
         onSelect(url);
         return;
-      } catch (e) {
-        console.warn("CDN upload failed, falling back to base64:", e);
+      } catch (uploadErr) {
+        console.warn("CDN upload failed:", uploadErr);
+        onSelect(dataUrl);
       }
-      onSelect(dataUrl);
     } catch (e) {
       console.error("Avatar save error:", e);
       toast.error("Could not save photo. Please try a JPG or PNG file.");
