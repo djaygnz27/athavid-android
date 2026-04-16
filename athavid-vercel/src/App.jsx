@@ -91,6 +91,20 @@ const muteStore = {
   set(val) { this._muted = val; },
 };
 
+// Spotlight colors — assigned per creator for stage effect
+const SPOTLIGHT_COLORS = [
+  'rgba(108,60,247,0.18)','rgba(229,57,53,0.15)','rgba(2,136,209,0.15)',
+  'rgba(46,125,50,0.15)','rgba(245,127,23,0.15)','rgba(173,20,87,0.15)',
+  'rgba(0,131,143,0.15)','rgba(78,52,46,0.12)','rgba(21,101,192,0.15)',
+  'rgba(130,119,23,0.15)',
+];
+function getSpotlightColor(userId) {
+  if (!userId) return SPOTLIGHT_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  return SPOTLIGHT_COLORS[Math.abs(hash) % SPOTLIGHT_COLORS.length];
+}
+
 // Safe JSON parse for photo_urls that may come back as string or array
 function safeParsePhotoUrls(raw) {
   if (!raw) return null;
@@ -2720,6 +2734,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
       })()}
 
+      {/* ── SPOTLIGHT — unique color per creator ── */}
+      <div style={{ position:"absolute", inset:0, background:`radial-gradient(ellipse 80% 60% at 50% 20%, ${getSpotlightColor(video.user_id || video.created_by)}, transparent)`, pointerEvents:"none", zIndex:5 }} />
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
@@ -6405,67 +6421,73 @@ function App() {
         <AdminPanel currentUser={currentUser} />
       )}
 
-      {/* Bottom Nav — Sachi original style: floating pill */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
-        <div style={{ pointerEvents:"auto", margin:"0 16px 8px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
+      {/* Bottom Nav — Arc command console */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, pointerEvents:"none" }}>
+        <svg viewBox="0 0 480 70" preserveAspectRatio="none" style={{ width:"100%", height:70, display:"block", pointerEvents:"none" }}>
+          <path d="M0 35 Q240 -8 480 35 L480 70 L0 70 Z" fill="rgba(10,10,25,0.97)"/>
+          <path d="M0 35 Q240 -8 480 35" fill="none" stroke="rgba(245,200,66,0.2)" strokeWidth="1"/>
+        </svg>
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:70, paddingBottom:"env(safe-area-inset-bottom,8px)", pointerEvents:"auto", display:"flex", alignItems:"flex-end", justifyContent:"space-around", padding:"0 8px 10px" }}>
 
           {/* Home */}
           <button onClick={goHome}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="feed" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#F5C842" : "none"} stroke={activeTab==="feed" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#F5C842" : "none"} stroke={activeTab==="feed" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <div style={{ fontSize:9, color: activeTab==="feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" ? 700 : 400, letterSpacing:0.3 }}>Home</div>
+            <div style={{ fontSize:9, color: activeTab==="feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" ? 700 : 400 }}>Home</div>
           </button>
 
           {/* Explore */}
           <button onClick={() => setActiveTab("explore")}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="explore" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="explore" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="explore" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400, letterSpacing:0.3 }}>Explore</div>
+            <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400 }}>Explore</div>
           </button>
 
-          {/* Post button — flat nav style, no circle */}
+          {/* Post button — elevated center, gold glowing circle */}
           <button onClick={() => requireAuth(() => setShowUpload(true))}
-            style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-            </svg>
-            <div style={{ fontSize:9, color:"#F5C842", fontWeight:600, letterSpacing:0.3 }}>Post</div>
+            style={{ width:56, marginBottom:14, padding:"0", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
+            <div style={{ width:48, height:48, borderRadius:"50%", background:"linear-gradient(135deg,#F5C842,#FF9500)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 0 20px rgba(245,200,66,0.5), 0 4px 12px rgba(0,0,0,0.4)" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </div>
+            <div style={{ fontSize:9, color:"#F5C842", fontWeight:700 }}>Post</div>
           </button>
 
           {/* Podcasts */}
           <button onClick={() => setActiveTab("podcast")}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="podcast" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
               <line x1="12" y1="19" x2="12" y2="23"/>
               <line x1="8" y1="23" x2="16" y2="23"/>
             </svg>
-            <div style={{ fontSize:9, color: activeTab==="podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="podcast" ? 700 : 400, letterSpacing:0.3 }}>Podcasts</div>
+            <div style={{ fontSize:9, color: activeTab==="podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="podcast" ? 700 : 400 }}>Pods</div>
           </button>
 
-          {/* Admin (owner only) */}
+          {/* Mod (owner only) */}
           {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
             <button onClick={() => setActiveTab("admin")}
-              style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background: activeTab==="admin" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="admin" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="admin" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
-              <div style={{ fontSize:9, color: activeTab==="admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="admin" ? 700 : 400, letterSpacing:0.3 }}>Mod</div>
+              <div style={{ fontSize:9, color: activeTab==="admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="admin" ? 700 : 400 }}>Mod</div>
             </button>
           )}
 
           {/* Profile */}
           <button onClick={() => setActiveTab("profile")}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="profile" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
-            <div style={{ fontSize:9, color: activeTab==="profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="profile" ? 700 : 400, letterSpacing:0.3 }}>Me</div>
+            <div style={{ fontSize:9, color: activeTab==="profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="profile" ? 700 : 400 }}>Me</div>
           </button>
 
         </div>
