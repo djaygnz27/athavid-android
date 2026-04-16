@@ -6681,68 +6681,186 @@ function App() {
       )}
 
       {/* Bottom Nav — Sachi original style: floating pill */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
-        <div style={{ pointerEvents:"auto", margin:"0 16px 8px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
+      {/* ── ORBITAL ARC NAV ── */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,4px)", pointerEvents:"none" }}>
+        {/* Aurora top line */}
+        <div style={{ height:1, background:"linear-gradient(90deg, transparent 0%, rgba(123,47,255,0.6) 30%, rgba(245,200,66,0.5) 50%, rgba(0,229,255,0.4) 70%, transparent 100%)" }} />
+        <div style={{ background:"linear-gradient(to top, rgba(5,3,15,0.98) 0%, rgba(8,5,25,0.95) 100%)",
+          backdropFilter:"blur(30px)", paddingTop:10, paddingBottom:2, pointerEvents:"auto" }}>
 
-          {/* Home */}
-          <button onClick={goHome}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="feed" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#F5C842" : "none"} stroke={activeTab==="feed" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          {/* Orbital arc container */}
+          <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-around", padding:"0 8px 8px", position:"relative" }}>
+
+            {/* Subtle arc line behind orbs */}
+            <svg style={{ position:"absolute", top:0, left:0, right:0, bottom:0, width:"100%", height:"100%", pointerEvents:"none", opacity:0.2 }}
+              viewBox="0 0 480 60" preserveAspectRatio="none">
+              <path d="M20,55 Q240,5 460,55" fill="none" stroke="url(#arcGrad)" strokeWidth="1.5"/>
+              <defs>
+                <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="transparent"/>
+                  <stop offset="30%" stopColor="#7B2FFF"/>
+                  <stop offset="50%" stopColor="#F5C842"/>
+                  <stop offset="70%" stopColor="#00E5FF"/>
+                  <stop offset="100%" stopColor="transparent"/>
+                </linearGradient>
+              </defs>
             </svg>
-            <div style={{ fontSize:9, color: activeTab==="feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" ? 700 : 400, letterSpacing:0.3 }}>Home</div>
-          </button>
 
-          {/* Explore */}
-          <button onClick={() => setActiveTab("explore")}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="explore" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="explore" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400, letterSpacing:0.3 }}>Explore</div>
-          </button>
-
-          {/* Post button — flat nav style, no circle */}
-          <button onClick={() => requireAuth(() => setShowUpload(true))}
-            style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-            </svg>
-            <div style={{ fontSize:9, color:"#F5C842", fontWeight:600, letterSpacing:0.3 }}>Post</div>
-          </button>
-
-          {/* Podcasts */}
-          <button onClick={() => setActiveTab("podcast")}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="podcast" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
-            <div style={{ fontSize:9, color: activeTab==="podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="podcast" ? 700 : 400, letterSpacing:0.3 }}>Podcasts</div>
-          </button>
-
-          {/* Admin (owner only) */}
-          {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
-            <button onClick={() => setActiveTab("admin")}
-              style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background: activeTab==="admin" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="admin" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-              <div style={{ fontSize:9, color: activeTab==="admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="admin" ? 700 : 400, letterSpacing:0.3 }}>Mod</div>
+            {/* Home orb */}
+            <button onClick={goHome} style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none",
+              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
+              <div style={{
+                width: activeTab==="feed" ? 46 : 38, height: activeTab==="feed" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="feed"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="feed" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="feed" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="feed" ? 20 : 17} height={activeTab==="feed" ? 20 : 17} viewBox="0 0 24 24"
+                  fill={activeTab==="feed" ? "#0B0C1A" : "none"} stroke={activeTab==="feed" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="feed" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="feed" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Home</span>
             </button>
-          )}
 
-          {/* Profile */}
-          <button onClick={() => setActiveTab("profile")}
-            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="profile" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-            <div style={{ fontSize:9, color: activeTab==="profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="profile" ? 700 : 400, letterSpacing:0.3 }}>Me</div>
-          </button>
+            {/* Explore orb */}
+            <button onClick={() => setActiveTab("explore")} style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none",
+              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
+              <div style={{
+                width: activeTab==="explore" ? 46 : 38, height: activeTab==="explore" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="explore"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="explore" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="explore" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="explore" ? 20 : 17} height={activeTab==="explore" ? 20 : 17} viewBox="0 0 24 24"
+                  fill="none" stroke={activeTab==="explore" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="explore" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="explore" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Explore</span>
+            </button>
 
+            {/* POST — center elevated gold orb */}
+            <button onClick={() => requireAuth(() => setShowUpload(true))} style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"0 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none", marginBottom:8 }}>
+              <div style={{
+                width:54, height:54, borderRadius:"50%",
+                background:"radial-gradient(circle at 30% 30%, #FFE580, #F5C842, #E08800)",
+                boxShadow:"0 0 0 3px rgba(245,200,66,0.25), 0 0 30px rgba(245,200,66,0.5), 0 6px 20px rgba(0,0,0,0.5)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                border:"2px solid rgba(255,230,100,0.6)",
+                transform:"translateY(-10px)",
+                transition:"transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B0C1A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight:800, letterSpacing:1.5, textTransform:"uppercase", color:"#F5C842", marginTop:-6 }}>Post</span>
+            </button>
+
+            {/* Podcasts orb */}
+            <button onClick={() => setActiveTab("podcast")} style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none",
+              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
+              <div style={{
+                width: activeTab==="podcast" ? 46 : 38, height: activeTab==="podcast" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="podcast"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="podcast" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="podcast" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="podcast" ? 20 : 17} height={activeTab==="podcast" ? 20 : 17} viewBox="0 0 24 24"
+                  fill="none" stroke={activeTab==="podcast" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="podcast" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="podcast" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Waves</span>
+            </button>
+
+            {/* Profile orb */}
+            <button onClick={() => setActiveTab("profile")} style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none",
+              transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)" }}>
+              <div style={{
+                width: activeTab==="profile" ? 46 : 38, height: activeTab==="profile" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="profile"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="profile" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="profile" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="profile" ? 20 : 17} height={activeTab==="profile" ? 20 : 17} viewBox="0 0 24 24"
+                  fill={activeTab==="profile" ? "#0B0C1A" : "none"} stroke={activeTab==="profile" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="profile" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="profile" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Me</span>
+            </button>
+
+            {/* Mod orb — owner only */}
+            {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
+              <button onClick={() => setActiveTab("admin")} style={{ background:"none", border:"none", cursor:"pointer",
+                display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+                WebkitTapHighlightColor:"transparent", outline:"none" }}>
+                <div style={{
+                  width: activeTab==="admin" ? 46 : 38, height: activeTab==="admin" ? 46 : 38,
+                  borderRadius:"50%",
+                  background: activeTab==="admin"
+                    ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                    : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                  border: activeTab==="admin" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                  boxShadow: activeTab==="admin" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+                }}>
+                  <svg width={activeTab==="admin" ? 20 : 17} height={activeTab==="admin" ? 20 : 17} viewBox="0 0 24 24"
+                    fill="none" stroke={activeTab==="admin" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <span style={{ fontSize:8, fontWeight: activeTab==="admin" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                  color: activeTab==="admin" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Mod</span>
+              </button>
+            )}
+
+          </div>
         </div>
       </div>
 
