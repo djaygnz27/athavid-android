@@ -3198,13 +3198,19 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
 
   useEffect(() => {
     const img = imgRef.current;
-    img.crossOrigin = "anonymous";
+    // Only set crossOrigin for non-blob URLs to avoid tainted canvas
+    if (!imageUrl.startsWith("blob:") && !imageUrl.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    } else {
+      img.crossOrigin = null;
+    }
     img.onload = () => {
       const fit = Math.max(SIZE / img.width, SIZE / img.height);
       setScale(fit);
       setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
       draw(fit, { x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
     };
+    img.onerror = () => console.warn("AvatarCropEditor: image failed to load", imageUrl);
     img.src = imageUrl;
   }, [imageUrl]);
 
@@ -3251,10 +3257,17 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
   const onTouchEnd = () => setDragging(false);
 
   const handleSave = () => {
-    const canvas = canvasRef.current;
-    // Return base64 data URL directly — works for all auth types (Google, email)
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    onSave(dataUrl);
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) { alert("Canvas not ready, please try again."); return; }
+      // Return base64 data URL directly — works for all auth types (Google, email)
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      if (!dataUrl || dataUrl === "data:,") { alert("Could not process image. Please try a JPG or PNG file."); return; }
+      onSave(dataUrl);
+    } catch(err) {
+      console.error("toDataURL error:", err);
+      alert("Could not crop image. Please try selecting a JPG or PNG photo instead.");
+    }
   };
 
   return (
@@ -3341,20 +3354,33 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
-      // Always try to upload to CDN (works for all login types)
+      if (!dataUrl || dataUrl === "data:,") {
+        toast.error("Image processing failed. Try a JPG or PNG photo.");
+        setUploading(false);
+        return;
+      }
+      // Convert base64 dataUrl to blob/file and upload to CDN
       const res = await fetch(dataUrl);
       const blob = await res.blob();
+      if (blob.size < 100) {
+        toast.error("Image appears empty. Please try selecting a different photo.");
+        setUploading(false);
+        return;
+      }
       const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
       try {
         const url = await uploadFile(file);
         onSelect(url);
         return;
-      } catch(e) {
-        console.warn("CDN upload failed, falling back to base64:", e);
+      } catch(uploadErr) {
+        console.warn("CDN upload failed:", uploadErr);
+        // Use base64 as last resort (stored locally only)
+        onSelect(dataUrl);
       }
-      // Last resort fallback
-      onSelect(dataUrl);
-    } catch(e) { console.error("Avatar save error:", e); toast.error("Could not save photo. Please try a JPG or PNG file."); }
+    } catch(e) {
+      console.error("Avatar save error:", e);
+      toast.error("Could not save photo. Please try a JPG or PNG file.");
+    }
     finally { setUploading(false); }
   };
 
