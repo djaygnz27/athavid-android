@@ -1,3 +1,4 @@
+
 // Sachi v2.2.1 - bulletproof build, mod panel fixed, toast system
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
@@ -179,6 +180,10 @@ function formatCount(n) {
 
 const resolveMediaUrl = (url, isVideo) => {
   if (!url) return url;
+  // Cloudflare Stream HLS URLs — pass through directly, no proxy needed
+  if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.endsWith('.m3u8')) {
+    return url;
+  }
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
   if (match) {
     const filename = match[2];
@@ -227,6 +232,95 @@ async function convertHeicToJpeg(file) {
   } catch(e) {
     console.warn('[Sachi] HEIC conversion failed, uploading original:', e);
     return file;
+  }
+}
+
+// ── Cloudflare Stream Upload ─────────────────────────────────────────────────
+// Routes video through Cloudflare Stream for HLS adaptive streaming & edge CDN
+// Falls back to direct Base44 upload if Stream is unavailable
+const CF_ACCOUNT_ID = "your_account_id_here"; // Replace with your Cloudflare Account ID
+const CF_STREAM_TOKEN = "your_stream_token_here"; // Replace with your Stream API Token
+
+async function uploadToCloudflareStream(file, onProgress) {
+  // If credentials not set, fall back to Base44
+  if (CF_ACCOUNT_ID === "your_account_id_here") {
+    console.log("[Sachi] Cloudflare Stream not configured — using Base44 upload");
+    return null;
+  }
+  try {
+    // Step 1: Get a one-time upload URL from Cloudflare Stream
+    onProgress && onProgress(5, "Connecting to Cloudflare Stream...");
+    const initRes = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/direct_upload`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${CF_STREAM_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          maxDurationSeconds: 600,
+          requireSignedURLs: false,
+          allowedOrigins: ["sachistream.com", "*.sachistream.com", "localhost"],
+        }),
+      }
+    );
+    if (!initRes.ok) throw new Error(`Stream init failed: ${initRes.status}`);
+    const { result } = await initRes.json();
+    const { uploadURL, uid } = result;
+
+    // Step 2: Upload the video file via tus resumable upload
+    onProgress && onProgress(15, "Uploading to Cloudflare Stream...");
+
+    // Use XMLHttpRequest for upload progress tracking
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", uploadURL);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 60) + 15;
+          onProgress && onProgress(pct, `Uploading... ${Math.round((e.loaded / e.total) * 100)}%`);
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`Upload failed: ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      const formData = new FormData();
+      formData.append("file", file);
+      xhr.send(formData);
+    });
+
+    // Step 3: Wait for Stream to process (transcode to HLS)
+    onProgress && onProgress(80, "Processing video for fast streaming...");
+    let attempts = 0;
+    let streamUrl = null;
+    let thumbnailUrl = null;
+
+    while (attempts < 30) {
+      await new Promise(r => setTimeout(r, 2000)); // poll every 2s
+      const statusRes = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${uid}`,
+        { headers: { "Authorization": `Bearer ${CF_STREAM_TOKEN}` } }
+      );
+      if (!statusRes.ok) { attempts++; continue; }
+      const { result: video } = await statusRes.json();
+      if (video.readyToStream) {
+        // HLS manifest URL — adaptive bitrate, edge delivered
+        streamUrl = video.playback?.hls || `https://videodelivery.net/${uid}/manifest/video.m3u8`;
+        thumbnailUrl = video.thumbnail || `https://videodelivery.net/${uid}/thumbnails/thumbnail.jpg`;
+        break;
+      }
+      attempts++;
+    }
+
+    if (!streamUrl) throw new Error("Stream processing timed out");
+    onProgress && onProgress(95, "Almost there...");
+    return { streamUrl, thumbnailUrl, uid };
+  } catch(e) {
+    console.error("[Sachi Stream] Upload failed:", e);
+    return null; // Fall back to Base44
   }
 }
 
@@ -1319,14 +1413,29 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     } catch {}
     setUploading(true); setProgress(10);
     try {
-      setStep("Uploading video...");
-      const video_url = await uploadFile(editedFile || file);
-      setProgress(60);
-      setStep("Generating thumbnail...");
+      // Try Cloudflare Stream first for HLS adaptive streaming
+      let video_url = null;
       let thumbnail_url = null;
-      try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
-      setProgress(80);
-      setStep("Saving to feed...");
+      const streamResult = await uploadToCloudflareStream(
+        editedFile || file,
+        (pct, msg) => { setProgress(pct); setStep(msg); }
+      );
+      if (streamResult) {
+        // Stream upload succeeded — use HLS URL
+        video_url = streamResult.streamUrl;
+        thumbnail_url = streamResult.thumbnailUrl;
+        setProgress(95);
+        setStep("Saving to feed...");
+      } else {
+        // Fall back to Base44 direct upload
+        setStep("Uploading video...");
+        video_url = await uploadFile(editedFile || file);
+        setProgress(60);
+        setStep("Generating thumbnail...");
+        try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
+        setProgress(80);
+        setStep("Saving to feed...");
+      }
       const videoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
@@ -2443,7 +2552,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setShowUI(false);
         setUserTapped(false);
       }
-    }, { threshold: 0.75 });
+    }, { threshold: 0.5 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -2465,7 +2574,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       }
-    }, { threshold: 0.75 });
+    }, { threshold: 0.5 });
     obs.observe(el);
     return () => obs.disconnect();
   }, [photoUrls]);
@@ -2757,6 +2866,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
               loop playsInline preload="auto"
               muted={muted || !!video.sound_url}
+              onCanPlay={() => {
+                if (videoRef.current && !videoRef.current.paused) return;
+              }}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
                 if (soundRef.current && video.sound_url && !muted) {
@@ -2767,7 +2879,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 setPlaying(false);
                 if (soundRef.current) soundRef.current.pause();
               }}
-              loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+              style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
             {video.sound_url && (
               <audio ref={soundRef} src={video.sound_url} loop preload="none"
                 style={{ display:"none" }} />
@@ -6254,6 +6366,14 @@ function App() {
               if (v.sound_url) preloadAudio(v.sound_url);
               const next1 = arr[idx + 1]; if (next1?.sound_url) preloadAudio(next1.sound_url);
               const next2 = arr[idx + 2]; if (next2?.sound_url) preloadAudio(next2.sound_url);
+              // Preload video for next card so it starts instantly on scroll
+              if (next1?.video_url && !next1?.is_photo) {
+                const preloadVid = next1._preloadEl || (next1._preloadEl = document.createElement('video'));
+                preloadVid.src = resolveMediaUrl(next1.video_url);
+                preloadVid.preload = 'auto';
+                preloadVid.muted = true;
+                preloadVid.playsInline = true;
+              }
               return (
                 <VideoCard key={v.id} video={v} currentUser={currentUser}
                   onCommentOpen={setCommentVideo}
