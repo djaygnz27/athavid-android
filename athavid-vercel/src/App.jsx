@@ -1240,6 +1240,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [postVisibility, setPostVisibility] = useState("everyone"); // everyone | followers | only_me
   const [postLocation, setPostLocation] = useState(null); // { name, city }
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [showCityLocation, setShowCityLocation] = useState(false); // privacy: show city or just flag
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showVisibilityPicker, setShowVisibilityPicker] = useState(false);
 
   const checkForExplicitContent = (f, cap) => {
@@ -1365,8 +1367,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
-        post_location_name: postLocation?.name || null,
-        post_city: postLocation?.city || photoGeo.post_city || null,
+        post_location_name: showCityLocation ? (postLocation?.name || null) : null,
+        post_city: showCityLocation ? (postLocation?.city || photoGeo.post_city || null) : null,
         ...photoGeo,
       });
       setProgress(100);
@@ -1448,8 +1450,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
-        post_location_name: postLocation?.name || null,
-        post_city: postLocation?.city || null,
+        post_location_name: showCityLocation ? (postLocation?.name || null) : null,
+        post_city: showCityLocation ? (postLocation?.city || null) : null,
         sound_title: selectedTrack?.sound_title || selectedTrack?.title || null,
         sound_artist: selectedTrack?.sound_artist || selectedTrack?.artist || null,
         sound_url: selectedTrack?.sound_url || selectedTrack?.url || null,
@@ -1688,8 +1690,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_approved: postVisibility !== "only_me", is_archived: false, is_ai_detected: false, is_mature: false,
         sound_title: "Text Post", sound_artist: "sachi",
         post_visibility: postVisibility,
-        post_location_name: postLocation?.name || null,
-        post_city: postLocation?.city || null,
+        post_location_name: showCityLocation ? (postLocation?.name || null) : null,
+        post_city: showCityLocation ? (postLocation?.city || null) : null,
         ...textGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
@@ -1760,10 +1762,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           {/* Divider */}
           <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:20 }} />
 
-          {/* Location row - MANDATORY */}
+          {/* Location row - country picker + privacy toggle */}
           <div style={{ marginBottom:4 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", cursor:"pointer" }}
-              onClick={detectLocation}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <span style={{ fontSize:20 }}>📍</span>
                 <div>
@@ -1771,29 +1772,108 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   <span style={{ marginLeft:8, background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px", letterSpacing:0.5 }}>REQUIRED</span>
                 </div>
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                {detectingLocation && <span style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>📡 Detecting...</span>}
-                {postLocation && !detectingLocation && (
-                  <span style={{ color:"#8BC34A", fontSize:13, fontWeight:600 }}>
-                    ✓ {postLocation.name}
-                  </span>
-                )}
-                {!postLocation && !detectingLocation && (
-                  <span style={{ color:"#ff6b6b", fontSize:12, fontWeight:600 }}>Not set — tap to detect</span>
-                )}
-              </div>
+              <button onClick={() => setShowCountryPicker(v => !v)}
+                style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:20, padding:"6px 14px", color:"#fff", fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+                {postLocation ? <>{countryFlag(postLocation.country_code)} {postLocation.country_code}</> : "Pick country"}
+                <span style={{ fontSize:10, opacity:0.5 }}>{showCountryPicker ? "▲" : "▼"}</span>
+              </button>
             </div>
+
+            {/* Country picker dropdown */}
+            {showCountryPicker && (
+              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, marginBottom:12, overflow:"hidden", maxHeight:260, overflowY:"auto" }}>
+                {[
+                  { code:"AU", name:"Australia" },
+                  { code:"US", name:"United States" },
+                  { code:"NZ", name:"New Zealand" },
+                  { code:"LK", name:"Sri Lanka" },
+                  { code:"GB", name:"United Kingdom" },
+                  { code:"CA", name:"Canada" },
+                  { code:"IN", name:"India" },
+                  { code:"ZA", name:"South Africa" },
+                  { code:"NG", name:"Nigeria" },
+                  { code:"GH", name:"Ghana" },
+                  { code:"KE", name:"Kenya" },
+                  { code:"PH", name:"Philippines" },
+                  { code:"SG", name:"Singapore" },
+                  { code:"AE", name:"UAE" },
+                  { code:"DE", name:"Germany" },
+                  { code:"FR", name:"France" },
+                  { code:"BR", name:"Brazil" },
+                  { code:"JP", name:"Japan" },
+                  { code:"OTHER", name:"Other" },
+                ].map(c => (
+                  <div key={c.code} onClick={() => {
+                    // When country selected, auto-detect to get city/state too
+                    setShowCountryPicker(false);
+                    setDetectingLocation(true);
+                    detectLocation().then(() => {
+                      // Override country_code with manually selected if detection fails
+                      setPostLocation(prev => prev || { name: c.name, city: null, state: null, country_code: c.code });
+                    }).finally(() => setDetectingLocation(false));
+                  }}
+                    style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 16px", cursor:"pointer", borderBottom:"1px solid rgba(255,255,255,0.05)",
+                      background: postLocation?.country_code === c.code ? "rgba(245,200,66,0.08)" : "transparent" }}>
+                    <span style={{ fontSize:22 }}>{countryFlag(c.code)}</span>
+                    <span style={{ color:"#fff", fontSize:14, fontWeight: postLocation?.country_code === c.code ? 700 : 400 }}>{c.name}</span>
+                    {postLocation?.country_code === c.code && <span style={{ color:"#F5C842", marginLeft:"auto" }}>✓</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Detected location + privacy checkbox */}
             {postLocation && !detectingLocation && (
-              <div style={{ display:"flex", gap:8, paddingBottom:12, flexWrap:"wrap" }}>
-                <div style={{ background:"rgba(139,195,74,0.12)", border:"1px solid rgba(139,195,74,0.25)", borderRadius:20, padding:"5px 14px", fontSize:13, color:"#8BC34A", display:"flex", alignItems:"center", gap:6 }}>
-                  📍 {postLocation.name}
-                  <span onClick={detectLocation} style={{ cursor:"pointer", color:"#666", fontSize:11, marginLeft:4 }}>↺ refresh</span>
+              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:14, padding:"12px 14px", marginBottom:12 }}>
+                {/* Preview of what will show */}
+                <div style={{ color:"#888", fontSize:11, marginBottom:8, textTransform:"uppercase", letterSpacing:0.8, fontWeight:700 }}>Viewers will see</div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, background:"rgba(0,0,0,0.3)", borderRadius:10, padding:"8px 12px" }}>
+                  <span style={{ fontSize:18 }}>{countryFlag(postLocation.country_code)}</span>
+                  <span style={{ color:"#fff", fontSize:13, fontWeight:600 }}>
+                    {showCityLocation && postLocation.city
+                      ? `${postLocation.city}${postLocation.state ? ", " + getStateAbbr(postLocation.state, postLocation.country_code) || postLocation.state : ""}`
+                      : postLocation.country_code}
+                  </span>
+                </div>
+
+                {/* Privacy toggle */}
+                <div onClick={() => setShowCityLocation(v => !v)}
+                  style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", padding:"4px 0" }}>
+                  <div>
+                    <div style={{ color:"#fff", fontSize:13, fontWeight:600 }}>Show my city/state</div>
+                    <div style={{ color:"#888", fontSize:11, marginTop:2 }}>
+                      {showCityLocation ? `Showing: ${postLocation.name}` : "Showing flag only — city is private"}
+                    </div>
+                  </div>
+                  <div style={{ width:44, height:24, borderRadius:12,
+                    background: showCityLocation ? "#F5C842" : "rgba(255,255,255,0.12)",
+                    position:"relative", flexShrink:0, transition:"background 0.2s" }}>
+                    <div style={{ position:"absolute", top:3, left: showCityLocation ? 23 : 3, width:18, height:18,
+                      borderRadius:"50%", background:"#fff", transition:"left 0.2s",
+                      boxShadow:"0 1px 4px rgba(0,0,0,0.3)" }} />
+                  </div>
+                </div>
+
+                <div style={{ marginTop:8, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:8, display:"flex", alignItems:"center", gap:6 }}>
+                  <span style={{ color:"#555", fontSize:11 }}>Wrong country?</span>
+                  <span onClick={() => setShowCountryPicker(true)} style={{ color:"#F5C842", fontSize:11, fontWeight:600, cursor:"pointer" }}>Change ↗</span>
+                  <span style={{ color:"#333", fontSize:11, marginLeft:4 }}>·</span>
+                  <span onClick={detectLocation} style={{ color:"#666", fontSize:11, cursor:"pointer" }}>↺ Re-detect</span>
                 </div>
               </div>
             )}
+
+            {detectingLocation && (
+              <div style={{ color:"#F5C842", fontSize:12, fontWeight:600, padding:"8px 0 12px", display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</span> Detecting your location...
+              </div>
+            )}
+
             {!postLocation && !detectingLocation && (
               <div style={{ paddingBottom:12 }}>
-                <div style={{ color:"#ff6b6b", fontSize:11, opacity:0.8 }}>📍 Location is required to post on Sachi. Tap above to detect automatically.</div>
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, lineHeight:1.5 }}>
+                  Pick your country above — only the flag will show by default. You can choose to share your city too.
+                </div>
               </div>
             )}
           </div>
@@ -1883,7 +1963,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </button>
           <button
             onClick={() => {
-              if (!postLocation) { toast.warn('📍 Please allow location access to post on Sachi.'); detectLocation(); return; }
+              if (!postLocation) { toast.warn('📍 Please pick your country to post on Sachi.'); setShowCountryPicker(true); return; }
               if (uploadTab === "text") uploadTextPost();
               else if (uploadTab === "photo") uploadPhotos();
               else upload();
@@ -1896,7 +1976,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               fontWeight:900, fontSize:16, cursor: (uploading || detectingLocation) ? "default" : "pointer",
               boxShadow: postLocation && !uploading ? "0 4px 20px rgba(255,107,107,0.35)" : "none",
               display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            {uploading ? step : detectingLocation ? "📡 Detecting location..." : !postLocation ? "📍 Location required" : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
+            {uploading ? step : detectingLocation ? "📡 Detecting location..." : !postLocation ? "📍 Pick your country first" : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
           </button>
         </div>
       </div>
@@ -2474,7 +2554,7 @@ function FlameIcon({ views = 0 }) {
   );
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, likedVideoIds, likeRecords, onLikeChange }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, likedVideoIds, likeRecords, onLikeChange, onHashtagPress }) {
   const [showLikers, setShowLikers] = React.useState(false);
   const [hyped, setHyped] = React.useState(false);
   const [hypeCount, setHypeCount] = React.useState(video.hype_count || 0);
@@ -3013,8 +3093,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
         {video.hashtags?.length > 0 && (
-          <div style={{ color:"#F5C842", fontSize:13, marginTop:4 }}>
-            {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:4 }}>
+            {video.hashtags.slice(0,4).map((t,i) => {
+              const tag = "#" + t.replace(/^#/,"");
+              return (
+                <span key={i}
+                  onClick={e => { e.stopPropagation(); onHashtagPress && onHashtagPress(tag); }}
+                  style={{ color:"#F5C842", fontSize:13, fontWeight:700, cursor:"pointer",
+                    background:"rgba(245,200,66,0.08)", borderRadius:20, padding:"2px 10px",
+                    border:"1px solid rgba(245,200,66,0.2)", WebkitTapHighlightColor:"transparent" }}>
+                  {tag}
+                </span>
+              );
+            })}
           </div>
         )}
         {video.created_date && (
@@ -5965,6 +6056,7 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [authToast, setAuthToast] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeHashtag, setActiveHashtag] = useState(null); // null | "#sydney" — hashtag feed
   const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
   const [followingVideos, setFollowingVideos] = useState([]);
   const [followedUserIds, setFollowedUserIds] = useState(new Set());
@@ -6430,6 +6522,7 @@ function App() {
                   followedUserIds={followedUserIds}
                   onFollowChange={handleFollowChange}
                   onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
+                  onHashtagPress={(tag) => { setActiveHashtag(tag); setActiveTab("explore"); setSearchQuery(""); }}
                   likedVideoIds={likedVideoIds} likeRecords={likeRecords} onLikeChange={(videoId, liked, recId) => { setLikedVideoIds(prev => { const n = new Set(prev); liked ? n.add(videoId) : n.delete(videoId); return n; }); setLikeRecords(prev => { const n = {...prev}; liked ? n[videoId] = recId : delete n[videoId]; return n; }); }}
                   onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
                   blockedIds={blockedIds}
@@ -6565,68 +6658,170 @@ function App() {
       )}
 
             {/* Explore Tab */}
-      {activeTab === "explore" && (
-        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
-          <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search users or videos..."
-                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
-              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>}
+      {activeTab === "explore" && (() => {
+        // Compute trending hashtags from videoList
+        const hashtagCounts = {};
+        videoList.forEach(v => {
+          (v.hashtags || []).forEach(t => {
+            const tag = "#" + t.replace(/^#/,"").toLowerCase();
+            hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+          });
+        });
+        const trendingTags = Object.entries(hashtagCounts)
+          .sort((a,b) => b[1]-a[1]).slice(0,12)
+          .map(([tag, count]) => ({ tag, count }));
+
+        // Videos for active hashtag
+        const hashtagVideos = activeHashtag
+          ? videoList.filter(v => (v.hashtags||[]).some(t => "#"+t.replace(/^#/,"").toLowerCase() === activeHashtag.toLowerCase()))
+          : [];
+
+        // Search results
+        const searchResults = searchQuery.trim()
+          ? videoList.filter(v =>
+              (v.caption||"").toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (v.username||"").toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (v.hashtags||[]).some(t => t.includes(searchQuery.replace("#","").toLowerCase()))
+            )
+          : [];
+
+        return (
+          <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
+            {/* Search bar */}
+            <div style={{ padding:"12px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setActiveHashtag(null); }}
+                  placeholder="Search videos, users or #hashtags..."
+                  style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
+                {(searchQuery || activeHashtag) && (
+                  <button onClick={() => { setSearchQuery(""); setActiveHashtag(null); }}
+                    style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>
+                )}
+              </div>
             </div>
-          </div>
-          <div style={{ padding:16 }}>
-            {searchQuery.trim() === "" ? (
-              <>
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>🔥 Trending Now</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-                  {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
-                    <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
-                      onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        <div>@{v.username}</div>
-                        {v.views_count > 0 && <div style={{ color:"#aaa" }}>👁 {v.views_count}</div>}
+
+            <div style={{ padding:"0 16px 16px" }}>
+
+              {/* ── HASHTAG FEED ── */}
+              {activeHashtag && (
+                <>
+                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 0 12px" }}>
+                    <button onClick={() => setActiveHashtag(null)}
+                      style={{ background:"none", border:"none", color:"#888", fontSize:20, cursor:"pointer", padding:0, lineHeight:1 }}>←</button>
+                    <div>
+                      <div style={{ color:"#F5C842", fontWeight:900, fontSize:22 }}>{activeHashtag}</div>
+                      <div style={{ color:"#666", fontSize:12 }}>{hashtagVideos.length} {hashtagVideos.length === 1 ? "post" : "posts"}</div>
+                    </div>
+                  </div>
+                  {hashtagVideos.length === 0 ? (
+                    <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", padding:"60px 0", fontSize:14 }}>
+                      <div style={{ fontSize:40, marginBottom:12 }}>🏷️</div>
+                      No posts with {activeHashtag} yet
+                    </div>
+                  ) : (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                      {hashtagVideos.map(v => (
+                        <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                          onClick={() => { setActiveHashtag(null); setActiveTab("feed"); }}>
+                          {v.thumbnail_url
+                            ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
+                            : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          }
+                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)" }} />
+                          <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
+                            <div style={{ color:"#fff", fontSize:10, fontWeight:600 }}>@{v.username}</div>
+                            {v.views_count > 0 && <div style={{ color:"rgba(255,255,255,0.6)", fontSize:10 }}>👁 {formatCount(v.views_count)}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── SEARCH RESULTS ── */}
+              {!activeHashtag && searchQuery.trim() !== "" && (
+                <>
+                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, padding:"12px 0 10px", letterSpacing:1, textTransform:"uppercase" }}>
+                    Results for "{searchQuery}"
+                  </div>
+                  {searchResults.length === 0 ? (
+                    <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:40, fontSize:14 }}>No results found</div>
+                  ) : (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                      {searchResults.map(v => (
+                        <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                          onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
+                          {v.thumbnail_url
+                            ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
+                            : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          }
+                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)" }} />
+                          <div style={{ position:"absolute", bottom:4, left:6, right:6, fontSize:10, color:"#fff" }}>@{v.username}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* ── DEFAULT: Trending hashtags + top videos ── */}
+              {!activeHashtag && searchQuery.trim() === "" && (
+                <>
+                  {/* Trending hashtags */}
+                  {trendingTags.length > 0 && (
+                    <div style={{ marginBottom:24, paddingTop:12 }}>
+                      <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>
+                        🔥 Trending hashtags
+                      </div>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                        {trendingTags.map(({ tag, count }) => (
+                          <button key={tag}
+                            onClick={() => setActiveHashtag(tag)}
+                            style={{ background:"rgba(245,200,66,0.08)", border:"1.5px solid rgba(245,200,66,0.25)",
+                              borderRadius:24, padding:"8px 16px", cursor:"pointer",
+                              display:"flex", alignItems:"center", gap:8, WebkitTapHighlightColor:"transparent" }}>
+                            <span style={{ color:"#F5C842", fontWeight:800, fontSize:14 }}>{tag}</span>
+                            <span style={{ background:"rgba(245,200,66,0.15)", borderRadius:20, padding:"1px 8px",
+                              color:"rgba(245,200,66,0.7)", fontSize:11, fontWeight:700 }}>{count}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-                {videoList.length === 0 && (
-                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No videos yet — be the first to post!</div>
-                )}
-              </>
-            ) : (
-              <>
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>Results</div>
-                {videoList.filter(v =>
-                  (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-                ).length === 0 ? (
-                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No results for "{searchQuery}"</div>
-                ) : (
+                  )}
+
+                  {/* Top videos grid */}
+                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, marginBottom:10, letterSpacing:1, textTransform:"uppercase" }}>
+                    🎬 Top Videos
+                  </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-                    {videoList.filter(v =>
-                      (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-                    ).map(v => (
+                    {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
                       <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
-                        onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
+                        onClick={() => { setActiveTab("feed"); }}>
+                        {v.thumbnail_url
+                          ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
+                          : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        }
+                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)" }} />
+                        <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
+                          <div style={{ fontSize:10, color:"#fff", fontWeight:600 }}>@{v.username}</div>
+                          {v.views_count > 0 && <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10 }}>👁 {formatCount(v.views_count)}</div>}
+                        </div>
                       </div>
                     ))}
                   </div>
-                )}
-              </>
-            )}
+                  {videoList.length === 0 && (
+                    <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No videos yet — be the first to post!</div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Podcast Tab */}
       {activeTab === "podcast" && (
