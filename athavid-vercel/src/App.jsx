@@ -99,11 +99,14 @@ function formatCount(n) {
   return String(n);
 }
 
-// Proxy image URLs through wsrv.nl for on-the-fly resize + WebP compression
-// width: 'feed' = 800px (fast scroll), 'full' = 1200px (expanded view), 'thumb' = 40px blur placeholder
+// Proxy image URLs through wsrv.nl for on-the-fly resize + WebP conversion
+// Returns null for unrenderable HEIC files (browser can't display them)
 const resolveMediaUrl = (url, isVideo, size = 'feed') => {
   if (!url) return url;
   if (url.includes('wsrv.nl')) return url;
+  // HEIC files from R2 cannot be rendered by browsers and wsrv.nl can't convert them either
+  // Return null so caller can show a friendly error state
+  if (/\.heic$/i.test(url)) return null;
   const widthMap = { thumb: 40, feed: 800, full: 1200 };
   const qualityMap = { thumb: 20, feed: 72, full: 85 };
   const w = widthMap[size] || 800;
@@ -1150,10 +1153,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               resolve(new File([b], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
             }, 'image/jpeg', 0.92);
           };
-          img.onerror = () => resolve(file);
+          img.onerror = () => { throw new Error("HEIC conversion failed - cannot render"); };
           img.src = ev.target.result;
         };
-        reader.onerror = () => resolve(file);
+        reader.onerror = () => { throw new Error('HEIC file read failed'); };
         reader.readAsDataURL(file);
       });
     }
@@ -1202,10 +1205,24 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     const rawFiles = Array.from(e.target.files);
     if (!rawFiles.length) return;
     // Step 1: HEIC → JPEG. Step 2: resize + compress
-    const converted = await Promise.all(rawFiles.map(async f => {
-      const heicFixed = await convertHeicToJpeg(f);
-      return compressImage(heicFixed);
-    }));
+    // If conversion fails, we must NOT silently upload the raw HEIC
+    const converted = [];
+    for (const f of rawFiles) {
+      try {
+        const heicFixed = await convertHeicToJpeg(f);
+        // Double-check: if result is still HEIC, reject it
+        if (/\.heic$/i.test(heicFixed.name) || heicFixed.type.includes('heic')) {
+          alert("⚠️ Could not convert this photo. Please try a different image or re-save it from your Photos app as JPG before uploading.");
+          continue;
+        }
+        const compressed = await compressImage(heicFixed);
+        converted.push(compressed);
+      } catch (err) {
+        console.error('Photo conversion failed:', err);
+        alert("⚠️ Could not process this photo. Please try re-saving it from your Photos app as JPG before uploading.");
+      }
+    }
+    if (!converted.length) return;
     setPhotos(prev => {
       const combined = [...prev, ...converted];
       return combined.slice(0, 6);
@@ -2426,7 +2443,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           } else {
             // Pre-fetch image into browser cache
             const img = new Image();
-            img.src = resolveMediaUrl(pUrl, false, 'feed');
+            const resolved = resolveMediaUrl(pUrl, false, 'feed');
+            if (resolved) img.src = resolved;
           }
         });
       } else {
@@ -2592,11 +2610,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   animation:"spin 0.9s linear infinite" }} />
               </div>
             )}
-            <ProgressiveImg
-              src={photoUrls[photoIdx]}
-              size="feed"
-              style={{ objectFit:"contain" }}
-            />
+            {/\.heic$/i.test(photoUrls[photoIdx] || "") ? (
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                height:"100%", gap:12, color:"rgba(255,255,255,0.5)", padding:24, textAlign:"center", position:"absolute", inset:0, zIndex:3 }}>
+                <div style={{ fontSize:48 }}>📸</div>
+                <div style={{ fontSize:15, fontWeight:600, color:"#F5C842" }}>Photo needs re-upload</div>
+                <div style={{ fontSize:12, lineHeight:1.5 }}>HEIC format can't display in browser. Delete &amp; re-upload to fix.</div>
+              </div>
+            ) : (
+              <ProgressiveImg
+                src={photoUrls[photoIdx]}
+                size="feed"
+                style={{ objectFit:"contain" }}
+              />
+            )}
             {/* Counter badge top-left */}
             {photoUrls.length > 1 && (
               <div style={{ position:"absolute", top:12, left:12, background:"rgba(0,0,0,0.7)",
@@ -2686,7 +2713,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       ) : (() => {
         const resolvedVideoUrl = resolveMediaUrl(video.video_url);
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+        // resolvedVideoUrl is null when original is a raw HEIC file (unconverted iPhone photo)
+        const isHeicFail = !resolvedVideoUrl && /\.heic$/i.test(video.video_url || "");
+        const isImg = /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(resolvedVideoUrl || "");
+        if (isHeicFail) return (
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+            height:"100%", gap:12, color:"rgba(255,255,255,0.5)", padding:24, textAlign:"center" }}>
+            <div style={{ fontSize:48 }}>📸</div>
+            <div style={{ fontSize:15, fontWeight:600, color:"#F5C842" }}>Photo needs re-upload</div>
+            <div style={{ fontSize:12, lineHeight:1.5 }}>This image was uploaded in HEIC format which browsers can't display. Please delete this post and re-upload — the app will auto-convert it.</div>
+          </div>
+        );
         if (isImg) return (
           <ProgressiveImg src={video.video_url} size="feed"
             style={{ objectFit:"contain", background:"#000" }} />

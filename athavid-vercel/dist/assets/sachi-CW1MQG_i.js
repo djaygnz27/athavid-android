@@ -10089,6 +10089,7 @@ function formatCount(n2) {
 const resolveMediaUrl = (url, isVideo, size = "feed") => {
   if (!url) return url;
   if (url.includes("wsrv.nl")) return url;
+  if (/\.heic$/i.test(url)) return null;
   const widthMap = { thumb: 40, feed: 800, full: 1200 };
   const qualityMap = { thumb: 20, feed: 72, full: 85 };
   const w2 = widthMap[size] || 800;
@@ -11444,10 +11445,14 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               resolve(new File([b], file2.name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" }));
             }, "image/jpeg", 0.92);
           };
-          img.onerror = () => resolve(file2);
+          img.onerror = () => {
+            throw new Error("HEIC conversion failed - cannot render");
+          };
           img.src = ev.target.result;
         };
-        reader.onerror = () => resolve(file2);
+        reader.onerror = () => {
+          throw new Error("HEIC file read failed");
+        };
         reader.readAsDataURL(file2);
       });
     }
@@ -11498,10 +11503,22 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const handlePhotoSelect = async (e) => {
     const rawFiles = Array.from(e.target.files);
     if (!rawFiles.length) return;
-    const converted = await Promise.all(rawFiles.map(async (f2) => {
-      const heicFixed = await convertHeicToJpeg(f2);
-      return compressImage(heicFixed);
-    }));
+    const converted = [];
+    for (const f2 of rawFiles) {
+      try {
+        const heicFixed = await convertHeicToJpeg(f2);
+        if (/\.heic$/i.test(heicFixed.name) || heicFixed.type.includes("heic")) {
+          alert("⚠️ Could not convert this photo. Please try a different image or re-save it from your Photos app as JPG before uploading.");
+          continue;
+        }
+        const compressed = await compressImage(heicFixed);
+        converted.push(compressed);
+      } catch (err) {
+        console.error("Photo conversion failed:", err);
+        alert("⚠️ Could not process this photo. Please try re-saving it from your Photos app as JPG before uploading.");
+      }
+    }
+    if (!converted.length) return;
     setPhotos((prev) => {
       const combined = [...prev, ...converted];
       return combined.slice(0, 6);
@@ -12857,7 +12874,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             }, 15e3);
           } else {
             const img = new Image();
-            img.src = resolveMediaUrl(pUrl, false, "feed");
+            const resolved = resolveMediaUrl(pUrl, false, "feed");
+            if (resolved) img.src = resolved;
           }
         });
       } else {
@@ -13036,7 +13054,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           borderTopColor: "#F5C842",
           animation: "spin 0.9s linear infinite"
         } }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
+        /\.heic$/i.test(photoUrls[photoIdx] || "") ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+          gap: 12,
+          color: "rgba(255,255,255,0.5)",
+          padding: 24,
+          textAlign: "center",
+          position: "absolute",
+          inset: 0,
+          zIndex: 3
+        }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48 }, children: "📸" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 15, fontWeight: 600, color: "#F5C842" }, children: "Photo needs re-upload" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, lineHeight: 1.5 }, children: "HEIC format can't display in browser. Delete & re-upload to fix." })
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
           ProgressiveImg,
           {
             src: photoUrls[photoIdx],
@@ -13247,7 +13282,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       ] })
     ] }) : (() => {
       const resolvedVideoUrl = resolveMediaUrl(video.video_url);
-      const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+      const isHeicFail = !resolvedVideoUrl && /\.heic$/i.test(video.video_url || "");
+      const isImg = /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(resolvedVideoUrl || "");
+      if (isHeicFail) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        gap: 12,
+        color: "rgba(255,255,255,0.5)",
+        padding: 24,
+        textAlign: "center"
+      }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48 }, children: "📸" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 15, fontWeight: 600, color: "#F5C842" }, children: "Photo needs re-upload" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, lineHeight: 1.5 }, children: "This image was uploaded in HEIC format which browsers can't display. Please delete this post and re-upload — the app will auto-convert it." })
+      ] });
       if (isImg) return /* @__PURE__ */ jsxRuntimeExports.jsx(
         ProgressiveImg,
         {
