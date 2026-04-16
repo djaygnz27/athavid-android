@@ -2930,39 +2930,69 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
       </div>
 
-      {/* ── RIGHT SIDE ACTION BAR — vertical stack, TikTok style ── */}
-      <div style={{ position:"absolute", right:12, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex: 500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      {/* ── REACTION RINGS — right side action bar ── */}
+      {(() => {
+        const CIRC = 100;
+        const isBookmarked = onBookmark?.isBookmarked?.(video.id);
+        const fId = `f${video.id}`;
+        const litRingOffset = Math.max(CIRC - (hypeCount / 20) * CIRC, hyped ? 10 : CIRC);
+        const likeRingOffset = liked ? Math.max(CIRC - ((video.likes_count||0) / 50) * CIRC, 10) : CIRC;
+        const commentRingOffset = Math.max(CIRC - ((video.comments_count||0) / 20) * CIRC, 10);
+        const crownRingOffset = isBookmarked ? 18 : CIRC;
+        const shareRingOffset = Math.max(CIRC - ((video.shares_count||0) / 15) * CIRC, 10);
 
-        {/* Mute button */}
-        <button onClick={tap(doMute)}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:28, height:28, borderRadius:8, background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: muted ? "1px solid rgba(245,200,66,0.35)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}>
-            {muted
-              ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-              : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-            }
-          </div>
-        </button>
-
-
-
-        {/* LIT — animated SVG flame */}
-        {(() => {
-          const lvl = hypeCount >= 100 ? 4 : hypeCount >= 50 ? 3 : hypeCount >= 20 ? 2 : hypeCount >= 5 ? 1 : 0;
-          const flameH = [22, 26, 28, 32, 36][lvl];
-          const flameW = [14, 16, 18, 20, 22][lvl];
-          const glow = hyped ? `drop-shadow(0 0 ${[4,6,8,10,14][lvl]}px rgba(255,${[140,100,70,40,10][lvl]},0,0.9))` : "none";
-          const fId = `f${video.id}`;
+        const RingBtn = ({ onClick, color, ringOffset, label, children }) => {
+          const [bursting, setBursting] = React.useState(false);
+          const handleClick = (e) => { setBursting(true); setTimeout(() => setBursting(false), 600); onClick(e); };
           return (
-            <button onClick={tap(doHype)}
-              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-              <div style={{ width:30, height:34, display:"flex", alignItems:"flex-end", justifyContent:"center",
-                filter: glow,
-                animation: hypeAnim ? "firepop 0.5s ease forwards" : "none",
-                transformOrigin:"bottom center" }}>
-                <svg width={flameW} height={flameH} viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg" style={{ overflow:"visible" }}>
+            <button onClick={handleClick}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column",
+                alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", position:"relative" }}>
+              <div style={{ position:"relative", width:44, height:44 }}>
+                <svg style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }} viewBox="0 0 44 44" width="44" height="44">
+                  <circle cx="22" cy="22" r="16" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="2.5"/>
+                  <circle cx="22" cy="22" r="16" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"
+                    strokeDasharray={CIRC} strokeDashoffset={ringOffset}
+                    style={{ transition:"stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1)" }}/>
+                </svg>
+                {bursting && (
+                  <div style={{ position:"absolute", inset:-4, borderRadius:"50%", border:`2px solid ${color}`,
+                    animation:"ringBurst 0.5s ease forwards", pointerEvents:"none" }} />
+                )}
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+                  animation: bursting ? "ringIconPop 0.4s ease forwards" : "none" }}>
+                  {children}
+                </div>
+              </div>
+              <div style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.55)", lineHeight:1 }}>{label}</div>
+            </button>
+          );
+        };
+
+        return (
+          <div style={{ position:"absolute", right:10, bottom:120, display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+            zIndex:500, transition:"opacity 0.4s ease", opacity:(showUI||!!photoUrls)?1:0,
+            pointerEvents:(showUI||!!photoUrls)?"auto":"none", visibility:(showUI||!!photoUrls)?"visible":"hidden" }}>
+
+            {/* Mute pill */}
+            <button onClick={tap(doMute)}
+              style={{ background:muted?"rgba(245,200,66,0.15)":"rgba(255,255,255,0.08)",
+                border:muted?"1px solid rgba(245,200,66,0.4)":"1px solid rgba(255,255,255,0.1)",
+                borderRadius:20, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                WebkitTapHighlightColor:"transparent", marginBottom:2, width:36, height:24 }}>
+              {muted
+                ? <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                : <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              }
+            </button>
+
+            {/* LIT flame ring */}
+            <RingBtn color="#FF6B00" ringOffset={litRingOffset}
+              label={hypeCount > 0 ? String(hypeCount) : "LIT"}
+              onClick={tap(doHype)}>
+              <div style={{ filter: hyped ? "drop-shadow(0 0 6px rgba(255,107,0,0.9))" : "none",
+                animation: hypeAnim ? "firepop 0.5s ease forwards" : "none" }}>
+                <svg width="18" height="22" viewBox="0 0 20 28" xmlns="http://www.w3.org/2000/svg" style={{ overflow:"visible" }}>
                   <defs>
                     <linearGradient id={fId} x1="50%" y1="0%" x2="50%" y2="100%">
                       <stop offset="0%" stopColor="#fff176"/>
@@ -2976,153 +3006,125 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                       <stop offset="100%" stopColor="#ffcc02" stopOpacity="0.6"/>
                     </linearGradient>
                   </defs>
-                  {/* Outer flame body */}
                   <path d="M10 27 C4 27 1 22 1 17 C1 12 4 8 6 5 C7 3 7 1 7 1 C9 4 8 7 10 9 C11 6 13 3 14 1 C15 4 19 9 19 16 C19 22 15 27 10 27Z"
-                    fill={`url(#${fId})`}
-                    style={{ animation:"flameWave 1.8s ease-in-out infinite", transformOrigin:"10px 27px" }}
-                  />
-                  {/* Inner bright core */}
+                    fill={`url(#${fId})`} style={{ animation:"flameWave 1.8s ease-in-out infinite", transformOrigin:"10px 27px" }}/>
                   <path d="M10 24 C7 24 6 21 6 18 C6 16 8 13 9 11 C10 13 10 15 11 16 C12 14 13 11 14 10 C15 13 14 17 14 18 C14 22 13 24 10 24Z"
-                    fill={`url(#${fId+"i"})`}
-                    style={{ animation:"flameWave 1.2s ease-in-out infinite reverse", transformOrigin:"10px 24px" }}
-                  />
+                    fill={`url(#${fId+"i"})`} style={{ animation:"flameWave 1.2s ease-in-out infinite reverse", transformOrigin:"10px 24px" }}/>
                 </svg>
               </div>
-              <div style={{ color: hyped ? "#FF6B00" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>
-                {hypeCount > 0 ? hypeCount : "LIT"}
-              </div>
-            </button>
-          );
-        })()}
+            </RingBtn>
 
-        {/* Like */}
-        <button onClick={tap(doLike)}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:28, height:28, borderRadius:8, background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center",
-            animation: liked ? "heartpop 0.4s ease forwards" : "none", transformOrigin:"center", transition:"background 0.2s, border 0.2s" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke="#FF6B6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </div>
-          <div
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (!video.likes_count) return;
-              setShowLikers(true);
-              setLikersLoading(true);
-              setLikersList([]);
-              const items = await likes.getByVideo(video.id);
-              setLikersList(items);
-              setLikersLoading(false);
-            }}
-            style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600, cursor: video.likes_count > 0 ? "pointer" : "default" }}>
-            {formatCount(video.likes_count||0)}
-          </div>
-        </button>
-
-        {/* Likers Modal */}
-        {showLikers && (
-          <div onClick={() => setShowLikers(false)}
-            style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-end" }}>
-            <div onClick={e => e.stopPropagation()}
-              style={{ width:"100%", maxHeight:"60vh", background:"#1a1a2e", borderRadius:"20px 20px 0 0", padding:"20px 0 40px", overflowY:"auto" }}>
-              <div style={{ textAlign:"center", padding:"0 20px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ width:40, height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", margin:"0 auto 16px" }} />
-                <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>❤️ {formatCount(video.likes_count||0)} Likes</div>
-              </div>
-              {likersLoading ? (
-                <div style={{ textAlign:"center", padding:32, color:"#555" }}>Loading…</div>
-              ) : likersList.length === 0 ? (
-                <div style={{ textAlign:"center", padding:32, color:"#555" }}>No like records found</div>
-              ) : likersList.map((l,i) => (
-                <div key={l.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px" }}>
-                  <img src={l.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.display_name||l.username||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
-                    style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
-                  <div>
-                    <div style={{ color:"#fff", fontWeight:600, fontSize:14 }}>{l.display_name || l.username || "Sachi User"}</div>
-                    <div style={{ color:"#555", fontSize:12 }}>@{l.username || "user"}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Comment */}
-        <button onClick={tap(() => onCommentOpen(video))}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.comments_count)}</div>
-        </button>
-
-        {/* Share */}
-        <button onClick={tap(async () => {
-            const shareUrl = `${window.location.origin}?v=${video.id}`;
-            if(navigator.share){ navigator.share({ title: video.caption||"Check this out on Sachi", url: shareUrl }); }
-            else { navigator.clipboard?.writeText(shareUrl); toast.success("Link copied to clipboard!"); }
-            // Increment share count in DB
-            try {
-              const newCount = (video.shares_count || 0) + 1;
-              onShareCount && onShareCount(video.id, newCount);
-              await videos.update(video.id, { shares_count: newCount });
-            } catch(e) {}
-          })}
-          style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-            WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-          <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-          </div>
-          <div style={{ color:"rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>{formatCount(video.shares_count||0)}</div>
-        </button>
-
-        {/* Bookmark */}
-        {currentUser && (() => {
-          const isBookmarked = onBookmark?.isBookmarked?.(video.id);
-          return (
-            <button onClick={tap(async () => {
-                if(!currentUser){ onNeedAuth && onNeedAuth(); return; }
-                onBookmark?.handle && onBookmark.handle(video.id, !isBookmarked);
-              })}
-              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-                WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-              <div style={{ width:28, height:28, borderRadius:8, background: isBookmarked ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", backdropFilter:"blur(12px)", border:`1px solid ${isBookmarked ? "rgba(245,200,66,0.5)" : "rgba(255,255,255,0.1)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill={isBookmarked ? "#F5C842" : "none"} stroke={isBookmarked ? "#F5C842" : "rgba(255,255,255,0.9)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-              </div>
-              <div style={{ color: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.8)", fontSize:9, fontWeight:600 }}>Save</div>
-            </button>
-          );
-        })()}
-
-        {/* Delete — only for own videos */}
-        {isOwnVideo && (
-          <button onClick={tap(doDelete)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-              WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-            <div style={{ width:28, height:28, borderRadius:8, background:"rgba(255,60,60,0.12)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,60,60,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff5555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+            {/* Heart ring */}
+            <RingBtn color="#FF6B6B" ringOffset={likeRingOffset}
+              label={formatCount(video.likes_count||0)}
+              onClick={tap(doLike)}>
+              <svg width="16" height="16" viewBox="0 0 24 24"
+                fill={liked ? "#FF6B6B" : "none"} stroke="#FF6B6B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transition:"fill 0.2s" }}>
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
-            </div>
-          </button>
-        )}
+            </RingBtn>
 
+            {/* Likers Modal */}
+            {showLikers && (
+              <div onClick={() => setShowLikers(false)}
+                style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-end" }}>
+                <div onClick={e => e.stopPropagation()}
+                  style={{ width:"100%", maxHeight:"60vh", background:"#1a1a2e", borderRadius:"20px 20px 0 0", padding:"20px 0 40px", overflowY:"auto" }}>
+                  <div style={{ textAlign:"center", padding:"0 20px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ width:40, height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", margin:"0 auto 16px" }} />
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>❤️ {formatCount(video.likes_count||0)} Likes</div>
+                  </div>
+                  {likersLoading ? (
+                    <div style={{ textAlign:"center", padding:32, color:"#555" }}>Loading…</div>
+                  ) : likersList.length === 0 ? (
+                    <div style={{ textAlign:"center", padding:32, color:"#555" }}>No like records found</div>
+                  ) : likersList.map((l,i) => (
+                    <div key={l.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px" }}>
+                      <img src={l.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.display_name||l.username||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
+                        style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
+                      <div>
+                        <div style={{ color:"#fff", fontWeight:600, fontSize:14 }}>{l.display_name || l.username || "Sachi User"}</div>
+                        <div style={{ color:"#555", fontSize:12 }}>@{l.username || "user"}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {/* Comment ring */}
+            <RingBtn color="#6c63ff" ringOffset={commentRingOffset}
+              label={formatCount(video.comments_count)}
+              onClick={tap(() => onCommentOpen(video))}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </RingBtn>
 
+            {/* Crown ring — replaces bookmark */}
+            <RingBtn color="#F5C842" ringOffset={crownRingOffset}
+              label={isBookmarked ? "Crowned" : "Crown"}
+              onClick={tap(async () => { if(!currentUser){onNeedAuth&&onNeedAuth();return;} onBookmark?.handle&&onBookmark.handle(video.id,!isBookmarked); })}>
+              <svg width="16" height="16" viewBox="0 0 24 24"
+                fill={isBookmarked ? "rgba(245,200,66,0.25)" : "none"}
+                stroke={isBookmarked ? "#F5C842" : "rgba(255,255,255,0.55)"}
+                strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transition:"all 0.3s",
+                  animation: isBookmarked ? "crownFloat 2s ease-in-out infinite" : "none",
+                  filter: isBookmarked ? "drop-shadow(0 0 6px rgba(245,200,66,0.7))" : "none" }}>
+                <path d="M2 20h20M5 20V10l7-6 7 6v10"/><path d="M9 20v-5h6v5"/>
+              </svg>
+            </RingBtn>
 
+            {/* Broadcast ring — share */}
+            {(() => {
+              const [pulsing, setPulsing] = React.useState(false);
+              const handleShare = tap(async () => {
+                setPulsing(true); setTimeout(() => setPulsing(false), 900);
+                const shareUrl = `${window.location.origin}?v=${video.id}`;
+                if(navigator.share){ navigator.share({ title: video.caption||"Check this out on Sachi", url: shareUrl }); }
+                else { navigator.clipboard?.writeText(shareUrl); toast.success("Link copied!"); }
+                try {
+                  const newCount = (video.shares_count||0)+1;
+                  onShareCount&&onShareCount(video.id,newCount);
+                  await videos.update(video.id,{shares_count:newCount});
+                } catch(e){}
+              });
+              return (
+                <RingBtn color="#a78bfa" ringOffset={shareRingOffset}
+                  label={formatCount(video.shares_count||0)||"Share"}
+                  onClick={handleShare}>
+                  <div style={{ position:"relative" }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                    {pulsing && <div style={{ position:"absolute", inset:-10, borderRadius:"50%", border:"1.5px solid #a78bfa",
+                      animation:"broadcastPulse 0.8s ease forwards", pointerEvents:"none" }} />}
+                  </div>
+                </RingBtn>
+              );
+            })()}
 
+            {/* Delete — own videos only */}
+            {isOwnVideo && (
+              <button onClick={tap(doDelete)}
+                style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", marginTop:2 }}>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:"rgba(255,60,60,0.12)",
+                  border:"1px solid rgba(255,60,60,0.3)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff5555" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                  </svg>
+                </div>
+              </button>
+            )}
 
-      </div>
+          </div>
+        );
+      })()}
 
       {reportTarget && <ReportModal video={reportTarget} currentUser={currentUser} onClose={() => setReportTarget(null)} />}
 
@@ -3277,6 +3279,11 @@ spinStyle.textContent = `
     80%  { transform: scale(1.15); }
     100% { transform: scale(1); }
   }
+  @keyframes ringBurst { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.4);opacity:0} }
+  @keyframes ringParticle { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
+  @keyframes crownFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+  @keyframes broadcastPulse { 0%{transform:scale(1);opacity:0.8} 100%{transform:scale(2.2);opacity:0} }
+  @keyframes ringIconPop { 0%{transform:scale(1)} 35%{transform:scale(1.5)} 65%{transform:scale(0.88)} 100%{transform:scale(1)} }
 `;
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
 
