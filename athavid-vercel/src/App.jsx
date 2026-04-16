@@ -2627,6 +2627,173 @@ function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onVi
   );
 }
 
+// ── CONSTELLATION ONBOARDING SCREEN ──
+function SachiOnboarding({ onDone, onSignUp }) {
+  const [step, setStep] = useState(0);
+  const [exiting, setExiting] = useState(false);
+
+  const steps = [
+    {
+      icon: "✦",
+      iconColor: "linear-gradient(135deg,#F5C842,#FF9500)",
+      title: "Welcome to Sachi",
+      subtitle: "Your universe of stories",
+      body: "A space built for real creators. Share moments, find your people, and let your light shine."
+    },
+    {
+      icon: "🌙",
+      iconColor: "linear-gradient(135deg,#C8A0FF,#7B2FFF)",
+      title: "Swipe to Explore",
+      subtitle: "Discover what moves you",
+      body: "Swipe right to love it ✦ — swipe left to pass 🌙. Every card is a world waiting for you."
+    },
+    {
+      icon: "🎙",
+      iconColor: "linear-gradient(135deg,#00E5FF,#7B2FFF)",
+      title: "Live & Podcasts",
+      subtitle: "Go live, or tune in",
+      body: "Host your own podcast, go live with viewers, or discover voices you'll love — all in one place."
+    },
+    {
+      icon: "🌟",
+      iconColor: "linear-gradient(135deg,#F5C842,#C8A0FF)",
+      title: "Your constellation awaits",
+      subtitle: "Join the community",
+      body: "Create your free account to post, follow creators, and become part of the Sachi universe."
+    }
+  ];
+
+  const current = steps[step];
+  const isLast = step === steps.length - 1;
+
+  const handleNext = () => {
+    if (isLast) { onSignUp(); return; }
+    setExiting(true);
+    setTimeout(() => { setStep(s => s + 1); setExiting(false); }, 250);
+  };
+
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:10000,
+      background:"radial-gradient(ellipse at 50% 100%, #1e0840 0%, #0B0C1A 55%)",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between",
+      padding:"env(safe-area-inset-top,40px) 32px 48px",
+      overflow:"hidden"
+    }}>
+      {/* Background stars */}
+      {[...Array(20)].map((_,i) => (
+        <div key={i} style={{
+          position:"absolute",
+          left:`${(i*37+11)%100}%`, top:`${(i*53+7)%100}%`,
+          width:i%4===0?3:2, height:i%4===0?3:2, borderRadius:"50%",
+          background:i%3===0?"#F5C842":i%3===1?"#C8A0FF":"#fff",
+          opacity:0.12+(i%5)*0.06,
+          animation:`starFloat ${2+i%4}s ease-in-out ${(i*0.4)%3}s infinite`,
+          pointerEvents:"none"
+        }}/>
+      ))}
+
+      {/* Aurora top line */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:2,
+        background:"linear-gradient(90deg,transparent,#7B2FFF 30%,#F5C842 50%,#00E5FF 70%,transparent)",
+        backgroundSize:"200% 100%", animation:"auroraShift 4s ease-in-out infinite" }} />
+
+      {/* Skip button */}
+      <button onClick={onDone}
+        style={{ alignSelf:"flex-end", background:"none", border:"none", cursor:"pointer",
+          color:"rgba(255,255,255,0.25)", fontSize:13, fontWeight:600, letterSpacing:1,
+          padding:"8px 0", WebkitTapHighlightColor:"transparent" }}>
+        Skip →
+      </button>
+
+      {/* Main content */}
+      <div style={{
+        flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+        justifyContent:"center", gap:28, textAlign:"center",
+        opacity: exiting ? 0 : 1, transform: exiting ? "translateY(20px)" : "translateY(0)",
+        transition:"all 0.25s ease"
+      }}>
+        {/* Icon orb */}
+        <div style={{
+          width:100, height:100, borderRadius:"50%",
+          background: current.iconColor,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontSize:46,
+          boxShadow:"0 0 60px rgba(245,200,66,0.3), 0 0 120px rgba(123,47,255,0.2), inset 0 2px 0 rgba(255,255,255,0.3)",
+          border:"2px solid rgba(255,255,255,0.15)",
+          animation:"orbitPulse 3s ease-in-out infinite"
+        }}>
+          {current.icon}
+        </div>
+
+        {/* Text */}
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <div style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:"uppercase",
+            color:"rgba(245,200,66,0.6)" }}>{current.subtitle}</div>
+          <div style={{ fontSize:32, fontWeight:900, letterSpacing:-0.5, lineHeight:1.15,
+            background:"linear-gradient(135deg,#fff 0%,rgba(245,200,66,0.9) 100%)",
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+            {current.title}
+          </div>
+          <div style={{ fontSize:16, color:"rgba(255,255,255,0.5)", lineHeight:1.7,
+            maxWidth:280, margin:"0 auto", fontWeight:400 }}>
+            {current.body}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom controls */}
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20, width:"100%" }}>
+        {/* Step dots */}
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {steps.map((_,i) => (
+            <div key={i} style={{
+              width: i===step ? 24 : 6,
+              height:6, borderRadius:3,
+              background: i===step
+                ? "linear-gradient(90deg,#F5C842,#C8A0FF)"
+                : "rgba(255,255,255,0.15)",
+              transition:"all 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+              cursor:"pointer"
+            }} onClick={() => setStep(i)} />
+          ))}
+        </div>
+
+        {/* CTA button */}
+        <button onClick={handleNext}
+          style={{
+            width:"100%", maxWidth:320, padding:"16px 0",
+            borderRadius:50, border:"none", cursor:"pointer",
+            background: isLast
+              ? "radial-gradient(circle at 35% 35%, #FFE580, #F5C842, #C97B00)"
+              : "linear-gradient(135deg, rgba(123,47,255,0.3), rgba(0,229,255,0.2))",
+            color: isLast ? "#0B0C1A" : "#fff",
+            fontSize:16, fontWeight:900, letterSpacing:0.5,
+            boxShadow: isLast
+              ? "0 0 40px rgba(245,200,66,0.5), 0 8px 24px rgba(0,0,0,0.4)"
+              : "0 4px 24px rgba(123,47,255,0.3)",
+            border: isLast ? "2px solid rgba(255,230,100,0.5)" : "1.5px solid rgba(123,47,255,0.4)",
+            WebkitTapHighlightColor:"transparent",
+            transition:"all 0.2s"
+          }}>
+          {isLast ? "✦ Create Free Account" : "Continue →"}
+        </button>
+
+        {/* Already have account */}
+        {isLast && (
+          <button onClick={onDone}
+            style={{ background:"none", border:"none", cursor:"pointer",
+              color:"rgba(255,255,255,0.3)", fontSize:13, letterSpacing:0.3,
+              WebkitTapHighlightColor:"transparent" }}>
+            I'll explore first →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 // One-time warm welcome hint
 function SwipeHint() {
   const [visible, setVisible] = useState(() => {
@@ -3165,7 +3332,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       })()}
 
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(5,2,18,0.98) 0%, rgba(8,4,22,0.7) 35%, rgba(10,5,25,0.2) 60%, transparent 85%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
       {/* Tap hint removed — content-first UI */}
 
@@ -3195,62 +3362,80 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
 
-      {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
-        <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
+      {/* ── BOTTOM LEFT: constellation creator info + caption ── */}
+      <div style={{ position:"absolute", bottom:148, left:16, right:76, zIndex:500, transition:"opacity 0.5s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+
+        {/* Creator name row */}
+        <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:6, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
-          <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
-          <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>@{video.username}</div>
+          <div style={{
+            fontWeight:900, fontSize:17, letterSpacing:-0.3,
+            background:"linear-gradient(135deg, #fff 0%, rgba(245,200,66,0.9) 100%)",
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+            textShadow:"none", filter:"drop-shadow(0 1px 6px rgba(0,0,0,0.8))"
+          }}>{video.display_name || video.username}</div>
+          <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12, fontWeight:500 }}>@{video.username}</div>
         </div>
+
+        {/* Sound pill */}
         {video.sound_title && (
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
-          <div style={{ fontSize:14, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none", display:"inline-block" }}>🎵</div>
-          <div style={{ overflow:"hidden", flex:1 }}>
-            <div style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600, whiteSpace:"nowrap",
-              animation: playing ? "marquee 8s linear infinite" : "none", display:"inline-block" }}>
-              {video.sound_title}{video.sound_artist ? ` · ${video.sound_artist}` : ""}
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, overflow:"hidden",
+            background:"rgba(123,47,255,0.15)", borderRadius:30, padding:"4px 12px 4px 8px",
+            border:"1px solid rgba(123,47,255,0.3)", width:"fit-content", maxWidth:"90%" }}>
+            <div style={{ fontSize:13, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none", display:"inline-block" }}>🎵</div>
+            <div style={{ overflow:"hidden", flex:1 }}>
+              <div style={{ color:"rgba(255,255,255,0.85)", fontSize:11, fontWeight:600, whiteSpace:"nowrap",
+                animation: playing ? "marquee 8s linear infinite" : "none", display:"inline-block" }}>
+                {video.sound_title}{video.sound_artist ? ` · ${video.sound_artist}` : ""}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {/* Real / AI badge */}
-      <div style={{ display:"flex", gap:6, marginBottom:4, flexWrap:"wrap" }}>
-        {!video.is_ai_detected ? (
-          <span style={{ fontSize:10, background:"rgba(107,255,154,0.15)", color:"#6BFFB8", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(107,255,154,0.3)" }}>
-            ✓ Real
-          </span>
-        ) : (
-          <span style={{ fontSize:10, background:"rgba(255,149,0,0.15)", color:"#FF9500", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(255,149,0,0.3)" }}>
-            🤖 AI Generated
-          </span>
         )}
-      </div>
-      {video.caption && (
-        <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>
-          {showFullCaption || (video.caption || "").length <= 80
-            ? video.caption
-            : (video.caption || "").slice(0, 80) + "…"}
-          {(video.caption || "").length > 80 && (
-            <span onClick={tap(() => setShowFullCaption(v => !v))}
-              style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginLeft:6, cursor:"pointer", fontWeight:600 }}>
-              {showFullCaption ? "see less" : "see more"}
-            </span>
-          )}
-        </div>
-      )}
-        {video.hashtags?.length > 0 && (
-          <div style={{ color:"#F5C842", fontSize:13, marginTop:4 }}>
-            {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
+
+        {/* Caption */}
+        {video.caption && (
+          <div style={{ color:"rgba(255,255,255,0.88)", fontSize:14, lineHeight:1.6, marginBottom:6,
+            textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
+            {showFullCaption || (video.caption || "").length <= 80
+              ? video.caption
+              : (video.caption || "").slice(0, 80) + "…"}
+            {(video.caption || "").length > 80 && (
+              <span onClick={tap(() => setShowFullCaption(v => !v))}
+                style={{ color:"rgba(245,200,66,0.7)", fontSize:13, marginLeft:6, cursor:"pointer", fontWeight:700 }}>
+                {showFullCaption ? " less" : " more"}
+              </span>
+            )}
           </div>
         )}
-        {video.created_date && (
-          <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:8,
-            background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px", width:"fit-content" }}>
-            <span style={{ fontSize:12 }}>📅</span>
-            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
+
+        {/* Hashtags — constellation gold */}
+        {video.hashtags?.length > 0 && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
+            {video.hashtags.slice(0,4).map((t,i) => (
+              <span key={i} style={{
+                fontSize:12, fontWeight:700, letterSpacing:0.3,
+                color:"#F5C842", textShadow:"0 0 10px rgba(245,200,66,0.5)"
+              }}>#{t.replace(/^#/,"")}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Bottom meta row — date + location + AI badge */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+          {!video.is_ai_detected ? (
+            <span style={{ fontSize:10, background:"rgba(107,255,154,0.12)", color:"#6BFFB8", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(107,255,154,0.25)" }}>
+              ✦ Real
+            </span>
+          ) : (
+            <span style={{ fontSize:10, background:"rgba(255,149,0,0.12)", color:"#FF9500", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(255,149,0,0.25)" }}>
+              🤖 AI
+            </span>
+          )}
+          {video.created_date && (
+            <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:500 }}>
               {formatDate(video.created_date)}
               {video.post_country && (
-                <span style={{ marginLeft:6, opacity:0.9 }}>
+                <span style={{ marginLeft:5 }}>
                   {countryFlag(video.post_country)}
                   {(() => {
                     const city = video.post_city || null;
@@ -3263,19 +3448,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 </span>
               )}
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* ── AVATAR + FOLLOW — top left, always visible — Sachi original ── */}
-      <div style={{ position:"absolute", top:72, left:14, display:"flex", flexDirection:"row", alignItems:"center", gap:10, zIndex:999 }}>
-        {/* Avatar */}
+      {/* ── AVATAR + FOLLOW — constellation style, top left ── */}
+      <div style={{ position:"absolute", top:72, left:14, display:"flex", flexDirection:"row", alignItems:"center", gap:8, zIndex:999 }}>
+        {/* Avatar with glowing ring */}
         <div onClick={(e) => { e.stopPropagation(); onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name); }}
-          style={{ width:22, height:22, borderRadius:"50%", overflow:"hidden", border:"1.5px solid rgba(245,200,66,0.7)", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
+          style={{ position:"relative", width:36, height:36, flexShrink:0, cursor:"pointer" }}>
+          <div style={{ position:"absolute", inset:-2, borderRadius:"50%",
+            background:"linear-gradient(135deg, #F5C842, #C8A0FF, #00E5FF)",
+            padding:2, zIndex:0 }}>
+            <div style={{ width:"100%", height:"100%", borderRadius:"50%", background:"#0B0C1A" }} />
+          </div>
           <img src={video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`}
-            style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
+            style={{ position:"absolute", inset:2, width:"calc(100% - 4px)", height:"calc(100% - 4px)", borderRadius:"50%", objectFit:"cover", zIndex:1 }} />
         </div>
-        {/* Follow pill — inline next to avatar */}
+        {/* Follow pill */}
         {!isOwnVideo && (
           <button
             onClick={(e) => { e.stopPropagation(); doFollow(); }}
@@ -3283,22 +3473,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             style={{
               height: 28,
               borderRadius: 20,
-              border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
-              background: isFollowing ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
-              backdropFilter: "blur(8px)",
-              color: isFollowing ? "#F5C842" : "#fff",
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: 0.3,
-              padding: "0 12px",
+              border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.25)",
+              background: isFollowing
+                ? "linear-gradient(135deg, rgba(245,200,66,0.25), rgba(200,160,255,0.15))"
+                : "rgba(5,2,18,0.7)",
+              backdropFilter: "blur(12px)",
+              color: isFollowing ? "#F5C842" : "rgba(255,255,255,0.9)",
+              fontWeight: 800,
+              fontSize: 11,
+              letterSpacing: 0.5,
+              padding: "0 13px",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-              boxShadow: isFollowing ? "0 0 10px rgba(245,200,66,0.3)" : "none",
-              transition: "all 0.25s",
+              boxShadow: isFollowing ? "0 0 16px rgba(245,200,66,0.35)" : "0 2px 12px rgba(0,0,0,0.5)",
+              transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
               WebkitTapHighlightColor: "transparent",
               touchAction: "manipulation",
             }}>
-            {followLoading ? "·" : isFollowing ? "✓ Following" : "+ Follow"}
+            {followLoading ? "·" : isFollowing ? "✦ Following" : "+ Follow"}
           </button>
         )}
       </div>
@@ -6440,6 +6632,9 @@ function App() {
   const [uploadToast, setUploadToast] = useState(false);
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return !localStorage.getItem('sachi-onboarded'); } catch { return false; }
+  });
   const [myVideos, setMyVideos] = useState([]);
   const [myVideosPlayer, setMyVideosPlayer] = useState(null); // index into myVideos for fullscreen
   const [meFollowersCount, setMeFollowersCount] = useState(0);
@@ -7092,60 +7287,125 @@ function App() {
         </div>
       )}
 
-            {/* Explore Tab */}
+            {/* ── CONSTELLATION EXPLORE TAB ── */}
       {activeTab === "explore" && (
-        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
-          <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div style={{ paddingTop:66, paddingBottom:90, minHeight:"100svh",
+          background:"radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0B0C1A 55%)" }}>
+
+          {/* Search bar — constellation style */}
+          <div style={{ padding:"14px 16px 10px" }}>
+            <div style={{ display:"flex", alignItems:"center",
+              background:"linear-gradient(135deg, rgba(123,47,255,0.12), rgba(245,200,66,0.06))",
+              borderRadius:28, padding:"10px 16px", gap:10,
+              border:"1px solid rgba(123,47,255,0.25)",
+              boxShadow:"0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(200,160,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search users or videos..."
-                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
-              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>}
+                placeholder="Search creators, videos, tags…"
+                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15, letterSpacing:0.2 }} />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")}
+                  style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:22, height:22,
+                    color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+              )}
             </div>
           </div>
-          <div style={{ padding:16 }}>
+
+          <div style={{ padding:"4px 16px 16px" }}>
             {searchQuery.trim() === "" ? (
               <>
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>🔥 Trending Now</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-                  {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
-                    <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                {/* Section header */}
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                  <div style={{ width:3, height:14, borderRadius:2,
+                    background:"linear-gradient(180deg,#F5C842,#C8A0FF)" }} />
+                  <span style={{ fontSize:11, fontWeight:800, letterSpacing:2.5, textTransform:"uppercase",
+                    color:"rgba(255,255,255,0.5)" }}>Rising Now</span>
+                  <div style={{ flex:1, height:1, background:"linear-gradient(90deg,rgba(245,200,66,0.2),transparent)" }} />
+                  <span style={{ fontSize:16, animation:"starFloat 2s ease-in-out infinite" }}>✦</span>
+                </div>
+
+                {/* Video grid — constellation card style */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
+                  {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map((v,i) => (
+                    <div key={v.id} style={{ aspectRatio:"9/16", borderRadius:10, overflow:"hidden", position:"relative", cursor:"pointer",
+                      boxShadow: i < 3 ? "0 0 16px rgba(245,200,66,0.2)" : "0 2px 8px rgba(0,0,0,0.4)",
+                      border: i < 3 ? "1px solid rgba(245,200,66,0.2)" : "1px solid rgba(255,255,255,0.04)" }}
                       onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        <div>@{v.username}</div>
-                        {v.views_count > 0 && <div style={{ color:"#aaa" }}>👁 {v.views_count}</div>}
+                      {v.is_photo && v.photo_urls ? (
+                        <img src={resolveMediaUrl(safeParsePhotoUrls(v.photo_urls)[0], false, "thumb")}
+                          style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      ) : v.thumbnail_url ? (
+                        <img src={resolveMediaUrl(v.thumbnail_url, false, "thumb")}
+                          style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      ) : (
+                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      )}
+                      {/* Overlay */}
+                      <div style={{ position:"absolute", inset:0,
+                        background:"linear-gradient(to top, rgba(5,2,18,0.9) 0%, transparent 50%)" }} />
+                      {/* Top badge for top 3 */}
+                      {i < 3 && (
+                        <div style={{ position:"absolute", top:6, left:6,
+                          background:"linear-gradient(135deg,#F5C842,#FF9500)", borderRadius:20,
+                          padding:"2px 8px", fontSize:9, fontWeight:900, color:"#0B0C1A", letterSpacing:0.5 }}>
+                          {i===0?"✦ HOT":i===1?"✦ #2":"✦ #3"}
+                        </div>
+                      )}
+                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"5px 7px" }}>
+                        <div style={{ color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700,
+                          overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
+                        {v.views_count > 0 && (
+                          <div style={{ color:"rgba(245,200,66,0.7)", fontSize:9, fontWeight:600 }}>
+                            ✦ {v.views_count >= 1000 ? (v.views_count/1000).toFixed(1)+"k" : v.views_count}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
                 {videoList.length === 0 && (
-                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No videos yet — be the first to post!</div>
+                  <div style={{ textAlign:"center", marginTop:60, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
+                    <div style={{ fontSize:48, animation:"starFloat 2s ease-in-out infinite" }}>✦</div>
+                    <div style={{ color:"rgba(255,255,255,0.35)", fontSize:14 }}>No posts yet — be the first!</div>
+                  </div>
                 )}
               </>
             ) : (
               <>
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>Results</div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                  <div style={{ width:3, height:14, borderRadius:2, background:"linear-gradient(180deg,#C8A0FF,#F5C842)" }} />
+                  <span style={{ fontSize:11, fontWeight:800, letterSpacing:2.5, textTransform:"uppercase", color:"rgba(255,255,255,0.5)" }}>Results</span>
+                </div>
                 {videoList.filter(v =>
                   (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                   (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                   (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
                 ).length === 0 ? (
-                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No results for "{searchQuery}"</div>
+                  <div style={{ textAlign:"center", marginTop:60, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
+                    <div style={{ fontSize:48 }}>🌙</div>
+                    <div style={{ color:"rgba(255,255,255,0.35)", fontSize:14 }}>Nothing found for "{searchQuery}"</div>
+                  </div>
                 ) : (
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
                     {videoList.filter(v =>
                       (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
                     ).map(v => (
-                      <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                      <div key={v.id} style={{ aspectRatio:"9/16", borderRadius:10, overflow:"hidden", position:"relative", cursor:"pointer",
+                        border:"1px solid rgba(255,255,255,0.06)", boxShadow:"0 2px 8px rgba(0,0,0,0.4)" }}
                         onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
+                        {v.thumbnail_url ? (
+                          <img src={resolveMediaUrl(v.thumbnail_url, false, "thumb")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                        ) : (
+                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        )}
+                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(5,2,18,0.9) 0%, transparent 50%)" }} />
+                        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"5px 7px" }}>
+                          <div style={{ color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -7502,6 +7762,18 @@ function App() {
         </div>
       )}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
+
+      {/* ── CONSTELLATION ONBOARDING ── */}
+      {showOnboarding && (
+        <SachiOnboarding onDone={() => {
+          try { localStorage.setItem('sachi-onboarded', '1'); } catch {}
+          setShowOnboarding(false);
+        }} onSignUp={() => {
+          try { localStorage.setItem('sachi-onboarded', '1'); } catch {}
+          setShowOnboarding(false);
+          setShowAuth(true);
+        }} />
+      )}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => setShowEditProfile(false)}>
