@@ -1,4 +1,4 @@
-// Sachi v3.0.0 - Constellation UI
+// Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import heic2any from "heic2any";
 import Landing from "./Landing";
@@ -74,11 +74,7 @@ function ToastContainer() {
         );
       })}
       <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes popIn { from { transform: scale(0.3); opacity:0; } to { transform: scale(1); opacity:1; } }
-@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
-@keyframes driftLeft { from { transform:translateX(4px); } to { transform:translateX(-4px); } }
-@keyframes driftRight { from { transform:translateX(-4px); } to { transform:translateX(4px); } }`}</style>
+@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
@@ -2252,606 +2248,6 @@ function getUserAge() {
   return age;
 }
 
-
-// ── SwipeFeed: Tinder-style left/right swipe card deck for the main feed ──
-function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onView, onNeedAuth,
-  onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds,
-  onLoadMore, hasMore, loading }) {
-
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [dragX, setDragX] = useState(0);
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [swipeDir, setSwipeDir] = useState(null); // 'left' | 'right' | null
-  const [exitAnim, setExitAnim] = useState(null); // 'exit-left' | 'exit-right' | null
-  const [likeFlash, setLikeFlash] = useState(false);
-  const [skipFlash, setSkipFlash] = useState(false);
-
-  const touchStartX = useRef(null);
-  const touchStartY = useRef(null);
-  const touchStartTime = useRef(null);
-  const isDragHorizontal = useRef(false);
-  const cardRef = useRef(null);
-
-  const filteredVideos = useMemo(() =>
-    videoList.filter(v => !blockedIds?.has(v.user_id)),
-    [videoList, blockedIds]
-  );
-
-  // Load more when approaching the end
-  useEffect(() => {
-    if (filteredVideos.length - currentIdx <= 5 && hasMore && !loading) {
-      onLoadMore && onLoadMore();
-    }
-  }, [currentIdx, filteredVideos.length, hasMore, loading]);
-
-  const advanceCard = (direction) => {
-    setExitAnim(direction === 'right' ? 'exit-right' : 'exit-left');
-    if (direction === 'right') {
-      setLikeFlash(true);
-      setTimeout(() => setLikeFlash(false), 600);
-    } else {
-      setSkipFlash(true);
-      setTimeout(() => setSkipFlash(false), 400);
-    }
-    setTimeout(() => {
-      setCurrentIdx(i => i + 1);
-      setExitAnim(null);
-      setDragX(0);
-      setDragY(0);
-      setSwipeDir(null);
-    }, 320);
-  };
-
-  // Touch handlers
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    touchStartTime.current = Date.now();
-    isDragHorizontal.current = false;
-    setIsDragging(false);
-  };
-
-  const handleTouchMove = (e) => {
-    if (touchStartX.current === null) return;
-    const dx = e.touches[0].clientX - touchStartX.current;
-    const dy = e.touches[0].clientY - touchStartY.current;
-    if (!isDragHorizontal.current) {
-      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 0.8) {
-        isDragHorizontal.current = true;
-      } else if (Math.abs(dy) > 12) {
-        return; // vertical scroll — don't hijack
-      }
-    }
-    if (isDragHorizontal.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(true);
-      setDragX(dx);
-      setDragY(dy * 0.15); // subtle tilt
-      setSwipeDir(dx > 20 ? 'right' : dx < -20 ? 'left' : null);
-    }
-  };
-
-  const handleTouchEnd = (e) => {
-    if (!isDragHorizontal.current) { touchStartX.current = null; return; }
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    const elapsed = Date.now() - touchStartTime.current;
-    const velocity = Math.abs(dx) / elapsed;
-    touchStartX.current = null;
-    setIsDragging(false);
-    // Threshold: 100px drag OR fast flick (velocity > 0.4)
-    if (dx > 100 || (dx > 40 && velocity > 0.4)) {
-      advanceCard('right');
-    } else if (dx < -100 || (dx < -40 && velocity > 0.4)) {
-      advanceCard('left');
-    } else {
-      // Snap back
-      setDragX(0); setDragY(0); setSwipeDir(null);
-    }
-  };
-
-  // Mouse drag support for desktop
-  const mouseStartX = useRef(null);
-  const mouseStartY = useRef(null);
-  const isMouseDragging = useRef(false);
-
-  const handleMouseDown = (e) => {
-    mouseStartX.current = e.clientX;
-    mouseStartY.current = e.clientY;
-    isMouseDragging.current = false;
-  };
-  const handleMouseMove = (e) => {
-    if (mouseStartX.current === null) return;
-    const dx = e.clientX - mouseStartX.current;
-    const dy = e.clientY - mouseStartY.current;
-    if (Math.abs(dx) > 5) isMouseDragging.current = true;
-    if (!isMouseDragging.current) return;
-    setIsDragging(true);
-    setDragX(dx);
-    setDragY(dy * 0.1);
-    setSwipeDir(dx > 20 ? 'right' : dx < -20 ? 'left' : null);
-  };
-  const handleMouseUp = (e) => {
-    if (!isMouseDragging.current) { mouseStartX.current = null; return; }
-    const dx = e.clientX - mouseStartX.current;
-    mouseStartX.current = null;
-    isMouseDragging.current = false;
-    setIsDragging(false);
-    if (dx > 80) advanceCard('right');
-    else if (dx < -80) advanceCard('left');
-    else { setDragX(0); setDragY(0); setSwipeDir(null); }
-  };
-
-  const currentVideo = filteredVideos[currentIdx];
-  const nextVideo = filteredVideos[currentIdx + 1];
-  const next2Video = filteredVideos[currentIdx + 2];
-
-  // Rotation + position from drag
-  const rotation = dragX * 0.06; // degrees
-  const opacity = exitAnim ? 0 : 1;
-
-  // Exit animation transform
-  let exitTransform = '';
-  if (exitAnim === 'exit-right') exitTransform = 'translateX(110vw) rotate(20deg)';
-  if (exitAnim === 'exit-left') exitTransform = 'translateX(-110vw) rotate(-20deg)';
-
-  // Current card transform
-  const currentTransform = exitAnim
-    ? exitTransform
-    : isDragging || dragX !== 0
-      ? `translateX(${dragX}px) translateY(${dragY}px) rotate(${rotation}deg)`
-      : 'translateX(0) translateY(0) rotate(0deg)';
-
-  if (!currentVideo) {
-    return (
-      <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-        background:"radial-gradient(ellipse at 50% 80%, #1a0a2e 0%, #0B0C1A 60%)", gap:20, padding:"0 40px", textAlign:"center" }}>
-        {/* Floating stars */}
-        {[...Array(8)].map((_,i) => (
-          <div key={i} style={{
-            position:"absolute",
-            left:`${(i*23+15)%90}%`, top:`${(i*31+10)%85}%`,
-            width:i%2===0?3:2, height:i%2===0?3:2, borderRadius:"50%",
-            background:i%2===0?"#F5C842":"#C8A0FF", opacity:0.3,
-            animation:`starFloat ${2+i%3}s ease-in-out ${i*0.5}s infinite`
-          }}/>
-        ))}
-        <div style={{ fontSize:72, filter:"drop-shadow(0 0 30px rgba(245,200,66,0.6))", animation:"starFloat 3s ease-in-out infinite" }}>✦</div>
-        <div style={{ fontWeight:900, fontSize:24, letterSpacing:-0.5,
-          background:"linear-gradient(135deg, #fff 0%, #F5C842 60%)",
-          WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>You've seen it all!</div>
-        <div style={{ color:"rgba(255,255,255,0.4)", fontSize:14, lineHeight:1.6 }}>
-          Come back soon — new creators are posting every day ✨
-        </div>
-        <div style={{ marginTop:8, padding:"10px 24px", borderRadius:50,
-          background:"linear-gradient(135deg, rgba(123,47,255,0.2), rgba(245,200,66,0.1))",
-          border:"1px solid rgba(245,200,66,0.2)",
-          color:"rgba(245,200,66,0.7)", fontSize:12, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase" }}>
-          ✦ All caught up ✦
-        </div>
-      </div>
-    );
-  }
-
-  const SWIPE_THRESHOLD = 60;
-  const likeOpacity = Math.min(Math.max(dragX / SWIPE_THRESHOLD, 0), 1);
-  const skipOpacity = Math.min(Math.max(-dragX / SWIPE_THRESHOLD, 0), 1);
-
-  return (
-    <div style={{ position:"relative", width:"100%", height:"100svh", overflow:"hidden", userSelect:"none",
-      background:"radial-gradient(ellipse at 50% 100%, #1a0a2e 0%, #0B0C1A 60%)" }}>
-
-      {/* Ambient constellation stars */}
-      <div style={{ position:"absolute", inset:0, zIndex:0, pointerEvents:"none", overflow:"hidden" }}>
-        {[...Array(18)].map((_,i) => (
-          <div key={i} style={{
-            position:"absolute",
-            left:`${(i * 37 + 11) % 100}%`,
-            top:`${(i * 53 + 7) % 100}%`,
-            width: i%4===0 ? 3 : 2,
-            height: i%4===0 ? 3 : 2,
-            borderRadius:"50%",
-            background: i%3===0 ? "#F5C842" : i%3===1 ? "#C8A0FF" : "#fff",
-            opacity: 0.15 + (i%5)*0.08,
-            animation:`starFloat ${2+i%4}s ease-in-out ${(i*0.4)%3}s infinite`
-          }}/>
-        ))}
-      </div>
-
-      {/* LIKE flash overlay — warm golden burst */}
-      {likeFlash && (
-        <div style={{ position:"absolute", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center",
-          background:"radial-gradient(circle at center, rgba(245,200,66,0.22) 0%, transparent 70%)",
-          pointerEvents:"none", animation:"fadeOut 0.6s ease forwards" }}>
-          <div style={{ fontSize:100, filter:"drop-shadow(0 0 30px rgba(245,200,66,0.9))", animation:"popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>✨</div>
-        </div>
-      )}
-      {/* SKIP flash overlay — cool purple */}
-      {skipFlash && (
-        <div style={{ position:"absolute", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center",
-          background:"radial-gradient(circle at center, rgba(123,47,255,0.12) 0%, transparent 70%)",
-          pointerEvents:"none", animation:"fadeOut 0.4s ease forwards" }}>
-          <div style={{ fontSize:80, filter:"drop-shadow(0 0 16px rgba(200,160,255,0.7))", animation:"popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}>🌙</div>
-        </div>
-      )}
-
-      {/* Card stack — back card (peek) with warm glow */}
-      {nextVideo && (
-        <div style={{
-          position:"absolute", inset:0, zIndex:1,
-          transform: `scale(${0.94 + Math.min(Math.abs(dragX) / 800, 0.06)}) translateY(${Math.max(0, 20 - Math.abs(dragX) * 0.1)}px)`,
-          transition: isDragging ? "none" : "transform 0.3s ease",
-          borderRadius: 24, overflow:"hidden",
-          boxShadow:"0 0 60px rgba(123,47,255,0.15)"
-        }}>
-          <VideoCard video={nextVideo} currentUser={null}
-            onCommentOpen={()=>{}} onLike={()=>{}} onView={()=>{}} onNeedAuth={()=>{}}
-            onDelete={()=>{}} onProfileOpen={()=>{}} onShareCount={()=>{}}
-            onBookmark={{ isBookmarked:()=>false, handle:()=>{} }}
-            blockedIds={new Set()} />
-        </div>
-      )}
-
-      {/* LIKE stamp — gold starburst */}
-      <div style={{
-        position:"absolute", top:"32%", left:24, zIndex:20, opacity: likeOpacity,
-        transform:`rotate(-18deg) scale(${0.7 + likeOpacity * 0.5})`,
-        pointerEvents:"none", transition: isDragging ? "none" : "all 0.12s",
-        borderRadius:16, padding:"10px 20px",
-        background:"linear-gradient(135deg, rgba(245,200,66,0.25), rgba(245,150,0,0.15))",
-        border:"2.5px solid #F5C842",
-        boxShadow:"0 0 30px rgba(245,200,66,0.5), inset 0 1px 0 rgba(255,255,255,0.2)"
-      }}>
-        <div style={{ color:"#F5C842", fontWeight:900, fontSize:22, letterSpacing:3, textShadow:"0 0 20px rgba(245,200,66,1)" }}>✦ LIKE</div>
-      </div>
-
-      {/* SKIP stamp — cool violet */}
-      <div style={{
-        position:"absolute", top:"32%", right:24, zIndex:20, opacity: skipOpacity,
-        transform:`rotate(18deg) scale(${0.7 + skipOpacity * 0.5})`,
-        pointerEvents:"none", transition: isDragging ? "none" : "all 0.12s",
-        borderRadius:16, padding:"10px 20px",
-        background:"linear-gradient(135deg, rgba(123,47,255,0.2), rgba(0,229,255,0.1))",
-        border:"2.5px solid #C8A0FF",
-        boxShadow:"0 0 30px rgba(123,47,255,0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
-      }}>
-        <div style={{ color:"#C8A0FF", fontWeight:900, fontSize:22, letterSpacing:3, textShadow:"0 0 20px rgba(200,160,255,1)" }}>PASS ✦</div>
-      </div>
-
-      {/* Main card */}
-      <div
-        ref={cardRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{
-          position:"absolute", inset:0, zIndex:10,
-          transform: currentTransform,
-          transition: (isDragging || exitAnim) ? (exitAnim ? "transform 0.32s cubic-bezier(0.4,0,0.2,1)" : "none") : "transform 0.35s cubic-bezier(0.34,1.2,0.64,1)",
-          cursor: isDragging ? "grabbing" : "grab",
-          borderRadius: dragX !== 0 ? 20 : 0,
-          overflow:"hidden",
-          willChange:"transform"
-        }}
-      >
-        <VideoCard
-          video={currentVideo}
-          currentUser={currentUser}
-          nextVideoUrl={nextVideo?.video_url || null}
-          next2VideoUrl={next2Video?.video_url || null}
-          onCommentOpen={onCommentOpen}
-          onLike={(id, delta) => {
-            // Auto-advance after like
-            onLike(id, delta);
-          }}
-          onView={onView}
-          onNeedAuth={onNeedAuth}
-          onDelete={onDelete}
-          onProfileOpen={onProfileOpen}
-          followedUserIds={followedUserIds}
-          onFollowChange={onFollowChange}
-          onShareCount={onShareCount}
-          onBookmark={onBookmark}
-          blockedIds={blockedIds}
-        />
-      </div>
-
-      {/* Bottom action bar — warm inviting buttons */}
-      <div style={{
-        position:"absolute", bottom:96, left:0, right:0, zIndex:30,
-        display:"flex", justifyContent:"center", alignItems:"center", gap:20,
-        pointerEvents:"none"
-      }}>
-        {/* Pass button — cool violet */}
-        <button
-          onClick={() => advanceCard('left')}
-          style={{
-            width:56, height:56, borderRadius:"50%",
-            background:"linear-gradient(135deg, rgba(30,20,60,0.95), rgba(20,10,45,0.98))",
-            border:"1.5px solid rgba(123,47,255,0.5)",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:22, cursor:"pointer", pointerEvents:"all",
-            boxShadow:"0 4px 24px rgba(123,47,255,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
-            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s, box-shadow 0.15s",
-            backdropFilter:"blur(12px)"
-          }}
-          onTouchStart={e => { e.currentTarget.style.transform="scale(0.88)"; e.currentTarget.style.boxShadow="0 2px 12px rgba(123,47,255,0.5)"; }}
-          onTouchEnd={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 4px 24px rgba(123,47,255,0.3)"; }}
-        >🌙</button>
-
-        {/* Progress dots — constellation style */}
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, pointerEvents:"none" }}>
-          <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-            {[...Array(Math.min(5, filteredVideos.length - currentIdx))].map((_,i) => (
-              <div key={i} style={{
-                width: i===0 ? 8 : 4,
-                height: i===0 ? 8 : 4,
-                borderRadius:"50%",
-                background: i===0 ? "#F5C842" : "rgba(255,255,255,0.2)",
-                boxShadow: i===0 ? "0 0 8px rgba(245,200,66,0.8)" : "none",
-                transition:"all 0.3s"
-              }}/>
-            ))}
-            {hasMore && <div style={{ color:"rgba(255,255,255,0.2)", fontSize:10 }}>…</div>}
-          </div>
-          <div style={{ color:"rgba(255,255,255,0.25)", fontSize:10, letterSpacing:1, fontWeight:600 }}>
-            {currentIdx + 1} of {filteredVideos.length}{hasMore ? "+" : ""}
-          </div>
-        </div>
-
-        {/* Like button — warm gold starburst */}
-        <button
-          onClick={() => { onLike(currentVideo.id, 1); advanceCard('right'); }}
-          style={{
-            width:56, height:56, borderRadius:"50%",
-            background:"radial-gradient(circle at 35% 30%, #FFE580, #F5C842, #C97B00)",
-            border:"1.5px solid rgba(255,230,100,0.7)",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:22, cursor:"pointer", pointerEvents:"all",
-            boxShadow:"0 0 28px rgba(245,200,66,0.55), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
-            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s, box-shadow 0.15s",
-          }}
-          onTouchStart={e => { e.currentTarget.style.transform="scale(0.88)"; e.currentTarget.style.boxShadow="0 0 40px rgba(245,200,66,0.8)"; }}
-          onTouchEnd={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 0 28px rgba(245,200,66,0.55)"; }}
-        >✦</button>
-      </div>
-
-      {/* Swipe hint — shown only first time */}
-      <SwipeHint />
-    </div>
-  );
-}
-
-// ── CONSTELLATION ONBOARDING SCREEN ──
-function SachiOnboarding({ onDone, onSignUp }) {
-  const [step, setStep] = useState(0);
-  const [exiting, setExiting] = useState(false);
-
-  const steps = [
-    {
-      icon: "✦",
-      iconColor: "linear-gradient(135deg,#F5C842,#FF9500)",
-      title: "Welcome to Sachi",
-      subtitle: "Your universe of stories",
-      body: "A space built for real creators. Share moments, find your people, and let your light shine."
-    },
-    {
-      icon: "🌙",
-      iconColor: "linear-gradient(135deg,#C8A0FF,#7B2FFF)",
-      title: "Swipe to Explore",
-      subtitle: "Discover what moves you",
-      body: "Swipe right to love it ✦ — swipe left to pass 🌙. Every card is a world waiting for you."
-    },
-    {
-      icon: "🎙",
-      iconColor: "linear-gradient(135deg,#00E5FF,#7B2FFF)",
-      title: "Live & Podcasts",
-      subtitle: "Go live, or tune in",
-      body: "Host your own podcast, go live with viewers, or discover voices you'll love — all in one place."
-    },
-    {
-      icon: "🌟",
-      iconColor: "linear-gradient(135deg,#F5C842,#C8A0FF)",
-      title: "Your constellation awaits",
-      subtitle: "Join the community",
-      body: "Create your free account to post, follow creators, and become part of the Sachi universe."
-    }
-  ];
-
-  const current = steps[step];
-  const isLast = step === steps.length - 1;
-
-  const handleNext = () => {
-    if (isLast) { onSignUp(); return; }
-    setExiting(true);
-    setTimeout(() => { setStep(s => s + 1); setExiting(false); }, 250);
-  };
-
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:10000,
-      background:"radial-gradient(ellipse at 50% 100%, #1e0840 0%, #0B0C1A 55%)",
-      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"space-between",
-      padding:"env(safe-area-inset-top,40px) 32px 48px",
-      overflow:"hidden"
-    }}>
-      {/* Background stars */}
-      {[...Array(20)].map((_,i) => (
-        <div key={i} style={{
-          position:"absolute",
-          left:`${(i*37+11)%100}%`, top:`${(i*53+7)%100}%`,
-          width:i%4===0?3:2, height:i%4===0?3:2, borderRadius:"50%",
-          background:i%3===0?"#F5C842":i%3===1?"#C8A0FF":"#fff",
-          opacity:0.12+(i%5)*0.06,
-          animation:`starFloat ${2+i%4}s ease-in-out ${(i*0.4)%3}s infinite`,
-          pointerEvents:"none"
-        }}/>
-      ))}
-
-      {/* Aurora top line */}
-      <div style={{ position:"absolute", top:0, left:0, right:0, height:2,
-        background:"linear-gradient(90deg,transparent,#7B2FFF 30%,#F5C842 50%,#00E5FF 70%,transparent)",
-        backgroundSize:"200% 100%", animation:"auroraShift 4s ease-in-out infinite" }} />
-
-      {/* Skip button */}
-      <button onClick={onDone}
-        style={{ alignSelf:"flex-end", background:"none", border:"none", cursor:"pointer",
-          color:"rgba(255,255,255,0.25)", fontSize:13, fontWeight:600, letterSpacing:1,
-          padding:"8px 0", WebkitTapHighlightColor:"transparent" }}>
-        Skip →
-      </button>
-
-      {/* Main content */}
-      <div style={{
-        flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-        justifyContent:"center", gap:28, textAlign:"center",
-        opacity: exiting ? 0 : 1, transform: exiting ? "translateY(20px)" : "translateY(0)",
-        transition:"all 0.25s ease"
-      }}>
-        {/* Icon orb */}
-        <div style={{
-          width:100, height:100, borderRadius:"50%",
-          background: current.iconColor,
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:46,
-          boxShadow:"0 0 60px rgba(245,200,66,0.3), 0 0 120px rgba(123,47,255,0.2), inset 0 2px 0 rgba(255,255,255,0.3)",
-          border:"2px solid rgba(255,255,255,0.15)",
-          animation:"orbitPulse 3s ease-in-out infinite"
-        }}>
-          {current.icon}
-        </div>
-
-        {/* Text */}
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          <div style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:"uppercase",
-            color:"rgba(245,200,66,0.6)" }}>{current.subtitle}</div>
-          <div style={{ fontSize:32, fontWeight:900, letterSpacing:-0.5, lineHeight:1.15,
-            background:"linear-gradient(135deg,#fff 0%,rgba(245,200,66,0.9) 100%)",
-            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
-            {current.title}
-          </div>
-          <div style={{ fontSize:16, color:"rgba(255,255,255,0.5)", lineHeight:1.7,
-            maxWidth:280, margin:"0 auto", fontWeight:400 }}>
-            {current.body}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom controls */}
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20, width:"100%" }}>
-        {/* Step dots */}
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          {steps.map((_,i) => (
-            <div key={i} style={{
-              width: i===step ? 24 : 6,
-              height:6, borderRadius:3,
-              background: i===step
-                ? "linear-gradient(90deg,#F5C842,#C8A0FF)"
-                : "rgba(255,255,255,0.15)",
-              transition:"all 0.4s cubic-bezier(0.34,1.56,0.64,1)",
-              cursor:"pointer"
-            }} onClick={() => setStep(i)} />
-          ))}
-        </div>
-
-        {/* CTA button */}
-        <button onClick={handleNext}
-          style={{
-            width:"100%", maxWidth:320, padding:"16px 0",
-            borderRadius:50, border:"none", cursor:"pointer",
-            background: isLast
-              ? "radial-gradient(circle at 35% 35%, #FFE580, #F5C842, #C97B00)"
-              : "linear-gradient(135deg, rgba(123,47,255,0.3), rgba(0,229,255,0.2))",
-            color: isLast ? "#0B0C1A" : "#fff",
-            fontSize:16, fontWeight:900, letterSpacing:0.5,
-            boxShadow: isLast
-              ? "0 0 40px rgba(245,200,66,0.5), 0 8px 24px rgba(0,0,0,0.4)"
-              : "0 4px 24px rgba(123,47,255,0.3)",
-            border: isLast ? "2px solid rgba(255,230,100,0.5)" : "1.5px solid rgba(123,47,255,0.4)",
-            WebkitTapHighlightColor:"transparent",
-            transition:"all 0.2s"
-          }}>
-          {isLast ? "✦ Create Free Account" : "Continue →"}
-        </button>
-
-        {/* Already have account */}
-        {isLast && (
-          <button onClick={onDone}
-            style={{ background:"none", border:"none", cursor:"pointer",
-              color:"rgba(255,255,255,0.3)", fontSize:13, letterSpacing:0.3,
-              WebkitTapHighlightColor:"transparent" }}>
-            I'll explore first →
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-// One-time warm welcome hint
-function SwipeHint() {
-  const [visible, setVisible] = useState(() => {
-    try { return !localStorage.getItem('sachi-swipe-hint-seen'); } catch { return true; }
-  });
-  useEffect(() => {
-    if (visible) {
-      const t = setTimeout(() => {
-        setVisible(false);
-        try { localStorage.setItem('sachi-swipe-hint-seen', '1'); } catch {}
-      }, 3800);
-      return () => clearTimeout(t);
-    }
-  }, [visible]);
-  if (!visible) return null;
-  return (
-    <div style={{
-      position:"absolute", inset:0, zIndex:50, pointerEvents:"none",
-      display:"flex", flexDirection:"column", alignItems:"flex-end", justifyContent:"flex-end",
-      padding:"0 0 160px 0",
-      animation:"fadeOut 0.6s ease 3.2s forwards"
-    }}>
-      <div style={{
-        margin:"0 auto",
-        background:"linear-gradient(135deg, rgba(20,10,50,0.96), rgba(10,5,30,0.98))",
-        borderRadius:24, padding:"18px 28px",
-        display:"flex", flexDirection:"column", alignItems:"center", gap:8,
-        backdropFilter:"blur(20px)",
-        border:"1px solid rgba(245,200,66,0.25)",
-        boxShadow:"0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), 0 0 30px rgba(123,47,255,0.2)"
-      }}>
-        {/* Animated arrows */}
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ fontSize:28, animation:"driftLeft 1.2s ease-in-out infinite alternate" }}>🌙</div>
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:2, textTransform:"uppercase" }}>swipe</div>
-            <div style={{ display:"flex", gap:6 }}>
-              <span style={{ color:"#C8A0FF", fontSize:18, fontWeight:900 }}>←</span>
-              <span style={{ color:"rgba(255,255,255,0.2)", fontSize:14 }}>·</span>
-              <span style={{ color:"#F5C842", fontSize:18, fontWeight:900 }}>→</span>
-            </div>
-          </div>
-          <div style={{ fontSize:28, animation:"driftRight 1.2s ease-in-out infinite alternate" }}>✦</div>
-        </div>
-        <div style={{
-          fontSize:13, fontWeight:700, letterSpacing:0.5,
-          background:"linear-gradient(135deg, #F5C842, #C8A0FF)",
-          WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"
-        }}>Discover your world</div>
-        <div style={{ color:"rgba(255,255,255,0.35)", fontSize:11, letterSpacing:0.3 }}>
-          ✦ Like &nbsp;·&nbsp; 🌙 Pass
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
 // ── LazyVideoCard: only renders full VideoCard when within 1 screen of viewport ──
 function LazyVideoCard(props) {
   const ref = React.useRef(null);
@@ -3332,7 +2728,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       })()}
 
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(5,2,18,0.98) 0%, rgba(8,4,22,0.7) 35%, rgba(10,5,25,0.2) 60%, transparent 85%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
       {/* Tap hint removed — content-first UI */}
 
@@ -3362,80 +2758,62 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
 
-      {/* ── BOTTOM LEFT: constellation creator info + caption ── */}
-      <div style={{ position:"absolute", bottom:148, left:16, right:76, zIndex:500, transition:"opacity 0.5s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
-
-        {/* Creator name row */}
-        <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:6, cursor:"pointer" }}
+      {/* ── BOTTOM LEFT: user info + caption ── */}
+      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+        <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
-          <div style={{
-            fontWeight:900, fontSize:17, letterSpacing:-0.3,
-            background:"linear-gradient(135deg, #fff 0%, rgba(245,200,66,0.9) 100%)",
-            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
-            textShadow:"none", filter:"drop-shadow(0 1px 6px rgba(0,0,0,0.8))"
-          }}>{video.display_name || video.username}</div>
-          <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12, fontWeight:500 }}>@{video.username}</div>
+          <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
+          <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>@{video.username}</div>
         </div>
-
-        {/* Sound pill */}
         {video.sound_title && (
-          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, overflow:"hidden",
-            background:"rgba(123,47,255,0.15)", borderRadius:30, padding:"4px 12px 4px 8px",
-            border:"1px solid rgba(123,47,255,0.3)", width:"fit-content", maxWidth:"90%" }}>
-            <div style={{ fontSize:13, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none", display:"inline-block" }}>🎵</div>
-            <div style={{ overflow:"hidden", flex:1 }}>
-              <div style={{ color:"rgba(255,255,255,0.85)", fontSize:11, fontWeight:600, whiteSpace:"nowrap",
-                animation: playing ? "marquee 8s linear infinite" : "none", display:"inline-block" }}>
-                {video.sound_title}{video.sound_artist ? ` · ${video.sound_artist}` : ""}
-              </div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
+          <div style={{ fontSize:14, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none", display:"inline-block" }}>🎵</div>
+          <div style={{ overflow:"hidden", flex:1 }}>
+            <div style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600, whiteSpace:"nowrap",
+              animation: playing ? "marquee 8s linear infinite" : "none", display:"inline-block" }}>
+              {video.sound_title}{video.sound_artist ? ` · ${video.sound_artist}` : ""}
             </div>
           </div>
+        </div>
+      )}
+      {/* Real / AI badge */}
+      <div style={{ display:"flex", gap:6, marginBottom:4, flexWrap:"wrap" }}>
+        {!video.is_ai_detected ? (
+          <span style={{ fontSize:10, background:"rgba(107,255,154,0.15)", color:"#6BFFB8", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(107,255,154,0.3)" }}>
+            ✓ Real
+          </span>
+        ) : (
+          <span style={{ fontSize:10, background:"rgba(255,149,0,0.15)", color:"#FF9500", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(255,149,0,0.3)" }}>
+            🤖 AI Generated
+          </span>
         )}
-
-        {/* Caption */}
-        {video.caption && (
-          <div style={{ color:"rgba(255,255,255,0.88)", fontSize:14, lineHeight:1.6, marginBottom:6,
-            textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
-            {showFullCaption || (video.caption || "").length <= 80
-              ? video.caption
-              : (video.caption || "").slice(0, 80) + "…"}
-            {(video.caption || "").length > 80 && (
-              <span onClick={tap(() => setShowFullCaption(v => !v))}
-                style={{ color:"rgba(245,200,66,0.7)", fontSize:13, marginLeft:6, cursor:"pointer", fontWeight:700 }}>
-                {showFullCaption ? " less" : " more"}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Hashtags — constellation gold */}
-        {video.hashtags?.length > 0 && (
-          <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
-            {video.hashtags.slice(0,4).map((t,i) => (
-              <span key={i} style={{
-                fontSize:12, fontWeight:700, letterSpacing:0.3,
-                color:"#F5C842", textShadow:"0 0 10px rgba(245,200,66,0.5)"
-              }}>#{t.replace(/^#/,"")}</span>
-            ))}
-          </div>
-        )}
-
-        {/* Bottom meta row — date + location + AI badge */}
-        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-          {!video.is_ai_detected ? (
-            <span style={{ fontSize:10, background:"rgba(107,255,154,0.12)", color:"#6BFFB8", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(107,255,154,0.25)" }}>
-              ✦ Real
-            </span>
-          ) : (
-            <span style={{ fontSize:10, background:"rgba(255,149,0,0.12)", color:"#FF9500", padding:"2px 9px", borderRadius:20, fontWeight:700, border:"1px solid rgba(255,149,0,0.25)" }}>
-              🤖 AI
+      </div>
+      {video.caption && (
+        <div style={{ color:"#fff", fontSize:14, lineHeight:1.5 }}>
+          {showFullCaption || (video.caption || "").length <= 80
+            ? video.caption
+            : (video.caption || "").slice(0, 80) + "…"}
+          {(video.caption || "").length > 80 && (
+            <span onClick={tap(() => setShowFullCaption(v => !v))}
+              style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginLeft:6, cursor:"pointer", fontWeight:600 }}>
+              {showFullCaption ? "see less" : "see more"}
             </span>
           )}
-          {video.created_date && (
-            <span style={{ fontSize:11, color:"rgba(255,255,255,0.4)", fontWeight:500 }}>
+        </div>
+      )}
+        {video.hashtags?.length > 0 && (
+          <div style={{ color:"#F5C842", fontSize:13, marginTop:4 }}>
+            {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
+          </div>
+        )}
+        {video.created_date && (
+          <div style={{ display:"inline-flex", alignItems:"center", gap:5, marginTop:8,
+            background:"rgba(0,0,0,0.45)", borderRadius:20, padding:"3px 10px", width:"fit-content" }}>
+            <span style={{ fontSize:12 }}>📅</span>
+            <span style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600 }}>
               {formatDate(video.created_date)}
               {video.post_country && (
-                <span style={{ marginLeft:5 }}>
+                <span style={{ marginLeft:6, opacity:0.9 }}>
                   {countryFlag(video.post_country)}
                   {(() => {
                     const city = video.post_city || null;
@@ -3448,24 +2826,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 </span>
               )}
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* ── AVATAR + FOLLOW — constellation style, top left ── */}
-      <div style={{ position:"absolute", top:72, left:14, display:"flex", flexDirection:"row", alignItems:"center", gap:8, zIndex:999 }}>
-        {/* Avatar with glowing ring */}
+      {/* ── AVATAR + FOLLOW — top left, always visible — Sachi original ── */}
+      <div style={{ position:"absolute", top:72, left:14, display:"flex", flexDirection:"row", alignItems:"center", gap:10, zIndex:999 }}>
+        {/* Avatar */}
         <div onClick={(e) => { e.stopPropagation(); onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name); }}
-          style={{ position:"relative", width:36, height:36, flexShrink:0, cursor:"pointer" }}>
-          <div style={{ position:"absolute", inset:-2, borderRadius:"50%",
-            background:"linear-gradient(135deg, #F5C842, #C8A0FF, #00E5FF)",
-            padding:2, zIndex:0 }}>
-            <div style={{ width:"100%", height:"100%", borderRadius:"50%", background:"#0B0C1A" }} />
-          </div>
+          style={{ width:22, height:22, borderRadius:"50%", overflow:"hidden", border:"1.5px solid rgba(245,200,66,0.7)", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
           <img src={video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`}
-            style={{ position:"absolute", inset:2, width:"calc(100% - 4px)", height:"calc(100% - 4px)", borderRadius:"50%", objectFit:"cover", zIndex:1 }} />
+            style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none" }} />
         </div>
-        {/* Follow pill */}
+        {/* Follow pill — inline next to avatar */}
         {!isOwnVideo && (
           <button
             onClick={(e) => { e.stopPropagation(); doFollow(); }}
@@ -3473,24 +2846,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             style={{
               height: 28,
               borderRadius: 20,
-              border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.25)",
-              background: isFollowing
-                ? "linear-gradient(135deg, rgba(245,200,66,0.25), rgba(200,160,255,0.15))"
-                : "rgba(5,2,18,0.7)",
-              backdropFilter: "blur(12px)",
-              color: isFollowing ? "#F5C842" : "rgba(255,255,255,0.9)",
-              fontWeight: 800,
-              fontSize: 11,
-              letterSpacing: 0.5,
-              padding: "0 13px",
+              border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
+              background: isFollowing ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
+              backdropFilter: "blur(8px)",
+              color: isFollowing ? "#F5C842" : "#fff",
+              fontWeight: 700,
+              fontSize: 12,
+              letterSpacing: 0.3,
+              padding: "0 12px",
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-              boxShadow: isFollowing ? "0 0 16px rgba(245,200,66,0.35)" : "0 2px 12px rgba(0,0,0,0.5)",
-              transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+              boxShadow: isFollowing ? "0 0 10px rgba(245,200,66,0.3)" : "none",
+              transition: "all 0.25s",
               WebkitTapHighlightColor: "transparent",
               touchAction: "manipulation",
             }}>
-            {followLoading ? "·" : isFollowing ? "✦ Following" : "+ Follow"}
+            {followLoading ? "·" : isFollowing ? "✓ Following" : "+ Follow"}
           </button>
         )}
       </div>
@@ -6632,9 +6003,6 @@ function App() {
   const [uploadToast, setUploadToast] = useState(false);
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    try { return !localStorage.getItem('sachi-onboarded'); } catch { return false; }
-  });
   const [myVideos, setMyVideos] = useState([]);
   const [myVideosPlayer, setMyVideosPlayer] = useState(null); // index into myVideos for fullscreen
   const [meFollowersCount, setMeFollowersCount] = useState(0);
@@ -6992,94 +6360,51 @@ function App() {
       <ToastContainer />
 
       {/* Header — Sachi original */}
-      {/* ── CONSTELLATION TOP BAR ── */}
-      <style>{`
-        @keyframes orbitPulse { 0%,100%{ box-shadow:0 0 0 0 rgba(245,200,66,0); } 50%{ box-shadow:0 0 0 6px rgba(245,200,66,0.18); } }
-        @keyframes auroraShift { 0%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } 100%{ background-position:0% 50%; } }
-        @keyframes starFloat { 0%,100%{ transform:translateY(0px); opacity:0.6; } 50%{ transform:translateY(-4px); opacity:1; } }
-        @keyframes glowRing { 0%,100%{ opacity:0.4; transform:scale(1); } 50%{ opacity:0.9; transform:scale(1.12); } }
-        .orb-active { animation: orbitPulse 2s ease-in-out infinite; }
-        .nav-orb { transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), background 0.2s; }
-        .nav-orb:active { transform: scale(0.85) !important; }
-      `}</style>
-      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", pointerEvents:"none" }}>
-        {/* Aurora gradient line at very top */}
-        <div style={{ height:2, background:"linear-gradient(90deg, transparent 0%, #7B2FFF 20%, #F5C842 50%, #00E5FF 80%, transparent 100%)", backgroundSize:"200% 100%", animation:"auroraShift 4s ease-in-out infinite", opacity:0.7 }} />
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 8px", pointerEvents:"auto",
-          background:"linear-gradient(to bottom, rgba(8,5,20,0.97) 0%, rgba(8,5,20,0.85) 70%, transparent 100%)",
-          backdropFilter:"blur(20px)" }}>
+      <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px", pointerEvents:"auto" }}>
 
-          {/* Left: minimal star-mark logo */}
-          <div style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer" }} onClick={goHome}>
-            <div style={{ position:"relative", width:32, height:32 }}>
-              <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:32, height:32, borderRadius:9, display:"block" }} />
-              <div style={{ position:"absolute", inset:-2, borderRadius:11, border:"1.5px solid rgba(245,200,66,0.5)", animation:"glowRing 3s ease-in-out infinite", pointerEvents:"none" }} />
+          {/* Left: Sachi logo + wordmark */}
+          <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+            <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:30, height:30, borderRadius:8, filter:"drop-shadow(0 0 6px rgba(245,200,66,0.5))" }} />
+            <div style={{ display:"flex", alignItems:"baseline", gap:1 }}>
+              <span style={{ fontSize:24, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
+              <span style={{ fontSize:12, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
             </div>
-            <span style={{ fontSize:18, fontWeight:900, letterSpacing:-0.5,
-              background:"linear-gradient(135deg,#fff 0%,#F5C842 60%,#C97B00 100%)",
-              WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>sachi</span>
-            <span style={{ fontSize:9, color:"rgba(245,200,66,0.5)", fontWeight:700, letterSpacing:2, marginBottom:6 }}>™</span>
           </div>
 
-          {/* Center: constellation dot tab selector */}
+          {/* Center: feed tabs — subtle pill style */}
           {activeTab === "feed" && (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-                {/* Following dot */}
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, cursor:"pointer" }}
-                  onClick={() => { setFeedTab("following"); if(currentUser) loadFollowingVideos(currentUser); }}>
-                  <div style={{
-                    width: feedTab==="following" ? 10 : 7,
-                    height: feedTab==="following" ? 10 : 7,
-                    borderRadius:"50%",
-                    background: feedTab==="following" ? "#F5C842" : "rgba(255,255,255,0.2)",
-                    boxShadow: feedTab==="following" ? "0 0 12px rgba(245,200,66,0.9), 0 0 24px rgba(245,200,66,0.4)" : "none",
-                    transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)"
-                  }} />
-                  <span style={{ fontSize:10, fontWeight: feedTab==="following" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                    color: feedTab==="following" ? "#F5C842" : "rgba(255,255,255,0.3)", transition:"all 0.2s" }}>Following</span>
-                </div>
-
-                {/* Connector line between dots */}
-                <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-                  {[0,1,2].map(i => <div key={i} style={{ width:3, height:3, borderRadius:"50%", background:"rgba(245,200,66,0.2)", animation:`starFloat ${1.5+i*0.4}s ease-in-out ${i*0.3}s infinite` }} />)}
-                </div>
-
-                {/* For You dot */}
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3, cursor:"pointer" }}
-                  onClick={() => setFeedTab("forYou")}>
-                  <div style={{
-                    width: feedTab==="forYou" ? 10 : 7,
-                    height: feedTab==="forYou" ? 10 : 7,
-                    borderRadius:"50%",
-                    background: feedTab==="forYou" ? "#F5C842" : "rgba(255,255,255,0.2)",
-                    boxShadow: feedTab==="forYou" ? "0 0 12px rgba(245,200,66,0.9), 0 0 24px rgba(245,200,66,0.4)" : "none",
-                    transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)"
-                  }} />
-                  <span style={{ fontSize:10, fontWeight: feedTab==="forYou" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                    color: feedTab==="forYou" ? "#F5C842" : "rgba(255,255,255,0.3)", transition:"all 0.2s" }}>For You</span>
-                </div>
-              </div>
+            <div style={{ display:"flex", background:"rgba(255,255,255,0.07)", borderRadius:24, padding:3, gap:2 }}>
+              <button onClick={() => { setFeedTab("following"); if(currentUser) loadFollowingVideos(currentUser); }}
+                style={{ background: feedTab==="following" ? "rgba(245,200,66,0.2)" : "none", border:"none", cursor:"pointer", padding:"5px 16px",
+                  color: feedTab==="following" ? "#F5C842" : "rgba(255,255,255,0.45)",
+                  fontWeight: feedTab==="following" ? 700 : 500,
+                  fontSize: 13, borderRadius:20, transition:"all 0.2s",
+                  WebkitTapHighlightColor:"transparent" }}>
+                Following
+              </button>
+              <button onClick={() => setFeedTab("forYou")}
+                style={{ background: feedTab==="forYou" ? "rgba(245,200,66,0.2)" : "none", border:"none", cursor:"pointer", padding:"5px 16px",
+                  color: feedTab==="forYou" ? "#F5C842" : "rgba(255,255,255,0.45)",
+                  fontWeight: feedTab==="forYou" ? 700 : 500,
+                  fontSize: 13, borderRadius:20, transition:"all 0.2s",
+                  WebkitTapHighlightColor:"transparent" }}>
+                For You
+              </button>
             </div>
           )}
           {activeTab !== "feed" && (
-            <div style={{ fontSize:15, fontWeight:900, color:"#fff", letterSpacing:3, textTransform:"uppercase", opacity:0.9 }}>
-              {activeTab === "profile" ? "⋆ Profile" : activeTab === "explore" ? "⋆ Explore" : activeTab === "podcast" ? "⋆ Podcasts" : ""}
+            <div style={{ fontSize:16, fontWeight:800, color:"#fff", letterSpacing:0.2 }}>
+              {activeTab === "profile" ? "Profile" : activeTab === "explore" ? "Explore" : activeTab === "podcast" ? "Podcasts" : ""}
             </div>
           )}
 
-          {/* Right: Live button */}
+          {/* Right: search + rec */}
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <button onClick={() => requireAuth(() => setShowGoLive(true))}
-              style={{ background:"linear-gradient(135deg, rgba(123,47,255,0.3), rgba(0,229,255,0.2))",
-                border:"1px solid rgba(123,47,255,0.5)", borderRadius:20, padding:"5px 12px",
-                color:"#C8A0FF", fontSize:11, fontWeight:800, cursor:"pointer", letterSpacing:1,
-                WebkitTapHighlightColor:"transparent", display:"flex", alignItems:"center", gap:5,
-                boxShadow:"0 0 12px rgba(123,47,255,0.3)" }}>
-              <span style={{ width:6, height:6, borderRadius:"50%", background:"#C8A0FF",
-                display:"inline-block", animation:"heartbeat 1.4s ease-in-out infinite",
-                boxShadow:"0 0 6px rgba(200,160,255,0.8)" }} />
-              LIVE
+              style={{ background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20, padding:"4px 10px", color:"#F5C842", fontSize:11, fontWeight:700, cursor:"pointer", letterSpacing:0.3, WebkitTapHighlightColor:"transparent", display:"flex", alignItems:"center", gap:4 }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background:"#F5C842", display:"inline-block", animation:"heartbeat 1.4s ease-in-out infinite" }} />
+              Live
             </button>
           </div>
 
@@ -7088,8 +6413,7 @@ function App() {
 
       {/* Feed */}
       {activeTab === "feed" && (
-        <div key={feedKey} style={{ height:"100svh", position:"relative", overflow:"hidden" }}>
-          {/* Following tab — empty state */}
+        <div key={feedKey} ref={el => { feedContainerRef.current = el; }} style={{ height:"100svh", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
@@ -7115,24 +6439,13 @@ function App() {
               )}
             </div>
           )}
-          {/* Loading state — constellation */}
-          {loading && (feedTab === "forYou" ? videoList.length === 0 : followingVideos.length === 0) && (
-            <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16,
-              background:"radial-gradient(ellipse at 50% 80%, #1a0a2e 0%, #0B0C1A 60%)" }}>
-              {/* Orbiting dots loader */}
-              <div style={{ position:"relative", width:60, height:60 }}>
-                <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.1)", borderTopColor:"#F5C842", animation:"spin 1s linear infinite" }}/>
-                <div style={{ position:"absolute", inset:8, borderRadius:"50%", border:"1.5px solid rgba(200,160,255,0.1)", borderBottomColor:"#C8A0FF", animation:"spin 1.5s linear reverse infinite" }}/>
-                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>✦</div>
-              </div>
-              <div style={{ fontSize:13, letterSpacing:3, textTransform:"uppercase", fontWeight:700,
-                background:"linear-gradient(135deg,#F5C842,#C8A0FF)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
-                Tuning in...
-              </div>
+          {loading && (
+            <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
+              <div style={{ fontSize:48 }}>🎬</div>
+              <div style={{ color:"rgba(245,200,66,0.7)", fontSize:14, letterSpacing:1, fontWeight:600 }}>Loading...</div>
             </div>
           )}
-          {/* Empty state */}
-          {!loading && videoList.length === 0 && feedTab === "forYou" && (
+          {!loading && videoList.length === 0 && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:64 }}>🎬</div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:22 }}>No videos yet</div>
@@ -7143,12 +6456,12 @@ function App() {
               </button>
             </div>
           )}
-          {/* Swipe card deck feed */}
-          {!loading && (feedTab === "forYou" ? videoList.length > 0 : followingIds.length > 0 && followingVideos.length > 0) && (
-            <SwipeFeed
-              key={feedKey + "-" + feedTab}
-              videos={feedTab === "forYou" ? videoList : followingVideos}
-              currentUser={currentUser}
+          {(feedTab === "forYou" ? videoList : followingVideos)
+            .filter(v => !blockedIds.has(v.user_id))
+            .map((v, idx, arr) => (
+            <LazyVideoCard key={v.id} video={v} currentUser={currentUser}
+              nextVideoUrl={arr[idx+1]?.video_url || null}
+              next2VideoUrl={arr[idx+2]?.video_url || null}
               onCommentOpen={setCommentVideo}
               onLike={handleLike}
               onView={handleView}
@@ -7160,10 +6473,17 @@ function App() {
               onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
               onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
               blockedIds={blockedIds}
-              onLoadMore={loadMoreVideos}
-              hasMore={feedHasMore}
-              loading={loading}
-            />
+              />
+          ))}
+          {feedTab === "forYou" && feedHasMore && (
+            <div ref={feedSentinelRef} style={{ height:1, marginBottom:80 }} />
+          )}
+          {feedTab === "following" && followingVideos.length === 0 && !loading && (
+            <div style={{ textAlign:"center", padding:"60px 24px", color:"rgba(255,255,255,0.3)" }}>
+              <div style={{ fontSize:48, marginBottom:16 }}>👀</div>
+              <div style={{ fontSize:16, fontWeight:600, marginBottom:8 }}>Nothing here yet</div>
+              <div style={{ fontSize:13 }}>Follow creators to see their posts here</div>
+            </div>
           )}
         </div>
       )}
@@ -7287,125 +6607,60 @@ function App() {
         </div>
       )}
 
-            {/* ── CONSTELLATION EXPLORE TAB ── */}
+            {/* Explore Tab */}
       {activeTab === "explore" && (
-        <div style={{ paddingTop:66, paddingBottom:90, minHeight:"100svh",
-          background:"radial-gradient(ellipse at 50% 0%, #1a0a2e 0%, #0B0C1A 55%)" }}>
-
-          {/* Search bar — constellation style */}
-          <div style={{ padding:"14px 16px 10px" }}>
-            <div style={{ display:"flex", alignItems:"center",
-              background:"linear-gradient(135deg, rgba(123,47,255,0.12), rgba(245,200,66,0.06))",
-              borderRadius:28, padding:"10px 16px", gap:10,
-              border:"1px solid rgba(123,47,255,0.25)",
-              boxShadow:"0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(200,160,255,0.6)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
+          <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search creators, videos, tags…"
-                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15, letterSpacing:0.2 }} />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")}
-                  style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:22, height:22,
-                    color:"rgba(255,255,255,0.5)", cursor:"pointer", fontSize:13, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-              )}
+                placeholder="Search users or videos..."
+                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
+              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>}
             </div>
           </div>
-
-          <div style={{ padding:"4px 16px 16px" }}>
+          <div style={{ padding:16 }}>
             {searchQuery.trim() === "" ? (
               <>
-                {/* Section header */}
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-                  <div style={{ width:3, height:14, borderRadius:2,
-                    background:"linear-gradient(180deg,#F5C842,#C8A0FF)" }} />
-                  <span style={{ fontSize:11, fontWeight:800, letterSpacing:2.5, textTransform:"uppercase",
-                    color:"rgba(255,255,255,0.5)" }}>Rising Now</span>
-                  <div style={{ flex:1, height:1, background:"linear-gradient(90deg,rgba(245,200,66,0.2),transparent)" }} />
-                  <span style={{ fontSize:16, animation:"starFloat 2s ease-in-out infinite" }}>✦</span>
-                </div>
-
-                {/* Video grid — constellation card style */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
-                  {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map((v,i) => (
-                    <div key={v.id} style={{ aspectRatio:"9/16", borderRadius:10, overflow:"hidden", position:"relative", cursor:"pointer",
-                      boxShadow: i < 3 ? "0 0 16px rgba(245,200,66,0.2)" : "0 2px 8px rgba(0,0,0,0.4)",
-                      border: i < 3 ? "1px solid rgba(245,200,66,0.2)" : "1px solid rgba(255,255,255,0.04)" }}
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>🔥 Trending Now</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                  {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
+                    <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                      {v.is_photo && v.photo_urls ? (
-                        <img src={resolveMediaUrl(safeParsePhotoUrls(v.photo_urls)[0], false, "thumb")}
-                          style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                      ) : v.thumbnail_url ? (
-                        <img src={resolveMediaUrl(v.thumbnail_url, false, "thumb")}
-                          style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                      ) : (
-                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                      )}
-                      {/* Overlay */}
-                      <div style={{ position:"absolute", inset:0,
-                        background:"linear-gradient(to top, rgba(5,2,18,0.9) 0%, transparent 50%)" }} />
-                      {/* Top badge for top 3 */}
-                      {i < 3 && (
-                        <div style={{ position:"absolute", top:6, left:6,
-                          background:"linear-gradient(135deg,#F5C842,#FF9500)", borderRadius:20,
-                          padding:"2px 8px", fontSize:9, fontWeight:900, color:"#0B0C1A", letterSpacing:0.5 }}>
-                          {i===0?"✦ HOT":i===1?"✦ #2":"✦ #3"}
-                        </div>
-                      )}
-                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"5px 7px" }}>
-                        <div style={{ color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700,
-                          overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
-                        {v.views_count > 0 && (
-                          <div style={{ color:"rgba(245,200,66,0.7)", fontSize:9, fontWeight:600 }}>
-                            ✦ {v.views_count >= 1000 ? (v.views_count/1000).toFixed(1)+"k" : v.views_count}
-                          </div>
-                        )}
+                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        <div>@{v.username}</div>
+                        {v.views_count > 0 && <div style={{ color:"#aaa" }}>👁 {v.views_count}</div>}
                       </div>
                     </div>
                   ))}
                 </div>
                 {videoList.length === 0 && (
-                  <div style={{ textAlign:"center", marginTop:60, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
-                    <div style={{ fontSize:48, animation:"starFloat 2s ease-in-out infinite" }}>✦</div>
-                    <div style={{ color:"rgba(255,255,255,0.35)", fontSize:14 }}>No posts yet — be the first!</div>
-                  </div>
+                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No videos yet — be the first to post!</div>
                 )}
               </>
             ) : (
               <>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-                  <div style={{ width:3, height:14, borderRadius:2, background:"linear-gradient(180deg,#C8A0FF,#F5C842)" }} />
-                  <span style={{ fontSize:11, fontWeight:800, letterSpacing:2.5, textTransform:"uppercase", color:"rgba(255,255,255,0.5)" }}>Results</span>
-                </div>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>Results</div>
                 {videoList.filter(v =>
                   (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                   (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                   (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
                 ).length === 0 ? (
-                  <div style={{ textAlign:"center", marginTop:60, display:"flex", flexDirection:"column", alignItems:"center", gap:12 }}>
-                    <div style={{ fontSize:48 }}>🌙</div>
-                    <div style={{ color:"rgba(255,255,255,0.35)", fontSize:14 }}>Nothing found for "{searchQuery}"</div>
-                  </div>
+                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No results for "{searchQuery}"</div>
                 ) : (
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:4 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
                     {videoList.filter(v =>
                       (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                       (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
                     ).map(v => (
-                      <div key={v.id} style={{ aspectRatio:"9/16", borderRadius:10, overflow:"hidden", position:"relative", cursor:"pointer",
-                        border:"1px solid rgba(255,255,255,0.06)", boxShadow:"0 2px 8px rgba(0,0,0,0.4)" }}
+                      <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                         onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                        {v.thumbnail_url ? (
-                          <img src={resolveMediaUrl(v.thumbnail_url, false, "thumb")} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                        ) : (
-                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                        )}
-                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(5,2,18,0.9) 0%, transparent 50%)" }} />
-                        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"5px 7px" }}>
-                          <div style={{ color:"rgba(255,255,255,0.9)", fontSize:10, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
-                        </div>
+                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                       </div>
                     ))}
                   </div>
@@ -7425,181 +6680,69 @@ function App() {
         <AdminPanel currentUser={currentUser} />
       )}
 
-      {/* ── CONSTELLATION ORBITAL NAV ── */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,4px)", pointerEvents:"none" }}>
-        {/* Aurora top line */}
-        <div style={{ height:1, background:"linear-gradient(90deg, transparent 0%, rgba(123,47,255,0.6) 30%, rgba(0,229,255,0.4) 70%, transparent 100%)", marginBottom:0 }} />
-        <div style={{ background:"linear-gradient(to top, rgba(5,3,15,0.98) 0%, rgba(8,5,25,0.95) 100%)",
-          backdropFilter:"blur(30px)", paddingTop:10, paddingBottom:2, pointerEvents:"auto" }}>
+      {/* Bottom Nav — Sachi original style: floating pill */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
+        <div style={{ pointerEvents:"auto", margin:"0 16px 8px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
 
-          {/* Orbital arc container */}
-          <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-around", padding:"0 8px 8px", position:"relative" }}>
-
-            {/* Subtle arc line behind orbs */}
-            <svg style={{ position:"absolute", top:0, left:0, right:0, bottom:0, width:"100%", height:"100%", pointerEvents:"none", opacity:0.15 }}
-              viewBox="0 0 480 60" preserveAspectRatio="none">
-              <path d="M20,55 Q240,5 460,55" fill="none" stroke="url(#arcGrad)" strokeWidth="1"/>
-              <defs>
-                <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="transparent"/>
-                  <stop offset="30%" stopColor="#7B2FFF"/>
-                  <stop offset="50%" stopColor="#F5C842"/>
-                  <stop offset="70%" stopColor="#00E5FF"/>
-                  <stop offset="100%" stopColor="transparent"/>
-                </linearGradient>
-              </defs>
+          {/* Home */}
+          <button onClick={goHome}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="feed" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#F5C842" : "none"} stroke={activeTab==="feed" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
+            <div style={{ fontSize:9, color: activeTab==="feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" ? 700 : 400, letterSpacing:0.3 }}>Home</div>
+          </button>
 
-            {/* Home orb */}
-            <button onClick={goHome} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
-              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none" }}>
-              <div className={activeTab==="feed" ? "orb-active" : ""} style={{
-                width: activeTab==="feed" ? 46 : 38, height: activeTab==="feed" ? 46 : 38,
-                borderRadius:"50%",
-                background: activeTab==="feed"
-                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
-                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
-                border: activeTab==="feed" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                boxShadow: activeTab==="feed" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
-              }}>
-                <svg width={activeTab==="feed" ? 20 : 17} height={activeTab==="feed" ? 20 : 17} viewBox="0 0 24 24"
-                  fill={activeTab==="feed" ? "#0B0C1A" : "none"} stroke={activeTab==="feed" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
-                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-              </div>
-              <span style={{ fontSize:8, fontWeight: activeTab==="feed" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                color: activeTab==="feed" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Home</span>
+          {/* Explore */}
+          <button onClick={() => setActiveTab("explore")}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="explore" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="explore" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400, letterSpacing:0.3 }}>Explore</div>
+          </button>
+
+          {/* Post button — flat nav style, no circle */}
+          <button onClick={() => requireAuth(() => setShowUpload(true))}
+            style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <div style={{ fontSize:9, color:"#F5C842", fontWeight:600, letterSpacing:0.3 }}>Post</div>
+          </button>
+
+          {/* Podcasts */}
+          <button onClick={() => setActiveTab("podcast")}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="podcast" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+            <div style={{ fontSize:9, color: activeTab==="podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="podcast" ? 700 : 400, letterSpacing:0.3 }}>Podcasts</div>
+          </button>
+
+          {/* Admin (owner only) */}
+          {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
+            <button onClick={() => setActiveTab("admin")}
+              style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background: activeTab==="admin" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="admin" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <div style={{ fontSize:9, color: activeTab==="admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="admin" ? 700 : 400, letterSpacing:0.3 }}>Mod</div>
             </button>
+          )}
 
-            {/* Explore orb */}
-            <button onClick={() => setActiveTab("explore")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
-              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none" }}>
-              <div className={activeTab==="explore" ? "orb-active" : ""} style={{
-                width: activeTab==="explore" ? 46 : 38, height: activeTab==="explore" ? 46 : 38,
-                borderRadius:"50%",
-                background: activeTab==="explore"
-                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
-                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
-                border: activeTab==="explore" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                boxShadow: activeTab==="explore" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
-              }}>
-                <svg width={activeTab==="explore" ? 20 : 17} height={activeTab==="explore" ? 20 : 17} viewBox="0 0 24 24"
-                  fill="none" stroke={activeTab==="explore" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
-                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-              </div>
-              <span style={{ fontSize:8, fontWeight: activeTab==="explore" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                color: activeTab==="explore" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Explore</span>
-            </button>
+          {/* Profile */}
+          <button onClick={() => setActiveTab("profile")}
+            style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="profile" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
+            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <div style={{ fontSize:9, color: activeTab==="profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="profile" ? 700 : 400, letterSpacing:0.3 }}>Me</div>
+          </button>
 
-            {/* POST — center elevated orb (glowing gold, biggest) */}
-            <button onClick={() => requireAuth(() => setShowUpload(true))} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
-              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"0 8px 0",
-              WebkitTapHighlightColor:"transparent", outline:"none", marginBottom:8 }}>
-              <div style={{
-                width:54, height:54, borderRadius:"50%",
-                background:"radial-gradient(circle at 30% 30%, #FFE580, #F5C842, #E08800)",
-                boxShadow:"0 0 0 3px rgba(245,200,66,0.3), 0 0 30px rgba(245,200,66,0.5), 0 6px 20px rgba(0,0,0,0.5)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                border:"2px solid rgba(255,230,100,0.7)",
-                transform:"translateY(-8px)",
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B0C1A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </div>
-              <span style={{ fontSize:8, fontWeight:800, letterSpacing:1.5, textTransform:"uppercase", color:"#F5C842", marginTop:-6 }}>Post</span>
-            </button>
-
-            {/* Podcasts orb */}
-            <button onClick={() => setActiveTab("podcast")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
-              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none" }}>
-              <div className={activeTab==="podcast" ? "orb-active" : ""} style={{
-                width: activeTab==="podcast" ? 46 : 38, height: activeTab==="podcast" ? 46 : 38,
-                borderRadius:"50%",
-                background: activeTab==="podcast"
-                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
-                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
-                border: activeTab==="podcast" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                boxShadow: activeTab==="podcast" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
-              }}>
-                <svg width={activeTab==="podcast" ? 20 : 17} height={activeTab==="podcast" ? 20 : 17} viewBox="0 0 24 24"
-                  fill="none" stroke={activeTab==="podcast" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
-                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-              </div>
-              <span style={{ fontSize:8, fontWeight: activeTab==="podcast" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                color: activeTab==="podcast" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Waves</span>
-            </button>
-
-            {/* Profile orb */}
-            <button onClick={() => setActiveTab("profile")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
-              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-              WebkitTapHighlightColor:"transparent", outline:"none" }}>
-              <div className={activeTab==="profile" ? "orb-active" : ""} style={{
-                width: activeTab==="profile" ? 46 : 38, height: activeTab==="profile" ? 46 : 38,
-                borderRadius:"50%",
-                background: activeTab==="profile"
-                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
-                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
-                border: activeTab==="profile" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                boxShadow: activeTab==="profile" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
-              }}>
-                <svg width={activeTab==="profile" ? 20 : 17} height={activeTab==="profile" ? 20 : 17} viewBox="0 0 24 24"
-                  fill={activeTab==="profile" ? "#0B0C1A" : "none"} stroke={activeTab==="profile" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
-                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <span style={{ fontSize:8, fontWeight: activeTab==="profile" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                color: activeTab==="profile" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Me</span>
-            </button>
-
-            {/* Admin orb (owner only) */}
-            {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
-              <button onClick={() => setActiveTab("admin")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
-                display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
-                WebkitTapHighlightColor:"transparent", outline:"none" }}>
-                <div className={activeTab==="admin" ? "orb-active" : ""} style={{
-                  width: activeTab==="admin" ? 46 : 38, height: activeTab==="admin" ? 46 : 38,
-                  borderRadius:"50%",
-                  background: activeTab==="admin"
-                    ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
-                    : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
-                  border: activeTab==="admin" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                  boxShadow: activeTab==="admin" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
-                }}>
-                  <svg width={activeTab==="admin" ? 20 : 17} height={activeTab==="admin" ? 20 : 17} viewBox="0 0 24 24"
-                    fill="none" stroke={activeTab==="admin" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
-                    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                  </svg>
-                </div>
-                <span style={{ fontSize:8, fontWeight: activeTab==="admin" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                  color: activeTab==="admin" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Mod</span>
-              </button>
-            )}
-
-          </div>
         </div>
       </div>
 
@@ -7762,18 +6905,6 @@ function App() {
         </div>
       )}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
-
-      {/* ── CONSTELLATION ONBOARDING ── */}
-      {showOnboarding && (
-        <SachiOnboarding onDone={() => {
-          try { localStorage.setItem('sachi-onboarded', '1'); } catch {}
-          setShowOnboarding(false);
-        }} onSignUp={() => {
-          try { localStorage.setItem('sachi-onboarded', '1'); } catch {}
-          setShowOnboarding(false);
-          setShowAuth(true);
-        }} />
-      )}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => setShowEditProfile(false)}>
