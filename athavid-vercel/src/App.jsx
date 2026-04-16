@@ -192,8 +192,44 @@ const resolveMediaUrl = (url, isVideo) => {
     const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
     if (!isVideoFile) return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp`;
   }
+  // Cloudflare R2 URLs — try loading directly via wsrv.nl which handles any image format
+  // The .heic extension may be wrong — R2 files are often JPEGs with incorrect extensions
+  if (url.includes('.r2.dev') || url.includes('r2.cloudflarestorage.com')) {
+    const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
+    if (isVideoFile) return url;
+    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp`;
+  }
   return url;
 };
+// ── HEIC to JPEG converter ───────────────────────────────────────────────────
+async function convertHeicToJpeg(file) {
+  if (!file) return file;
+  const name = file.name || '';
+  const type = file.type || '';
+  const isHeic = /\.heic$/i.test(name) || /\.heif$/i.test(name) || type === 'image/heic' || type === 'image/heif';
+  if (!isHeic) return file;
+  try {
+    // Dynamically load heic2any from CDN
+    if (!window._heic2any) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+      window._heic2any = window.heic2any;
+    }
+    const blob = await window._heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    const converted = new File([blob], name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' });
+    console.log(`[Sachi] HEIC converted: ${(file.size/1024).toFixed(0)}KB → ${(converted.size/1024).toFixed(0)}KB`);
+    return converted;
+  } catch(e) {
+    console.warn('[Sachi] HEIC conversion failed, uploading original:', e);
+    return file;
+  }
+}
+
 // Get user's location for post geo-tagging
 async function getPostLocation() {
   const savedCode = localStorage.getItem('sachi_country_code');
@@ -1171,8 +1207,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   const [explicitBlocked, setExplicitBlocked] = useState(false);
 
-  const handleFileSelect = (f) => {
+  const handleFileSelect = async (f) => {
     if (!f) return;
+    // Convert HEIC before any checks
+    f = await convertHeicToJpeg(f);
     setFile(f);
     setEditedFile(null);
     setAiBlocked(false);
@@ -1183,11 +1221,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     if (f.type.startsWith("video/") || f.type.startsWith("image/")) setShowEditor(true);
   };
 
-  const handlePhotoSelect = (e) => {
+  const handlePhotoSelect = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    // Convert any HEIC files to JPEG
+    const converted = await Promise.all(files.map(f => convertHeicToJpeg(f)));
     setPhotos(prev => {
-      const combined = [...prev, ...files];
+      const combined = [...prev, ...converted];
       return combined.slice(0, 6);
     });
   };
@@ -1201,7 +1241,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Uploading photos...");
       const urls = [];
       for (let i = 0; i < photos.length; i++) {
-        const photo = photos[i];
+        let photo = photos[i];
+        // Convert HEIC to JPEG before upload
+        setStep(`Processing photo ${i+1} of ${photos.length}...`);
+        photo = await convertHeicToJpeg(photo);
         // Check file size — 20MB limit per photo
         if (photo.size > 20 * 1024 * 1024) {
           throw new Error(`Photo ${i+1} is too large. Max 20MB per photo.`);
