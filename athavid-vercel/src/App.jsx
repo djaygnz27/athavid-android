@@ -76,7 +76,9 @@ function ToastContainer() {
       <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes popIn { from { transform: scale(0.3); opacity:0; } to { transform: scale(1); opacity:1; } }
-@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }`}</style>
+@keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+@keyframes driftLeft { from { transform:translateX(4px); } to { transform:translateX(-4px); } }
+@keyframes driftRight { from { transform:translateX(-4px); } to { transform:translateX(4px); } }`}</style>
     </div>
   );
 }
@@ -2403,10 +2405,31 @@ function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onVi
 
   if (!currentVideo) {
     return (
-      <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:"#0B0C1A", gap:16 }}>
-        <div style={{ fontSize:64 }}>✨</div>
-        <div style={{ color:"#fff", fontWeight:800, fontSize:22 }}>You're all caught up!</div>
-        <div style={{ color:"#888", fontSize:15, textAlign:"center", padding:"0 40px" }}>Check back later for new posts</div>
+      <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+        background:"radial-gradient(ellipse at 50% 80%, #1a0a2e 0%, #0B0C1A 60%)", gap:20, padding:"0 40px", textAlign:"center" }}>
+        {/* Floating stars */}
+        {[...Array(8)].map((_,i) => (
+          <div key={i} style={{
+            position:"absolute",
+            left:`${(i*23+15)%90}%`, top:`${(i*31+10)%85}%`,
+            width:i%2===0?3:2, height:i%2===0?3:2, borderRadius:"50%",
+            background:i%2===0?"#F5C842":"#C8A0FF", opacity:0.3,
+            animation:`starFloat ${2+i%3}s ease-in-out ${i*0.5}s infinite`
+          }}/>
+        ))}
+        <div style={{ fontSize:72, filter:"drop-shadow(0 0 30px rgba(245,200,66,0.6))", animation:"starFloat 3s ease-in-out infinite" }}>✦</div>
+        <div style={{ fontWeight:900, fontSize:24, letterSpacing:-0.5,
+          background:"linear-gradient(135deg, #fff 0%, #F5C842 60%)",
+          WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>You've seen it all!</div>
+        <div style={{ color:"rgba(255,255,255,0.4)", fontSize:14, lineHeight:1.6 }}>
+          Come back soon — new creators are posting every day ✨
+        </div>
+        <div style={{ marginTop:8, padding:"10px 24px", borderRadius:50,
+          background:"linear-gradient(135deg, rgba(123,47,255,0.2), rgba(245,200,66,0.1))",
+          border:"1px solid rgba(245,200,66,0.2)",
+          color:"rgba(245,200,66,0.7)", fontSize:12, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase" }}>
+          ✦ All caught up ✦
+        </div>
       </div>
     );
   }
@@ -2416,30 +2439,51 @@ function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onVi
   const skipOpacity = Math.min(Math.max(-dragX / SWIPE_THRESHOLD, 0), 1);
 
   return (
-    <div style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", overflow:"hidden", userSelect:"none" }}>
+    <div style={{ position:"relative", width:"100%", height:"100svh", overflow:"hidden", userSelect:"none",
+      background:"radial-gradient(ellipse at 50% 100%, #1a0a2e 0%, #0B0C1A 60%)" }}>
 
-      {/* LIKE flash overlay */}
+      {/* Ambient constellation stars */}
+      <div style={{ position:"absolute", inset:0, zIndex:0, pointerEvents:"none", overflow:"hidden" }}>
+        {[...Array(18)].map((_,i) => (
+          <div key={i} style={{
+            position:"absolute",
+            left:`${(i * 37 + 11) % 100}%`,
+            top:`${(i * 53 + 7) % 100}%`,
+            width: i%4===0 ? 3 : 2,
+            height: i%4===0 ? 3 : 2,
+            borderRadius:"50%",
+            background: i%3===0 ? "#F5C842" : i%3===1 ? "#C8A0FF" : "#fff",
+            opacity: 0.15 + (i%5)*0.08,
+            animation:`starFloat ${2+i%4}s ease-in-out ${(i*0.4)%3}s infinite`
+          }}/>
+        ))}
+      </div>
+
+      {/* LIKE flash overlay — warm golden burst */}
       {likeFlash && (
         <div style={{ position:"absolute", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center",
-          background:"rgba(80,220,100,0.12)", pointerEvents:"none", animation:"fadeOut 0.5s ease forwards" }}>
-          <div style={{ fontSize:90, filter:"drop-shadow(0 0 20px rgba(80,220,100,0.8))", animation:"popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>❤️</div>
+          background:"radial-gradient(circle at center, rgba(245,200,66,0.22) 0%, transparent 70%)",
+          pointerEvents:"none", animation:"fadeOut 0.6s ease forwards" }}>
+          <div style={{ fontSize:100, filter:"drop-shadow(0 0 30px rgba(245,200,66,0.9))", animation:"popIn 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>✨</div>
         </div>
       )}
-      {/* SKIP flash overlay */}
+      {/* SKIP flash overlay — cool purple */}
       {skipFlash && (
         <div style={{ position:"absolute", inset:0, zIndex:999, display:"flex", alignItems:"center", justifyContent:"center",
-          background:"rgba(255,80,80,0.08)", pointerEvents:"none", animation:"fadeOut 0.4s ease forwards" }}>
-          <div style={{ fontSize:80, filter:"drop-shadow(0 0 16px rgba(255,100,100,0.6))", animation:"popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}>👋</div>
+          background:"radial-gradient(circle at center, rgba(123,47,255,0.12) 0%, transparent 70%)",
+          pointerEvents:"none", animation:"fadeOut 0.4s ease forwards" }}>
+          <div style={{ fontSize:80, filter:"drop-shadow(0 0 16px rgba(200,160,255,0.7))", animation:"popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}>🌙</div>
         </div>
       )}
 
-      {/* Card stack — back card (peek) */}
+      {/* Card stack — back card (peek) with warm glow */}
       {nextVideo && (
         <div style={{
           position:"absolute", inset:0, zIndex:1,
           transform: `scale(${0.94 + Math.min(Math.abs(dragX) / 800, 0.06)}) translateY(${Math.max(0, 20 - Math.abs(dragX) * 0.1)}px)`,
           transition: isDragging ? "none" : "transform 0.3s ease",
-          borderRadius: 20, overflow:"hidden"
+          borderRadius: 24, overflow:"hidden",
+          boxShadow:"0 0 60px rgba(123,47,255,0.15)"
         }}>
           <VideoCard video={nextVideo} currentUser={null}
             onCommentOpen={()=>{}} onLike={()=>{}} onView={()=>{}} onNeedAuth={()=>{}}
@@ -2449,25 +2493,31 @@ function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onVi
         </div>
       )}
 
-      {/* LIKE indicator */}
+      {/* LIKE stamp — gold starburst */}
       <div style={{
-        position:"absolute", top:"35%", left:30, zIndex:20, opacity: likeOpacity,
-        transform:`rotate(-15deg) scale(${0.8 + likeOpacity * 0.4})`,
-        pointerEvents:"none", transition: isDragging ? "none" : "all 0.15s",
-        border:"3px solid #50DC64", borderRadius:12, padding:"8px 16px",
-        color:"#50DC64", fontWeight:900, fontSize:28, letterSpacing:2,
-        textShadow:"0 0 20px rgba(80,220,100,0.8)", background:"rgba(0,0,0,0.3)"
-      }}>❤️ LIKE</div>
+        position:"absolute", top:"32%", left:24, zIndex:20, opacity: likeOpacity,
+        transform:`rotate(-18deg) scale(${0.7 + likeOpacity * 0.5})`,
+        pointerEvents:"none", transition: isDragging ? "none" : "all 0.12s",
+        borderRadius:16, padding:"10px 20px",
+        background:"linear-gradient(135deg, rgba(245,200,66,0.25), rgba(245,150,0,0.15))",
+        border:"2.5px solid #F5C842",
+        boxShadow:"0 0 30px rgba(245,200,66,0.5), inset 0 1px 0 rgba(255,255,255,0.2)"
+      }}>
+        <div style={{ color:"#F5C842", fontWeight:900, fontSize:22, letterSpacing:3, textShadow:"0 0 20px rgba(245,200,66,1)" }}>✦ LIKE</div>
+      </div>
 
-      {/* NOPE indicator */}
+      {/* SKIP stamp — cool violet */}
       <div style={{
-        position:"absolute", top:"35%", right:30, zIndex:20, opacity: skipOpacity,
-        transform:`rotate(15deg) scale(${0.8 + skipOpacity * 0.4})`,
-        pointerEvents:"none", transition: isDragging ? "none" : "all 0.15s",
-        border:"3px solid #FF5050", borderRadius:12, padding:"8px 16px",
-        color:"#FF5050", fontWeight:900, fontSize:28, letterSpacing:2,
-        textShadow:"0 0 20px rgba(255,80,80,0.8)", background:"rgba(0,0,0,0.3)"
-      }}>SKIP 👋</div>
+        position:"absolute", top:"32%", right:24, zIndex:20, opacity: skipOpacity,
+        transform:`rotate(18deg) scale(${0.7 + skipOpacity * 0.5})`,
+        pointerEvents:"none", transition: isDragging ? "none" : "all 0.12s",
+        borderRadius:16, padding:"10px 20px",
+        background:"linear-gradient(135deg, rgba(123,47,255,0.2), rgba(0,229,255,0.1))",
+        border:"2.5px solid #C8A0FF",
+        boxShadow:"0 0 30px rgba(123,47,255,0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
+      }}>
+        <div style={{ color:"#C8A0FF", fontWeight:900, fontSize:22, letterSpacing:3, textShadow:"0 0 20px rgba(200,160,255,1)" }}>PASS ✦</div>
+      </div>
 
       {/* Main card */}
       <div
@@ -2511,52 +2561,64 @@ function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onVi
         />
       </div>
 
-      {/* Bottom action bar — manual swipe buttons */}
+      {/* Bottom action bar — warm inviting buttons */}
       <div style={{
-        position:"absolute", bottom:90, left:0, right:0, zIndex:30,
-        display:"flex", justifyContent:"center", alignItems:"center", gap:28,
+        position:"absolute", bottom:96, left:0, right:0, zIndex:30,
+        display:"flex", justifyContent:"center", alignItems:"center", gap:20,
         pointerEvents:"none"
       }}>
-        {/* Skip button */}
+        {/* Pass button — cool violet */}
         <button
           onClick={() => advanceCard('left')}
           style={{
-            width:60, height:60, borderRadius:"50%",
-            background:"rgba(255,80,80,0.15)", border:"2px solid rgba(255,80,80,0.5)",
+            width:56, height:56, borderRadius:"50%",
+            background:"linear-gradient(135deg, rgba(30,20,60,0.95), rgba(20,10,45,0.98))",
+            border:"1.5px solid rgba(123,47,255,0.5)",
             display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:26, cursor:"pointer", pointerEvents:"all",
-            boxShadow:"0 4px 20px rgba(255,80,80,0.2)",
-            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s",
-            backdropFilter:"blur(8px)"
+            fontSize:22, cursor:"pointer", pointerEvents:"all",
+            boxShadow:"0 4px 24px rgba(123,47,255,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
+            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s, box-shadow 0.15s",
+            backdropFilter:"blur(12px)"
           }}
-          onTouchStart={e => e.currentTarget.style.transform="scale(0.9)"}
-          onTouchEnd={e => e.currentTarget.style.transform="scale(1)"}
-        >👋</button>
+          onTouchStart={e => { e.currentTarget.style.transform="scale(0.88)"; e.currentTarget.style.boxShadow="0 2px 12px rgba(123,47,255,0.5)"; }}
+          onTouchEnd={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 4px 24px rgba(123,47,255,0.3)"; }}
+        >🌙</button>
 
-        {/* Progress indicator */}
-        <div style={{
-          color:"rgba(255,255,255,0.4)", fontSize:12, fontWeight:600,
-          letterSpacing:0.5, textAlign:"center",
-          textShadow:"0 1px 4px rgba(0,0,0,0.8)", pointerEvents:"none"
-        }}>
-          {currentIdx + 1} / {filteredVideos.length}{hasMore ? "+" : ""}
+        {/* Progress dots — constellation style */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4, pointerEvents:"none" }}>
+          <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+            {[...Array(Math.min(5, filteredVideos.length - currentIdx))].map((_,i) => (
+              <div key={i} style={{
+                width: i===0 ? 8 : 4,
+                height: i===0 ? 8 : 4,
+                borderRadius:"50%",
+                background: i===0 ? "#F5C842" : "rgba(255,255,255,0.2)",
+                boxShadow: i===0 ? "0 0 8px rgba(245,200,66,0.8)" : "none",
+                transition:"all 0.3s"
+              }}/>
+            ))}
+            {hasMore && <div style={{ color:"rgba(255,255,255,0.2)", fontSize:10 }}>…</div>}
+          </div>
+          <div style={{ color:"rgba(255,255,255,0.25)", fontSize:10, letterSpacing:1, fontWeight:600 }}>
+            {currentIdx + 1} of {filteredVideos.length}{hasMore ? "+" : ""}
+          </div>
         </div>
 
-        {/* Like button */}
+        {/* Like button — warm gold starburst */}
         <button
           onClick={() => { onLike(currentVideo.id, 1); advanceCard('right'); }}
           style={{
-            width:60, height:60, borderRadius:"50%",
-            background:"rgba(80,220,100,0.15)", border:"2px solid rgba(80,220,100,0.5)",
+            width:56, height:56, borderRadius:"50%",
+            background:"radial-gradient(circle at 35% 30%, #FFE580, #F5C842, #C97B00)",
+            border:"1.5px solid rgba(255,230,100,0.7)",
             display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:26, cursor:"pointer", pointerEvents:"all",
-            boxShadow:"0 4px 20px rgba(80,220,100,0.2)",
-            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s",
-            backdropFilter:"blur(8px)"
+            fontSize:22, cursor:"pointer", pointerEvents:"all",
+            boxShadow:"0 0 28px rgba(245,200,66,0.55), 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4)",
+            WebkitTapHighlightColor:"transparent", transition:"transform 0.15s, box-shadow 0.15s",
           }}
-          onTouchStart={e => e.currentTarget.style.transform="scale(0.9)"}
-          onTouchEnd={e => e.currentTarget.style.transform="scale(1)"}
-        >❤️</button>
+          onTouchStart={e => { e.currentTarget.style.transform="scale(0.88)"; e.currentTarget.style.boxShadow="0 0 40px rgba(245,200,66,0.8)"; }}
+          onTouchEnd={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 0 28px rgba(245,200,66,0.55)"; }}
+        >✦</button>
       </div>
 
       {/* Swipe hint — shown only first time */}
@@ -2565,7 +2627,7 @@ function SwipeFeed({ videos: videoList, currentUser, onCommentOpen, onLike, onVi
   );
 }
 
-// One-time hint overlay
+// One-time warm welcome hint
 function SwipeHint() {
   const [visible, setVisible] = useState(() => {
     try { return !localStorage.getItem('sachi-swipe-hint-seen'); } catch { return true; }
@@ -2575,7 +2637,7 @@ function SwipeHint() {
       const t = setTimeout(() => {
         setVisible(false);
         try { localStorage.setItem('sachi-swipe-hint-seen', '1'); } catch {}
-      }, 3000);
+      }, 3800);
       return () => clearTimeout(t);
     }
   }, [visible]);
@@ -2583,15 +2645,40 @@ function SwipeHint() {
   return (
     <div style={{
       position:"absolute", inset:0, zIndex:50, pointerEvents:"none",
-      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-      gap:8, animation:"fadeOut 0.5s ease 2.5s forwards"
+      display:"flex", flexDirection:"column", alignItems:"flex-end", justifyContent:"flex-end",
+      padding:"0 0 160px 0",
+      animation:"fadeOut 0.6s ease 3.2s forwards"
     }}>
-      <div style={{ background:"rgba(0,0,0,0.7)", borderRadius:20, padding:"16px 28px",
-        display:"flex", flexDirection:"column", alignItems:"center", gap:6,
-        backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.1)" }}>
-        <div style={{ fontSize:36 }}>👈 👉</div>
-        <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Swipe to explore</div>
-        <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12 }}>Right = ❤️ Like · Left = Skip</div>
+      <div style={{
+        margin:"0 auto",
+        background:"linear-gradient(135deg, rgba(20,10,50,0.96), rgba(10,5,30,0.98))",
+        borderRadius:24, padding:"18px 28px",
+        display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+        backdropFilter:"blur(20px)",
+        border:"1px solid rgba(245,200,66,0.25)",
+        boxShadow:"0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), 0 0 30px rgba(123,47,255,0.2)"
+      }}>
+        {/* Animated arrows */}
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ fontSize:28, animation:"driftLeft 1.2s ease-in-out infinite alternate" }}>🌙</div>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.35)", letterSpacing:2, textTransform:"uppercase" }}>swipe</div>
+            <div style={{ display:"flex", gap:6 }}>
+              <span style={{ color:"#C8A0FF", fontSize:18, fontWeight:900 }}>←</span>
+              <span style={{ color:"rgba(255,255,255,0.2)", fontSize:14 }}>·</span>
+              <span style={{ color:"#F5C842", fontSize:18, fontWeight:900 }}>→</span>
+            </div>
+          </div>
+          <div style={{ fontSize:28, animation:"driftRight 1.2s ease-in-out infinite alternate" }}>✦</div>
+        </div>
+        <div style={{
+          fontSize:13, fontWeight:700, letterSpacing:0.5,
+          background:"linear-gradient(135deg, #F5C842, #C8A0FF)",
+          WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"
+        }}>Discover your world</div>
+        <div style={{ color:"rgba(255,255,255,0.35)", fontSize:11, letterSpacing:0.3 }}>
+          ✦ Like &nbsp;·&nbsp; 🌙 Pass
+        </div>
       </div>
     </div>
   );
@@ -6833,11 +6920,20 @@ function App() {
               )}
             </div>
           )}
-          {/* Loading state */}
+          {/* Loading state — constellation */}
           {loading && (feedTab === "forYou" ? videoList.length === 0 : followingVideos.length === 0) && (
-            <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
-              <div style={{ fontSize:48 }}>🎬</div>
-              <div style={{ color:"rgba(245,200,66,0.7)", fontSize:14, letterSpacing:1, fontWeight:600 }}>Loading...</div>
+            <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16,
+              background:"radial-gradient(ellipse at 50% 80%, #1a0a2e 0%, #0B0C1A 60%)" }}>
+              {/* Orbiting dots loader */}
+              <div style={{ position:"relative", width:60, height:60 }}>
+                <div style={{ position:"absolute", inset:0, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.1)", borderTopColor:"#F5C842", animation:"spin 1s linear infinite" }}/>
+                <div style={{ position:"absolute", inset:8, borderRadius:"50%", border:"1.5px solid rgba(200,160,255,0.1)", borderBottomColor:"#C8A0FF", animation:"spin 1.5s linear reverse infinite" }}/>
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>✦</div>
+              </div>
+              <div style={{ fontSize:13, letterSpacing:3, textTransform:"uppercase", fontWeight:700,
+                background:"linear-gradient(135deg,#F5C842,#C8A0FF)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+                Tuning in...
+              </div>
             </div>
           )}
           {/* Empty state */}
