@@ -364,7 +364,21 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   useEffect(() => {
     if (!video) return;
     comments.list(video.id)
-      .then(r => setList(Array.isArray(r) ? r : []))
+      .then(r => {
+        if (!Array.isArray(r)) { setList([]); return; }
+        // Separate top-level comments from replies, nest replies under parents
+        const topLevel = r.filter(c => !c.parent_id);
+        const replies = r.filter(c => !!c.parent_id);
+        const nested = topLevel.map(c => ({
+          ...c,
+          replies: replies.filter(rep => rep.parent_id === c.id)
+        }));
+        setList(nested);
+        // Auto-expand any parent that has replies
+        const expanded = {};
+        nested.forEach(c => { if (c.replies && c.replies.length > 0) expanded[c.id] = true; });
+        setExpandedReplies(expanded);
+      })
       .catch(() => setList([]))
       .finally(() => setLoading(false));
   }, [video?.id]);
@@ -387,9 +401,20 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     try {
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       if (replyingTo) {
-        // Post as a reply stored locally under the parent comment
-        const reply = { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
-        setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
+        // Save reply to DB with parent_id so it persists across sessions
+        const savedReply = await comments.create({
+          video_id: video.id,
+          username,
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+          comment_text: text.trim(),
+          likes_count: 0,
+          parent_id: replyingTo.id,
+        });
+        // Nest it under the parent in local state
+        setList(prev => prev.map(x => x.id === replyingTo.id
+          ? { ...x, replies: [...(x.replies || []), savedReply] }
+          : x
+        ));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
         setText("");

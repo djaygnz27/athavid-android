@@ -10482,7 +10482,24 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const inputRef = reactExports.useRef(null);
   reactExports.useEffect(() => {
     if (!video) return;
-    comments.list(video.id).then((r2) => setList(Array.isArray(r2) ? r2 : [])).catch(() => setList([])).finally(() => setLoading(false));
+    comments.list(video.id).then((r2) => {
+      if (!Array.isArray(r2)) {
+        setList([]);
+        return;
+      }
+      const topLevel = r2.filter((c) => !c.parent_id);
+      const replies = r2.filter((c) => !!c.parent_id);
+      const nested = topLevel.map((c) => ({
+        ...c,
+        replies: replies.filter((rep) => rep.parent_id === c.id)
+      }));
+      setList(nested);
+      const expanded = {};
+      nested.forEach((c) => {
+        if (c.replies && c.replies.length > 0) expanded[c.id] = true;
+      });
+      setExpandedReplies(expanded);
+    }).catch(() => setList([])).finally(() => setLoading(false));
   }, [video == null ? void 0 : video.id]);
   reactExports.useEffect(() => {
     var _a;
@@ -10515,8 +10532,17 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     try {
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       if (replyingTo) {
-        const reply = { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: text.trim(), thumbsUp: 0, hearts: 0, thumbsDown: 0 };
-        setList((prev) => prev.map((x2) => x2.id === replyingTo.id ? { ...x2, replies: [...x2.replies || [], reply] } : x2));
+        const savedReply = await comments.create({
+          video_id: video.id,
+          username,
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+          comment_text: text.trim(),
+          likes_count: 0,
+          parent_id: replyingTo.id
+        });
+        setList((prev) => prev.map(
+          (x2) => x2.id === replyingTo.id ? { ...x2, replies: [...x2.replies || [], savedReply] } : x2
+        ));
         setExpandedReplies((prev) => ({ ...prev, [replyingTo.id]: true }));
         setReplyingTo(null);
         setText("");
