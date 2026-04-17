@@ -3007,7 +3007,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {/* ── SPOTLIGHT — unique color per creator ── */}
       <div style={{ position:"absolute", inset:0, background:`radial-gradient(ellipse 80% 60% at 50% 20%, ${getSpotlightColor(video.user_id || video.created_by)}, transparent)`, pointerEvents:"none", zIndex:5 }} />
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(5,5,18,0.98) 0%, rgba(11,12,26,0.7) 35%, rgba(11,12,26,0.15) 60%, transparent 85%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
       {/* Tap hint removed — content-first UI */}
 
@@ -3050,7 +3050,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:160, left:16, right:80, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", bottom:168, left:16, right:16, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
         <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
@@ -3176,21 +3176,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         const ActionBtn = ({ onClick, label, count, isActive, activeColor, children }) => (
           <button onClick={onClick}
             style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column",
-              alignItems:"center", gap:5, padding:"4px 2px", WebkitTapHighlightColor:"transparent",
+              alignItems:"center", gap:3, padding:"0 6px", WebkitTapHighlightColor:"transparent",
               touchAction:"manipulation", flex:1, minWidth:0 }}>
             <div style={{
-              width:44, height:44, borderRadius:14,
-              background: isActive ? `${activeColor}22` : "rgba(255,255,255,0.06)",
-              border: `1.5px solid ${isActive ? activeColor : "rgba(255,255,255,0.1)"}`,
+              width:32, height:32, borderRadius:10,
+              background: isActive
+                ? `linear-gradient(135deg, ${activeColor}33, ${activeColor}18)`
+                : "rgba(255,255,255,0.07)",
+              border: `1.5px solid ${isActive ? activeColor : "rgba(255,255,255,0.12)"}`,
               display:"flex", alignItems:"center", justifyContent:"center",
-              transition:"all 0.2s",
-              boxShadow: isActive ? `0 0 16px ${activeColor}55` : "none",
+              transition:"all 0.22s cubic-bezier(0.34,1.56,0.64,1)",
+              boxShadow: isActive ? `0 0 14px ${activeColor}44` : "none",
+              transform: isActive ? "scale(1.1)" : "scale(1)",
             }}>
               {children}
             </div>
             <div style={{
-              fontSize:10, fontWeight:700, color: isActive ? activeColor : "rgba(255,255,255,0.55)",
-              lineHeight:1.2, maxWidth:48, textAlign:"center", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"
+              fontSize:9, fontWeight:700,
+              color: isActive ? activeColor : "rgba(255,255,255,0.4)",
+              lineHeight:1.2, maxWidth:44, textAlign:"center",
+              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+              transition:"color 0.2s",
             }}>
               {count !== undefined ? (formatCount(count) || label) : label}
             </div>
@@ -3227,33 +3233,34 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
 
             <div style={{
-              position:"absolute", bottom:80, left:0, right:0, zIndex:500,
-              transition:"opacity 0.3s ease, transform 0.3s ease",
+              position:"absolute", bottom:90, left:0, right:0, zIndex:500,
+              transition:"opacity 0.35s ease, transform 0.35s ease",
               opacity: (showUI || !playing || !!photoUrls) ? 1 : 0,
-              transform: (showUI || !playing || !!photoUrls) ? "translateY(0)" : "translateY(20px)",
+              transform: (showUI || !playing || !!photoUrls) ? "translateY(0)" : "translateY(30px)",
               pointerEvents: (showUI || !playing || !!photoUrls) ? "auto" : "none",
             }}>
               <div style={{
-                margin:"0 8px 4px",
-                background:"rgba(11,12,26,0.88)",
-                backdropFilter:"blur(20px)",
-                borderRadius:20,
-                border:"1px solid rgba(255,255,255,0.08)",
-                padding:"8px 2px 6px",
+                margin:"0 12px 0",
+                background:"linear-gradient(180deg, rgba(15,15,32,0.92) 0%, rgba(8,8,20,0.97) 100%)",
+                backdropFilter:"blur(24px)",
+                borderRadius:22,
+                border:"1px solid rgba(255,255,255,0.1)",
+                borderBottom:"1px solid rgba(255,255,255,0.05)",
+                padding:"8px 4px 7px",
                 display:"flex", alignItems:"flex-start", justifyContent:"space-around",
-                boxShadow:"0 -2px 24px rgba(0,0,0,0.5)",
+                boxShadow:"0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)",
               }}>
 
                 <ActionBtn onClick={tap(doMute)} label={muted ? "Muted" : "Sound"} isActive={!muted} activeColor="#F5C842">
                   {muted
-                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                   }
                 </ActionBtn>
 
                 <ActionBtn onClick={tap(doHype)} label={hypeCount > 0 ? String(hypeCount) : "LIT"} isActive={hyped} activeColor="#FF6B00">
                   <div style={{ filter:hyped?"drop-shadow(0 0 8px rgba(255,107,0,0.9))":"none", animation:hypeAnim?"firepop 0.5s ease forwards":"none" }}>
-                    <svg width="20" height="24" viewBox="0 0 20 28" style={{ overflow:"visible" }}>
+                    <svg width="14" height="18" viewBox="0 0 20 28" style={{ overflow:"visible" }}>
                       <defs>
                         <linearGradient id={fId} x1="50%" y1="0%" x2="50%" y2="100%">
                           <stop offset="0%" stopColor="#fff176"/><stop offset="35%" stopColor="#ffb300"/>
@@ -3271,7 +3278,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 </ActionBtn>
 
                 <ActionBtn onClick={tap(doLike)} count={video.likes_count||0} label="Like" isActive={liked} activeColor="#FF6B6B">
-                  <svg width="18" height="18" viewBox="0 0 24 24"
+                  <svg width="14" height="14" viewBox="0 0 24 24"
                     fill={liked?"#FF6B6B":"none"} stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     style={{ transition:"fill 0.2s", animation:liked?"heartpop 0.4s ease forwards":"none" }}>
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -3279,7 +3286,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 </ActionBtn>
 
                 <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comments_count||0} label="Comment" isActive={false} activeColor="#6c63ff">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                   </svg>
                 </ActionBtn>
@@ -3288,7 +3295,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   <ActionBtn
                     onClick={tap(async()=>{ if(!currentUser){onNeedAuth&&onNeedAuth();return;} onBookmark?.handle&&onBookmark.handle(video.id,!isBookmarked); })}
                     label={isBookmarked?"Crowned":"Crown"} isActive={isBookmarked} activeColor="#F5C842">
-                    <svg width="18" height="18" viewBox="0 0 24 24"
+                    <svg width="14" height="14" viewBox="0 0 24 24"
                       fill={isBookmarked?"rgba(245,200,66,0.3)":"none"}
                       stroke={isBookmarked?"#F5C842":"rgba(255,255,255,0.8)"}
                       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -3308,7 +3315,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                       try{ const n=(video.shares_count||0)+1; onShareCount&&onShareCount(video.id,n); await videos.update(video.id,{shares_count:n}); }catch(e){}
                     })}
                     count={video.shares_count||0} label="Share" isActive={pulsing} activeColor="#a78bfa">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                     </svg>
@@ -3317,7 +3324,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
                 {isOwnVideo && (
                   <ActionBtn onClick={tap(doDelete)} label="Delete" isActive={false} activeColor="#ff5555">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                       <path d="M10 11v6"/><path d="M14 11v6"/>
                     </svg>
