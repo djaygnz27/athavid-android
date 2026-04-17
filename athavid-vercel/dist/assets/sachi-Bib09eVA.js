@@ -13659,232 +13659,233 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 10, bottom: 120, display: "flex", flexDirection: "column", alignItems: "center", gap: 14, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: tap(doMute),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      bottom: 72,
+      left: 0,
+      right: 0,
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingLeft: 12,
+      paddingRight: 12,
+      zIndex: 500,
+      transition: "opacity 0.4s ease",
+      opacity: showUI || !!photoUrls ? 1 : 0,
+      pointerEvents: showUI || !!photoUrls ? "auto" : "none",
+      visibility: showUI || !!photoUrls ? "visible" : "hidden"
+    }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-around",
+      width: "100%",
+      maxWidth: 420,
+      background: "rgba(11,12,26,0.72)",
+      backdropFilter: "blur(24px)",
+      WebkitBackdropFilter: "blur(24px)",
+      borderRadius: 28,
+      border: "1px solid rgba(245,200,66,0.18)",
+      boxShadow: "0 -2px 32px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(245,200,66,0.08) inset",
+      padding: "10px 8px",
+      gap: 4
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(doLike), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          background: liked ? "radial-gradient(135deg, rgba(255,107,107,0.45), rgba(255,60,60,0.15))" : "rgba(255,255,255,0.07)",
+          border: liked ? "1.5px solid rgba(255,107,107,0.7)" : "1.5px solid rgba(255,255,255,0.1)",
+          boxShadow: liked ? "0 0 18px rgba(255,107,107,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s",
+          animation: liked ? "heartpop 0.4s ease forwards" : "none"
+        }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: liked ? "#FF6B6B" : "rgba(255,255,255,0.85)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.likes_count || 0) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(() => onCommentOpen(video)), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          background: "rgba(100,180,255,0.1)",
+          border: "1.5px solid rgba(100,180,255,0.3)",
+          boxShadow: "0 0 12px rgba(100,180,255,0.15), 0 2px 8px rgba(0,0,0,0.3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s"
+        }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(100,200,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(100,200,255,0.85)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.comments_count || 0) })
+      ] }),
+      (() => {
+        const isHyped = video._hyped;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(async () => {
+          if (!currentUser) {
+            onNeedAuth();
+            return;
+          }
+          const newHyped = !isHyped;
+          const newCount = Math.max(0, (video.hype_count || 0) + (newHyped ? 1 : -1));
+          onLike(video.id, 0);
+          try {
+            await videos.update(video.id, { hype_count: newCount });
+          } catch (e) {
+          }
+        }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            width: 52,
+            height: 52,
+            borderRadius: 16,
+            background: isHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
+            border: isHyped ? "1.5px solid rgba(255,180,0,0.8)" : "1.5px solid rgba(255,150,0,0.25)",
+            boxShadow: isHyped ? "0 0 20px rgba(255,160,0,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, borderRadius: "50%", background: muted ? "radial-gradient(circle at 35% 35%, rgba(245,200,66,0.35), rgba(245,200,66,0.08))" : "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.18), rgba(255,255,255,0.04))", backdropFilter: "blur(16px)", border: muted ? "1.5px solid rgba(245,200,66,0.6)" : "1.5px solid rgba(255,255,255,0.18)", boxShadow: muted ? "0 0 14px rgba(245,200,66,0.4), 0 2px 8px rgba(0,0,0,0.5)" : "0 2px 12px rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s" }, children: muted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "#F5C842", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "23", y1: "9", x2: "17", y2: "15" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "17", y1: "9", x2: "23", y2: "15" })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" })
-          ] }) })
+            justifyContent: "center",
+            transition: "all 0.2s"
+          }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 22 }, children: "🔥" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.hype_count || 0) })
+        ] });
+      })(),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(async () => {
+        var _a2;
+        const shareUrl = `${window.location.origin}?v=${video.id}`;
+        if (navigator.share) {
+          navigator.share({ title: video.caption || "Check this out on Sachi", url: shareUrl });
+        } else {
+          (_a2 = navigator.clipboard) == null ? void 0 : _a2.writeText(shareUrl);
+          toast.success("Link copied!");
         }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(async () => {
-            if (!currentUser) {
-              onNeedAuth();
-              return;
-            }
-            if (!window.confirm(video.is_ai_detected ? "Clear AI flag from this post?" : "Flag this post as AI-generated content?")) return;
-            try {
-              const newFlag = !video.is_ai_detected;
-              await videos.update(video.id, { is_ai_detected: newFlag });
-              onLike(video.id, 0);
-            } catch (e) {
-            }
-          }),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-              width: 28,
-              height: 28,
-              borderRadius: 8,
-              background: video.is_ai_detected ? "radial-gradient(circle at 35% 35%, rgba(0,255,120,0.35), rgba(0,255,120,0.08))" : "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.18), rgba(255,255,255,0.04))",
-              backdropFilter: "blur(16px)",
-              border: video.is_ai_detected ? "1.5px solid rgba(0,255,120,0.8)" : "1.5px solid rgba(255,255,255,0.18)",
-              boxShadow: video.is_ai_detected ? "0 0 16px rgba(0,255,120,0.5), 0 2px 8px rgba(0,0,0,0.5)" : "0 2px 12px rgba(0,0,0,0.5)",
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.3s"
-            }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 13 }, children: video.is_ai_detected ? "🤖" : "🚩" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: video.is_ai_detected ? "#00ff78" : "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700 }, children: video.is_ai_detected ? "AI" : "Flag" })
-          ]
+        try {
+          const newCount = (video.shares_count || 0) + 1;
+          onShareCount && onShareCount(video.id, newCount);
+          await videos.update(video.id, { shares_count: newCount });
+        } catch (e) {
         }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(doLike),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-              width: 44,
-              height: 44,
-              borderRadius: "50%",
-              background: liked ? "radial-gradient(circle at 35% 35%, rgba(255,107,107,0.55), rgba(255,107,107,0.12))" : "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.18), rgba(255,255,255,0.04))",
-              backdropFilter: "blur(16px)",
-              border: liked ? "1.5px solid rgba(255,107,107,0.8)" : "1.5px solid rgba(255,255,255,0.18)",
-              boxShadow: liked ? "0 0 18px rgba(255,107,107,0.6), 0 2px 8px rgba(0,0,0,0.5)" : "0 2px 12px rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              animation: liked ? "heartpop 0.4s ease forwards" : "none",
-              transformOrigin: "center",
-              transition: "background 0.2s, border 0.2s, box-shadow 0.2s"
-            }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: "#FF6B6B", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.likes_count || 0) })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(() => onCommentOpen(video)),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, rgba(100,180,255,0.22), rgba(100,180,255,0.04))", backdropFilter: "blur(16px)", border: "1.5px solid rgba(100,180,255,0.35)", boxShadow: "0 0 14px rgba(100,180,255,0.2), 0 2px 12px rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.comments_count) })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(async () => {
-            var _a2;
-            const shareUrl = `${window.location.origin}?v=${video.id}`;
-            if (navigator.share) {
-              navigator.share({ title: video.caption || "Check this out on Sachi", url: shareUrl });
-            } else {
-              (_a2 = navigator.clipboard) == null ? void 0 : _a2.writeText(shareUrl);
-              toast.success("Link copied to clipboard!");
-            }
-            try {
-              const newCount = (video.shares_count || 0) + 1;
-              onShareCount && onShareCount(video.id, newCount);
-              await videos.update(video.id, { shares_count: newCount });
-            } catch (e) {
-            }
-          }),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, rgba(160,120,255,0.25), rgba(160,120,255,0.05))", backdropFilter: "blur(16px)", border: "1.5px solid rgba(160,120,255,0.4)", boxShadow: "0 0 14px rgba(160,120,255,0.2), 0 2px 12px rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "15", height: "15", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(200,170,255,0.95)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "5", r: "3" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "6", cy: "12", r: "3" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "19", r: "3" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8.59", y1: "13.51", x2: "15.42", y2: "17.49" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "15.41", y1: "6.51", x2: "8.59", y2: "10.49" })
-            ] }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.shares_count || 0) })
-          ]
-        }
-      ),
+      }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          background: "rgba(160,120,255,0.1)",
+          border: "1.5px solid rgba(160,120,255,0.3)",
+          boxShadow: "0 0 12px rgba(160,120,255,0.15), 0 2px 8px rgba(0,0,0,0.3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s"
+        }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(200,170,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "5", r: "3" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "6", cy: "12", r: "3" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "19", r: "3" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8.59", y1: "13.51", x2: "15.42", y2: "17.49" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "15.41", y1: "6.51", x2: "8.59", y2: "10.49" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(200,170,255,0.85)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.shares_count || 0) })
+      ] }),
       currentUser && (() => {
         var _a2;
         const isBookmarked = (_a2 = onBookmark == null ? void 0 : onBookmark.isBookmarked) == null ? void 0 : _a2.call(onBookmark, video.id);
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "button",
-          {
-            onClick: tap(async () => {
-              if (!currentUser) {
-                onNeedAuth && onNeedAuth();
-                return;
-              }
-              (onBookmark == null ? void 0 : onBookmark.handle) && onBookmark.handle(video.id, !isBookmarked);
-            }),
-            style: {
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 3,
-              WebkitTapHighlightColor: "transparent",
-              touchAction: "manipulation"
-            },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, borderRadius: "50%", background: isBookmarked ? "radial-gradient(circle at 35% 35%, rgba(245,200,66,0.4), rgba(245,200,66,0.08))" : "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.18), rgba(255,255,255,0.04))", backdropFilter: "blur(16px)", border: isBookmarked ? "1.5px solid rgba(245,200,66,0.75)" : "1.5px solid rgba(255,255,255,0.18)", boxShadow: isBookmarked ? "0 0 18px rgba(245,200,66,0.45), 0 2px 8px rgba(0,0,0,0.5)" : "0 2px 12px rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.25s" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: isBookmarked ? "#F5C842" : "none", stroke: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" }) }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: "Save" })
-            ]
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(async () => {
+          if (!currentUser) {
+            onNeedAuth && onNeedAuth();
+            return;
           }
-        );
-      })(),
-      isOwnVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: tap(doDelete),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
+          (onBookmark == null ? void 0 : onBookmark.handle) && onBookmark.handle(video.id, !isBookmarked);
+        }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            width: 52,
+            height: 52,
+            borderRadius: 16,
+            background: isBookmarked ? "radial-gradient(135deg, rgba(245,200,66,0.4), rgba(245,150,0,0.15))" : "rgba(245,200,66,0.06)",
+            border: isBookmarked ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(245,200,66,0.2)",
+            boxShadow: isBookmarked ? "0 0 18px rgba(245,200,66,0.45), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "radial-gradient(circle at 35% 35%, rgba(255,60,60,0.28), rgba(255,60,60,0.06))", backdropFilter: "blur(16px)", border: "1.5px solid rgba(255,80,80,0.4)", boxShadow: "0 0 12px rgba(255,60,60,0.2), 0 2px 12px rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "#ff6666", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "3 6 5 6 21 6" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10 11v6" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M14 11v6" })
-          ] }) })
+            justifyContent: "center",
+            transition: "all 0.25s"
+          }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: isBookmarked ? "#F5C842" : "none", stroke: isBookmarked ? "#F5C842" : "rgba(245,200,66,0.8)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" }) }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isBookmarked ? "#F5C842" : "rgba(245,200,66,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: "Save" })
+        ] });
+      })(),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(doMute), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: 52,
+          height: 52,
+          borderRadius: 16,
+          background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.06)",
+          border: muted ? "1.5px solid rgba(245,200,66,0.5)" : "1.5px solid rgba(255,255,255,0.1)",
+          boxShadow: muted ? "0 0 12px rgba(245,200,66,0.3)" : "0 2px 8px rgba(0,0,0,0.3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.25s"
+        }, children: muted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "#F5C842", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "23", y1: "9", x2: "17", y2: "15" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "17", y1: "9", x2: "23", y2: "15" })
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.8)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: muted ? "#F5C842" : "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: muted ? "Muted" : "Sound" })
+      ] })
+    ] }) }),
+    (isOwnVideo || currentUser) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      bottom: 144,
+      right: 10,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 8,
+      zIndex: 500,
+      transition: "opacity 0.4s ease",
+      opacity: showUI || !!photoUrls ? 1 : 0,
+      pointerEvents: showUI || !!photoUrls ? "auto" : "none"
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: tap(async () => {
+        if (!currentUser) {
+          onNeedAuth();
+          return;
         }
-      )
+        if (!window.confirm(video.is_ai_detected ? "Clear AI flag?" : "Flag as AI-generated?")) return;
+        try {
+          await videos.update(video.id, { is_ai_detected: !video.is_ai_detected });
+          onLike(video.id, 0);
+        } catch (e) {
+        }
+      }), style: { background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        background: video.is_ai_detected ? "rgba(0,255,120,0.15)" : "rgba(255,255,255,0.08)",
+        border: video.is_ai_detected ? "1.5px solid rgba(0,255,120,0.6)" : "1.5px solid rgba(255,255,255,0.12)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 14 }, children: video.is_ai_detected ? "🤖" : "🚩" }) }) }),
+      isOwnVideo && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: tap(doDelete), style: { background: "none", border: "none", cursor: "pointer", WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        background: "rgba(255,60,60,0.12)",
+        border: "1.5px solid rgba(255,80,80,0.35)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "#ff6666", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "3 6 5 6 21 6" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10 11v6" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M14 11v6" })
+      ] }) }) })
     ] }),
     reportTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(ReportModal, { video: reportTarget, currentUser, onClose: () => setReportTarget(null) }),
     showDeleteConfirm && /* @__PURE__ */ jsxRuntimeExports.jsx(
