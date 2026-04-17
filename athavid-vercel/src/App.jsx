@@ -461,19 +461,21 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
 
   useEffect(() => {
     if (!video) return;
-    comments.list(video.id)
+    // Fetch ALL comments for this video including parent_id field
+    request("GET", `/apps/${APP_ID}/entities/SachiComment?video_id=${video.id}&limit=500&sort=created_date`)
       .then(r => {
-        const all = Array.isArray(r) ? r : [];
-        // Separate top-level comments and replies
+        const all = Array.isArray(r) ? r : (r?.items || []);
+        // Separate top-level and replies using parent_id
         const topLevel = all.filter(c => !c.parent_id);
         const replies = all.filter(c => !!c.parent_id);
-        // Attach replies to their parent comments
+        // Group replies under their parent
         const withReplies = topLevel.map(c => ({
           ...c,
-          replies: replies.filter(r => r.parent_id === c.id)
+          replies: replies.filter(rep => rep.parent_id === c.id)
+            .sort((a,b) => new Date(a.created_date) - new Date(b.created_date))
         }));
         setList(withReplies);
-        // Auto-expand comments that have replies
+        // Auto-expand threads with replies
         const expanded = {};
         withReplies.forEach(c => { if (c.replies?.length > 0) expanded[c.id] = true; });
         setExpandedReplies(expanded);
@@ -487,7 +489,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const startReply = (c) => {
     if (!currentUser) { onNeedAuth(); return; }
     setReplyingTo({ id: c.id, username: c.username });
-    setText(`@${c.username} `);
+    setText(""); // Don't pre-fill — the placeholder shows who they're replying to
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
@@ -501,8 +503,12 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       if (replyingTo) {
         // Save reply to DB so it persists across sessions
-        const replyText = `@${replyingTo.username} ${text.trim()}`;
-        const savedReply = await comments.create({
+        // Avoid double @username if user already typed it
+        const trimmed = text.trim();
+        const replyText = trimmed.toLowerCase().startsWith(`@${replyingTo.username.toLowerCase()}`)
+          ? trimmed
+          : `@${replyingTo.username} ${trimmed}`;
+        const savedReply = await request("POST", `/apps/${APP_ID}/entities/SachiComment`, {
           video_id: video.id, username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
           comment_text: replyText,
@@ -2928,11 +2934,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </div>
           )}
           {/* Photo takes up most of the space */}
-          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none" }}>
+          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none", minHeight:0 }}>
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
               loading="lazy"
-              style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
+              style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
               onError={e => { e.target.style.display="none"; e.target.nextSibling && (e.target.nextSibling.style.display="flex"); }}
             />
             <div style={{ display:"none", position:"absolute", inset:0, alignItems:"center", justifyContent:"center", flexDirection:"column", gap:8, color:"#555" }}>
