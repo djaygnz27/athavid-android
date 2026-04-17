@@ -13962,7 +13962,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       padding: "10px 8px",
       gap: 4
     }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(doLike), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(doLike), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation", position: "relative" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
           width: 52,
           height: 52,
@@ -13979,11 +13979,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.likes_count || 0) }),
         likePopMsg && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
           position: "absolute",
-          bottom: 72,
+          bottom: "calc(100% + 8px)",
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 600,
-          background: "rgba(255,60,60,0.92)",
+          background: "rgba(255,60,60,0.95)",
           color: "#fff",
           borderRadius: 14,
           padding: "7px 13px",
@@ -13991,7 +13991,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           fontWeight: 700,
           whiteSpace: "nowrap",
           pointerEvents: "none",
-          boxShadow: "0 4px 18px rgba(255,60,60,0.45)",
+          boxShadow: "0 4px 18px rgba(255,60,60,0.5)",
           animation: "popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both"
         }, children: likePopMsg })
       ] }),
@@ -14025,7 +14025,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             await videos.update(video.id, { hype_count: newCount });
           } catch (e) {
           }
-        }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
+        }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation", position: "relative" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
             width: 52,
             height: 52,
@@ -14041,11 +14041,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.hype_count || 0) }),
           hypePopMsg && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
             position: "absolute",
-            bottom: 72,
+            bottom: "calc(100% + 8px)",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 600,
-            background: "rgba(255,130,0,0.92)",
+            background: "rgba(255,130,0,0.95)",
             color: "#fff",
             borderRadius: 14,
             padding: "7px 13px",
@@ -14053,7 +14053,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             fontWeight: 700,
             whiteSpace: "nowrap",
             pointerEvents: "none",
-            boxShadow: "0 4px 18px rgba(255,130,0,0.45)",
+            boxShadow: "0 4px 18px rgba(255,130,0,0.5)",
             animation: "popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both"
           }, children: hypePopMsg })
         ] });
