@@ -2918,10 +2918,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"center",
         gap:6, paddingLeft:12, paddingRight:12,
         zIndex:500,
-        transition:"opacity 0.4s ease",
-        opacity: (showUI || !!photoUrls) ? 1 : 0,
-        pointerEvents: (showUI || !!photoUrls) ? "auto" : "none",
-        visibility: (showUI || !!photoUrls) ? "visible" : "hidden",
+        transition:"opacity 0.3s ease",
+        opacity: 1,
+        pointerEvents: "auto",
+        visibility: "visible",
       }}>
         {/* Frosted glass pill container */}
         <div style={{
@@ -3076,8 +3076,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           position:"absolute", bottom: 144, right:10,
           display:"flex", flexDirection:"column", alignItems:"center", gap:8,
           zIndex:500, transition:"opacity 0.4s ease",
-          opacity: (showUI || !!photoUrls) ? 1 : 0,
-          pointerEvents: (showUI || !!photoUrls) ? "auto" : "none",
+          opacity: 1,
+          pointerEvents: "auto",
         }}>
           {/* AI Flag */}
           <button onClick={tap(async () => {
