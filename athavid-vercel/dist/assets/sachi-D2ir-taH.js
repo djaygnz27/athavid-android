@@ -8432,9 +8432,19 @@ const videos = {
     });
   },
   async byUser(userId) {
-    const res = await request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
-    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
-    return items.filter((v2) => !v2.is_archived);
+    const [res1, res2] = await Promise.all([
+      request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
+      request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => [])
+    ]);
+    const items1 = Array.isArray(res1) ? res1 : (res1 == null ? void 0 : res1.items) || [];
+    const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || [];
+    const seen2 = /* @__PURE__ */ new Set();
+    const merged = [...items1, ...items2].filter((v2) => {
+      if (seen2.has(v2.id)) return false;
+      seen2.add(v2.id);
+      return !v2.is_archived;
+    });
+    return merged;
   },
   async delete(id2) {
     return request$1("DELETE", `/apps/${APP_ID$3}/entities/SachiVideo/${id2}`);
@@ -14526,6 +14536,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   ] });
 }
 function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username }) {
+  var _a;
   const [idx, setIdx] = React.useState(startIndex || 0);
   const [muted, setMuted] = React.useState(false);
   const videoRef = React.useRef(null);
@@ -14563,7 +14574,22 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       onTouchEnd,
       style: { position: "fixed", inset: 0, zIndex: 5e3, background: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
+        v2.is_photo && ((_a = v2.photo_urls) == null ? void 0 : _a.length) > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            src: resolveMediaUrl(Array.isArray(v2.photo_urls) ? v2.photo_urls[0] : JSON.parse(v2.photo_urls || "[]")[0]),
+            style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", background: "#000" }
+          }
+        ) : v2.is_text_post ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg,#1B1535,#0B0C1A,#2A1E00)",
+          padding: 32,
+          textAlign: "center"
+        }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 22, fontWeight: 700, lineHeight: 1.5 }, children: v2.caption }) }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
           "video",
           {
             ref: videoRef,
@@ -14572,9 +14598,20 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
             playsInline: true,
             loop: true,
             muted,
+            controls: false,
             onClick: () => {
-              if (videoRef.current.paused) videoRef.current.play();
-              else videoRef.current.pause();
+              var _a2, _b;
+              if ((_a2 = videoRef.current) == null ? void 0 : _a2.paused) videoRef.current.play().catch(() => {
+              });
+              else (_b = videoRef.current) == null ? void 0 : _b.pause();
+            },
+            onError: (e) => {
+              console.log("Video error:", e);
+            },
+            onLoadedData: () => {
+              var _a2;
+              (_a2 = videoRef.current) == null ? void 0 : _a2.play().catch(() => {
+              });
             },
             style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }
           },
@@ -14962,17 +14999,17 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                     overflow: "hidden",
                     cursor: "pointer",
                     borderRadius: 12,
-                    border: "1.5px solid rgba(245,200,66,0.18)",
-                    boxShadow: "0 0 12px rgba(245,200,66,0.08), 0 4px 16px rgba(0,0,0,0.6)",
+                    border: "2.5px solid rgba(245,200,66,0.7)",
+                    boxShadow: "0 0 0 1px rgba(245,200,66,0.15), 0 0 16px rgba(245,200,66,0.35), 0 4px 16px rgba(0,0,0,0.6)",
                     transition: "transform 0.15s, box-shadow 0.15s"
                   },
                   onMouseEnter: (e) => {
                     e.currentTarget.style.transform = "scale(1.03)";
-                    e.currentTarget.style.boxShadow = "0 0 20px rgba(245,200,66,0.22), 0 6px 20px rgba(0,0,0,0.7)";
+                    e.currentTarget.style.boxShadow = "0 0 0 1px rgba(245,200,66,0.3), 0 0 28px rgba(245,200,66,0.55), 0 6px 20px rgba(0,0,0,0.7)";
                   },
                   onMouseLeave: (e) => {
                     e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.boxShadow = "0 0 12px rgba(245,200,66,0.08), 0 4px 16px rgba(0,0,0,0.6)";
+                    e.currentTarget.style.boxShadow = "0 0 0 1px rgba(245,200,66,0.15), 0 0 16px rgba(245,200,66,0.35), 0 4px 16px rgba(0,0,0,0.6)";
                   },
                   children: [
                     v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover", borderRadius: 10 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("video", { src: resolveMediaUrl(v2.video_url), style: { width: "100%", height: "100%", objectFit: "cover", borderRadius: 10 }, muted: true, playsInline: true, preload: "metadata" }),
