@@ -2556,6 +2556,7 @@ function FlameIcon({ views = 0 }) {
 
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, likedVideoIds, likeRecords, onLikeChange, onHashtagPress }) {
   const [showLikers, setShowLikers] = React.useState(false);
+  const [showBruhToast, setShowBruhToast] = React.useState(false);
   const [hyped, setHyped] = React.useState(false);
   const [hypeCount, setHypeCount] = React.useState(video.hype_count || 0);
   const [hypeAnim, setHypeAnim] = React.useState(false);
@@ -2739,7 +2740,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const likeLockedRef = React.useRef(false);
   const doLike = async () => {
     if (!currentUser) { onNeedAuth(); return; }
-    if (liked) { toast.info("Dude, you already liked this video!"); return; }
+    if (liked) {
+      setShowBruhToast(true);
+      setTimeout(() => setShowBruhToast(false), 2200);
+      return;
+    }
     if (likeLockedRef.current) return;
     likeLockedRef.current = true;
     setTimeout(() => { likeLockedRef.current = false; }, 800);
@@ -3257,13 +3262,63 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               transform: (showUI || !playing || !!photoUrls) ? "translateY(0)" : "translateY(30px)",
               pointerEvents: (showUI || !playing || !!photoUrls) ? "auto" : "none",
             }}>
+
+              {/* ── FLOATING HEART + COMMENT — right side, independent ── */}
+              <div style={{ position:"absolute", right:12, bottom:0, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex:10 }}>
+
+                {/* Bruh toast — floats up from heart */}
+                {showBruhToast && (
+                  <div style={{
+                    position:"absolute", bottom:90, right:-8, zIndex:999,
+                    animation:"bruhFloat 2.2s ease forwards",
+                    pointerEvents:"none", whiteSpace:"nowrap",
+                  }}>
+                    <div style={{
+                      background:"linear-gradient(135deg,#FF6B6B,#ff3366)",
+                      borderRadius:20, padding:"8px 14px",
+                      boxShadow:"0 4px 20px rgba(255,107,107,0.6)",
+                      animation:"bruhWiggle 0.3s ease-in-out infinite",
+                      position:"relative",
+                    }}>
+                      <div style={{ color:"#fff", fontWeight:900, fontSize:13, letterSpacing:0.3 }}>
+                        Bruh 😂 you already liked this!
+                      </div>
+                      {/* Speech bubble tail */}
+                      <div style={{
+                        position:"absolute", bottom:-8, right:18,
+                        width:0, height:0,
+                        borderLeft:"8px solid transparent",
+                        borderRight:"8px solid transparent",
+                        borderTop:"8px solid #ff3366",
+                      }}/>
+                    </div>
+                  </div>
+                )}
+
+                {/* Heart */}
+                <ActionBtn onClick={tap(doLike)} count={video.likes_count||0} label="Like" isActive={liked} activeColor="#FF6B6B" ringOffset={liked ? Math.max(RING_CIRC-((video.likes_count||0)/40)*RING_CIRC,8) : RING_CIRC}>
+                  <svg width="14" height="14" viewBox="0 0 24 24"
+                    fill={liked?"#FF6B6B":"none"} stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ transition:"fill 0.2s", animation:liked?"heartpop 0.4s ease forwards":"none" }}>
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </ActionBtn>
+
+                {/* Comment */}
+                <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comments_count||0} label="Comment" isActive={false} activeColor="#6c63ff" ringOffset={Math.max(RING_CIRC-((video.comments_count||0)/15)*RING_CIRC, 12)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </ActionBtn>
+              </div>
+
+              {/* ── PILL BAR — Sound, LIT, Crown, Share, Delete ── */}
               <div style={{
-                margin:"0 12px 0",
+                margin:"0 60px 0 12px",
                 background:"linear-gradient(180deg, rgba(15,15,32,0.92) 0%, rgba(8,8,20,0.97) 100%)",
                 backdropFilter:"blur(24px)",
                 borderRadius:22,
                 border:"1px solid rgba(255,255,255,0.1)",
-                borderBottom:"1px solid rgba(255,255,255,0.05)",
                 padding:"8px 4px 7px",
                 display:"flex", alignItems:"flex-start", justifyContent:"space-around",
                 boxShadow:"0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)",
@@ -3293,20 +3348,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                       <path d="M10 24 C7 24 6 21 6 18 C6 16 8 13 9 11 C10 13 10 15 11 16 C12 14 13 11 14 10 C15 13 14 17 14 18 C14 22 13 24 10 24Z" fill={`url(#${fId+"i"})`} style={{ animation:"flameWave 1.2s ease-in-out infinite reverse", transformOrigin:"10px 24px" }}/>
                     </svg>
                   </div>
-                </ActionBtn>
-
-                <ActionBtn onClick={tap(doLike)} count={video.likes_count||0} label="Like" isActive={liked} activeColor="#FF6B6B" ringOffset={liked ? Math.max(RING_CIRC-((video.likes_count||0)/40)*RING_CIRC,8) : RING_CIRC}>
-                  <svg width="14" height="14" viewBox="0 0 24 24"
-                    fill={liked?"#FF6B6B":"none"} stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    style={{ transition:"fill 0.2s", animation:liked?"heartpop 0.4s ease forwards":"none" }}>
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                </ActionBtn>
-
-                <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comments_count||0} label="Comment" isActive={false} activeColor="#6c63ff" ringOffset={Math.max(RING_CIRC-((video.comments_count||0)/15)*RING_CIRC, 12)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
                 </ActionBtn>
 
                 {currentUser && (
@@ -3513,6 +3554,16 @@ spinStyle.textContent = `
   @keyframes crownFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
   @keyframes broadcastPulse { 0%{transform:scale(1);opacity:0.8} 100%{transform:scale(2.2);opacity:0} }
   @keyframes ringIconPop { 0%{transform:scale(1)} 35%{transform:scale(1.5)} 65%{transform:scale(0.88)} 100%{transform:scale(1)} }
+  @keyframes bruhFloat {
+    0%   { opacity:0; transform:translateY(0) scale(0.6); }
+    15%  { opacity:1; transform:translateY(-20px) scale(1.05); }
+    75%  { opacity:1; transform:translateY(-60px) scale(1); }
+    100% { opacity:0; transform:translateY(-90px) scale(0.9); }
+  }
+  @keyframes bruhWiggle {
+    0%,100%{ transform:rotate(-2deg); }
+    50%    { transform:rotate(2deg); }
+  }
 `;
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
 
