@@ -6376,6 +6376,21 @@ function App() {
     }
   }, []);
 
+  // TEMPORARY: Cloudflare Stream function diagnostic. Remove after verification.
+  useEffect(() => {
+    window.testCfStream = async () => {
+      try {
+        const r = await request("POST", "/functions/cfStreamUpload", { maxDurationSeconds: 60 });
+        console.log("✅ cfStreamUpload response:", r);
+        return r;
+      } catch (e) {
+        console.error("❌ cfStreamUpload error:", e);
+        return { error: e.message };
+      }
+    };
+    console.log("[diagnostic] Call window.testCfStream() in console to test");
+  }, []);
+
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
