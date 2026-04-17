@@ -13,44 +13,32 @@
  * URLs that consume paid Cloudflare resources.
  */
 
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
-  }
-
-  if (req.method !== "POST") {
-    return Response.json({ error: "Method not allowed" }, {
-      status: 405,
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
-  }
-
+export default async function handler(req, res) {
   // ── Auth (required) ─────────────────────────────────────────────────────────
-  // Base44's Deno runtime: use createClientFromRequest + base44.auth.me()
-  // Unauthenticated requests are rejected. Do NOT make this optional.
+  // Base44's Deno runtime should populate req.user from the session cookie.
+  // If you're not sure of the exact auth API on Base44, call base44.auth.me()
+  // inside a try/catch — but still REQUIRE a valid user afterward.
   let user = null;
   try {
-    const base44 = createClientFromRequest(req);
-    user = await base44.auth.me();
+    // Option A: Base44 injects req.user (most common pattern)
+    if (req.user && req.user.id) {
+      user = req.user;
+    } else {
+      // Option B: fall back to base44.auth.me() if the global is available
+      // (this is what Base44's AI referenced in its logs)
+      // deno-lint-ignore no-explicit-any
+      const globalBase44 = (globalThis as any).base44;
+      if (globalBase44?.auth?.me) {
+        user = await globalBase44.auth.me();
+      }
+    }
   } catch (_err) {
+    // auth lookup itself threw — treat as unauthenticated
     user = null;
   }
 
   if (!user || !user.id) {
-    return Response.json({ error: "Authentication required" }, {
-      status: 401,
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
+    return res.status(401).json({ error: "Authentication required" });
   }
 
   // ── Env vars ────────────────────────────────────────────────────────────────
@@ -63,15 +51,11 @@ Deno.serve(async (req) => {
 
   if (!CF_ACCOUNT_ID || !CF_STREAM_API_TOKEN) {
     console.error("[cfStreamUpload] Missing CF env vars");
-    return Response.json({ error: "Server not configured for video uploads" }, {
-      status: 500,
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
+    return res.status(500).json({ error: "Server not configured for video uploads" });
   }
 
   // ── Request body ────────────────────────────────────────────────────────────
-  const body = await req.json().catch(() => ({}));
-  const { maxDurationSeconds } = body;
+  const { maxDurationSeconds } = req.body || {};
   const duration = Math.min(
     parseInt(maxDurationSeconds, 10) || CF_STREAM_MAX_SECONDS,
     CF_STREAM_MAX_SECONDS,
@@ -110,28 +94,18 @@ Deno.serve(async (req) => {
 
     if (!cfResponse.ok || !data.success) {
       console.error("[cfStreamUpload] CF API error:", data);
-      return Response.json({
+      return res.status(502).json({
         error: "Cloudflare Stream rejected the upload request",
         details: data.errors || data,
-      }, {
-        status: 502,
-        headers: { "Access-Control-Allow-Origin": "*" },
       });
     }
 
-    return Response.json({
+    return res.status(200).json({
       uploadURL: data.result.uploadURL,
       videoId: data.result.uid,
-    }, {
-      status: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
     });
-
   } catch (err) {
     console.error("[cfStreamUpload] Fetch error:", err);
-    return Response.json({ error: "Failed to reach Cloudflare Stream" }, {
-      status: 500,
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
+    return res.status(500).json({ error: "Failed to reach Cloudflare Stream" });
   }
-});
+}
