@@ -2932,7 +2932,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <img
               src={resolveMediaUrl(photoUrls[photoIdx])}
               loading="lazy"
-              style={{ width:"100%", height:"100%", objectFit:"contain", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
+              style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
               onError={e => { e.target.style.display="none"; e.target.nextSibling && (e.target.nextSibling.style.display="flex"); }}
             />
             <div style={{ display:"none", position:"absolute", inset:0, alignItems:"center", justifyContent:"center", flexDirection:"column", gap:8, color:"#555" }}>
@@ -3287,7 +3287,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             }}>
 
               {/* ── FLOATING HEART + COMMENT — right side, independent ── */}
-              <div style={{ position:"absolute", right:10, bottom:4, display:"flex", flexDirection:"column", alignItems:"center", gap:8, zIndex:10 }}>
+              <div style={{ position:"absolute", right:10, bottom:8, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex:10 }}>
 
                 {/* Bruh toast — floats up from heart */}
                 {showBruhToast && (
@@ -3337,7 +3337,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
               {/* ── PILL BAR — Sound, LIT, Crown, Share, Delete ── */}
               <div style={{
-                margin:"0 56px 0 12px",
+                margin:"0 58px 0 12px",
                 background:"linear-gradient(180deg, rgba(15,15,32,0.92) 0%, rgba(8,8,20,0.97) 100%)",
                 backdropFilter:"blur(24px)",
                 borderRadius:22,
@@ -4515,13 +4515,17 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const regularPodcasts = filtered.filter(p => !p.is_live);
 
   const handleRegister = async () => {
-    if (!registerForm.title || !registerForm.host_name) return;
+    const hostName = registerForm.host_name || currentUser?.full_name || currentUser?.email?.split("@")[0] || "";
+    if (!registerForm.title || !hostName) {
+      showToast("Please enter your podcast title and your name", "error");
+      return;
+    }
     setRegistering(true);
     try {
       const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
       await request("POST", `/apps/${APP_ID}/entities/SachiPodcast`, {
         title: registerForm.title,
-        host_name: registerForm.host_name,
+        host_name: hostName,
         description: registerForm.description,
         category: registerForm.category,
         live_stream_url: registerForm.live_stream_url || "",
@@ -4943,16 +4947,24 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
         {toast && <Toast msg={toast.msg} type={toast.type} />}
         <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom:60 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
             <button onClick={() => setShowRegister(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", flexShrink:0 }}>←</button>
             <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>🎙️ Register Your Podcast</div>
           </div>
+          {!registerDone && (
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20, padding:"10px 14px", background:"rgba(108,60,247,0.08)", border:"1px solid rgba(108,60,247,0.2)", borderRadius:12 }}>
+              <span style={{ fontSize:18 }}>💡</span>
+              <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12, lineHeight:1.5 }}>
+                Fill in your show details below. Your podcast goes <strong style={{ color:"#a78bfa" }}>live instantly</strong> — no waiting, no approval.
+              </div>
+            </div>
+          )}
           {registerDone ? (
             <div style={{ textAlign:"center", padding:"40px 20px" }}>
               <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:24, marginBottom:10 }}>You are on the list!</div>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:24, marginBottom:10 }}>Your podcast is LIVE! 🎙️</div>
               <div style={{ color:"rgba(255,255,255,0.5)", fontSize:15, marginBottom:8, lineHeight:1.6 }}>
-                Your show is <strong style={{ color:"#81c784" }}>live on Sachi right now.</strong><br/>No waiting. No approval needed.
+                Your show is <strong style={{ color:"#81c784" }}>live on Sachi right now.</strong><br/>Listeners can find it in the Podcasts tab.
               </div>
               <div style={{ background:"rgba(46,125,50,0.1)", border:"1px solid rgba(46,125,50,0.3)", borderRadius:14, padding:16, margin:"20px 0 28px", textAlign:"left" }}>
                 <div style={{ color:"#81c784", fontWeight:700, fontSize:13, marginBottom:8 }}>⚡ You are all set — here's how to go live:</div>
@@ -4998,18 +5010,19 @@ function PodcastPage({ currentUser, onNeedAuth }) {
               {/* HOST NAME */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Your Name <span style={{ color:"#e53935" }}>*</span></div>
-                <input value={registerForm.host_name} onChange={e => setRegisterForm(p => ({...p, host_name:e.target.value}))}
-                  placeholder="Full name or stage name"
+                <input value={registerForm.host_name || currentUser?.full_name || ""} onChange={e => setRegisterForm(p => ({...p, host_name:e.target.value}))}
+                  placeholder={currentUser?.full_name || "Full name or stage name"}
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
               </div>
 
               {/* DESCRIPTION */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>What is your podcast about?</div>
-                <textarea value={registerForm.description} onChange={e => setRegisterForm(p => ({...p, description:e.target.value}))}
+                <textarea value={registerForm.description} onChange={e => setRegisterForm(p => ({...p, description:e.target.value.slice(0,300)}))}
                   placeholder="Tell listeners what to expect — topics, guests, vibe..."
                   rows={3}
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", resize:"none", boxSizing:"border-box" }} />
+                <div style={{ color:"rgba(255,255,255,0.2)", fontSize:11, textAlign:"right", marginTop:4 }}>{(registerForm.description||"").length}/300</div>
               </div>
 
               {/* CATEGORY */}
@@ -5031,14 +5044,16 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 <input value={registerForm.live_stream_url} onChange={e => setRegisterForm(p => ({...p, live_stream_url:e.target.value}))}
                   placeholder="https://youtube.com/live/... or Twitch link"
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
-                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, marginTop:5 }}>Where listeners will tune in when you go live. You can update this anytime.</div>
+                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, marginTop:5 }}>
+                  Supports YouTube Live, Twitch, Rumble, Spotify. You can add or change this anytime after registering.
+                </div>
               </div>
 
               <button onClick={handleRegister} disabled={registering || !registerForm.title || !registerForm.host_name}
                 style={{ width:"100%", padding:"16px 0", background: (!registerForm.title || !registerForm.host_name) ? "rgba(108,60,247,0.3)" : registering ? "rgba(108,60,247,0.5)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: (!registerForm.title || !registerForm.host_name) ? "not-allowed" : "pointer", marginTop:4 }}>
                 {registering ? "⏳ Submitting..." : "Submit My Podcast →"}
               </button>
-              <div style={{ color:"rgba(255,255,255,0.2)", fontSize:12, textAlign:"center" }}>Reviewed and approved within 24 hours</div>
+              <div style={{ color:"rgba(255,255,255,0.2)", fontSize:12, textAlign:"center" }}>Your show goes live instantly — no approval needed 🎉</div>
             </div>
           )}
         </div>
