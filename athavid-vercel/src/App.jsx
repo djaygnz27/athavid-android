@@ -1,4 +1,13 @@
-// Sachi v2.1.0 - avatar top-left, horizontal action bar, frosted glass icons
+// Sachi v2.1.1 - photo_urls array fix, bottom action bar
+const SACHI_BUILD = "20260417-1";
+if (localStorage.getItem("sachi_build") !== SACHI_BUILD) {
+  localStorage.setItem("sachi_build", SACHI_BUILD);
+  // Clear any stale caches
+  if ('caches' in window) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+}
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import heic2any from "heic2any";
 import Landing from "./Landing";
