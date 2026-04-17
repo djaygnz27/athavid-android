@@ -3148,7 +3148,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }}>
 
           {/* LIKE */}
-          <button onClick={tap(doLike)} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+          <button onClick={tap(doLike)} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", position:"relative" }}>
             <div style={{
               width:52, height:52, borderRadius:16,
               background: liked ? "radial-gradient(135deg, rgba(255,107,107,0.45), rgba(255,60,60,0.15))" : "rgba(255,255,255,0.07)",
@@ -3163,10 +3163,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </div>
             <div style={{ color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.likes_count||0)}</div>
             {likePopMsg && (
-              <div style={{ position:"absolute", bottom:72, left:"50%", transform:"translateX(-50%)", zIndex:600,
-                background:"rgba(255,60,60,0.92)", color:"#fff", borderRadius:14, padding:"7px 13px",
+              <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:"50%", transform:"translateX(-50%)", zIndex:600,
+                background:"rgba(255,60,60,0.95)", color:"#fff", borderRadius:14, padding:"7px 13px",
                 fontSize:12, fontWeight:700, whiteSpace:"nowrap", pointerEvents:"none",
-                boxShadow:"0 4px 18px rgba(255,60,60,0.45)",
+                boxShadow:"0 4px 18px rgba(255,60,60,0.5)",
                 animation:"popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both" }}>
                 {likePopMsg}
               </div>
@@ -3202,7 +3202,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 const newCount = Math.max(0, (video.hype_count || 0) + (newHyped ? 1 : -1));
                 onLike(video.id, 0); // re-render trigger
                 try { await videos.update(video.id, { hype_count: newCount }); } catch(e) {}
-              })} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+              })} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", position:"relative" }}>
                 <div style={{
                   width:52, height:52, borderRadius:16,
                   background: isHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
@@ -3215,10 +3215,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 </div>
                 <div style={{ color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.hype_count||0)}</div>
                 {hypePopMsg && (
-                  <div style={{ position:"absolute", bottom:72, left:"50%", transform:"translateX(-50%)", zIndex:600,
-                    background:"rgba(255,130,0,0.92)", color:"#fff", borderRadius:14, padding:"7px 13px",
+                  <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:"50%", transform:"translateX(-50%)", zIndex:600,
+                    background:"rgba(255,130,0,0.95)", color:"#fff", borderRadius:14, padding:"7px 13px",
                     fontSize:12, fontWeight:700, whiteSpace:"nowrap", pointerEvents:"none",
-                    boxShadow:"0 4px 18px rgba(255,130,0,0.45)",
+                    boxShadow:"0 4px 18px rgba(255,130,0,0.5)",
                     animation:"popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both" }}>
                     {hypePopMsg}
                   </div>
