@@ -2688,11 +2688,33 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   };
 
   const likeLockedRef = React.useRef(false);
+  const likeTapCount = React.useRef(0);
+  const likeTapTimer = React.useRef(null);
+  const [likePopMsg, setLikePopMsg] = React.useState(null);
+  const hypeTapCount = React.useRef(0);
+  const hypeTapTimer = React.useRef(null);
+  const [hypePopMsg, setHypePopMsg] = React.useState(null);
+
+  const LIKE_MSGS = ["❤️ Okay okay, we get it!", "😅 You really love this!", "🙈 Obsessed much?", "💘 Alright, settle down!", "🫀 Your heart is showing!"];
+  const HYPE_MSGS = ["🔥 Easy there, pyromaniac!", "😤 Still on fire!", "🚒 Call the fire dept!", "💥 Okay you're HYPED!", "🫠 You're melting the screen!"];
+
+  const showPopMsg = (msgs, setter, countRef, timerRef) => {
+    countRef.current += 1;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (countRef.current >= 3) {
+      const msg = msgs[Math.min(countRef.current - 3, msgs.length - 1)];
+      setter(msg);
+      timerRef.current = setTimeout(() => { setter(null); countRef.current = 0; }, 2200);
+    } else {
+      timerRef.current = setTimeout(() => { countRef.current = 0; }, 1500);
+    }
+  };
   const doLike = () => {
     if (!currentUser) { onNeedAuth(); return; }
     if (likeLockedRef.current) return;
     likeLockedRef.current = true;
     setTimeout(() => { likeLockedRef.current = false; }, 500);
+    showPopMsg(LIKE_MSGS, setLikePopMsg, likeTapCount, likeTapTimer);
     setLiked(prev => {
       const newLiked = !prev;
       onLike(video.id, newLiked ? 1 : -1);
@@ -3140,6 +3162,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
               </svg>
             </div>
             <div style={{ color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.likes_count||0)}</div>
+            {likePopMsg && (
+              <div style={{ position:"absolute", bottom:72, left:"50%", transform:"translateX(-50%)", zIndex:600,
+                background:"rgba(255,60,60,0.92)", color:"#fff", borderRadius:14, padding:"7px 13px",
+                fontSize:12, fontWeight:700, whiteSpace:"nowrap", pointerEvents:"none",
+                boxShadow:"0 4px 18px rgba(255,60,60,0.45)",
+                animation:"popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both" }}>
+                {likePopMsg}
+              </div>
+            )}
           </button>
 
           {/* COMMENT */}
@@ -3165,6 +3196,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             return (
               <button onClick={tap(async () => {
                 if (!currentUser) { onNeedAuth(); return; }
+                showPopMsg(HYPE_MSGS, setHypePopMsg, hypeTapCount, hypeTapTimer);
                 // Toggle hype
                 const newHyped = !isHyped;
                 const newCount = Math.max(0, (video.hype_count || 0) + (newHyped ? 1 : -1));
@@ -3182,6 +3214,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   <span style={{ fontSize:22 }}>🔥</span>
                 </div>
                 <div style={{ color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.hype_count||0)}</div>
+                {hypePopMsg && (
+                  <div style={{ position:"absolute", bottom:72, left:"50%", transform:"translateX(-50%)", zIndex:600,
+                    background:"rgba(255,130,0,0.92)", color:"#fff", borderRadius:14, padding:"7px 13px",
+                    fontSize:12, fontWeight:700, whiteSpace:"nowrap", pointerEvents:"none",
+                    boxShadow:"0 4px 18px rgba(255,130,0,0.45)",
+                    animation:"popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both" }}>
+                    {hypePopMsg}
+                  </div>
+                )}
               </button>
             );
           })()}

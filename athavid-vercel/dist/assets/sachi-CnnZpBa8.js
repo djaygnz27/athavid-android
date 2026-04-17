@@ -13252,6 +13252,30 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }
   };
   const likeLockedRef = React.useRef(false);
+  const likeTapCount = React.useRef(0);
+  const likeTapTimer = React.useRef(null);
+  const [likePopMsg, setLikePopMsg] = React.useState(null);
+  const hypeTapCount = React.useRef(0);
+  const hypeTapTimer = React.useRef(null);
+  const [hypePopMsg, setHypePopMsg] = React.useState(null);
+  const LIKE_MSGS = ["❤️ Okay okay, we get it!", "😅 You really love this!", "🙈 Obsessed much?", "💘 Alright, settle down!", "🫀 Your heart is showing!"];
+  const HYPE_MSGS = ["🔥 Easy there, pyromaniac!", "😤 Still on fire!", "🚒 Call the fire dept!", "💥 Okay you're HYPED!", "🫠 You're melting the screen!"];
+  const showPopMsg = (msgs, setter, countRef, timerRef) => {
+    countRef.current += 1;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (countRef.current >= 3) {
+      const msg = msgs[Math.min(countRef.current - 3, msgs.length - 1)];
+      setter(msg);
+      timerRef.current = setTimeout(() => {
+        setter(null);
+        countRef.current = 0;
+      }, 2200);
+    } else {
+      timerRef.current = setTimeout(() => {
+        countRef.current = 0;
+      }, 1500);
+    }
+  };
   const doLike = () => {
     if (!currentUser) {
       onNeedAuth();
@@ -13262,6 +13286,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     setTimeout(() => {
       likeLockedRef.current = false;
     }, 500);
+    showPopMsg(LIKE_MSGS, setLikePopMsg, likeTapCount, likeTapTimer);
     setLiked((prev) => {
       const newLiked = !prev;
       onLike(video.id, newLiked ? 1 : -1);
@@ -13951,7 +13976,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           transition: "all 0.2s",
           animation: liked ? "heartpop 0.4s ease forwards" : "none"
         }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: liked ? "#FF6B6B" : "rgba(255,255,255,0.85)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.likes_count || 0) })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.likes_count || 0) }),
+        likePopMsg && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          position: "absolute",
+          bottom: 72,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 600,
+          background: "rgba(255,60,60,0.92)",
+          color: "#fff",
+          borderRadius: 14,
+          padding: "7px 13px",
+          fontSize: 12,
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+          boxShadow: "0 4px 18px rgba(255,60,60,0.45)",
+          animation: "popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both"
+        }, children: likePopMsg })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(() => onCommentOpen(video)), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
@@ -13975,6 +14017,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             onNeedAuth();
             return;
           }
+          showPopMsg(HYPE_MSGS, setHypePopMsg, hypeTapCount, hypeTapTimer);
           const newHyped = !isHyped;
           const newCount = Math.max(0, (video.hype_count || 0) + (newHyped ? 1 : -1));
           onLike(video.id, 0);
@@ -13995,7 +14038,24 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             justifyContent: "center",
             transition: "all 0.2s"
           }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 22 }, children: "🔥" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.hype_count || 0) })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.hype_count || 0) }),
+          hypePopMsg && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            position: "absolute",
+            bottom: 72,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 600,
+            background: "rgba(255,130,0,0.92)",
+            color: "#fff",
+            borderRadius: 14,
+            padding: "7px 13px",
+            fontSize: 12,
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            boxShadow: "0 4px 18px rgba(255,130,0,0.45)",
+            animation: "popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both"
+          }, children: hypePopMsg })
         ] });
       })(),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(async () => {
