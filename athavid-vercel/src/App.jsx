@@ -3173,35 +3173,53 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         const isBookmarked = onBookmark?.isBookmarked?.(video.id);
         const fId = `f${video.id}`;
 
-        const ActionBtn = ({ onClick, label, count, isActive, activeColor, children }) => (
-          <button onClick={onClick}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column",
-              alignItems:"center", gap:3, padding:"0 6px", WebkitTapHighlightColor:"transparent",
-              touchAction:"manipulation", flex:1, minWidth:0 }}>
-            <div style={{
-              width:32, height:32, borderRadius:10,
-              background: isActive
-                ? `linear-gradient(135deg, ${activeColor}33, ${activeColor}18)`
-                : "rgba(255,255,255,0.07)",
-              border: `1.5px solid ${isActive ? activeColor : "rgba(255,255,255,0.12)"}`,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              transition:"all 0.22s cubic-bezier(0.34,1.56,0.64,1)",
-              boxShadow: isActive ? `0 0 14px ${activeColor}44` : "none",
-              transform: isActive ? "scale(1.1)" : "scale(1)",
-            }}>
-              {children}
-            </div>
-            <div style={{
-              fontSize:9, fontWeight:700,
-              color: isActive ? activeColor : "rgba(255,255,255,0.4)",
-              lineHeight:1.2, maxWidth:44, textAlign:"center",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-              transition:"color 0.2s",
-            }}>
-              {count !== undefined ? (formatCount(count) || label) : label}
-            </div>
-          </button>
-        );
+        const RING_CIRC = 88;
+        const ActionBtn = ({ onClick, label, count, isActive, activeColor, children, ringOffset }) => {
+          const [bursting, setBursting] = React.useState(false);
+          const handleClick = (e) => { setBursting(true); setTimeout(() => setBursting(false), 600); onClick(e); };
+          const offset = ringOffset !== undefined ? ringOffset : (isActive ? 20 : RING_CIRC);
+          return (
+            <button onClick={handleClick}
+              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column",
+                alignItems:"center", gap:3, padding:"0 6px", WebkitTapHighlightColor:"transparent",
+                touchAction:"manipulation", flex:1, minWidth:0 }}>
+              <div style={{ position:"relative", width:38, height:38 }}>
+                {/* Ring SVG */}
+                <svg style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }} viewBox="0 0 38 38" width="38" height="38">
+                  <circle cx="19" cy="19" r="14" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2"/>
+                  <circle cx="19" cy="19" r="14" fill="none" stroke={activeColor} strokeWidth="2"
+                    strokeLinecap="round" strokeDasharray={RING_CIRC} strokeDashoffset={offset}
+                    style={{ transition:"stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1)", opacity: offset < RING_CIRC ? 1 : 0.3 }}/>
+                </svg>
+                {/* Burst ring */}
+                {bursting && (
+                  <div style={{ position:"absolute", inset:-4, borderRadius:"50%", border:`2px solid ${activeColor}`,
+                    animation:"ringBurst 0.5s ease forwards", pointerEvents:"none" }} />
+                )}
+                {/* Icon center */}
+                <div style={{
+                  position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+                  borderRadius:"50%",
+                  background: isActive ? `${activeColor}18` : "rgba(255,255,255,0.05)",
+                  transition:"background 0.2s",
+                  animation: bursting ? "ringIconPop 0.4s ease forwards" : "none",
+                  filter: isActive ? `drop-shadow(0 0 6px ${activeColor}88)` : "none",
+                }}>
+                  {children}
+                </div>
+              </div>
+              <div style={{
+                fontSize:9, fontWeight:700,
+                color: isActive ? activeColor : "rgba(255,255,255,0.4)",
+                lineHeight:1.2, maxWidth:44, textAlign:"center",
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                transition:"color 0.2s",
+              }}>
+                {count !== undefined ? (formatCount(count) || label) : label}
+              </div>
+            </button>
+          );
+        };
 
         return (
           <>
@@ -3258,7 +3276,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   }
                 </ActionBtn>
 
-                <ActionBtn onClick={tap(doHype)} label={hypeCount > 0 ? String(hypeCount) : "LIT"} isActive={hyped} activeColor="#FF6B00">
+                <ActionBtn onClick={tap(doHype)} label={hypeCount > 0 ? String(hypeCount) : "LIT"} isActive={hyped} activeColor="#FF6B00" ringOffset={Math.max(RING_CIRC - (hypeCount/15)*RING_CIRC, hyped?8:RING_CIRC)}>
                   <div style={{ filter:hyped?"drop-shadow(0 0 8px rgba(255,107,0,0.9))":"none", animation:hypeAnim?"firepop 0.5s ease forwards":"none" }}>
                     <svg width="14" height="18" viewBox="0 0 20 28" style={{ overflow:"visible" }}>
                       <defs>
@@ -3277,7 +3295,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   </div>
                 </ActionBtn>
 
-                <ActionBtn onClick={tap(doLike)} count={video.likes_count||0} label="Like" isActive={liked} activeColor="#FF6B6B">
+                <ActionBtn onClick={tap(doLike)} count={video.likes_count||0} label="Like" isActive={liked} activeColor="#FF6B6B" ringOffset={liked ? Math.max(RING_CIRC-((video.likes_count||0)/40)*RING_CIRC,8) : RING_CIRC}>
                   <svg width="14" height="14" viewBox="0 0 24 24"
                     fill={liked?"#FF6B6B":"none"} stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     style={{ transition:"fill 0.2s", animation:liked?"heartpop 0.4s ease forwards":"none" }}>
@@ -3285,7 +3303,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   </svg>
                 </ActionBtn>
 
-                <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comments_count||0} label="Comment" isActive={false} activeColor="#6c63ff">
+                <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comments_count||0} label="Comment" isActive={false} activeColor="#6c63ff" ringOffset={Math.max(RING_CIRC-((video.comments_count||0)/15)*RING_CIRC, 12)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                   </svg>
@@ -3294,7 +3312,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 {currentUser && (
                   <ActionBtn
                     onClick={tap(async()=>{ if(!currentUser){onNeedAuth&&onNeedAuth();return;} onBookmark?.handle&&onBookmark.handle(video.id,!isBookmarked); })}
-                    label={isBookmarked?"Crowned":"Crown"} isActive={isBookmarked} activeColor="#F5C842">
+                    label={isBookmarked?"Crowned":"Crown"} isActive={isBookmarked} activeColor="#F5C842" ringOffset={isBookmarked ? 16 : RING_CIRC}>
                     <svg width="14" height="14" viewBox="0 0 24 24"
                       fill={isBookmarked?"rgba(245,200,66,0.3)":"none"}
                       stroke={isBookmarked?"#F5C842":"rgba(255,255,255,0.8)"}
@@ -3314,7 +3332,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                       else{navigator.clipboard?.writeText(shareUrl);toast.success("Link copied!");}
                       try{ const n=(video.shares_count||0)+1; onShareCount&&onShareCount(video.id,n); await videos.update(video.id,{shares_count:n}); }catch(e){}
                     })}
-                    count={video.shares_count||0} label="Share" isActive={pulsing} activeColor="#a78bfa">
+                    count={video.shares_count||0} label="Share" isActive={pulsing} activeColor="#a78bfa" ringOffset={Math.max(RING_CIRC-((video.shares_count||0)/10)*RING_CIRC, pulsing?10:RING_CIRC)}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
