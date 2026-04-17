@@ -10064,6 +10064,17 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
     ] })
   ] }) });
 }
+if (!document.getElementById("sachi-popup-css")) {
+  const s = document.createElement("style");
+  s.id = "sachi-popup-css";
+  s.textContent = `
+@keyframes popBubbleIn {
+  from { opacity: 0; transform: scale(0.6) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+`;
+  document.head.appendChild(s);
+}
 const SACHI_BUILD = "20260417-1";
 if (localStorage.getItem("sachi_build") !== SACHI_BUILD) {
   localStorage.setItem("sachi_build", SACHI_BUILD);
@@ -10179,6 +10190,68 @@ function formatCount(n2) {
   if (n2 >= 1e6) return (n2 / 1e6).toFixed(1) + "M";
   if (n2 >= 1e3) return (n2 / 1e3).toFixed(1) + "K";
   return String(n2);
+}
+const boingSound = typeof window !== "undefined" ? (() => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return () => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = "sine";
+      o.frequency.setValueAtTime(520, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.18);
+      g.gain.setValueAtTime(0.18, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(1e-3, ctx.currentTime + 0.32);
+      o.start(ctx.currentTime);
+      o.stop(ctx.currentTime + 0.33);
+    };
+  } catch (e) {
+    return () => {
+    };
+  }
+})() : () => {
+};
+function PopUpBubbles({ annotations, videoRef }) {
+  const [visible, setVisible] = React.useState([]);
+  const firedRef = React.useRef(/* @__PURE__ */ new Set());
+  React.useEffect(() => {
+    if (!annotations || !annotations.length || !(videoRef == null ? void 0 : videoRef.current)) return;
+    const el2 = videoRef.current;
+    const handler = () => {
+      const t2 = el2.currentTime;
+      annotations.forEach((ann, i) => {
+        const key = i + "-" + Math.floor(ann.time);
+        if (t2 >= ann.time && t2 < ann.time + 0.5 && !firedRef.current.has(key)) {
+          firedRef.current.add(key);
+          boingSound();
+          const id2 = Date.now() + i;
+          setVisible((prev) => [...prev, { id: id2, text: ann.text, time: ann.time }]);
+          setTimeout(() => setVisible((prev) => prev.filter((b) => b.id !== id2)), 4e3);
+        }
+        if (t2 < ann.time - 1) firedRef.current.delete(i + "-" + Math.floor(ann.time));
+      });
+    };
+    el2.addEventListener("timeupdate", handler);
+    return () => el2.removeEventListener("timeupdate", handler);
+  }, [annotations, videoRef]);
+  if (!visible.length) return null;
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 160, left: 16, zIndex: 150, display: "flex", flexDirection: "column", gap: 8, pointerEvents: "none", maxWidth: "70%" }, children: visible.map((b) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+    background: "rgba(255,255,255,0.97)",
+    color: "#111",
+    borderRadius: 18,
+    padding: "9px 16px",
+    fontSize: 13,
+    fontWeight: 600,
+    boxShadow: "0 4px 20px rgba(0,0,0,0.35)",
+    animation: "popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both",
+    lineHeight: 1.4,
+    maxWidth: 220
+  }, children: [
+    "💬 ",
+    b.text
+  ] }, b.id)) });
 }
 const resolveMediaUrl = (url, isVideo, size = "feed") => {
   if (!url) return url;
@@ -11356,6 +11429,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [textPostTemplate, setTextPostTemplate] = reactExports.useState(0);
   const [showPostDetails, setShowPostDetails] = reactExports.useState(false);
   const [postTitle, setPostTitle] = reactExports.useState("");
+  const [annotations, setAnnotations] = reactExports.useState([]);
+  const [annText, setAnnText] = reactExports.useState("");
+  const [annTime, setAnnTime] = reactExports.useState("");
+  const [showAnnEditor, setShowAnnEditor] = reactExports.useState(false);
   const [postVisibility, setPostVisibility] = reactExports.useState("everyone");
   const [postLocation, setPostLocation] = reactExports.useState(null);
   const [detectingLocation, setDetectingLocation] = reactExports.useState(false);
@@ -11647,6 +11724,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         photo_urls: urls,
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
+        annotations: annotations.length > 0 ? annotations : [],
         hashtags: tags,
         likes_count: 0,
         comments_count: 0,
@@ -12034,6 +12112,128 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           }
         ) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 20 } }),
+        uploadTab === "video" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: "💬" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 15 }, children: "Pop-Up Bubbles" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { background: "rgba(245,200,66,0.15)", color: "#F5C842", fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 6px" }, children: "NEW" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => setShowAnnEditor((v2) => !v2),
+                style: {
+                  background: "rgba(245,200,66,0.1)",
+                  border: "1px solid rgba(245,200,66,0.25)",
+                  borderRadius: 20,
+                  padding: "5px 14px",
+                  color: "#F5C842",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer"
+                },
+                children: showAnnEditor ? "Done" : "+ Add"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 12, marginBottom: 10 }, children: "Timed text bubbles that pop up while your video plays — like VH1 Pop-Up Video 🎬" }),
+          annotations.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }, children: annotations.map((a, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "8px 12px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#F5C842", fontWeight: 800, fontSize: 12, minWidth: 36 }, children: [
+              a.time,
+              "s"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#fff", fontSize: 13, flex: 1 }, children: [
+              "💬 ",
+              a.text
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "span",
+              {
+                onClick: () => setAnnotations((prev) => prev.filter((_, j) => j !== i)),
+                style: { color: "#ff6b6b", fontSize: 16, cursor: "pointer", padding: "0 4px" },
+                children: "×"
+              }
+            )
+          ] }, i)) }),
+          showAnnEditor && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 4 }, children: "At second" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    type: "number",
+                    min: "0",
+                    step: "0.5",
+                    value: annTime,
+                    onChange: (e) => setAnnTime(e.target.value),
+                    placeholder: "e.g. 3",
+                    style: {
+                      width: "100%",
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 10,
+                      padding: "8px 12px",
+                      color: "#fff",
+                      fontSize: 14,
+                      outline: "none",
+                      boxSizing: "border-box"
+                    }
+                  }
+                )
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 3 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 4 }, children: "Message" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    type: "text",
+                    maxLength: 80,
+                    value: annText,
+                    onChange: (e) => setAnnText(e.target.value),
+                    placeholder: "This took me 3 hours 😭",
+                    style: {
+                      width: "100%",
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 10,
+                      padding: "8px 12px",
+                      color: "#fff",
+                      fontSize: 14,
+                      outline: "none",
+                      boxSizing: "border-box"
+                    }
+                  }
+                )
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => {
+                  const t2 = parseFloat(annTime);
+                  if (!annText.trim() || isNaN(t2) || t2 < 0) return;
+                  setAnnotations((prev) => [...prev, { time: t2, text: annText.trim() }].sort((a, b) => a.time - b.time));
+                  setAnnText("");
+                  setAnnTime("");
+                },
+                style: {
+                  width: "100%",
+                  background: "linear-gradient(135deg,#F5C842,#e0a800)",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "10px",
+                  color: "#0B0C1A",
+                  fontWeight: 800,
+                  fontSize: 14,
+                  cursor: "pointer"
+                },
+                children: "+ Add Bubble"
+              }
+            )
+          ] })
+        ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs(
             "div",
@@ -13513,7 +13713,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             },
             children: "🔇 Tap to unmute"
           }
-        )
+        ),
+        video.annotations && Array.isArray(video.annotations) && video.annotations.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(PopUpBubbles, { annotations: video.annotations, videoRef })
       ] });
     })(),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
