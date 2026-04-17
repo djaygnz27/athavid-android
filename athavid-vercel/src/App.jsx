@@ -2724,6 +2724,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
   return (
     <div style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start",
+      overflow:"hidden",
       outline:"2.5px solid transparent",
       boxShadow:"inset 0 0 0 3px rgba(245,200,66,0.55), inset 0 0 0 5px rgba(245,200,66,0.12), inset 0 0 40px rgba(245,200,66,0.06), 0 0 0 1.5px rgba(245,200,66,0.3)" }}>
 
