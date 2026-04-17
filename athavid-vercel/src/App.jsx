@@ -6584,7 +6584,27 @@ function App() {
       const overflow = scored.filter(v => !cappedIds.has(v.id));
       capped.push(...overflow);
     }
-    return capped;
+    // Interleave by creator — ensures no two consecutive posts from the same user.
+    // Groups posts by creator, then round-robins through groups.
+    const interleave = (posts) => {
+      const buckets = {};
+      for (const p of posts) {
+        const uid = p.user_id || p.username || 'unknown';
+        if (!buckets[uid]) buckets[uid] = [];
+        buckets[uid].push(p);
+      }
+      const groups = Object.values(buckets);
+      const result = [];
+      let filled = true;
+      while (filled) {
+        filled = false;
+        for (const g of groups) {
+          if (g.length > 0) { result.push(g.shift()); filled = true; }
+        }
+      }
+      return result;
+    };
+    return interleave(capped);
   };
 
   const loadVideos = async (user, append = false, page = 1) => {
