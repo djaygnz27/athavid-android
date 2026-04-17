@@ -3743,9 +3743,24 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
       {/* Video */}
-      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.video_url)} autoPlay playsInline loop muted={muted}
-        onClick={() => { if(videoRef.current.paused) videoRef.current.play(); else videoRef.current.pause(); }}
-        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+      {v.is_photo && v.photo_urls?.length > 0 ? (
+        <img src={resolveMediaUrl(Array.isArray(v.photo_urls) ? v.photo_urls[0] : JSON.parse(v.photo_urls||"[]")[0])} 
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", background:"#000" }} />
+      ) : v.is_text_post ? (
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+          background:"linear-gradient(135deg,#1B1535,#0B0C1A,#2A1E00)", padding:32, textAlign:"center" }}>
+          <div style={{ color:"#fff", fontSize:22, fontWeight:700, lineHeight:1.5 }}>{v.caption}</div>
+        </div>
+      ) : (
+        <video ref={videoRef} key={v.id} 
+          src={resolveMediaUrl(v.video_url)} 
+          autoPlay playsInline loop muted={muted}
+          controls={false}
+          onClick={() => { if(videoRef.current?.paused) videoRef.current.play().catch(()=>{}); else videoRef.current?.pause(); }}
+          onError={(e) => { console.log("Video error:", e); }}
+          onLoadedData={() => { videoRef.current?.play().catch(()=>{}); }}
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+      )}
 
       {/* Gradient overlay */}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents:"none" }} />
@@ -3980,11 +3995,11 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                       <div key={v.id} onClick={() => setPlayerIndex(i)}
                         style={{ position:"relative", aspectRatio:"9/16", background:"#0d0d1a", overflow:"hidden", cursor:"pointer",
                           borderRadius:12,
-                          border:"1.5px solid rgba(245,200,66,0.18)",
-                          boxShadow:"0 0 12px rgba(245,200,66,0.08), 0 4px 16px rgba(0,0,0,0.6)",
+                          border:"2.5px solid rgba(245,200,66,0.7)",
+                          boxShadow:"0 0 0 1px rgba(245,200,66,0.15), 0 0 16px rgba(245,200,66,0.35), 0 4px 16px rgba(0,0,0,0.6)",
                           transition:"transform 0.15s, box-shadow 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.transform="scale(1.03)"; e.currentTarget.style.boxShadow="0 0 20px rgba(245,200,66,0.22), 0 6px 20px rgba(0,0,0,0.7)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 0 12px rgba(245,200,66,0.08), 0 4px 16px rgba(0,0,0,0.6)"; }}>
+                        onMouseEnter={e => { e.currentTarget.style.transform="scale(1.03)"; e.currentTarget.style.boxShadow="0 0 0 1px rgba(245,200,66,0.3), 0 0 28px rgba(245,200,66,0.55), 0 6px 20px rgba(0,0,0,0.7)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 0 0 1px rgba(245,200,66,0.15), 0 0 16px rgba(245,200,66,0.35), 0 4px 16px rgba(0,0,0,0.6)"; }}>
                         {v.thumbnail_url
                           ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} />
                           : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} muted playsInline preload="metadata" />}

@@ -86,9 +86,21 @@ export const videos = {
     });
   },
   async byUser(userId) {
-    const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
-    const items = Array.isArray(res) ? res : (res?.items || []);
-    return items.filter(v => !v.is_archived);
+    // Try user_id first, also fetch by created_by and merge unique results
+    const [res1, res2] = await Promise.all([
+      request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
+      request("GET", `/apps/${APP_ID}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => []),
+    ]);
+    const items1 = Array.isArray(res1) ? res1 : (res1?.items || []);
+    const items2 = Array.isArray(res2) ? res2 : (res2?.items || []);
+    // Merge and deduplicate by id
+    const seen = new Set();
+    const merged = [...items1, ...items2].filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return !v.is_archived;
+    });
+    return merged;
   },
   async delete(id) {
     return request("DELETE", `/apps/${APP_ID}/entities/SachiVideo/${id}`);
