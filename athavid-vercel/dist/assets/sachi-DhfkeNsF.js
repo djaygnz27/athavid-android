@@ -10064,6 +10064,13 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
     ] })
   ] }) });
 }
+const SACHI_BUILD = "20260417-1";
+if (localStorage.getItem("sachi_build") !== SACHI_BUILD) {
+  localStorage.setItem("sachi_build", SACHI_BUILD);
+  if ("caches" in window) {
+    caches.keys().then((keys) => keys.forEach((k2) => caches.delete(k2)));
+  }
+}
 const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
 const muteStore = {
   _muted: true,
