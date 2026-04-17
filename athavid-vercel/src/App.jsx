@@ -462,7 +462,22 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   useEffect(() => {
     if (!video) return;
     comments.list(video.id)
-      .then(r => setList(Array.isArray(r) ? r : []))
+      .then(r => {
+        const all = Array.isArray(r) ? r : [];
+        // Separate top-level comments and replies
+        const topLevel = all.filter(c => !c.parent_id);
+        const replies = all.filter(c => !!c.parent_id);
+        // Attach replies to their parent comments
+        const withReplies = topLevel.map(c => ({
+          ...c,
+          replies: replies.filter(r => r.parent_id === c.id)
+        }));
+        setList(withReplies);
+        // Auto-expand comments that have replies
+        const expanded = {};
+        withReplies.forEach(c => { if (c.replies?.length > 0) expanded[c.id] = true; });
+        setExpandedReplies(expanded);
+      })
       .catch(() => setList([]))
       .finally(() => setLoading(false));
   }, [video?.id]);
@@ -485,8 +500,16 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     try {
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       if (replyingTo) {
-        // Post as a reply stored locally under the parent comment
-        const reply = { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: text.trim(), thumbsUp:0, hearts:0, thumbsDown:0 };
+        // Save reply to DB so it persists across sessions
+        const replyText = `@${replyingTo.username} ${text.trim()}`;
+        const savedReply = await comments.create({
+          video_id: video.id, username,
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+          comment_text: replyText,
+          parent_id: replyingTo.id,
+          likes_count: 0,
+        }).catch(() => null);
+        const reply = savedReply || { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: replyText, thumbsUp:0, hearts:0, thumbsDown:0 };
         setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
@@ -2667,7 +2690,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setShowUI(false);
         setUserTapped(false);
       }
-    }, { threshold: 0.5 });
+    }, { threshold: 0.4 });
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
@@ -2689,7 +2712,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       }
-    }, { threshold: 0.5 });
+    }, { threshold: 0.4 });
     obs.observe(el);
     return () => obs.disconnect();
   }, [photoUrls]);
@@ -3256,7 +3279,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
 
             <div style={{
-              position:"absolute", bottom:90, left:0, right:0, zIndex:500,
+              position:"absolute", bottom:76, left:0, right:0, zIndex:500,
               transition:"opacity 0.35s ease, transform 0.35s ease",
               opacity: (showUI || !playing || !!photoUrls) ? 1 : 0,
               transform: (showUI || !playing || !!photoUrls) ? "translateY(0)" : "translateY(30px)",
@@ -3264,12 +3287,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             }}>
 
               {/* ── FLOATING HEART + COMMENT — right side, independent ── */}
-              <div style={{ position:"absolute", right:12, bottom:0, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex:10 }}>
+              <div style={{ position:"absolute", right:10, bottom:4, display:"flex", flexDirection:"column", alignItems:"center", gap:8, zIndex:10 }}>
 
                 {/* Bruh toast — floats up from heart */}
                 {showBruhToast && (
                   <div style={{
-                    position:"absolute", bottom:90, right:-8, zIndex:999,
+                    position:"absolute", bottom:88, right:-8, zIndex:999,
                     animation:"bruhFloat 2.2s ease forwards",
                     pointerEvents:"none", whiteSpace:"nowrap",
                   }}>
@@ -3314,7 +3337,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
               {/* ── PILL BAR — Sound, LIT, Crown, Share, Delete ── */}
               <div style={{
-                margin:"0 60px 0 12px",
+                margin:"0 56px 0 12px",
                 background:"linear-gradient(180deg, rgba(15,15,32,0.92) 0%, rgba(8,8,20,0.97) 100%)",
                 backdropFilter:"blur(24px)",
                 borderRadius:22,
@@ -6170,12 +6193,38 @@ function App() {
       const { type, uri, url } = e.detail || {};
       if (type === "video" || type === "url") {
         setShowUpload(true);
-        // Store shared data for upload screen to pick up
         window._sachiSharedContent = { type, uri, url };
       }
     };
     window.addEventListener("sachi-share", handleSachiShare);
     return () => window.removeEventListener("sachi-share", handleSachiShare);
+  }, []);
+
+  // ── FIX: Stop ALL audio when user leaves the app (switches to Instagram etc.) ──
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // App went to background — kill everything
+        audioCache.forEach(audio => { audio.pause(); audio.currentTime = 0; });
+        // Stop all video elements
+        document.querySelectorAll('video').forEach(v => { v.pause(); });
+        // Stop all audio elements
+        document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
+      }
+    };
+    const handlePageHide = () => {
+      audioCache.forEach(audio => { audio.pause(); audio.currentTime = 0; });
+      document.querySelectorAll('video').forEach(v => { v.pause(); });
+      document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('blur', handlePageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('blur', handlePageHide);
+    };
   }, []);
   useEffect(() => { if (currentUser) loadFollowingVideos(currentUser); }, [currentUser]);
   useEffect(() => {
