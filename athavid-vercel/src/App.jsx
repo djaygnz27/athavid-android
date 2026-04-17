@@ -1,4 +1,10 @@
 // Sachi v2.1.1 - photo_urls array fix, bottom action bar
+if (!document.getElementById('sachi-popup-css')) {
+  const s = document.createElement('style');
+  s.id = 'sachi-popup-css';
+  s.textContent = `\n@keyframes popBubbleIn {\n  from { opacity: 0; transform: scale(0.6) translateY(8px); }\n  to   { opacity: 1; transform: scale(1) translateY(0); }\n}\n`;
+  document.head.appendChild(s);
+}
 const SACHI_BUILD = "20260417-1";
 if (localStorage.getItem("sachi_build") !== SACHI_BUILD) {
   localStorage.setItem("sachi_build", SACHI_BUILD);
@@ -109,6 +115,74 @@ function formatCount(n) {
 }
 
 // Proxy image URLs through wsrv.nl for on-the-fly resize + WebP conversion
+
+// ─── POP-UP VIDEO BUBBLES ─────────────────────────────────────────────────────
+// Plays a soft boing sound and renders timed annotation bubbles over videos
+const boingSound = typeof window !== 'undefined' ? (() => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return () => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(520, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.18);
+      g.gain.setValueAtTime(0.18, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.32);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.33);
+    };
+  } catch(e) { return () => {}; }
+})() : () => {};
+
+function PopUpBubbles({ annotations, videoRef }) {
+  const [visible, setVisible] = React.useState([]);
+  const firedRef = React.useRef(new Set());
+  React.useEffect(() => {
+    if (!annotations || !annotations.length || !videoRef?.current) return;
+    const el = videoRef.current;
+    const handler = () => {
+      const t = el.currentTime;
+      annotations.forEach((ann, i) => {
+        const key = i + '-' + Math.floor(ann.time);
+        if (t >= ann.time && t < ann.time + 0.5 && !firedRef.current.has(key)) {
+          firedRef.current.add(key);
+          boingSound();
+          const id = Date.now() + i;
+          setVisible(prev => [...prev, { id, text: ann.text, time: ann.time }]);
+          setTimeout(() => setVisible(prev => prev.filter(b => b.id !== id)), 4000);
+        }
+        // Reset fired flag when video loops back
+        if (t < ann.time - 1) firedRef.current.delete(i + '-' + Math.floor(ann.time));
+      });
+    };
+    el.addEventListener('timeupdate', handler);
+    return () => el.removeEventListener('timeupdate', handler);
+  }, [annotations, videoRef]);
+  if (!visible.length) return null;
+  return (
+    <div style={{ position:'absolute', bottom: 160, left: 16, zIndex: 150, display:'flex', flexDirection:'column', gap: 8, pointerEvents:'none', maxWidth:'70%' }}>
+      {visible.map(b => (
+        <div key={b.id} style={{
+          background: 'rgba(255,255,255,0.97)',
+          color: '#111',
+          borderRadius: 18,
+          padding: '9px 16px',
+          fontSize: 13,
+          fontWeight: 600,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+          animation: 'popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
+          lineHeight: 1.4,
+          maxWidth: 220,
+        }}>
+          💬 {b.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Returns null for unrenderable HEIC files (browser can't display them)
 const resolveMediaUrl = (url, isVideo, size = 'feed') => {
   if (!url) return url;
@@ -1065,6 +1139,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   // Post details step
   const [showPostDetails, setShowPostDetails] = useState(false);
   const [postTitle, setPostTitle] = useState("");
+  const [annotations, setAnnotations] = useState([]); // [{time: 3.5, text: "hello!"}]
+  const [annText, setAnnText] = useState("");
+  const [annTime, setAnnTime] = useState("");
+  const [showAnnEditor, setShowAnnEditor] = useState(false);
   const [postVisibility, setPostVisibility] = useState("everyone"); // everyone | followers | only_me
   const [postLocation, setPostLocation] = useState(null); // { name, city }
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -1264,6 +1342,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         photo_urls: urls,
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
+        annotations: annotations.length > 0 ? annotations : [],
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
         is_approved: !isAiGenerated && postVisibility !== "only_me",
@@ -1654,6 +1733,77 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
           {/* Divider */}
           <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:20 }} />
+
+          {/* ── POP-UP BUBBLES EDITOR (video only) ── */}
+          {uploadTab === "video" && (
+            <div style={{ marginBottom:20 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:18 }}>💬</span>
+                  <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Pop-Up Bubbles</span>
+                  <span style={{ background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px" }}>NEW</span>
+                </div>
+                <button onClick={() => setShowAnnEditor(v => !v)}
+                  style={{ background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.25)", borderRadius:20,
+                    padding:"5px 14px", color:"#F5C842", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                  {showAnnEditor ? "Done" : "+ Add"}
+                </button>
+              </div>
+              <div style={{ color:"#666", fontSize:12, marginBottom:10 }}>
+                Timed text bubbles that pop up while your video plays — like VH1 Pop-Up Video 🎬
+              </div>
+              {/* Existing annotations */}
+              {annotations.length > 0 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:12 }}>
+                  {annotations.map((a, i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.05)", borderRadius:10, padding:"8px 12px" }}>
+                      <span style={{ color:"#F5C842", fontWeight:800, fontSize:12, minWidth:36 }}>{a.time}s</span>
+                      <span style={{ color:"#fff", fontSize:13, flex:1 }}>💬 {a.text}</span>
+                      <span onClick={() => setAnnotations(prev => prev.filter((_,j)=>j!==i))}
+                        style={{ color:"#ff6b6b", fontSize:16, cursor:"pointer", padding:"0 4px" }}>×</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showAnnEditor && (
+                <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:14 }}>
+                  <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ color:"#aaa", fontSize:11, marginBottom:4 }}>At second</div>
+                      <input type="number" min="0" step="0.5"
+                        value={annTime}
+                        onChange={e => setAnnTime(e.target.value)}
+                        placeholder="e.g. 3"
+                        style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)",
+                          borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }}
+                      />
+                    </div>
+                    <div style={{ flex:3 }}>
+                      <div style={{ color:"#aaa", fontSize:11, marginBottom:4 }}>Message</div>
+                      <input type="text" maxLength={80}
+                        value={annText}
+                        onChange={e => setAnnText(e.target.value)}
+                        placeholder="This took me 3 hours 😭"
+                        style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)",
+                          borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const t = parseFloat(annTime);
+                      if (!annText.trim() || isNaN(t) || t < 0) return;
+                      setAnnotations(prev => [...prev, { time: t, text: annText.trim() }].sort((a,b)=>a.time-b.time));
+                      setAnnText(""); setAnnTime("");
+                    }}
+                    style={{ width:"100%", background:"linear-gradient(135deg,#F5C842,#e0a800)", border:"none",
+                      borderRadius:12, padding:"10px", color:"#0B0C1A", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                    + Add Bubble
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Location row - MANDATORY */}
           <div style={{ marginBottom:4 }}>
@@ -2777,6 +2927,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
                 🔇 Tap to unmute
               </div>
+            )}
+            {/* ── POP-UP BUBBLES ── */}
+            {video.annotations && Array.isArray(video.annotations) && video.annotations.length > 0 && (
+              <PopUpBubbles annotations={video.annotations} videoRef={videoRef} />
             )}
           </>
         );

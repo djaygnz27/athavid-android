@@ -1,5 +1,4 @@
 {
-  "type": "object",
   "properties": {
     "user_id": {
       "type": "string"
@@ -99,8 +98,16 @@
     },
     "is_text_post": {
       "type": "boolean"
+    },
+    "annotations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Timed pop-up bubbles [{time: 3.5, text: 'hello!'}]"
     }
   },
+  "type": "object",
   "required": [],
   "name": "SachiVideo"
 }
