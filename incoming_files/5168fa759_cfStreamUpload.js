@@ -18,59 +18,29 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
+export default async function handler(req, res) {
+  // Only allow authenticated users
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ error: "Authentication required" });
   }
 
-  if (req.method !== "POST") {
-    return Response.json({ error: "Method not allowed" }, {
-      status: 405,
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
+  const CF_ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
+  const CF_STREAM_API_TOKEN = process.env.CF_STREAM_API_TOKEN;
+  const CF_STREAM_MAX_SECONDS = parseInt(process.env.CF_STREAM_MAX_SECONDS || "300", 10);
+
+  if (!CF_ACCOUNT_ID || !CF_STREAM_API_TOKEN) {
+    console.error("[cfStreamUpload] Missing CF_ACCOUNT_ID or CF_STREAM_API_TOKEN env vars");
+    return res.status(500).json({ error: "Server not configured for video uploads" });
   }
+
+  // Get expected content length from request body (optional, helps CF enforce limits)
+  const { maxDurationSeconds } = req.body || {};
+  const duration = Math.min(
+    parseInt(maxDurationSeconds, 10) || CF_STREAM_MAX_SECONDS,
+    CF_STREAM_MAX_SECONDS
+  );
 
   try {
-    // Authenticate the user via Base44
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user || !user.id) {
-      return Response.json({ error: "Authentication required" }, {
-        status: 401,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      });
-    }
-
-    const CF_ACCOUNT_ID = Deno.env.get("CF_ACCOUNT_ID");
-    const CF_STREAM_API_TOKEN = Deno.env.get("CF_STREAM_API_TOKEN");
-    const CF_STREAM_MAX_SECONDS = parseInt(Deno.env.get("CF_STREAM_MAX_SECONDS") || "300", 10);
-
-    if (!CF_ACCOUNT_ID || !CF_STREAM_API_TOKEN) {
-      console.error("[cfStreamUpload] Missing CF_ACCOUNT_ID or CF_STREAM_API_TOKEN env vars");
-      return Response.json({ error: "Server not configured for video uploads" }, {
-        status: 500,
-        headers: { "Access-Control-Allow-Origin": "*" },
-      });
-    }
-
-    // Get expected content length from request body (optional, helps CF enforce limits)
-    const body = await req.json().catch(() => ({}));
-    const { maxDurationSeconds } = body;
-    const duration = Math.min(
-      parseInt(maxDurationSeconds, 10) || CF_STREAM_MAX_SECONDS,
-      CF_STREAM_MAX_SECONDS
-    );
-
     // Request a direct creator upload URL from Cloudflare Stream
     // Docs: https://developers.cloudflare.com/stream/uploading-videos/direct-creator-uploads/
     const cfResponse = await fetch(
@@ -85,8 +55,8 @@ Deno.serve(async (req) => {
           maxDurationSeconds: duration,
           // Tag videos with the uploader's user ID so we can find/delete them later
           meta: {
-            name: `sachi_${user.id}_${Date.now()}`,
-            uploaderId: user.id,
+            name: `sachi_${req.user.id}_${Date.now()}`,
+            uploaderId: req.user.id,
           },
           // Enable creator-facing options
           requireSignedURLs: false,  // Set to true later if you want access control
@@ -105,31 +75,21 @@ Deno.serve(async (req) => {
     const data = await cfResponse.json();
 
     if (!cfResponse.ok || !data.success) {
-      console.error("[cfStreamUpload] CF API error:", JSON.stringify(data));
-      return Response.json({
+      console.error("[cfStreamUpload] CF API error:", data);
+      return res.status(502).json({
         error: "Cloudflare Stream rejected the upload request",
         details: data.errors || data,
-      }, {
-        status: 502,
-        headers: { "Access-Control-Allow-Origin": "*" },
       });
     }
 
     // Return the upload URL + video ID to the frontend.
     // Frontend uses the URL to POST the video file, then saves `uid` to the DB.
-    return Response.json({
+    return res.status(200).json({
       uploadURL: data.result.uploadURL,
       videoId: data.result.uid,
-    }, {
-      status: 200,
-      headers: { "Access-Control-Allow-Origin": "*" },
     });
-
   } catch (err) {
     console.error("[cfStreamUpload] Network/fetch error:", err);
-    return Response.json({ error: "Failed to reach Cloudflare Stream" }, {
-      status: 500,
-      headers: { "Access-Control-Allow-Origin": "*" },
-    });
+    return res.status(500).json({ error: "Failed to reach Cloudflare Stream" });
   }
-});
+}
