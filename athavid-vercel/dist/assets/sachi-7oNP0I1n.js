@@ -13672,10 +13672,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       paddingLeft: 12,
       paddingRight: 12,
       zIndex: 500,
-      transition: "opacity 0.4s ease",
-      opacity: showUI || !!photoUrls ? 1 : 0,
-      pointerEvents: showUI || !!photoUrls ? "auto" : "none",
-      visibility: showUI || !!photoUrls ? "visible" : "hidden"
+      transition: "opacity 0.3s ease",
+      opacity: 1,
+      pointerEvents: "auto",
+      visibility: "visible"
     }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       display: "flex",
       flexDirection: "row",
@@ -13847,8 +13847,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       gap: 8,
       zIndex: 500,
       transition: "opacity 0.4s ease",
-      opacity: showUI || !!photoUrls ? 1 : 0,
-      pointerEvents: showUI || !!photoUrls ? "auto" : "none"
+      opacity: 1,
+      pointerEvents: "auto"
     }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: tap(async () => {
         if (!currentUser) {
