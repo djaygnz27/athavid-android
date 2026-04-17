@@ -13952,20 +13952,20 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       alignItems: "center",
       justifyContent: "space-around",
       width: "100%",
-      maxWidth: 420,
+      maxWidth: 480,
       background: "rgba(11,12,26,0.72)",
       backdropFilter: "blur(24px)",
       WebkitBackdropFilter: "blur(24px)",
       borderRadius: 28,
       border: "1px solid rgba(245,200,66,0.18)",
       boxShadow: "0 -2px 32px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(245,200,66,0.08) inset",
-      padding: "10px 8px",
-      gap: 4
+      padding: "8px 4px",
+      gap: 2
     }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(doLike), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation", position: "relative" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: 52,
-          height: 52,
+          width: 44,
+          height: 44,
           borderRadius: 16,
           background: liked ? "radial-gradient(135deg, rgba(255,107,107,0.45), rgba(255,60,60,0.15))" : "rgba(255,255,255,0.07)",
           border: liked ? "1.5px solid rgba(255,107,107,0.7)" : "1.5px solid rgba(255,255,255,0.1)",
@@ -13997,8 +13997,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(() => onCommentOpen(video)), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: 52,
-          height: 52,
+          width: 44,
+          height: 44,
           borderRadius: 16,
           background: "rgba(100,180,255,0.1)",
           border: "1.5px solid rgba(100,180,255,0.3)",
@@ -14027,8 +14027,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           }
         }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation", position: "relative" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            width: 52,
-            height: 52,
+            width: 44,
+            height: 44,
             borderRadius: 16,
             background: isHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
             border: isHyped ? "1.5px solid rgba(255,180,0,0.8)" : "1.5px solid rgba(255,150,0,0.25)",
@@ -14075,8 +14075,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: 52,
-          height: 52,
+          width: 44,
+          height: 44,
           borderRadius: 16,
           background: "rgba(160,120,255,0.1)",
           border: "1.5px solid rgba(160,120,255,0.3)",
@@ -14105,8 +14105,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           (onBookmark == null ? void 0 : onBookmark.handle) && onBookmark.handle(video.id, !isBookmarked);
         }), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            width: 52,
-            height: 52,
+            width: 44,
+            height: 44,
             borderRadius: 16,
             background: isBookmarked ? "radial-gradient(135deg, rgba(245,200,66,0.4), rgba(245,150,0,0.15))" : "rgba(245,200,66,0.06)",
             border: isBookmarked ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(245,200,66,0.2)",
@@ -14121,8 +14121,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       })(),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(doMute), style: { background: "none", border: "none", cursor: "pointer", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: 52,
-          height: 52,
+          width: 44,
+          height: 44,
           borderRadius: 16,
           background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.06)",
           border: muted ? "1.5px solid rgba(245,200,66,0.5)" : "1.5px solid rgba(255,255,255,0.1)",
