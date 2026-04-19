@@ -6237,6 +6237,20 @@ function App() {
   const [feedHasMore, setFeedHasMore] = useState(true);
   const FEED_PAGE_SIZE = 50;
   const [commentVideo, setCommentVideo] = useState(null);
+  // TEMPORARY: Cloudflare Stream diagnostic. Remove after verification.
+  useEffect(() => {
+    window.testCfStream = async () => {
+      try {
+        const r = await request("POST", "/functions/cfStreamUpload", { maxDurationSeconds: 60 });
+        console.log("✅ cfStreamUpload response:", r);
+        return r;
+      } catch (e) {
+        console.error("❌ cfStreamUpload error:", e);
+        return { error: e.message };
+      }
+    };
+    console.log("[diagnostic] Call window.testCfStream() in console to test");
+  }, []);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
   const [loginToast, setLoginToast] = useState(false);
