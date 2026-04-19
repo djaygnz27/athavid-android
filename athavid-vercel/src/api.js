@@ -12,7 +12,7 @@ export async function request(method, path, body) {
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${BASE_URL}${path}`, {
-    method, headers, body: body ? JSON.stringify(body) : undefined
+    method, headers, credentials: "include", body: body ? JSON.stringify(body) : undefined
   });
   let data;
   try { data = await res.json(); } catch { data = {}; }
