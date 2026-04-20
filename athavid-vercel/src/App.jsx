@@ -3815,7 +3815,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                     <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
                   <button
-                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer", borderLeft:"1px solid rgba(255,255,255,0.08)",
+                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer",
                       background:"none", border:"none", borderLeft:"1px solid rgba(255,255,255,0.08)", color:"inherit",
                       WebkitTapHighlightColor:"rgba(245,200,66,0.2)", touchAction:"manipulation", minWidth:80 }}
                     onClick={(e) => { e.stopPropagation(); console.log("FOLLOWERS CLICKED"); loadFollowers(); setView("followers"); }}>
