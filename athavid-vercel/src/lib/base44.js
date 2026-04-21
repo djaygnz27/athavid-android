@@ -11,7 +11,7 @@
 
 import { createClient } from "@base44/sdk";
 
-export const BASE44_APP_ID = "69b2ee18a8e6fb58c7f0261c";
+export const BASE44_APP_ID = "69e79122bcc8fb5a04cfb834";
 
 export const base44 = createClient({ appId: BASE44_APP_ID });
 
