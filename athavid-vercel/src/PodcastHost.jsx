@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const API = "https://sachi-c7f0261c.base44.app/api";
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const API = "https://sachi-truth-sync.base44.app/api";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 const APP_BASE = `/apps/${APP_ID}`;
-const SACHI_FN = "https://sachi-c7f0261c.base44.app/functions";
+const SACHI_FN = "https://sachi-truth-sync.base44.app/functions";
 
 const COVER_COLORS = [
   { bg:"linear-gradient(135deg,#1a0a2e,#6c3cf7)", emoji:"🎙️" },
