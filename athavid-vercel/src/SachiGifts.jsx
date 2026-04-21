@@ -4,14 +4,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 
 // Lightweight toast — fires into App's ToastContainer via the shared bus
 const _toastBus = typeof window !== "undefined" ? (window._sachiBus = window._sachiBus || { _l:[], emit(m,t){this._l.forEach(f=>f({msg:m,type:t,id:Date.now()+Math.random()}))}, on(f){this._l.push(f);return()=>{this._l=this._l.filter(l=>l!==f)}} }) : {emit:()=>{},on:()=>()=>{}};
 const toast = { error:(m)=>_toastBus.emit(m,"error"), success:(m)=>_toastBus.emit(m,"success"), warn:(m)=>_toastBus.emit(m,"warn") };
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const BASE_URL = "https://sachi-truth-sync.base44.app/api";
 const APP_BASE = `/apps/${APP_ID}`;
-const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
+const COINS_FN = "https://sachi-truth-sync.base44.app/functions/sachiCoins";
 
 // ── Sachi Gift catalog — totally unique, not TikTok ─────────────────────────
 export const GIFTS = [
