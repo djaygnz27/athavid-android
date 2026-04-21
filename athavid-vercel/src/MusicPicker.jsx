@@ -78,9 +78,9 @@ export default function MusicPicker({ onSelect, onClose, currentSound }) {
   useEffect(() => {
     if (tab !== "original") return;
     // Fetch from Sachi API
-    const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+    const APP_ID = "69e79122bcc8fb5a04cfb834";
     const token = localStorage.getItem("sachi_token");
-    fetch(`https://sachi-c7f0261c.base44.app/api/apps/${APP_ID}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
+    fetch(`https://sachi-truth-sync.base44.app/api/apps/${APP_ID}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
       headers: { "Content-Type": "application/json", ...(token ? { "Authorization": `Bearer ${token}` } : {}) }
     })
       .then(r => r.json())
