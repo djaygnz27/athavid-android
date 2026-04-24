@@ -9,6 +9,7 @@ import Sachi from './pages/Sachi';
 import AthaVid from './pages/AthaVid';
 import Index from './pages/Index';
 import CodeCopy from './pages/CodeCopy';
+import JMUXDashboard from './pages/JMUXDashboard';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="/AthaVid" element={<AthaVid />} />
         <Route path="/Index" element={<Index />} />
         <Route path="/CodeCopy" element={<CodeCopy />} />
+        <Route path="/JMUXDashboard" element={<JMUXDashboard />} />
       </Routes>
     </BrowserRouter>
   )
