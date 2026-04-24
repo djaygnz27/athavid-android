@@ -8,23 +8,23 @@
     "JMUXDashboard": {
       "title": "JMUXDashboard"
     },
+    "Home": {
+      "title": "Home"
+    },
     "Sachi": {
       "title": "Sachi"
     },
     "AthaVid": {
       "title": "AthaVid"
     },
-    "Install": {
-      "title": "Install"
-    },
     "Index": {
       "title": "Index"
     },
-    "Home": {
-      "title": "Home"
-    },
     "CodeCopy": {
       "title": "CodeCopy"
+    },
+    "Install": {
+      "title": "Install"
     },
     "TheWatchers": {
       "title": "TheWatchers"

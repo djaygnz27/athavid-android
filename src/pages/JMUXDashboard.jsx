@@ -1,5 +1,36 @@
-import { useState, useEffect } from "react";
-import { JMUXMilestone, JMUXWorkstream, JMUXMeetingMinute, JMUXEngPackage, JMUXEquipment, JMUXPARControl, JMUXSOW } from "@/api/entities";
+import { useState, useEffect, useCallback } from "react";
+
+const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const BASE = `https://sachi-c7f0261c.base44.app`;
+
+async function listEntity(name) {
+  try {
+    const r = await fetch(`${BASE}/api/entities/${name}`, {
+      headers: { "Content-Type": "application/json" }
+    });
+    if (!r.ok) return [];
+    const d = await r.json();
+    return Array.isArray(d) ? d : (d.items || d.data || []);
+  } catch { return []; }
+}
+
+async function updateEntity(name, id, data) {
+  const r = await fetch(`${BASE}/api/entities/${name}/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  return r.json();
+}
+
+async function createEntityRecord(name, data) {
+  const r = await fetch(`${BASE}/api/entities/${name}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  return r.json();
+}
 
 const NAVY = "#0f2744";
 const BLUE = "#1d4ed8";
@@ -10,32 +41,32 @@ const GRAY = "#64748b";
 const PURPLE = "#7c3aed";
 
 const STATUS_CFG = {
-  "Complete":          { color: GREEN,     bg: "#dcfce7", icon: "✅" },
-  "In Progress":       { color: BLUE,      bg: "#dbeafe", icon: "🔄" },
-  "Not Started":       { color: GRAY,      bg: "#f1f5f9", icon: "⬜" },
-  "Overdue":           { color: RED,       bg: "#fee2e2", icon: "⚠️" },
+  "Complete":          { color: GREEN,  bg: "#dcfce7", icon: "✅" },
+  "In Progress":       { color: BLUE,   bg: "#dbeafe", icon: "🔄" },
+  "Not Started":       { color: GRAY,   bg: "#f1f5f9", icon: "⬜" },
+  "Overdue":           { color: RED,    bg: "#fee2e2", icon: "⚠️" },
   "At Risk":           { color: "#d97706", bg: "#fef3c7", icon: "🟡" },
-  "On Track":          { color: GREEN,     bg: "#dcfce7", icon: "✅" },
-  "Approved":          { color: GREEN,     bg: "#dcfce7", icon: "✅" },
-  "Submitted":         { color: BLUE,      bg: "#dbeafe", icon: "📤" },
-  "In Review":         { color: PURPLE,    bg: "#ede9fe", icon: "🔍" },
-  "Issued to Hawkeye": { color: GREEN,     bg: "#dcfce7", icon: "🏗️" },
-  "PO Placed":         { color: BLUE,      bg: "#dbeafe", icon: "📋" },
-  "Received":          { color: GREEN,     bg: "#dcfce7", icon: "📦" },
-  "Not Ordered":       { color: RED,       bg: "#fee2e2", icon: "🚨" },
+  "On Track":          { color: GREEN,  bg: "#dcfce7", icon: "✅" },
+  "Approved":          { color: GREEN,  bg: "#dcfce7", icon: "✅" },
+  "Submitted":         { color: BLUE,   bg: "#dbeafe", icon: "📤" },
+  "In Review":         { color: PURPLE, bg: "#ede9fe", icon: "🔍" },
+  "Issued to Hawkeye": { color: GREEN,  bg: "#dcfce7", icon: "🏗️" },
+  "PO Placed":         { color: BLUE,   bg: "#dbeafe", icon: "📋" },
+  "Received":          { color: GREEN,  bg: "#dcfce7", icon: "📦" },
+  "Not Ordered":       { color: RED,    bg: "#fee2e2", icon: "🚨" },
+  "Staged":            { color: PURPLE, bg: "#ede9fe", icon: "🏭" },
+  "Draft":             { color: GRAY,   bg: "#f1f5f9", icon: "📝" },
+  "Final":             { color: GREEN,  bg: "#dcfce7", icon: "✅" },
+  "Closed":            { color: GRAY,   bg: "#f1f5f9", icon: "🔒" },
+  "PO Pending":        { color: GOLD,   bg: "#fef3c7", icon: "⏳" },
+  "Shipped":           { color: BLUE,   bg: "#dbeafe", icon: "🚚" },
+  "Installed":         { color: GREEN,  bg: "#dcfce7", icon: "🔧" },
+  "Under Review":      { color: PURPLE, bg: "#ede9fe", icon: "🔍" },
+  "Executed":          { color: GREEN,  bg: "#dcfce7", icon: "✅" },
+  "Active":            { color: GREEN,  bg: "#dcfce7", icon: "✅" },
+  "On Hold":           { color: GRAY,   bg: "#f1f5f9", icon: "⏸️" },
+  "Scheduled":         { color: BLUE,   bg: "#dbeafe", icon: "📅" },
   "Action Items Open": { color: "#d97706", bg: "#fef3c7", icon: "📌" },
-  "Staged":            { color: PURPLE,    bg: "#ede9fe", icon: "🏭" },
-  "Draft":             { color: GRAY,      bg: "#f1f5f9", icon: "📝" },
-  "Final":             { color: GREEN,     bg: "#dcfce7", icon: "✅" },
-  "Closed":            { color: GRAY,      bg: "#f1f5f9", icon: "🔒" },
-  "PO Pending":        { color: GOLD,      bg: "#fef3c7", icon: "⏳" },
-  "Shipped":           { color: BLUE,      bg: "#dbeafe", icon: "🚚" },
-  "Installed":         { color: GREEN,     bg: "#dcfce7", icon: "🔧" },
-  "Under Review":      { color: PURPLE,    bg: "#ede9fe", icon: "🔍" },
-  "Executed":          { color: GREEN,     bg: "#dcfce7", icon: "✅" },
-  "Active":            { color: GREEN,     bg: "#dcfce7", icon: "✅" },
-  "On Hold":           { color: GRAY,      bg: "#f1f5f9", icon: "⏸️" },
-  "Scheduled":         { color: BLUE,      bg: "#dbeafe", icon: "📅" },
 };
 
 const TABS = [
@@ -44,8 +75,8 @@ const TABS = [
   { id: "engineering", label: "📋 IFR / IFC" },
   { id: "equipment",   label: "📦 Equipment" },
   { id: "par",         label: "⚡ PAR Control" },
-  { id: "minutes",     label: "📝 Meeting Minutes" },
-  { id: "sow",         label: "📄 SOW / Contracts" },
+  { id: "minutes",     label: "📝 Minutes" },
+  { id: "sow",         label: "📄 SOW" },
 ];
 
 function badge(status, small) {
@@ -98,29 +129,31 @@ function F({ label, children }) {
   return <div style={{ marginBottom: 14 }}><label style={{ fontSize: 12, fontWeight: 700, color: GRAY, display: "block", marginBottom: 4 }}>{label}</label>{children}</div>;
 }
 
-function Btns({ onSave, onClose }) {
+function SaveCancel({ onSave, onClose, saving }) {
   return (
     <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-      <button onClick={onSave} style={{ flex: 1, padding: "10px 0", background: NAVY, color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>Save</button>
+      <button onClick={onSave} disabled={saving} style={{ flex: 1, padding: "10px 0", background: NAVY, color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
+        {saving ? "Saving…" : "Save"}
+      </button>
       <button onClick={onClose} style={{ flex: 1, padding: "10px 0", background: "#f1f5f9", border: "none", borderRadius: 10, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
     </div>
   );
 }
 
-function Pill({ label, active, onClick }) {
-  return <button onClick={onClick} style={{ padding: "5px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 12, background: active ? NAVY : "#fff", color: active ? "#fff" : GRAY, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>{label}</button>;
-}
-
-// ── MODALS ────────────────────────────────────────────────────────────────────
-
-function MilestoneEditModal({ item, onSave, onClose }) {
+function MilestoneModal({ item, onSave, onClose }) {
   const [f, setF] = useState({ ...item });
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const save = async () => {
+    setSaving(true);
+    await updateEntity("JMUXMilestone", f.id, f);
+    onSave();
+  };
   return (
     <Modal title="Edit Milestone" onClose={onClose}>
       <F label="Status">
         <select style={{ ...INP, background: "#fff" }} value={f.status || ""} onChange={e => set("status", e.target.value)}>
-          {["Not Started", "In Progress", "Complete", "Overdue", "At Risk"].map(x => <option key={x}>{x}</option>)}
+          {["Not Started","In Progress","Complete","Overdue","At Risk"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="% Complete"><input style={INP} type="number" min={0} max={100} value={f.percent_complete || 0} onChange={e => set("percent_complete", +e.target.value)} /></F>
@@ -129,60 +162,66 @@ function MilestoneEditModal({ item, onSave, onClose }) {
       <F label="Actual Date"><input style={INP} type="date" value={f.actual_date || ""} onChange={e => set("actual_date", e.target.value)} /></F>
       <F label="Owner"><input style={INP} type="text" value={f.owner || ""} onChange={e => set("owner", e.target.value)} /></F>
       <F label="Notes"><textarea style={{ ...INP, resize: "vertical" }} rows={3} value={f.notes || ""} onChange={e => set("notes", e.target.value)} /></F>
-      <Btns onSave={() => JMUXMilestone.update(f.id, f).then(onSave)} onClose={onClose} />
+      <SaveCancel onSave={save} onClose={onClose} saving={saving} />
     </Modal>
   );
 }
 
-function WorkstreamEditModal({ item, onSave, onClose }) {
+function WorkstreamModal({ item, onSave, onClose }) {
   const [f, setF] = useState({ ...item });
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const save = async () => { setSaving(true); await updateEntity("JMUXWorkstream", f.id, f); onSave(); };
   return (
     <Modal title="Edit Workstream" onClose={onClose}>
       <F label="Status">
         <select style={{ ...INP, background: "#fff" }} value={f.status || ""} onChange={e => set("status", e.target.value)}>
-          {["Not Started", "In Progress", "On Track", "At Risk", "Overdue", "Complete"].map(x => <option key={x}>{x}</option>)}
+          {["Not Started","In Progress","On Track","At Risk","Overdue","Complete"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="% Complete"><input style={INP} type="number" min={0} max={100} value={f.percent_complete || 0} onChange={e => set("percent_complete", +e.target.value)} /></F>
       <F label="Owner"><input style={INP} type="text" value={f.owner || ""} onChange={e => set("owner", e.target.value)} /></F>
       <F label="Notes"><textarea style={{ ...INP, resize: "vertical" }} rows={3} value={f.notes || ""} onChange={e => set("notes", e.target.value)} /></F>
-      <Btns onSave={() => JMUXWorkstream.update(f.id, f).then(onSave)} onClose={onClose} />
+      <SaveCancel onSave={save} onClose={onClose} saving={saving} />
     </Modal>
   );
 }
 
-function EngEditModal({ item, onSave, onClose }) {
+function EngModal({ item, onSave, onClose }) {
   const [f, setF] = useState({ ...item });
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const save = async () => { setSaving(true); await updateEntity("JMUXEngPackage", f.id, f); onSave(); };
   return (
     <Modal title={`Edit — ${item.site_name}`} onClose={onClose}>
       <F label="IFR Status">
         <select style={{ ...INP, background: "#fff" }} value={f.ifr_status || ""} onChange={e => set("ifr_status", e.target.value)}>
-          {["Not Started", "In Review", "Submitted", "Approved"].map(x => <option key={x}>{x}</option>)}
+          {["Not Started","In Review","Submitted","Approved"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="IFR Actual Date"><input style={INP} type="date" value={f.ifr_actual || ""} onChange={e => set("ifr_actual", e.target.value)} /></F>
       <F label="IFC Status">
         <select style={{ ...INP, background: "#fff" }} value={f.ifc_status || ""} onChange={e => set("ifc_status", e.target.value)}>
-          {["Not Started", "In Review", "Submitted", "Issued to Hawkeye", "Approved"].map(x => <option key={x}>{x}</option>)}
+          {["Not Started","In Review","Submitted","Issued to Hawkeye","Approved"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="IFC Actual Date"><input style={INP} type="date" value={f.ifc_actual || ""} onChange={e => set("ifc_actual", e.target.value)} /></F>
       <F label="Notes"><textarea style={{ ...INP, resize: "vertical" }} rows={2} value={f.notes || ""} onChange={e => set("notes", e.target.value)} /></F>
-      <Btns onSave={() => JMUXEngPackage.update(f.id, f).then(onSave)} onClose={onClose} />
+      <SaveCancel onSave={save} onClose={onClose} saving={saving} />
     </Modal>
   );
 }
 
-function EquipEditModal({ item, onSave, onClose }) {
+function EquipModal({ item, onSave, onClose }) {
   const [f, setF] = useState({ ...item });
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const save = async () => { setSaving(true); await updateEntity("JMUXEquipment", f.id, f); onSave(); };
   return (
     <Modal title={`Edit — ${item.item_name}`} onClose={onClose}>
       <F label="PO Status">
         <select style={{ ...INP, background: "#fff" }} value={f.po_status || ""} onChange={e => set("po_status", e.target.value)}>
-          {["Not Ordered", "PO Pending", "PO Placed", "Shipped", "Received", "Staged", "Installed"].map(x => <option key={x}>{x}</option>)}
+          {["Not Ordered","PO Pending","PO Placed","Shipped","Received","Staged","Installed"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="PO Number"><input style={INP} type="text" value={f.po_number || ""} onChange={e => set("po_number", e.target.value)} /></F>
@@ -193,19 +232,21 @@ function EquipEditModal({ item, onSave, onClose }) {
       <F label="Qty Staged"><input style={INP} type="number" value={f.quantity_staged || 0} onChange={e => set("quantity_staged", +e.target.value)} /></F>
       <F label="Qty Installed"><input style={INP} type="number" value={f.quantity_installed || 0} onChange={e => set("quantity_installed", +e.target.value)} /></F>
       <F label="Notes"><textarea style={{ ...INP, resize: "vertical" }} rows={2} value={f.notes || ""} onChange={e => set("notes", e.target.value)} /></F>
-      <Btns onSave={() => JMUXEquipment.update(f.id, f).then(onSave)} onClose={onClose} />
+      <SaveCancel onSave={save} onClose={onClose} saving={saving} />
     </Modal>
   );
 }
 
-function PAREditModal({ item, onSave, onClose }) {
+function PARModal({ item, onSave, onClose }) {
   const [f, setF] = useState({ ...item });
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const save = async () => { setSaving(true); await updateEntity("JMUXPARControl", f.id, f); onSave(); };
   return (
     <Modal title={`PAR — ${item.site_name}`} onClose={onClose}>
       <F label="Design Status">
         <select style={{ ...INP, background: "#fff" }} value={f.design_status || ""} onChange={e => set("design_status", e.target.value)}>
-          {["Not Started", "In Progress", "Complete", "Approved"].map(x => <option key={x}>{x}</option>)}
+          {["Not Started","In Progress","Complete","Approved"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="RC-30 Ordered?">
@@ -232,21 +273,24 @@ function PAREditModal({ item, onSave, onClose }) {
       </F>
       <F label="Installation Status">
         <select style={{ ...INP, background: "#fff" }} value={f.installation_status || ""} onChange={e => set("installation_status", e.target.value)}>
-          {["Not Started", "Scheduled", "In Progress", "Complete"].map(x => <option key={x}>{x}</option>)}
+          {["Not Started","Scheduled","In Progress","Complete"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="Notes"><textarea style={{ ...INP, resize: "vertical" }} rows={3} value={f.notes || ""} onChange={e => set("notes", e.target.value)} /></F>
-      <Btns onSave={() => JMUXPARControl.update(f.id, f).then(onSave)} onClose={onClose} />
+      <SaveCancel onSave={save} onClose={onClose} saving={saving} />
     </Modal>
   );
 }
 
-function MinuteEditModal({ item, isNew, onSave, onClose }) {
+function MinuteModal({ item, isNew, onSave, onClose }) {
   const [f, setF] = useState({ status: "Action Items Open", ...item });
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-  const save = () => {
-    const p = isNew ? JMUXMeetingMinute.create(f) : JMUXMeetingMinute.update(f.id, f);
-    p.then(onSave);
+  const save = async () => {
+    setSaving(true);
+    if (isNew) await createEntityRecord("JMUXMeetingMinute", f);
+    else await updateEntity("JMUXMeetingMinute", f.id, f);
+    onSave();
   };
   return (
     <Modal title={isNew ? "Add Meeting Minutes" : "Edit Minutes"} onClose={onClose}>
@@ -259,85 +303,78 @@ function MinuteEditModal({ item, isNew, onSave, onClose }) {
       <F label="Due Date"><input style={INP} type="date" value={f.due_date || ""} onChange={e => set("due_date", e.target.value)} /></F>
       <F label="Status">
         <select style={{ ...INP, background: "#fff" }} value={f.status || ""} onChange={e => set("status", e.target.value)}>
-          {["Draft", "Final", "Action Items Open", "Closed"].map(x => <option key={x}>{x}</option>)}
+          {["Draft","Final","Action Items Open","Closed"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="Notes"><textarea style={{ ...INP, resize: "vertical" }} rows={3} value={f.notes || ""} onChange={e => set("notes", e.target.value)} /></F>
-      <Btns onSave={save} onClose={onClose} />
+      <SaveCancel onSave={save} onClose={onClose} saving={saving} />
     </Modal>
   );
 }
 
-function SOWEditModal({ item, onSave, onClose }) {
+function SOWModal({ item, onSave, onClose }) {
   const [f, setF] = useState({ ...item });
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const save = async () => { setSaving(true); await updateEntity("JMUXSOW", f.id, f); onSave(); };
   return (
     <Modal title={`SOW — ${item.vendor}`} onClose={onClose}>
       <F label="Status">
         <select style={{ ...INP, background: "#fff" }} value={f.status || ""} onChange={e => set("status", e.target.value)}>
-          {["Draft", "Under Review", "Executed", "Active", "Complete", "On Hold"].map(x => <option key={x}>{x}</option>)}
+          {["Draft","Under Review","Executed","Active","Complete","On Hold"].map(x => <option key={x}>{x}</option>)}
         </select>
       </F>
       <F label="Open Items"><textarea style={{ ...INP, resize: "vertical" }} rows={4} value={f.open_items || ""} onChange={e => set("open_items", e.target.value)} /></F>
       <F label="Notes"><textarea style={{ ...INP, resize: "vertical" }} rows={3} value={f.notes || ""} onChange={e => set("notes", e.target.value)} /></F>
-      <Btns onSave={() => JMUXSOW.update(f.id, f).then(onSave)} onClose={onClose} />
+      <SaveCancel onSave={save} onClose={onClose} saving={saving} />
     </Modal>
   );
 }
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
-
 export default function JMUXDashboard() {
   const [tab, setTab] = useState("overview");
-  const [milestones, setMilestones] = useState([]);
-  const [workstreams, setWorkstreams] = useState([]);
-  const [minutes, setMinutes] = useState([]);
-  const [packages, setPackages] = useState([]);
-  const [equipment, setEquipment] = useState([]);
-  const [par, setPar] = useState([]);
-  const [sows, setSows] = useState([]);
+  const [data, setData] = useState({ milestones: [], workstreams: [], minutes: [], packages: [], equipment: [], par: [], sows: [] });
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null); // { type, item }
+  const [modal, setModal] = useState(null);
   const [addMinute, setAddMinute] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [phaseFilter, setPhaseFilter] = useState("All");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const [ms, ws, mn, pk, eq, pr, sw] = await Promise.all([
-        JMUXMilestone.list(),
-        JMUXWorkstream.list(),
-        JMUXMeetingMinute.list(),
-        JMUXEngPackage.list(),
-        JMUXEquipment.list(),
-        JMUXPARControl.list(),
-        JMUXSOW.list(),
-      ]);
-      setMilestones(Array.isArray(ms) ? ms : []);
-      setWorkstreams(Array.isArray(ws) ? ws : []);
-      setMinutes((Array.isArray(mn) ? mn : []).sort((a, b) => (b.meeting_date || "") > (a.meeting_date || "") ? 1 : -1));
-      setPackages((Array.isArray(pk) ? pk : []).sort((a, b) => String(a.site_number || "").localeCompare(String(b.site_number || ""), undefined, { numeric: true })));
-      setEquipment(Array.isArray(eq) ? eq : []);
-      setPar(Array.isArray(pr) ? pr : []);
-      setSows(Array.isArray(sw) ? sw : []);
-    } catch (e) {
-      console.error("Load error:", e);
-    }
+    const [milestones, workstreams, minutes, packages, equipment, par, sows] = await Promise.all([
+      listEntity("JMUXMilestone"),
+      listEntity("JMUXWorkstream"),
+      listEntity("JMUXMeetingMinute"),
+      listEntity("JMUXEngPackage"),
+      listEntity("JMUXEquipment"),
+      listEntity("JMUXPARControl"),
+      listEntity("JMUXSOW"),
+    ]);
+    setData({
+      milestones,
+      workstreams,
+      minutes: [...minutes].sort((a, b) => (b.meeting_date || "") > (a.meeting_date || "") ? 1 : -1),
+      packages: [...packages].sort((a, b) => String(a.site_number || "").localeCompare(String(b.site_number || ""), undefined, { numeric: true })),
+      equipment,
+      par,
+      sows,
+    });
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const close = () => setModal(null);
   const saved = () => { close(); setAddMinute(false); load(); };
 
-  // derived
+  const { milestones, workstreams, minutes, packages, equipment, par, sows } = data;
   const p1 = packages.filter(p => p.phase === "Phase 1");
   const p2 = packages.filter(p => p.phase === "Phase 2");
-  const p1Ifc = p1.filter(p => p.ifc_status === "Issued to Hawkeye" || p.ifc_status === "Approved").length;
-  const p2Ifc = p2.filter(p => p.ifc_status === "Issued to Hawkeye" || p.ifc_status === "Approved").length;
-  const ifrDone = packages.filter(p => p.ifr_status === "Approved" || p.ifr_status === "Submitted").length;
+  const p1Ifc = p1.filter(p => ["Issued to Hawkeye", "Approved"].includes(p.ifc_status)).length;
+  const p2Ifc = p2.filter(p => ["Issued to Hawkeye", "Approved"].includes(p.ifc_status)).length;
+  const ifrDone = packages.filter(p => ["Approved", "Submitted"].includes(p.ifr_status)).length;
   const doneMs = milestones.filter(m => m.status === "Complete").length;
   const overdueMs = milestones.filter(m => m.status === "Overdue").length;
   const critEquip = equipment.filter(e => e.po_status === "Not Ordered");
@@ -347,7 +384,8 @@ export default function JMUXDashboard() {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f0f4f8", fontFamily: "system-ui,sans-serif" }}>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 48 }}>⚡</div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: NAVY, marginTop: 12 }}>Loading JMUX Dashboard...</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: NAVY, marginTop: 12 }}>Loading JMUX Dashboard…</div>
+        <div style={{ fontSize: 14, color: GRAY, marginTop: 6 }}>PRJ13797 · PSEG Long Island</div>
       </div>
     </div>
   );
@@ -355,7 +393,7 @@ export default function JMUXDashboard() {
   return (
     <div style={{ minHeight: "100vh", background: "#f0f4f8", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <div style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #1a3a6b 100%)`, color: "#fff", padding: "20px 24px 0" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
@@ -381,8 +419,7 @@ export default function JMUXDashboard() {
               )}
             </div>
           </div>
-          {/* Tabs */}
-          <div style={{ display: "flex", overflowX: "auto" }}>
+          <div style={{ display: "flex", overflowX: "auto", gap: 0 }}>
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "11px 18px", border: "none", background: "none", cursor: "pointer", fontSize: 13, fontWeight: tab === t.id ? 700 : 500, color: tab === t.id ? "#fff" : "rgba(255,255,255,0.55)", borderBottom: tab === t.id ? "3px solid #fff" : "3px solid transparent", whiteSpace: "nowrap" }}>
                 {t.label}
@@ -392,13 +429,13 @@ export default function JMUXDashboard() {
         </div>
       </div>
 
-      {/* ── CONTENT ── */}
+      {/* CONTENT */}
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "20px 16px" }}>
 
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(165px, 1fr))", gap: 14, marginBottom: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 20 }}>
               {[
                 { icon: "✅", val: `${doneMs}/${milestones.length}`, label: "Milestones Complete", color: GREEN },
                 { icon: "⚠️", val: overdueMs, label: "Overdue Items", color: RED },
@@ -415,14 +452,14 @@ export default function JMUXDashboard() {
               ))}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginBottom: 18 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 18, marginBottom: 18 }}>
               <Card>
                 <SectionTitle>📈 SPI History</SectionTitle>
-                {[["January 2026", 1.00], ["February 2026", 0.75], ["March 2026", 0.80], ["April 2026", 0.77]].map(([l, v], i) => (
+                {[["Jan 2026", 1.00], ["Feb 2026", 0.75], ["Mar 2026", 0.80], ["Apr 2026", 0.77]].map(([l, v], i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <div style={{ width: 110, fontSize: 12, color: GRAY }}>{l}</div>
-                    <div style={{ flex: 1 }}><Bar pct={v * 70} color={v === 1 ? "#94a3b8" : GOLD} h={10} /></div>
-                    <div style={{ width: 36, fontSize: 13, fontWeight: 700, color: v === 1 ? "#94a3b8" : GOLD }}>{v.toFixed(2)}</div>
+                    <div style={{ width: 70, fontSize: 12, color: GRAY }}>{l}</div>
+                    <div style={{ flex: 1 }}><Bar pct={v * 70} color={v === 1.0 ? "#94a3b8" : GOLD} h={10} /></div>
+                    <div style={{ width: 36, fontSize: 13, fontWeight: 700, color: v === 1.0 ? "#94a3b8" : GOLD }}>{v.toFixed(2)}</div>
                   </div>
                 ))}
                 <div style={{ marginTop: 12, padding: 12, background: "#f8fafc", borderRadius: 10, fontSize: 13, color: GRAY }}>
@@ -445,6 +482,9 @@ export default function JMUXDashboard() {
                     <div style={{ fontSize: 12, color: GRAY }}>PO Not Placed · Lead: {e.lead_time_weeks} weeks</div>
                   </div>
                 ))}
+                {milestones.filter(m => m.status === "Overdue" || m.status === "At Risk").length === 0 && critEquip.length === 0 && (
+                  <div style={{ color: GREEN, fontWeight: 600, fontSize: 14 }}>✅ No critical items</div>
+                )}
               </Card>
             </div>
 
@@ -455,14 +495,14 @@ export default function JMUXDashboard() {
                 return (
                   <div key={i} style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5, flexWrap: "wrap", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: BLUE, background: "#dbeafe", borderRadius: 4, padding: "1px 7px" }}>{w.phase}</span>
                         <span style={{ fontSize: 14, fontWeight: 600, color: NAVY }}>{w.name}</span>
-                        <span style={{ fontSize: 12, color: GRAY }}>· {w.owner}</span>
+                        {w.owner && <span style={{ fontSize: 12, color: GRAY }}>· {w.owner}</span>}
                       </div>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         {badge(w.status, true)}
-                        <span style={{ fontWeight: 700, color: cfg.color }}>{w.percent_complete}%</span>
+                        <span style={{ fontWeight: 700, color: cfg.color }}>{w.percent_complete || 0}%</span>
                         <button onClick={() => setModal({ type: "ws", item: w })} style={{ padding: "3px 10px", fontSize: 11, background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer" }}>Edit</button>
                       </div>
                     </div>
@@ -494,7 +534,7 @@ export default function JMUXDashboard() {
                       <td style={{ padding: "10px 14px" }}><span style={{ fontSize: 11, fontWeight: 700, color: BLUE, background: "#dbeafe", borderRadius: 4, padding: "1px 7px" }}>{m.phase}</span></td>
                       <td style={{ padding: "10px 14px" }}>
                         <div style={{ fontWeight: 600, fontSize: 13, color: NAVY }}>{m.milestone_name}</div>
-                        {m.notes && <div style={{ fontSize: 11, color: GRAY, marginTop: 2 }}>{m.notes.slice(0, 70)}{m.notes.length > 70 ? "…" : ""}</div>}
+                        {m.notes && <div style={{ fontSize: 11, color: GRAY, marginTop: 2 }}>{String(m.notes).slice(0, 70)}{String(m.notes).length > 70 ? "…" : ""}</div>}
                       </td>
                       <td style={{ padding: "10px 14px", fontSize: 12, color: GRAY, whiteSpace: "nowrap" }}>{fmt(m.planned_date)}</td>
                       <td style={{ padding: "10px 14px", minWidth: 100 }}>
@@ -503,8 +543,8 @@ export default function JMUXDashboard() {
                           <span style={{ fontSize: 12, fontWeight: 700, color: cfg.color }}>{m.percent_complete || 0}%</span>
                         </div>
                       </td>
-                      <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: m.weekly_spi >= 1 ? GREEN : m.weekly_spi >= 0.7 ? GOLD : RED }}>{m.weekly_spi != null ? (+m.weekly_spi).toFixed(2) : "—"}</td>
-                      <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: m.cumulative_spi >= 0.9 ? GREEN : m.cumulative_spi >= 0.7 ? GOLD : m.cumulative_spi ? RED : GRAY }}>{m.cumulative_spi != null ? (+m.cumulative_spi).toFixed(2) : "—"}</td>
+                      <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: (m.weekly_spi || 0) >= 1 ? GREEN : (m.weekly_spi || 0) >= 0.7 ? GOLD : RED }}>{m.weekly_spi != null ? (+m.weekly_spi).toFixed(2) : "—"}</td>
+                      <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: (m.cumulative_spi || 0) >= 0.9 ? GREEN : (m.cumulative_spi || 0) >= 0.7 ? GOLD : m.cumulative_spi ? RED : GRAY }}>{m.cumulative_spi != null ? (+m.cumulative_spi).toFixed(2) : "—"}</td>
                       <td style={{ padding: "10px 14px", fontSize: 12, color: GRAY }}>{m.owner || "—"}</td>
                       <td style={{ padding: "10px 14px" }}>{badge(m.status, true)}</td>
                       <td style={{ padding: "10px 14px" }}><button onClick={() => setModal({ type: "ms", item: m })} style={{ padding: "4px 12px", fontSize: 12, background: "#f1f5f9", border: "none", borderRadius: 6, cursor: "pointer", fontWeight: 600 }}>Edit</button></td>
@@ -516,15 +556,15 @@ export default function JMUXDashboard() {
           </Card>
         )}
 
-        {/* IFR / IFC */}
+        {/* IFR/IFC */}
         {tab === "engineering" && (
           <div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))", gap: 12, marginBottom: 18 }}>
               {[
-                { label: "Phase 1 — 31 Sites", val: `${p1Ifc} IFCs Issued`, color: BLUE },
-                { label: "Phase 2 — 36 Sites", val: `${p2Ifc} IFCs Issued`, color: PURPLE },
+                { label: "Phase 1 IFCs Issued", val: `${p1Ifc}/31`, color: BLUE },
+                { label: "Phase 2 IFCs Issued", val: `${p2Ifc}/36`, color: PURPLE },
                 { label: "Total IFRs Done", val: ifrDone, color: GREEN },
-                { label: "IFC Not Started", val: packages.filter(p => p.ifc_status === "Not Started" || !p.ifc_status).length, color: GRAY },
+                { label: "IFC Not Started", val: packages.filter(p => !p.ifc_status || p.ifc_status === "Not Started").length, color: GRAY },
               ].map((k, i) => (
                 <Card key={i} style={{ padding: 14 }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: k.color }}>{k.val}</div>
@@ -533,8 +573,9 @@ export default function JMUXDashboard() {
               ))}
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: GRAY }}>Phase:</span>
-              {["All", "Phase 1", "Phase 2"].map(f => <Pill key={f} label={f} active={phaseFilter === f} onClick={() => setPhaseFilter(f)} />)}
+              {["All", "Phase 1", "Phase 2"].map(f => (
+                <button key={f} onClick={() => setPhaseFilter(f)} style={{ padding: "5px 14px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 12, background: phaseFilter === f ? NAVY : "#fff", color: phaseFilter === f ? "#fff" : GRAY, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>{f}</button>
+              ))}
             </div>
             <Card style={{ padding: 0, overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 960 }}>
@@ -585,7 +626,6 @@ export default function JMUXDashboard() {
                       <div style={{ fontSize: 12, color: GRAY, marginTop: 4 }}>
                         {e.vendor && `Vendor: ${e.vendor}`}{e.po_number ? ` · PO: ${e.po_number}` : ""}{e.lead_time_weeks ? ` · Lead: ${e.lead_time_weeks} wks` : ""}
                       </div>
-                      {e.notes && <div style={{ fontSize: 12, color: e.po_status === "Not Ordered" ? RED : GRAY, marginTop: 4 }}>{e.notes}</div>}
                     </div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       {badge(e.po_status)}
@@ -615,7 +655,7 @@ export default function JMUXDashboard() {
           </div>
         )}
 
-        {/* PAR CONTROL */}
+        {/* PAR */}
         {tab === "par" && (
           <div>
             <Card style={{ marginBottom: 16, background: "#fef3c7", border: "1px solid #f59e0b" }}>
@@ -645,7 +685,7 @@ export default function JMUXDashboard() {
                     {p.c3794_card_needed && (
                       <div style={{ padding: 10, borderRadius: 8, background: p.c3794_ordered ? "#dcfce7" : "#fee2e2", gridColumn: "span 2" }}>
                         <div style={{ fontSize: 11, color: GRAY }}>C37.94 Card Required</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: p.c3794_ordered ? GREEN : RED }}>{p.c3794_ordered ? "✅ Ordered" : "🚨 Not Ordered — Bundle with Phase 2"}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: p.c3794_ordered ? GREEN : RED }}>{p.c3794_ordered ? "✅ Ordered" : "🚨 Not Ordered — Bundle w/ Phase 2"}</div>
                       </div>
                     )}
                   </div>
@@ -656,15 +696,15 @@ export default function JMUXDashboard() {
           </div>
         )}
 
-        {/* MEETING MINUTES */}
+        {/* MINUTES */}
         {tab === "minutes" && (
           <div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
               <button onClick={() => setAddMinute(true)} style={{ padding: "10px 20px", background: NAVY, color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>+ Add Meeting Minutes</button>
             </div>
             {minutes.map((m, i) => (
-              <Card key={i} style={{ marginBottom: 14, cursor: "pointer" }}>
-                <div onClick={() => setExpanded(expanded === m.id ? null : m.id)} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+              <Card key={i} style={{ marginBottom: 14 }}>
+                <div onClick={() => setExpanded(expanded === m.id ? null : m.id)} style={{ cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 13, color: GRAY }}>{fmt(m.meeting_date)}</div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: NAVY, marginTop: 2 }}>{m.title}</div>
@@ -677,7 +717,7 @@ export default function JMUXDashboard() {
                   </div>
                 </div>
                 {expanded === m.id && (
-                  <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
                     <div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 6 }}>📌 Key Decisions</div>
                       <div style={{ fontSize: 13, color: "#374151", whiteSpace: "pre-line", background: "#f8fafc", padding: 12, borderRadius: 8 }}>{m.key_decisions}</div>
@@ -687,7 +727,7 @@ export default function JMUXDashboard() {
                       <div style={{ fontSize: 13, color: "#374151", whiteSpace: "pre-line", background: "#f8fafc", padding: 12, borderRadius: 8 }}>{m.action_items}</div>
                       {m.due_date && <div style={{ fontSize: 12, color: GOLD, marginTop: 6, fontWeight: 600 }}>⏰ Due: {fmt(m.due_date)} · {m.owner}</div>}
                     </div>
-                    {m.notes && <div style={{ gridColumn: "span 2", fontSize: 12, color: GRAY, background: "#f8fafc", padding: 10, borderRadius: 8 }}>{m.notes}</div>}
+                    {m.notes && <div style={{ fontSize: 12, color: GRAY, background: "#f8fafc", padding: 10, borderRadius: 8 }}>{m.notes}</div>}
                   </div>
                 )}
               </Card>
@@ -728,15 +768,15 @@ export default function JMUXDashboard() {
         )}
       </div>
 
-      {/* ── MODALS ── */}
-      {modal?.type === "ms"    && <MilestoneEditModal  item={modal.item} onSave={saved} onClose={close} />}
-      {modal?.type === "ws"    && <WorkstreamEditModal item={modal.item} onSave={saved} onClose={close} />}
-      {modal?.type === "eng"   && <EngEditModal        item={modal.item} onSave={saved} onClose={close} />}
-      {modal?.type === "equip" && <EquipEditModal      item={modal.item} onSave={saved} onClose={close} />}
-      {modal?.type === "par"   && <PAREditModal        item={modal.item} onSave={saved} onClose={close} />}
-      {modal?.type === "min"   && <MinuteEditModal     item={modal.item} isNew={false} onSave={saved} onClose={close} />}
-      {modal?.type === "sow"   && <SOWEditModal        item={modal.item} onSave={saved} onClose={close} />}
-      {addMinute && <MinuteEditModal item={{}} isNew={true} onSave={saved} onClose={() => setAddMinute(false)} />}
+      {/* MODALS */}
+      {modal?.type === "ms"    && <MilestoneModal  item={modal.item} onSave={saved} onClose={close} />}
+      {modal?.type === "ws"    && <WorkstreamModal item={modal.item} onSave={saved} onClose={close} />}
+      {modal?.type === "eng"   && <EngModal        item={modal.item} onSave={saved} onClose={close} />}
+      {modal?.type === "equip" && <EquipModal      item={modal.item} onSave={saved} onClose={close} />}
+      {modal?.type === "par"   && <PARModal        item={modal.item} onSave={saved} onClose={close} />}
+      {modal?.type === "min"   && <MinuteModal     item={modal.item} isNew={false} onSave={saved} onClose={close} />}
+      {modal?.type === "sow"   && <SOWModal        item={modal.item} onSave={saved} onClose={close} />}
+      {addMinute && <MinuteModal item={{}} isNew={true} onSave={saved} onClose={() => setAddMinute(false)} />}
     </div>
   );
 }
