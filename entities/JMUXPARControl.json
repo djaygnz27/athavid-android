@@ -16,13 +16,34 @@
         "Approved"
       ]
     },
+    "design_owner": {
+      "type": "string"
+    },
+    "design_due_date": {
+      "type": "string"
+    },
+    "design_complete_date": {
+      "type": "string"
+    },
     "rc30_ordered": {
       "type": "boolean"
     },
     "rc30_order_date": {
       "type": "string"
     },
+    "rc30_po_number": {
+      "type": "string"
+    },
+    "rc30_ordered_by": {
+      "type": "string"
+    },
+    "rc30_quantity": {
+      "type": "number"
+    },
     "rc30_expected_delivery": {
+      "type": "string"
+    },
+    "rc30_actual_delivery": {
       "type": "string"
     },
     "rc30_received": {
@@ -34,13 +55,19 @@
     "c3794_ordered": {
       "type": "boolean"
     },
+    "c3794_po_number": {
+      "type": "string"
+    },
+    "c3794_expected_delivery": {
+      "type": "string"
+    },
     "installation_status": {
       "type": "string",
       "enum": [
         "Not Started",
-        "Scheduled",
         "In Progress",
-        "Complete"
+        "Complete",
+        "Scheduled"
       ]
     },
     "installation_date": {
@@ -48,6 +75,9 @@
     },
     "nerc_cip_compliant": {
       "type": "boolean"
+    },
+    "open_questions": {
+      "type": "string"
     },
     "notes": {
       "type": "string"
