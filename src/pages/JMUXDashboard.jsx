@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { JMUXMilestone, JMUXWorkstream, JMUXMeetingMinute, JMUXEngPackage, JMUXEquipment, JMUXPARControl, JMUXSOW } from "../api/entities";
+import { JMUXMilestone, JMUXWorkstream, JMUXMeetingMinute, JMUXEngPackage, JMUXEquipment, JMUXPARControl, JMUXSOW } from "@/api/entities";
 
 const NAVY = "#0f2744";
 const BLUE = "#1d4ed8";
