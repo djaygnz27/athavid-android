@@ -347,8 +347,8 @@ export default function JMUXDashboard() {
       const [ms, ws, mn, pk, eq, pr, sw] = await Promise.all([
         JMUXMilestone.list(),
         JMUXWorkstream.list(),
-        JMUXMeetingMinute.list("-meeting_date"),
-        JMUXEngPackage.list("site_number"),
+        JMUXMeetingMinute.list(),
+        JMUXEngPackage.list(),
         JMUXEquipment.list(),
         JMUXPARControl.list(),
         JMUXSOW.list(),
