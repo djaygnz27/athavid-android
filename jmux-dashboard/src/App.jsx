@@ -430,38 +430,123 @@ function Equipment({ items, onRefresh }) {
 
 // ── PAR CONTROL ────────────────────────────────────────────────────────────────
 function PARControl({ items, onRefresh }) {
+  const [expanded, setExpanded] = useState(null);
+
+  const statusDot = (val) => {
+    if (val === true) return { icon: "✅", color: "#22c55e" };
+    if (val === false) return { icon: "❌", color: "#ef4444" };
+    return { icon: "⏳", color: "#f59e0b" };
+  };
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+      {/* Header bar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: "#93c5fd", background: "#1e3a5f33", border: "1px solid #3b82f644", borderRadius: 8, padding: "10px 16px", flex: 1, marginRight: 12 }}>
+          ⚡ <strong>PAR Migration</strong> — Iniven RC-30 converts direct contact → C37.94 protocol · 6 high-impact substations · 8-week lead time · $500K unbudgeted (inherited 2024 scope gap) · RC-30 ordered by <strong>Chakrapani</strong>
+        </div>
         <button style={s.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
       </div>
-      <div style={{ background: "#1e3a5f22", border: "1px solid #3b82f644", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#93c5fd" }}>
-        ℹ️ PAR migration uses Iniven RC-30 (converts direct contact → C37.94). ~6–7 high-impact sites. 8-week lead time. $500K unbudgeted — inherited 2024 scope gap.
+
+      {/* Summary strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
+        {[
+          { label: "Total PAR Sites", val: items.length, color: "#f59e0b" },
+          { label: "RC-30 Ordered", val: items.filter(i => i.rc30_ordered).length + " / " + items.length, color: "#22c55e" },
+          { label: "RC-30 Received", val: items.filter(i => i.rc30_received).length + " / " + items.length, color: "#06b6d4" },
+          { label: "Design In Progress", val: items.filter(i => i.design_status === "In Progress").length, color: "#3b82f6" },
+          { label: "Design Complete", val: items.filter(i => i.design_status === "Complete" || i.design_status === "Approved").length, color: "#22c55e" },
+          { label: "C37.94 Card Needed", val: items.filter(i => i.c3794_card_needed).length + " site(s)", color: "#ef4444" },
+        ].map((kpi, i) => (
+          <div key={i} style={{ background: "#1e293b", borderRadius: 8, padding: "10px 14px", border: "1px solid #334155" }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: kpi.color }}>{kpi.val}</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{kpi.label}</div>
+          </div>
+        ))}
       </div>
-      <table style={s.table}>
-        <thead>
-          <tr>
-            <th style={s.th}>Site</th><th style={s.th}>Design</th><th style={s.th}>RC-30 Ordered</th>
-            <th style={s.th}>Expected Delivery</th><th style={s.th}>RC-30 Received</th>
-            <th style={s.th}>C37.94 Needed</th><th style={s.th}>Install Status</th><th style={s.th}>NERC CIP</th><th style={s.th}>Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((p, i) => (
-            <tr key={i} style={{ background: i % 2 === 0 ? "#1e293b" : "#162032" }}>
-              <td style={{ ...s.td, fontWeight: 600 }}>{p.site_name}</td>
-              <td style={s.td}><Badge status={p.design_status} /></td>
-              <td style={s.td}>{p.rc30_ordered ? "✅ Yes" : "❌ No"}</td>
-              <td style={s.td}>{p.rc30_expected_delivery || "—"}</td>
-              <td style={s.td}>{p.rc30_received ? "✅ Yes" : "—"}</td>
-              <td style={s.td}>{p.c3794_card_needed ? "⚠️ Yes" : "No"}</td>
-              <td style={s.td}><Badge status={p.installation_status} /></td>
-              <td style={s.td}>{p.nerc_cip_compliant ? "✅" : "⏳"}</td>
-              <td style={{ ...s.td, fontSize: 12, color: "#94a3b8" }}>{p.notes || "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      {/* Site cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {items.map((p, i) => {
+          const isOpen = expanded === i;
+          const hasAlert = p.c3794_card_needed || !p.rc30_ordered || p.design_status === "Not Started";
+          return (
+            <div key={i} style={{ background: "#1e293b", borderRadius: 10, border: `1px solid ${hasAlert ? "#f59e0b55" : "#334155"}`, overflow: "hidden" }}>
+              {/* Card header — always visible */}
+              <div
+                style={{ padding: "14px 20px", cursor: "pointer", display: "flex", alignItems: "center", gap: 16 }}
+                onClick={() => setExpanded(isOpen ? null : i)}
+              >
+                {/* Site name */}
+                <div style={{ minWidth: 180 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#e2e8f0" }}>{p.site_name}</div>
+                  <div style={{ fontSize: 11, color: "#64748b" }}>{p.substation_id}</div>
+                </div>
+
+                {/* Status pills */}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flex: 1 }}>
+                  <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 999, fontWeight: 700, background: (p.design_status === "Complete" || p.design_status === "Approved") ? "#22c55e22" : p.design_status === "In Progress" ? "#3b82f622" : "#ef444422", color: (p.design_status === "Complete" || p.design_status === "Approved") ? "#22c55e" : p.design_status === "In Progress" ? "#3b82f6" : "#ef4444", border: "1px solid currentColor" }}>
+                    📐 Design: {p.design_status || "Not Started"}
+                  </span>
+                  <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 999, fontWeight: 700, background: p.rc30_ordered ? "#22c55e22" : "#ef444422", color: p.rc30_ordered ? "#22c55e" : "#ef4444", border: "1px solid currentColor" }}>
+                    📦 RC-30: {p.rc30_ordered ? "Ordered ✅" : "NOT Ordered ❌"}
+                  </span>
+                  <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 999, fontWeight: 700, background: p.rc30_received ? "#22c55e22" : "#64748b22", color: p.rc30_received ? "#22c55e" : "#64748b", border: "1px solid currentColor" }}>
+                    🚚 Received: {p.rc30_received ? "Yes ✅" : "Pending"}
+                  </span>
+                  {p.c3794_card_needed && (
+                    <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 999, fontWeight: 700, background: p.c3794_ordered ? "#22c55e22" : "#ef444422", color: p.c3794_ordered ? "#22c55e" : "#ef4444", border: "1px solid currentColor" }}>
+                      ⚠️ C37.94 Card: {p.c3794_ordered ? "Ordered ✅" : "NOT Ordered ❌"}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 999, fontWeight: 700, background: "#1e293b", color: "#94a3b8", border: "1px solid #334155" }}>
+                    🔧 Install: {p.installation_status || "Not Started"}
+                  </span>
+                </div>
+
+                {/* Expand arrow */}
+                <div style={{ fontSize: 18, color: "#64748b", transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.2s" }}>›</div>
+              </div>
+
+              {/* Expanded detail */}
+              {isOpen && (
+                <div style={{ borderTop: "1px solid #334155", padding: "16px 20px", background: "#162032" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    {/* Left column — tracking details */}
+                    <div>
+                      <div style={{ fontWeight: 700, color: "#f59e0b", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>Tracking Details</div>
+                      {[
+                        ["Ordered By", p.rc30_ordered_by || "—"],
+                        ["PO Number", p.rc30_po_number || "TBD ⚠️"],
+                        ["RC-30 Qty", p.rc30_quantity || "—"],
+                        ["Expected Delivery", p.rc30_expected_delivery || "TBD ⚠️"],
+                        ["Actual Delivery", p.rc30_actual_delivery || "—"],
+                        ["Design Owner", p.design_owner || "TBD ⚠️"],
+                        ["Design Due Date", p.design_due_date || "TBD ⚠️"],
+                        ["Design Complete", p.design_complete_date || "—"],
+                        ["NERC CIP Compliant", p.nerc_cip_compliant ? "✅ Yes" : "⏳ Pending"],
+                        ...(p.c3794_card_needed ? [["C37.94 PO#", p.c3794_po_number || "TBD ⚠️"], ["C37.94 Delivery", p.c3794_expected_delivery || "TBD ⚠️"]] : []),
+                      ].map(([label, val], j) => (
+                        <div key={j} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #1e293b" }}>
+                          <span style={{ fontSize: 12, color: "#64748b" }}>{label}</span>
+                          <span style={{ fontSize: 12, color: val && val.toString().includes("TBD") ? "#f59e0b" : "#e2e8f0", fontWeight: 600 }}>{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Right column — open questions + notes */}
+                    <div>
+                      <div style={{ fontWeight: 700, color: "#ef4444", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>❓ Open Questions</div>
+                      <div style={{ fontSize: 12, color: "#fca5a5", lineHeight: 1.8, whiteSpace: "pre-line", marginBottom: 16 }}>{p.open_questions || "None"}</div>
+                      <div style={{ fontWeight: 700, color: "#94a3b8", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>📝 Notes</div>
+                      <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.6 }}>{p.notes || "—"}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
