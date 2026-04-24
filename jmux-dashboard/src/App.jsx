@@ -95,7 +95,17 @@ function Overview({ data }) {
 
   const ph1Sites = engineering.filter(e => e.phase === "Phase 1");
   const ph2Sites = engineering.filter(e => e.phase === "Phase 2");
-  const ph1Complete = ph1Sites.filter(e => e.ifc_status === "IFC Issued" || e.ifc_status === "Complete").length;
+
+  // Phase 1 progress: weighted by milestone status (Complete=100, In Progress=actual%, else 0)
+  // Only count milestones that are not Not Started to avoid new future tasks pulling down progress
+  const ph1Milestones = milestones.filter(m => m.phase === "Phase 1");
+  const ph1CompletedCount = ph1Milestones.filter(m => m.status === "Complete").length;
+  const ph1ActiveMilestones = ph1Milestones.filter(m => m.status !== "Not Started");
+  const ph1AvgPct = ph1ActiveMilestones.length
+    ? Math.round(ph1ActiveMilestones.reduce((sum, m) => sum + (m.percent_complete || 0), 0) / ph1ActiveMilestones.length)
+    : 0;
+
+  // Phase 2 progress: IFR issued count from engineering packages
   const ph2IFR = ph2Sites.filter(e => e.ifr_status === "IFR Issued" || e.ifr_status === "Complete").length;
 
   const milestonesComplete = milestones.filter(m => m.status === "Complete").length;
@@ -121,8 +131,8 @@ function Overview({ data }) {
         <div style={styles.card}>
           <div style={styles.cardNum}>{ph1Sites.length}</div>
           <div style={styles.cardLabel}>Phase 1 Sites</div>
-          <div style={styles.cardSub}>{ph1Complete} IFC issued</div>
-          <div style={{ marginTop: 8 }}><ProgressBar pct={(ph1Complete / (ph1Sites.length || 1)) * 100} color="#22c55e" /></div>
+          <div style={styles.cardSub}>{ph1AvgPct}% complete · {ph1CompletedCount}/{ph1Milestones.length} milestones done</div>
+          <div style={{ marginTop: 8 }}><ProgressBar pct={ph1AvgPct} color="#22c55e" /></div>
         </div>
         <div style={styles.card}>
           <div style={styles.cardNum}>{ph2Sites.length}</div>
@@ -587,3 +597,6 @@ export default function App() {
     </div>
   );
 }
+
+
+
