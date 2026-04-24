@@ -16,6 +16,23 @@ export const SachiPodcast = base44.entities.SachiPodcast;
 export const SachiPodcastEpisode = base44.entities.SachiPodcastEpisode;
 export const UserInterest = base44.entities.UserInterest;
 export const SachiAnalytics = base44.entities.SachiAnalytics;
+export const SachiReport = base44.entities.SachiReport;
+export const SachiBookmark = base44.entities.SachiBookmark;
+export const SachiBlock = base44.entities.SachiBlock;
+export const FoundingCreator = base44.entities.FoundingCreator;
+export const SachiLike = base44.entities.SachiLike;
+export const SachiLiveRoom = base44.entities.SachiLiveRoom;
+export const SachiLiveComment = base44.entities.SachiLiveComment;
+export const SachiGuestRequest = base44.entities.SachiGuestRequest;
+export const SachiCoinWallet = base44.entities.SachiCoinWallet;
+export const SachiGift = base44.entities.SachiGift;
+export const SachiHostEarning = base44.entities.SachiHostEarning;
+export const SachiCoinPurchase = base44.entities.SachiCoinPurchase;
+export const SachiMessage = base44.entities.SachiMessage;
+export const SachiNotification = base44.entities.SachiNotification;
+export const SachiHype = base44.entities.SachiHype;
+export const JMUXMilestone = base44.entities.JMUXMilestone;
+export const JMUXWorkstream = base44.entities.JMUXWorkstream;
 
 // auth sdk:
 export const User = base44.auth;

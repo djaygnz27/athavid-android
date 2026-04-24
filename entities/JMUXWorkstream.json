@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "Phase 1",
+        "Phase 2",
+        "Phase 3",
+        "All"
+      ]
+    },
+    "percent_complete": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "On Track",
+        "At Risk",
+        "Overdue",
+        "Complete",
+        "Not Started"
+      ]
+    },
+    "owner": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "JMUXWorkstream"
+}
