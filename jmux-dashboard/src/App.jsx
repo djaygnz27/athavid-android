@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE = "https://sachi-c7f0261c.base44.app";
 
 async function listEntity(name) {
@@ -15,177 +14,269 @@ async function listEntity(name) {
 }
 
 const STATUS_COLOR = {
-  "Complete": "#22c55e",
-  "In Progress": "#3b82f6",
-  "Not Started": "#6b7280",
-  "At Risk": "#f59e0b",
-  "Delayed": "#ef4444",
-  "On Hold": "#8b5cf6",
-  "IFR Issued": "#06b6d4",
-  "IFC Issued": "#10b981",
-  "Pending": "#f59e0b",
-  "Active": "#3b82f6",
-  "Closed": "#6b7280",
+  "Complete": "#22c55e", "In Progress": "#3b82f6", "Not Started": "#6b7280",
+  "At Risk": "#f59e0b", "Delayed": "#ef4444", "On Hold": "#8b5cf6",
+  "IFR Issued": "#06b6d4", "IFC Issued": "#10b981", "Pending": "#f59e0b",
+  "Active": "#3b82f6", "Closed": "#6b7280", "Overdue": "#ef4444",
 };
 
 const TABS = ["Overview", "Milestones", "Engineering", "Equipment", "PAR Control", "SOW", "Meetings"];
 
-const styles = {
+const s = {
   app: { fontFamily: "'Segoe UI', system-ui, sans-serif", background: "#0f172a", minHeight: "100vh", color: "#e2e8f0" },
   header: { background: "linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%)", borderBottom: "2px solid #f59e0b", padding: "20px 32px" },
   headerTitle: { fontSize: 22, fontWeight: 700, color: "#f59e0b", margin: 0 },
   headerSub: { fontSize: 13, color: "#94a3b8", margin: "4px 0 0 0" },
   tabBar: { display: "flex", gap: 4, padding: "12px 32px", background: "#1e293b", borderBottom: "1px solid #334155", overflowX: "auto" },
-  tab: (active) => ({
-    padding: "8px 18px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-    background: active ? "#f59e0b" : "transparent", color: active ? "#0f172a" : "#94a3b8",
-    transition: "all 0.2s"
-  }),
+  tab: (active) => ({ padding: "8px 18px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", background: active ? "#f59e0b" : "transparent", color: active ? "#0f172a" : "#94a3b8" }),
   body: { padding: "24px 32px", maxWidth: 1400, margin: "0 auto" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 28 },
   card: { background: "#1e293b", borderRadius: 10, padding: "18px 22px", border: "1px solid #334155" },
+  clickCard: { background: "#1e293b", borderRadius: 10, padding: "18px 22px", border: "1px solid #334155", cursor: "pointer", transition: "all 0.2s" },
   cardNum: { fontSize: 36, fontWeight: 800, color: "#f59e0b", margin: 0 },
   cardLabel: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
-  cardSub: { fontSize: 13, color: "#64748b", marginTop: 2 },
+  cardSub: { fontSize: 12, color: "#64748b", marginTop: 2 },
+  cardHint: { fontSize: 11, color: "#475569", marginTop: 6 },
   section: { marginBottom: 28 },
   sectionTitle: { fontSize: 15, fontWeight: 700, color: "#f59e0b", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 },
   table: { width: "100%", borderCollapse: "collapse", background: "#1e293b", borderRadius: 10, overflow: "hidden" },
   th: { padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", borderBottom: "1px solid #334155", background: "#0f172a" },
   td: { padding: "10px 14px", fontSize: 13, color: "#e2e8f0", borderBottom: "1px solid #1e293b" },
-  badge: (status) => ({
-    display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700,
-    background: (STATUS_COLOR[status] || "#475569") + "22",
-    color: STATUS_COLOR[status] || "#94a3b8",
-    border: `1px solid ${STATUS_COLOR[status] || "#475569"}44`
-  }),
+  badge: (status) => ({ display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, background: (STATUS_COLOR[status] || "#475569") + "22", color: STATUS_COLOR[status] || "#94a3b8", border: `1px solid ${STATUS_COLOR[status] || "#475569"}44` }),
   loading: { textAlign: "center", padding: 60, color: "#94a3b8" },
-  empty: { textAlign: "center", padding: 40, color: "#475569", fontSize: 14 },
   refreshBtn: { marginLeft: "auto", padding: "6px 16px", background: "#1e3a5f", border: "1px solid #3b82f6", borderRadius: 6, color: "#93c5fd", fontSize: 12, cursor: "pointer", fontWeight: 600 },
   input: { background: "#0f172a", border: "1px solid #334155", borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 13, width: "100%", boxSizing: "border-box" },
-  progressBar: (pct, color) => ({
-    height: 6, borderRadius: 3, background: "#334155", position: "relative", overflow: "hidden"
-  }),
-  progressFill: (pct, color) => ({
-    position: "absolute", top: 0, left: 0, height: "100%",
-    width: `${Math.min(pct || 0, 100)}%`,
-    background: color || "#f59e0b", borderRadius: 3,
-    transition: "width 0.6s ease"
-  }),
+  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 },
+  modal: { background: "#1e293b", borderRadius: 12, border: "1px solid #334155", width: "100%", maxWidth: 720, maxHeight: "85vh", overflow: "auto", padding: 28 },
+  modalTitle: { fontSize: 18, fontWeight: 700, color: "#f59e0b", marginBottom: 4 },
+  modalSub: { fontSize: 13, color: "#94a3b8", marginBottom: 20 },
+  closeBtn: { float: "right", background: "none", border: "1px solid #475569", borderRadius: 6, color: "#94a3b8", padding: "4px 12px", cursor: "pointer", fontSize: 13 },
+  checkRow: { display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: "1px solid #1e293b" },
+  checkIcon: (done) => ({ fontSize: 16, color: done ? "#22c55e" : "#475569", flexShrink: 0, marginTop: 1 }),
+  checkText: (done) => ({ fontSize: 13, color: done ? "#e2e8f0" : "#64748b", flex: 1 }),
+  checkNote: { fontSize: 11, color: "#64748b", marginTop: 2 },
 };
 
-function StatusBadge({ status }) {
-  return <span style={styles.badge(status)}>{status || "—"}</span>;
-}
-
-function ProgressBar({ pct, color }) {
+function pb(pct, color) {
   return (
-    <div style={styles.progressBar(pct, color)}>
-      <div style={styles.progressFill(pct, color)} />
+    <div style={{ height: 6, borderRadius: 3, background: "#334155", position: "relative", overflow: "hidden", marginTop: 8 }}>
+      <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: `${Math.min(pct||0,100)}%`, background: color||"#f59e0b", borderRadius: 3 }} />
     </div>
   );
 }
 
-function Loading() {
-  return <div style={styles.loading}>⏳ Loading data...</div>;
+function Badge({ status }) { return <span style={s.badge(status)}>{status||"—"}</span>; }
+
+// ── PHASE DRILL-DOWN MODAL ────────────────────────────────────────────────────
+function PhaseModal({ phase, data, onClose }) {
+  const { milestones, engineering, equipment } = data;
+
+  const PHASES = {
+    "Phase 1": {
+      color: "#22c55e",
+      icon: "🟢",
+      subtitle: "Nokia SR-Series NMS Integration — 31 Sites",
+      pct: 85,
+      summary: "All Nokia MPLS routers installed. All 31 nodes built into NSP GUI by PSEG techs. IFR/IFC packages complete for all sites. Pending: RTU serial test (John Ng, due Apr 30) and production RTU MOP.",
+      checklist: [
+        { done: true,  text: "iLO Corporate Connectivity — Melville & Hicksville", note: "Completed Feb 26" },
+        { done: true,  text: "BGP Network Design & Configurations", note: "Completed Mar 9" },
+        { done: true,  text: "BGP Design Approved", note: "Completed Mar 16" },
+        { done: true,  text: "Remote Access to NSP — Fiber Terminated at Hicksville", note: "Completed Apr 13" },
+        { done: true,  text: "Nokia NSP License Received & DNS Resolved", note: "License received Apr 13, DNS resolved by Vic" },
+        { done: true,  text: "All 31 Nokia MPLS Routers Installed", note: "Hardware install complete" },
+        { done: true,  text: "All 31 Nodes Built into NSP GUI", note: "Completed by Lee, Rahiq & Brianna" },
+        { done: true,  text: "All Phase 1 IFR & IFC Packages Issued", note: "All 31 sites — sealed and approved" },
+        { done: false, text: "RTU Serial Test — Hicksville (John Ng)", note: "50-ft DB9 cables delivered. John Ng targeting Apr 30." },
+        { done: false, text: "Develop Production RTU Migration MOP", note: "To follow successful RTU test with B&M" },
+        { done: false, text: "Remote Node Verification — All 31 Sites", note: "Remote login via NSP GUI to confirm configs & connectivity" },
+      ]
+    },
+    "Phase 2": {
+      color: "#3b82f6",
+      icon: "🔵",
+      subtitle: "Nokia SR-Series Expansion — 36 Sites",
+      pct: Math.round((9/36)*100),
+      summary: "Nokia equipment ordered, delivered and staged in Hawkeye trailer. 9 of 36 sites have sealed & approved IFR/IFC packages on shared drive. Hawkeye is conducting site surveys on those 9 sites to assess cable lengths, connectors, and installation requirements.",
+      checklist: [
+        { done: true,  text: "Nokia Phase 2 Equipment Ordered & Delivered", note: "All equipment staged in Hawkeye trailer" },
+        { done: true,  text: "9/36 IFR & IFC Packages — Sealed & Approved", note: "On shared drive. Hawkeye conducting site surveys." },
+        { done: false, text: "Remaining 27/36 IFR Submissions", note: `Final IFR deadline: June 29, 2026` },
+        { done: false, text: "All 36 IFC Packages Issued", note: "Final IFC deadline: July 13, 2026" },
+        { done: false, text: "Hawkeye Site Surveys Complete — All 36 Sites", note: "Currently in progress for first 9 sites" },
+        { done: false, text: "Phase 2 Construction Start", note: "Planned Aug 5, 2026" },
+        { done: false, text: "Phase 2 Deployment Complete", note: "Planned Sep 28, 2026" },
+      ]
+    },
+    "Phase 3": {
+      color: "#8b5cf6",
+      icon: "🟣",
+      subtitle: "PAR Circuit Migration — 6 High-Impact Substations",
+      pct: 10,
+      summary: "Serial-to-IP intermediary solution using Iniven RC-30 for NERC CIP compliance. Inherited 2024 scope gap — $500K unbudgeted. 8-week equipment lead time. Northport requires additional C37.94 protocol card.",
+      checklist: [
+        { done: true,  text: "PAR Migration Strategy Defined", note: "Iniven RC-30 selected — converts direct contact → C37.94. NOT a programmable device under NERC CIP." },
+        { done: false, text: "Iniven RC-30 Equipment PO Placed — 6 Sites", note: "8-week lead time. CRITICAL PATH." },
+        { done: false, text: "Northport C37.94 Card Ordered", note: "To be bundled with Phase 2 equipment orders" },
+        { done: false, text: "RC-30 Equipment Received & Staged", note: "Pending PO placement" },
+        { done: false, text: "PAR Circuit Migration — All 6 Sites", note: "~6 high-impact substations" },
+        { done: false, text: "NERC CIP Compliance Verified — All PAR Sites", note: "Post-migration validation required" },
+      ]
+    },
+    "Decommission": {
+      color: "#f59e0b",
+      icon: "🟡",
+      subtitle: "JMUX Legacy Equipment Decommission",
+      pct: 0,
+      summary: "Legacy JMUX equipment decommission follows successful Phase 1 & Phase 2 cutover. 2W Barrett decommission scheduled to conclude before Robert Costello's construction work begins in 2027.",
+      checklist: [
+        { done: false, text: "Phase 1 Cutover Complete — Prerequisite", note: "Required before decommission begins" },
+        { done: false, text: "Phase 2 Cutover Complete — Prerequisite", note: "Required before decommission begins" },
+        { done: false, text: "2W Barrett Decommission", note: "Must conclude before Costello construction (2027)" },
+        { done: false, text: "Legacy JMUX Equipment Removal — All Sites", note: "To be scheduled post-cutover" },
+        { done: false, text: "Decommission Complete & Final Sign-Off", note: "Project closeout" },
+      ]
+    }
+  };
+
+  const cfg = PHASES[phase];
+  if (!cfg) return null;
+  const done = cfg.checklist.filter(c => c.done).length;
+  const total = cfg.checklist.length;
+
+  return (
+    <div style={s.overlay} onClick={onClose}>
+      <div style={s.modal} onClick={e => e.stopPropagation()}>
+        <button style={s.closeBtn} onClick={onClose}>✕ Close</button>
+        <div style={s.modalTitle}>{cfg.icon} {phase}</div>
+        <div style={s.modalSub}>{cfg.subtitle}</div>
+
+        {/* Progress bar */}
+        <div style={{ background: "#0f172a", borderRadius: 8, padding: "12px 16px", marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontSize: 13, color: "#94a3b8" }}>Overall Progress</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: cfg.color }}>{cfg.pct}%</span>
+          </div>
+          {pb(cfg.pct, cfg.color)}
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>{done} of {total} work items complete</div>
+        </div>
+
+        {/* Summary */}
+        <div style={{ background: "#0f172a", borderRadius: 8, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>
+          {cfg.summary}
+        </div>
+
+        {/* Checklist */}
+        <div style={{ fontWeight: 700, color: "#e2e8f0", fontSize: 13, marginBottom: 10 }}>Work Items</div>
+        {cfg.checklist.map((item, i) => (
+          <div key={i} style={s.checkRow}>
+            <span style={s.checkIcon(item.done)}>{item.done ? "✅" : "⬜"}</span>
+            <div>
+              <div style={s.checkText(item.done)}>{item.text}</div>
+              {item.note && <div style={s.checkNote}>{item.note}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────────
 function Overview({ data }) {
-  const { milestones, engineering, equipment, sow, meetings, par } = data;
+  const { milestones, engineering, equipment, sow, meetings } = data;
+  const [activePhase, setActivePhase] = useState(null);
 
-  const ph1Sites = engineering.filter(e => e.phase === "Phase 1");
-  const ph2Sites = engineering.filter(e => e.phase === "Phase 2");
-
-  // Phase 1 progress: all IFR/IFC/install/NMS work complete. Only RTU test + MOP remaining.
-  // Hardcoded at 85% per PM confirmation (Apr 24 2026)
-  const ph1Milestones = milestones.filter(m => m.phase === "Phase 1");
-  const ph1CompletedCount = ph1Milestones.filter(m => m.status === "Complete").length;
-  const ph1AvgPct = 85;
-
-  // Phase 2 progress: IFR issued count from engineering packages
-  const ph2IFR = ph2Sites.filter(e => e.ifr_status === "IFR Issued" || e.ifr_status === "Complete").length;
-
+  const ph2IFCIssued = engineering.filter(e => e.phase === "Phase 2" && e.ifc_status === "IFC Issued").length;
   const milestonesComplete = milestones.filter(m => m.status === "Complete").length;
   const milestonesTotal = milestones.length;
+  const equipOrdered = equipment.filter(e => e.po_status === "Ordered" || e.po_status === "Received").length;
+  const equipTotal = equipment.length;
   const openActions = meetings.reduce((acc, m) => {
     const items = m.action_items ? (Array.isArray(m.action_items) ? m.action_items : [m.action_items]) : [];
     return acc + items.filter(i => i && typeof i === "string" && !i.toLowerCase().includes("complete")).length;
   }, 0);
 
-  const equipOrdered = equipment.filter(e => e.po_status === "Ordered" || e.po_status === "Received").length;
-  const equipTotal = equipment.length;
-
-  // SPI from milestones
   const withSPI = milestones.filter(m => m.cumulative_spi);
   const latestSPI = withSPI.length ? withSPI[withSPI.length - 1].cumulative_spi : null;
   const spiColor = !latestSPI ? "#94a3b8" : latestSPI >= 0.95 ? "#22c55e" : latestSPI >= 0.80 ? "#f59e0b" : "#ef4444";
   const spiStatus = !latestSPI ? "N/A" : latestSPI >= 0.95 ? "GREEN" : latestSPI >= 0.80 ? "YELLOW" : "RED";
 
+  const phaseCards = [
+    { phase: "Phase 1", num: 31, label: "Phase 1 — NMS Integration", sub: "85% complete · RTU test pending Apr 30", pct: 85, color: "#22c55e" },
+    { phase: "Phase 2", num: 36, label: "Phase 2 — Expansion", sub: `9/36 IFR & IFC issued · Equipment in Hawkeye trailer`, pct: Math.round((9/36)*100), color: "#3b82f6" },
+    { phase: "Phase 3", num: 6,  label: "Phase 3 — PAR Migration", sub: "Iniven RC-30 · 6 substations · PO pending", pct: 10, color: "#8b5cf6" },
+    { phase: "Decommission", num: "—", label: "Decommission", sub: "Legacy JMUX removal · Post-cutover", pct: 0, color: "#f59e0b" },
+  ];
+
   return (
     <div>
-      {/* KPI row */}
-      <div style={styles.grid}>
-        <div style={styles.card}>
-          <div style={styles.cardNum}>{ph1Sites.length}</div>
-          <div style={styles.cardLabel}>Phase 1 Sites</div>
-          <div style={styles.cardSub}>{ph1AvgPct}% complete · {ph1CompletedCount}/{ph1Milestones.length} milestones done</div>
-          <div style={{ marginTop: 8 }}><ProgressBar pct={ph1AvgPct} color="#22c55e" /></div>
+      {activePhase && <PhaseModal phase={activePhase} data={data} onClose={() => setActivePhase(null)} />}
+
+      {/* Phase KPI Cards — clickable */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 20 }}>
+        {phaseCards.map(({ phase, num, label, sub, pct, color }) => (
+          <div
+            key={phase}
+            style={{ ...s.clickCard, borderColor: color + "55" }}
+            onClick={() => setActivePhase(phase)}
+            onMouseEnter={e => e.currentTarget.style.borderColor = color}
+            onMouseLeave={e => e.currentTarget.style.borderColor = color + "55"}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ ...s.cardNum, color }}>{num}</div>
+              <span style={{ fontSize: 11, color: color, background: color + "22", padding: "2px 8px", borderRadius: 999, fontWeight: 700 }}>{pct}%</span>
+            </div>
+            <div style={s.cardLabel}>{label}</div>
+            <div style={s.cardSub}>{sub}</div>
+            {pb(pct, color)}
+            <div style={s.cardHint}>Click to see details →</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Secondary KPI row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 28 }}>
+        <div style={s.card}>
+          <div style={{ ...s.cardNum, color: spiColor }}>{latestSPI ? latestSPI.toFixed(2) : "—"}</div>
+          <div style={s.cardLabel}>Cumulative SPI</div>
+          <div style={{ ...s.cardSub, color: spiColor }}>{spiStatus}</div>
         </div>
-        <div style={styles.card}>
-          <div style={styles.cardNum}>{ph2Sites.length}</div>
-          <div style={styles.cardLabel}>Phase 2 Sites</div>
-          <div style={styles.cardSub}>{ph2IFR} IFR issued</div>
-          <div style={{ marginTop: 8 }}><ProgressBar pct={(ph2IFR / (ph2Sites.length || 1)) * 100} color="#3b82f6" /></div>
+        <div style={s.card}>
+          <div style={s.cardNum}>{milestonesComplete}/{milestonesTotal}</div>
+          <div style={s.cardLabel}>Milestones Complete</div>
+          {pb((milestonesComplete / (milestonesTotal || 1)) * 100, "#f59e0b")}
         </div>
-        <div style={styles.card}>
-          <div style={{ ...styles.cardNum, color: spiColor }}>{latestSPI ? latestSPI.toFixed(2) : "—"}</div>
-          <div style={styles.cardLabel}>Cumulative SPI</div>
-          <div style={{ ...styles.cardSub, color: spiColor }}>{spiStatus}</div>
+        <div style={s.card}>
+          <div style={s.cardNum}>{equipOrdered}/{equipTotal}</div>
+          <div style={s.cardLabel}>Equipment Ordered</div>
+          {pb((equipOrdered / (equipTotal || 1)) * 100, "#06b6d4")}
         </div>
-        <div style={styles.card}>
-          <div style={styles.cardNum}>{milestonesComplete}/{milestonesTotal}</div>
-          <div style={styles.cardLabel}>Milestones Complete</div>
-          <div style={{ marginTop: 8 }}><ProgressBar pct={(milestonesComplete / (milestonesTotal || 1)) * 100} color="#f59e0b" /></div>
-        </div>
-        <div style={styles.card}>
-          <div style={styles.cardNum}>{equipOrdered}/{equipTotal}</div>
-          <div style={styles.cardLabel}>Equipment Ordered</div>
-          <div style={{ marginTop: 8 }}><ProgressBar pct={(equipOrdered / (equipTotal || 1)) * 100} color="#06b6d4" /></div>
-        </div>
-        <div style={styles.card}>
-          <div style={{ ...styles.cardNum, color: openActions > 5 ? "#ef4444" : "#f59e0b" }}>{openActions}</div>
-          <div style={styles.cardLabel}>Open Action Items</div>
-          <div style={styles.cardSub}>from {meetings.length} meetings</div>
+        <div style={s.card}>
+          <div style={{ ...s.cardNum, color: openActions > 5 ? "#ef4444" : "#f59e0b" }}>{openActions}</div>
+          <div style={s.cardLabel}>Open Action Items</div>
+          <div style={s.cardSub}>from {meetings.length} meetings</div>
         </div>
       </div>
 
       {/* Recent Milestones */}
-      <div style={styles.section}>
-        <div style={styles.sectionTitle}>🎯 Recent Milestones</div>
-        <table style={styles.table}>
+      <div style={s.section}>
+        <div style={s.sectionTitle}>🎯 Recent Milestones</div>
+        <table style={s.table}>
           <thead>
             <tr>
-              <th style={styles.th}>Milestone</th>
-              <th style={styles.th}>Phase</th>
-              <th style={styles.th}>Workstream</th>
-              <th style={styles.th}>Planned</th>
-              <th style={styles.th}>Actual</th>
-              <th style={styles.th}>SPI</th>
-              <th style={styles.th}>Status</th>
+              <th style={s.th}>Milestone</th><th style={s.th}>Phase</th><th style={s.th}>Workstream</th>
+              <th style={s.th}>Planned</th><th style={s.th}>Actual</th><th style={s.th}>Status</th>
             </tr>
           </thead>
           <tbody>
             {milestones.slice(-10).reverse().map((m, i) => (
               <tr key={i} style={{ background: i % 2 === 0 ? "#1e293b" : "#162032" }}>
-                <td style={styles.td}>{m.milestone_name}</td>
-                <td style={styles.td}>{m.phase}</td>
-                <td style={styles.td}>{m.workstream}</td>
-                <td style={styles.td}>{m.planned_date}</td>
-                <td style={styles.td}>{m.actual_date || "—"}</td>
-                <td style={{ ...styles.td, color: !m.cumulative_spi ? "#6b7280" : m.cumulative_spi >= 0.95 ? "#22c55e" : m.cumulative_spi >= 0.80 ? "#f59e0b" : "#ef4444", fontWeight: 700 }}>
-                  {m.cumulative_spi ? m.cumulative_spi.toFixed(2) : "—"}
-                </td>
-                <td style={styles.td}><StatusBadge status={m.status} /></td>
+                <td style={s.td}>{m.milestone_name}</td>
+                <td style={s.td}>{m.phase}</td>
+                <td style={s.td}>{m.workstream}</td>
+                <td style={s.td}>{m.planned_date}</td>
+                <td style={s.td}>{m.actual_date || "—"}</td>
+                <td style={s.td}><Badge status={m.status} /></td>
               </tr>
             ))}
           </tbody>
@@ -193,15 +284,15 @@ function Overview({ data }) {
       </div>
 
       {/* SOW Summary */}
-      <div style={styles.section}>
-        <div style={styles.sectionTitle}>📋 SOW Status</div>
+      <div style={s.section}>
+        <div style={s.sectionTitle}>📋 SOW Status</div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {sow.map((s, i) => (
-            <div key={i} style={{ ...styles.card, flex: "1 1 220px" }}>
-              <div style={{ fontWeight: 700, color: "#e2e8f0", fontSize: 14 }}>{s.vendor}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0" }}>{s.scope_summary}</div>
-              <StatusBadge status={s.status} />
-              {s.contract_value && <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 6 }}>${Number(s.contract_value).toLocaleString()}</div>}
+          {sow.map((sw, i) => (
+            <div key={i} style={{ ...s.card, flex: "1 1 220px" }}>
+              <div style={{ fontWeight: 700, color: "#e2e8f0", fontSize: 14 }}>{sw.vendor}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0" }}>{sw.scope_summary}</div>
+              <Badge status={sw.status} />
+              {sw.contract_value && <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 6 }}>${Number(sw.contract_value).toLocaleString()}</div>}
             </div>
           ))}
         </div>
@@ -218,46 +309,37 @@ function Milestones({ items, onRefresh }) {
     m.phase?.toLowerCase().includes(filter.toLowerCase()) ||
     m.workstream?.toLowerCase().includes(filter.toLowerCase())
   );
-
   return (
     <div>
       <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-        <input style={{ ...styles.input, maxWidth: 300 }} placeholder="Filter milestones..." value={filter} onChange={e => setFilter(e.target.value)} />
-        <button style={styles.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
+        <input style={{ ...s.input, maxWidth: 300 }} placeholder="Filter milestones..." value={filter} onChange={e => setFilter(e.target.value)} />
+        <button style={s.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
       </div>
-      <table style={styles.table}>
+      <table style={s.table}>
         <thead>
           <tr>
-            <th style={styles.th}>Milestone</th>
-            <th style={styles.th}>Phase</th>
-            <th style={styles.th}>Workstream</th>
-            <th style={styles.th}>Owner</th>
-            <th style={styles.th}>Planned</th>
-            <th style={styles.th}>Actual</th>
-            <th style={styles.th}>% Done</th>
-            <th style={styles.th}>SPI</th>
-            <th style={styles.th}>Status</th>
+            <th style={s.th}>Milestone</th><th style={s.th}>Phase</th><th style={s.th}>Workstream</th>
+            <th style={s.th}>Owner</th><th style={s.th}>Planned</th><th style={s.th}>Actual</th>
+            <th style={s.th}>% Done</th><th style={s.th}>SPI</th><th style={s.th}>Status</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.length === 0 ? (
-            <tr><td colSpan={9} style={{ ...styles.td, ...styles.empty }}>No milestones found</td></tr>
-          ) : filtered.map((m, i) => (
+          {filtered.map((m, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? "#1e293b" : "#162032" }}>
-              <td style={styles.td}>{m.milestone_name}</td>
-              <td style={styles.td}>{m.phase}</td>
-              <td style={styles.td}>{m.workstream}</td>
-              <td style={styles.td}>{m.owner || "—"}</td>
-              <td style={styles.td}>{m.planned_date}</td>
-              <td style={styles.td}>{m.actual_date || "—"}</td>
-              <td style={{ ...styles.td, minWidth: 80 }}>
-                <ProgressBar pct={m.percent_complete} color="#f59e0b" />
+              <td style={s.td}>{m.milestone_name}</td>
+              <td style={s.td}>{m.phase}</td>
+              <td style={s.td}>{m.workstream}</td>
+              <td style={s.td}>{m.owner || "—"}</td>
+              <td style={s.td}>{m.planned_date}</td>
+              <td style={s.td}>{m.actual_date || "—"}</td>
+              <td style={{ ...s.td, minWidth: 80 }}>
+                {pb(m.percent_complete, "#f59e0b")}
                 <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{m.percent_complete || 0}%</div>
               </td>
-              <td style={{ ...styles.td, color: !m.cumulative_spi ? "#6b7280" : m.cumulative_spi >= 0.95 ? "#22c55e" : m.cumulative_spi >= 0.80 ? "#f59e0b" : "#ef4444", fontWeight: 700 }}>
+              <td style={{ ...s.td, color: !m.cumulative_spi ? "#6b7280" : m.cumulative_spi >= 0.95 ? "#22c55e" : m.cumulative_spi >= 0.80 ? "#f59e0b" : "#ef4444", fontWeight: 700 }}>
                 {m.cumulative_spi ? m.cumulative_spi.toFixed(2) : "—"}
               </td>
-              <td style={styles.td}><StatusBadge status={m.status} /></td>
+              <td style={s.td}><Badge status={m.status} /></td>
             </tr>
           ))}
         </tbody>
@@ -270,45 +352,32 @@ function Milestones({ items, onRefresh }) {
 function Engineering({ items, onRefresh }) {
   const [phFilter, setPhFilter] = useState("All");
   const filtered = phFilter === "All" ? items : items.filter(e => e.phase === phFilter);
-
   return (
     <div>
       <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
         {["All", "Phase 1", "Phase 2"].map(p => (
-          <button key={p} style={{ ...styles.tab(phFilter === p), fontSize: 12 }} onClick={() => setPhFilter(p)}>{p}</button>
+          <button key={p} style={{ ...s.tab(phFilter === p), fontSize: 12 }} onClick={() => setPhFilter(p)}>{p}</button>
         ))}
-        <button style={styles.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
+        <button style={s.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
       </div>
-      <table style={styles.table}>
+      <table style={s.table}>
         <thead>
           <tr>
-            <th style={styles.th}>#</th>
-            <th style={styles.th}>Site Name</th>
-            <th style={styles.th}>Phase</th>
-            <th style={styles.th}>IFR Planned</th>
-            <th style={styles.th}>IFR Actual</th>
-            <th style={styles.th}>IFR Status</th>
-            <th style={styles.th}>IFC Planned</th>
-            <th style={styles.th}>IFC Actual</th>
-            <th style={styles.th}>IFC Status</th>
-            <th style={styles.th}>Construction</th>
+            <th style={s.th}>#</th><th style={s.th}>Site Name</th><th style={s.th}>Phase</th>
+            <th style={s.th}>IFR Status</th><th style={s.th}>IFC Status</th>
+            <th style={s.th}>Construction</th><th style={s.th}>Notes</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.length === 0 ? (
-            <tr><td colSpan={10} style={{ ...styles.td, textAlign: "center", color: "#475569" }}>No sites found</td></tr>
-          ) : filtered.map((e, i) => (
+          {filtered.map((e, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? "#1e293b" : "#162032" }}>
-              <td style={{ ...styles.td, color: "#64748b" }}>{e.site_number}</td>
-              <td style={{ ...styles.td, fontWeight: 600 }}>{e.site_name}</td>
-              <td style={styles.td}>{e.phase}</td>
-              <td style={styles.td}>{e.ifr_planned || "—"}</td>
-              <td style={styles.td}>{e.ifr_actual || "—"}</td>
-              <td style={styles.td}><StatusBadge status={e.ifr_status} /></td>
-              <td style={styles.td}>{e.ifc_planned || "—"}</td>
-              <td style={styles.td}>{e.ifc_actual || "—"}</td>
-              <td style={styles.td}><StatusBadge status={e.ifc_status} /></td>
-              <td style={styles.td}>{e.construction_planned || "—"}</td>
+              <td style={{ ...s.td, color: "#64748b" }}>{e.site_number}</td>
+              <td style={{ ...s.td, fontWeight: 600 }}>{e.site_name}</td>
+              <td style={s.td}>{e.phase}</td>
+              <td style={s.td}><Badge status={e.ifr_status} /></td>
+              <td style={s.td}><Badge status={e.ifc_status} /></td>
+              <td style={s.td}>{e.construction_planned || "—"}</td>
+              <td style={{ ...s.td, fontSize: 12, color: "#94a3b8" }}>{e.notes || "—"}</td>
             </tr>
           ))}
         </tbody>
@@ -322,50 +391,35 @@ function Equipment({ items, onRefresh }) {
   const [filter, setFilter] = useState("");
   const filtered = items.filter(e =>
     !filter || e.item_name?.toLowerCase().includes(filter.toLowerCase()) ||
-    e.vendor?.toLowerCase().includes(filter.toLowerCase()) ||
-    e.site?.toLowerCase().includes(filter.toLowerCase())
+    e.vendor?.toLowerCase().includes(filter.toLowerCase())
   );
-
   return (
     <div>
       <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-        <input style={{ ...styles.input, maxWidth: 300 }} placeholder="Filter equipment..." value={filter} onChange={e => setFilter(e.target.value)} />
-        <button style={styles.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
+        <input style={{ ...s.input, maxWidth: 300 }} placeholder="Filter equipment..." value={filter} onChange={e => setFilter(e.target.value)} />
+        <button style={s.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
       </div>
-      <table style={styles.table}>
+      <table style={s.table}>
         <thead>
           <tr>
-            <th style={styles.th}>Item</th>
-            <th style={styles.th}>Category</th>
-            <th style={styles.th}>Vendor</th>
-            <th style={styles.th}>Site</th>
-            <th style={styles.th}>Phase</th>
-            <th style={styles.th}>PO #</th>
-            <th style={styles.th}>Ordered</th>
-            <th style={styles.th}>Received</th>
-            <th style={styles.th}>Staged</th>
-            <th style={styles.th}>Installed</th>
-            <th style={styles.th}>PO Status</th>
-            <th style={styles.th}>Delivery</th>
+            <th style={s.th}>Item</th><th style={s.th}>Category</th><th style={s.th}>Vendor</th>
+            <th style={s.th}>Site / Phase</th><th style={s.th}>Ordered</th><th style={s.th}>Received</th>
+            <th style={s.th}>Staged</th><th style={s.th}>Installed</th><th style={s.th}>PO Status</th><th style={s.th}>Delivery</th>
           </tr>
         </thead>
         <tbody>
-          {filtered.length === 0 ? (
-            <tr><td colSpan={12} style={{ ...styles.td, textAlign: "center", color: "#475569" }}>No equipment found</td></tr>
-          ) : filtered.map((e, i) => (
+          {filtered.map((e, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? "#1e293b" : "#162032" }}>
-              <td style={{ ...styles.td, fontWeight: 600 }}>{e.item_name}</td>
-              <td style={styles.td}>{e.category}</td>
-              <td style={styles.td}>{e.vendor || "—"}</td>
-              <td style={styles.td}>{e.site || "—"}</td>
-              <td style={styles.td}>{e.phase || "—"}</td>
-              <td style={styles.td}>{e.po_number || "—"}</td>
-              <td style={styles.td}>{e.quantity_ordered || 0}</td>
-              <td style={styles.td}>{e.quantity_received || 0}</td>
-              <td style={styles.td}>{e.quantity_staged || 0}</td>
-              <td style={styles.td}>{e.quantity_installed || 0}</td>
-              <td style={styles.td}><StatusBadge status={e.po_status} /></td>
-              <td style={styles.td}>{e.actual_delivery || e.expected_delivery || "—"}</td>
+              <td style={{ ...s.td, fontWeight: 600 }}>{e.item_name}</td>
+              <td style={s.td}>{e.category}</td>
+              <td style={s.td}>{e.vendor || "—"}</td>
+              <td style={s.td}>{e.site || e.phase || "—"}</td>
+              <td style={s.td}>{e.quantity_ordered || 0}</td>
+              <td style={s.td}>{e.quantity_received || 0}</td>
+              <td style={s.td}>{e.quantity_staged || 0}</td>
+              <td style={s.td}>{e.quantity_installed || 0}</td>
+              <td style={s.td}><Badge status={e.po_status} /></td>
+              <td style={s.td}>{e.actual_delivery || e.expected_delivery || "—"}</td>
             </tr>
           ))}
         </tbody>
@@ -379,43 +433,31 @@ function PARControl({ items, onRefresh }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-        <button style={styles.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
+        <button style={s.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
       </div>
       <div style={{ background: "#1e3a5f22", border: "1px solid #3b82f644", borderRadius: 8, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#93c5fd" }}>
-        ℹ️ PAR migration uses Iniven RC-30 (converts direct contact → C37.94). ~6–7 high-impact sites. 8-week lead time. $500K unbudgeted cost — inherited 2024 scope gap.
+        ℹ️ PAR migration uses Iniven RC-30 (converts direct contact → C37.94). ~6–7 high-impact sites. 8-week lead time. $500K unbudgeted — inherited 2024 scope gap.
       </div>
-      <table style={styles.table}>
+      <table style={s.table}>
         <thead>
           <tr>
-            <th style={styles.th}>Site</th>
-            <th style={styles.th}>Substation ID</th>
-            <th style={styles.th}>Design</th>
-            <th style={styles.th}>RC-30 Ordered</th>
-            <th style={styles.th}>Order Date</th>
-            <th style={styles.th}>Expected Delivery</th>
-            <th style={styles.th}>RC-30 Received</th>
-            <th style={styles.th}>C37.94 Needed</th>
-            <th style={styles.th}>C37.94 Ordered</th>
-            <th style={styles.th}>Install Status</th>
-            <th style={styles.th}>NERC CIP</th>
+            <th style={s.th}>Site</th><th style={s.th}>Design</th><th style={s.th}>RC-30 Ordered</th>
+            <th style={s.th}>Expected Delivery</th><th style={s.th}>RC-30 Received</th>
+            <th style={s.th}>C37.94 Needed</th><th style={s.th}>Install Status</th><th style={s.th}>NERC CIP</th><th style={s.th}>Notes</th>
           </tr>
         </thead>
         <tbody>
-          {items.length === 0 ? (
-            <tr><td colSpan={11} style={{ ...styles.td, textAlign: "center", color: "#475569" }}>No PAR control records found</td></tr>
-          ) : items.map((p, i) => (
+          {items.map((p, i) => (
             <tr key={i} style={{ background: i % 2 === 0 ? "#1e293b" : "#162032" }}>
-              <td style={{ ...styles.td, fontWeight: 600 }}>{p.site_name}</td>
-              <td style={styles.td}>{p.substation_id || "—"}</td>
-              <td style={styles.td}><StatusBadge status={p.design_status} /></td>
-              <td style={styles.td}>{p.rc30_ordered ? "✅" : "❌"}</td>
-              <td style={styles.td}>{p.rc30_order_date || "—"}</td>
-              <td style={styles.td}>{p.rc30_expected_delivery || "—"}</td>
-              <td style={styles.td}>{p.rc30_received ? "✅" : "❌"}</td>
-              <td style={styles.td}>{p.c3794_card_needed ? "Yes" : "No"}</td>
-              <td style={styles.td}>{p.c3794_ordered ? "✅" : "❌"}</td>
-              <td style={styles.td}><StatusBadge status={p.installation_status} /></td>
-              <td style={styles.td}>{p.nerc_cip_compliant ? "✅ Yes" : "⚠️ Pending"}</td>
+              <td style={{ ...s.td, fontWeight: 600 }}>{p.site_name}</td>
+              <td style={s.td}><Badge status={p.design_status} /></td>
+              <td style={s.td}>{p.rc30_ordered ? "✅ Yes" : "❌ No"}</td>
+              <td style={s.td}>{p.rc30_expected_delivery || "—"}</td>
+              <td style={s.td}>{p.rc30_received ? "✅ Yes" : "—"}</td>
+              <td style={s.td}>{p.c3794_card_needed ? "⚠️ Yes" : "No"}</td>
+              <td style={s.td}><Badge status={p.installation_status} /></td>
+              <td style={s.td}>{p.nerc_cip_compliant ? "✅" : "⏳"}</td>
+              <td style={{ ...s.td, fontSize: 12, color: "#94a3b8" }}>{p.notes || "—"}</td>
             </tr>
           ))}
         </tbody>
@@ -424,36 +466,23 @@ function PARControl({ items, onRefresh }) {
   );
 }
 
-// ── SOW ───────────────────────────────────────────────────────────────────────
+// ── SOW ────────────────────────────────────────────────────────────────────────
 function SOW({ items, onRefresh }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-        <button style={styles.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
+        <button style={s.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {items.length === 0 ? (
-          <div style={styles.empty}>No SOW records found</div>
-        ) : items.map((s, i) => (
-          <div key={i} style={{ ...styles.card, borderLeft: `4px solid ${STATUS_COLOR[s.status] || "#475569"}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: "#f1f5f9" }}>{s.vendor}</div>
-                <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 2 }}>{s.scope_summary}</div>
-              </div>
-              <StatusBadge status={s.status} />
-            </div>
-            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13 }}>
-              {s.contract_value && <div><span style={{ color: "#64748b" }}>Value: </span><span style={{ color: "#f59e0b", fontWeight: 700 }}>${Number(s.contract_value).toLocaleString()}</span></div>}
-              {s.start_date && <div><span style={{ color: "#64748b" }}>Start: </span><span>{s.start_date}</span></div>}
-              {s.end_date && <div><span style={{ color: "#64748b" }}>End: </span><span>{s.end_date}</span></div>}
-            </div>
-            {s.open_items && (
-              <div style={{ marginTop: 10, padding: "8px 12px", background: "#0f172a", borderRadius: 6, fontSize: 12, color: "#fbbf24" }}>
-                ⚠️ Open Items: {s.open_items}
-              </div>
-            )}
-            {s.notes && <div style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>{s.notes}</div>}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        {items.map((sw, i) => (
+          <div key={i} style={{ ...s.card, flex: "1 1 300px" }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: "#e2e8f0", marginBottom: 4 }}>{sw.vendor}</div>
+            <Badge status={sw.status} />
+            <div style={{ fontSize: 13, color: "#94a3b8", margin: "10px 0 6px" }}>{sw.scope_summary}</div>
+            {sw.contract_value && <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700 }}>${Number(sw.contract_value).toLocaleString()}</div>}
+            <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>{sw.start_date} → {sw.end_date || "TBD"}</div>
+            {sw.open_items && <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 8 }}>⚠️ {sw.open_items}</div>}
+            {sw.notes && <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>{sw.notes}</div>}
           </div>
         ))}
       </div>
@@ -461,90 +490,58 @@ function SOW({ items, onRefresh }) {
   );
 }
 
-// ── MEETINGS ──────────────────────────────────────────────────────────────────
+// ── MEETINGS ───────────────────────────────────────────────────────────────────
 function Meetings({ items, onRefresh }) {
   const [selected, setSelected] = useState(null);
   const sorted = [...items].sort((a, b) => new Date(b.meeting_date) - new Date(a.meeting_date));
-
   return (
-    <div style={{ display: "flex", gap: 20 }}>
-      {/* List */}
-      <div style={{ width: 280, flexShrink: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ fontSize: 13, color: "#94a3b8" }}>{items.length} meetings</div>
-          <button style={styles.refreshBtn} onClick={onRefresh}>↻</button>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {sorted.map((m, i) => (
-            <div
-              key={i}
-              onClick={() => setSelected(m)}
-              style={{
-                ...styles.card, cursor: "pointer", padding: "12px 14px",
-                borderLeft: selected === m ? "3px solid #f59e0b" : "3px solid transparent",
-                background: selected === m ? "#1e3a5f" : "#1e293b"
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{m.title || "Meeting"}</div>
-              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{m.meeting_date}</div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{m.owner || "—"}</div>
-            </div>
-          ))}
-        </div>
+    <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+        <button style={s.refreshBtn} onClick={onRefresh}>↻ Refresh</button>
       </div>
-
-      {/* Detail */}
-      <div style={{ flex: 1 }}>
-        {!selected ? (
-          <div style={styles.empty}>← Select a meeting to view details</div>
-        ) : (
-          <div style={styles.card}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#f59e0b", marginBottom: 4 }}>{selected.title}</div>
-            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{selected.meeting_date} · {selected.owner}</div>
-
-            {selected.attendees && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>ATTENDEES</div>
-                <div style={{ fontSize: 13 }}>{Array.isArray(selected.attendees) ? selected.attendees.join(", ") : selected.attendees}</div>
-              </div>
-            )}
-
-            {selected.key_decisions && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>KEY DECISIONS</div>
-                <div style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>{Array.isArray(selected.key_decisions) ? selected.key_decisions.join("\n") : selected.key_decisions}</div>
-              </div>
-            )}
-
-            {selected.action_items && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>ACTION ITEMS</div>
-                <div style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>{Array.isArray(selected.action_items) ? selected.action_items.join("\n") : selected.action_items}</div>
-              </div>
-            )}
-
-            {selected.notes && (
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", marginBottom: 4 }}>NOTES</div>
-                <div style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>{selected.notes}</div>
-              </div>
-            )}
+      {selected && (
+        <div style={s.overlay} onClick={() => setSelected(null)}>
+          <div style={s.modal} onClick={e => e.stopPropagation()}>
+            <button style={s.closeBtn} onClick={() => setSelected(null)}>✕ Close</button>
+            <div style={s.modalTitle}>{selected.title}</div>
+            <div style={s.modalSub}>{selected.meeting_date} · Attendees: {selected.attendees || "—"}</div>
+            {selected.key_decisions && <><div style={{ fontWeight: 700, color: "#f59e0b", marginBottom: 6, marginTop: 12 }}>Key Decisions</div><div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>{selected.key_decisions}</div></>}
+            {selected.action_items && <><div style={{ fontWeight: 700, color: "#f59e0b", marginBottom: 6, marginTop: 16 }}>Action Items</div><div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>{Array.isArray(selected.action_items) ? selected.action_items.join("\n") : selected.action_items}</div></>}
+            {selected.notes && <><div style={{ fontWeight: 700, color: "#f59e0b", marginBottom: 6, marginTop: 16 }}>Notes</div><div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.6 }}>{selected.notes}</div></>}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      <table style={s.table}>
+        <thead>
+          <tr>
+            <th style={s.th}>Date</th><th style={s.th}>Title</th><th style={s.th}>Owner</th>
+            <th style={s.th}>Due Date</th><th style={s.th}>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((m, i) => (
+            <tr key={i} style={{ background: i % 2 === 0 ? "#1e293b" : "#162032", cursor: "pointer" }} onClick={() => setSelected(m)}>
+              <td style={s.td}>{m.meeting_date}</td>
+              <td style={{ ...s.td, color: "#93c5fd", fontWeight: 600 }}>{m.title}</td>
+              <td style={s.td}>{m.owner || "—"}</td>
+              <td style={s.td}>{m.due_date || "—"}</td>
+              <td style={s.td}><Badge status={m.status} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
+// ── APP ROOT ───────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("Overview");
+  const [data, setData] = useState({ milestones: [], engineering: [], equipment: [], sow: [], meetings: [], par: [] });
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({
-    milestones: [], engineering: [], equipment: [], sow: [], meetings: [], par: []
-  });
+  const [lastLoaded, setLastLoaded] = useState(null);
 
-  const load = async () => {
+  async function loadData() {
     setLoading(true);
     const [milestones, engineering, equipment, sow, meetings, par] = await Promise.all([
       listEntity("JMUXMilestone"),
@@ -555,46 +552,39 @@ export default function App() {
       listEntity("JMUXPARControl"),
     ]);
     setData({ milestones, engineering, equipment, sow, meetings, par });
+    setLastLoaded(new Date().toLocaleTimeString());
     setLoading(false);
-  };
+  }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { loadData(); }, []);
 
   return (
-    <div style={styles.app}>
-      <div style={styles.header}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div style={s.app}>
+      <div style={s.header}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={styles.headerTitle}>⚡ JMUX Replacement Dashboard</div>
-            <div style={styles.headerSub}>PRJ13797 · PSEG Long Island · Nokia SR-Series NMS Integration</div>
+            <h1 style={s.headerTitle}>⚡ JMUX Replacement Dashboard</h1>
+            <p style={s.headerSub}>PRJ13797 · PSEG Long Island · Nokia SR-Series NMS Integration</p>
           </div>
-          <div style={{ fontSize: 12, color: "#64748b" }}>Last loaded: {new Date().toLocaleTimeString()}</div>
+          {lastLoaded && <div style={{ fontSize: 12, color: "#475569" }}>Last loaded: {lastLoaded}</div>}
         </div>
       </div>
-
-      <div style={styles.tabBar}>
-        {TABS.map(t => (
-          <button key={t} style={styles.tab(tab === t)} onClick={() => setTab(t)}>{t}</button>
-        ))}
+      <div style={s.tabBar}>
+        {TABS.map(t => <button key={t} style={s.tab(tab === t)} onClick={() => setTab(t)}>{t}</button>)}
       </div>
-
-      <div style={styles.body}>
-        {loading ? <Loading /> : (
+      <div style={s.body}>
+        {loading ? <div style={s.loading}>⏳ Loading data...</div> : (
           <>
-            {tab === "Overview" && <Overview data={data} />}
-            {tab === "Milestones" && <Milestones items={data.milestones} onRefresh={load} />}
-            {tab === "Engineering" && <Engineering items={data.engineering} onRefresh={load} />}
-            {tab === "Equipment" && <Equipment items={data.equipment} onRefresh={load} />}
-            {tab === "PAR Control" && <PARControl items={data.par} onRefresh={load} />}
-            {tab === "SOW" && <SOW items={data.sow} onRefresh={load} />}
-            {tab === "Meetings" && <Meetings items={data.meetings} onRefresh={load} />}
+            {tab === "Overview"    && <Overview data={data} />}
+            {tab === "Milestones"  && <Milestones items={data.milestones} onRefresh={loadData} />}
+            {tab === "Engineering" && <Engineering items={data.engineering} onRefresh={loadData} />}
+            {tab === "Equipment"   && <Equipment items={data.equipment} onRefresh={loadData} />}
+            {tab === "PAR Control" && <PARControl items={data.par} onRefresh={loadData} />}
+            {tab === "SOW"         && <SOW items={data.sow} onRefresh={loadData} />}
+            {tab === "Meetings"    && <Meetings items={data.meetings} onRefresh={loadData} />}
           </>
         )}
       </div>
     </div>
   );
 }
-
-
-
-
