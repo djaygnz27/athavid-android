@@ -2,35 +2,38 @@
   "app_id": "69b2ee18a8e6fb58c7f0261c",
   "slug": "sachi-c7f0261c",
   "pages": {
-    "AthaVid": {
-      "title": "AthaVid"
+    "JMUXDashboard": {
+      "title": "JMUXDashboard"
     },
-    "CodeCopy": {
-      "title": "CodeCopy"
-    },
-    "Home": {
-      "title": "Home"
-    },
-    "Index": {
-      "title": "Index"
-    },
-    "Install": {
-      "title": "Install"
-    },
-    "SPICalculator": {
-      "title": "SPICalculator"
+    "Dashboard": {
+      "title": "Dashboard"
     },
     "Sachi": {
       "title": "Sachi"
     },
-    "TaycanFinder": {
-      "title": "TaycanFinder"
+    "AthaVid": {
+      "title": "AthaVid"
+    },
+    "Install": {
+      "title": "Install"
+    },
+    "Index": {
+      "title": "Index"
+    },
+    "Home": {
+      "title": "Home"
+    },
+    "CodeCopy": {
+      "title": "CodeCopy"
     },
     "TheWatchers": {
       "title": "TheWatchers"
     },
-    "Dashboard": {
-      "title": "Dashboard"
+    "TaycanFinder": {
+      "title": "TaycanFinder"
+    },
+    "SPICalculator": {
+      "title": "SPICalculator"
     }
   }
 }
