@@ -385,7 +385,7 @@ export default function JMUXDashboard() {
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 48 }}>⚡</div>
         <div style={{ fontSize: 20, fontWeight: 700, color: NAVY, marginTop: 12 }}>Loading JMUX Dashboard…</div>
-        <div style={{ fontSize: 14, color: GRAY, marginTop: 6 }}>PRJ13797 · PSEG Long Island</div>
+        <div style={{ fontSize: 14, color: GRAY, marginTop: 6 }}>PRJ13797 · PSEG LI · v2</div>
       </div>
     </div>
   );
@@ -780,4 +780,3 @@ export default function JMUXDashboard() {
     </div>
   );
 }
-// rebuild Fri Apr 24 02:39:48 UTC 2026
