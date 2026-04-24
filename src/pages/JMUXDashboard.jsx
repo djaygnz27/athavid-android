@@ -300,6 +300,7 @@ export default function JMUXDashboard() {
   const [addMinute, setAddMinute] = useState(false);
   const [expandedMinute, setExpandedMinute] = useState(null);
   const [ifcFilter, setIfcFilter] = useState("All");
+  const [phaseFilter, setPhaseFilter] = useState("All");
 
   const load = async () => {
     setLoading(true);
@@ -331,8 +332,15 @@ export default function JMUXDashboard() {
   const ifrApproved = packages.filter(p=>p.ifr_status==="Approved"||p.ifr_status==="Submitted").length;
   const criticalEquip = equipment.filter(e=>e.po_status==="Not Ordered");
 
-  const filteredPkgs = ifcFilter === "All" ? packages
-    : packages.filter(p => p.ifc_status === ifcFilter || p.ifr_status === ifcFilter);
+  const filteredPkgs = packages.filter(p => {
+    const phaseOk = phaseFilter === "All" || p.phase === phaseFilter;
+    const statusOk = ifcFilter === "All" || p.ifc_status === ifcFilter || p.ifr_status === ifcFilter;
+    return phaseOk && statusOk;
+  });
+  const p1Pkgs = packages.filter(p=>p.phase==="Phase 1");
+  const p2Pkgs = packages.filter(p=>p.phase==="Phase 2");
+  const p1IfcIssued = p1Pkgs.filter(p=>p.ifc_status==="Issued to Hawkeye"||p.ifc_status==="Approved").length;
+  const p2IfcIssued = p2Pkgs.filter(p=>p.ifc_status==="Issued to Hawkeye"||p.ifc_status==="Approved").length;
 
   if (loading) return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#f0f4f8" }}>
@@ -409,9 +417,9 @@ export default function JMUXDashboard() {
               {[
                 { icon:"✅", val:`${complete}/${milestones.length}`, label:"Milestones Complete", color:GREEN },
                 { icon:"⚠️", val:overdue, label:"Overdue Items", color:RED },
-                { icon:"📋", val:`${ifcIssued}/36`, label:"IFCs Issued to Hawkeye", color:BLUE },
+                { icon:"📋", val:`${ifcIssued}/${packages.length}`, label:"IFCs Issued to Hawkeye", color:BLUE },
                 { icon:"🖥️", val:"13/31", label:"Phase 1 Nodes in NMS", color:"#7c3aed" },
-                { icon:"🗂️", val:"36/36", label:"Phase 2 Site Surveys", color:GREEN },
+                { icon:"🗂️", val:"36/36", label:"Phase 2 Site Surveys Done", color:GREEN },
                 { icon:"🚨", val:criticalEquip.length, label:"Equipment Not Ordered", color:RED },
               ].map((k,i) => (
                 <Card key={i} style={{ padding:16 }}>
@@ -541,10 +549,10 @@ export default function JMUXDashboard() {
           <div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:12, marginBottom:18 }}>
               {[
-                { label:"IFC Issued to Hawkeye", val:ifcIssued, color:GREEN },
-                { label:"IFR Approved/Submitted", val:ifrApproved, color:BLUE },
-                { label:"Not Started", val:packages.filter(p=>p.ifc_status==="Not Started").length, color:GRAY },
-                { label:"Total Sites", val:36, color:NAVY },
+                { label:"Phase 1 — 31 Sites", val:`${p1IfcIssued} IFCs Issued`, color:BLUE },
+                { label:"Phase 2 — 36 Sites", val:`${p2IfcIssued} IFCs Issued`, color:"#7c3aed" },
+                { label:"IFR Approved/Submitted", val:ifrApproved, color:GREEN },
+                { label:"Not Started (IFC)", val:packages.filter(p=>p.ifc_status==="Not Started").length, color:GRAY },
               ].map((k,i)=>(
                 <Card key={i} style={{ padding:14 }}>
                   <div style={{ fontSize:24, fontWeight:800, color:k.color }}>{k.val}</div>
@@ -553,9 +561,16 @@ export default function JMUXDashboard() {
               ))}
             </div>
 
-            <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:8, marginBottom:8, flexWrap:"wrap", alignItems:"center" }}>
+              <span style={{ fontSize:12, fontWeight:700, color:GRAY }}>Phase:</span>
+              {["All","Phase 1","Phase 2"].map(f=>(
+                <button key={f} onClick={()=>setPhaseFilter(f)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:phaseFilter===f?NAVY:"#fff", color:phaseFilter===f?"#fff":GRAY, boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}>{f}</button>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap", alignItems:"center" }}>
+              <span style={{ fontSize:12, fontWeight:700, color:GRAY }}>Status:</span>
               {["All","Not Started","In Review","Submitted","Issued to Hawkeye","Approved"].map(f=>(
-                <button key={f} onClick={()=>setIfcFilter(f)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:ifcFilter===f?NAVY:"#fff", color:ifcFilter===f?"#fff":GRAY, boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}>{f}</button>
+                <button key={f} onClick={()=>setIfcFilter(f)} style={{ padding:"6px 14px", borderRadius:20, border:"none", cursor:"pointer", fontWeight:600, fontSize:12, background:ifcFilter===f?"#1d4ed8":"#fff", color:ifcFilter===f?"#fff":GRAY, boxShadow:"0 1px 4px rgba(0,0,0,0.08)" }}>{f}</button>
               ))}
             </div>
 
