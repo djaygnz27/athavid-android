@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { AthaVidVideo as Video, AthaVidComment as Comment, User } from "../api/entities";
-import { base44 } from "../api/base44Client";
+import { AthaVidVideo as Video, AthaVidComment as Comment, User } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function formatCount(n) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Video, Comment, User } from "../api/entities";
-import { base44 } from "../api/base44Client";
+import { Video, Comment, User } from "@/api/entities";
+import { base44 } from "@/api/base44Client";
 
 const OWNER_EMAIL = "jaygnz27@gmail.com";
 
