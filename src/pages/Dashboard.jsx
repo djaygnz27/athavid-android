@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { SachiVideo } from "@/api/entities";
-import { SachiComment } from "@/api/entities";
-import { BetaTester } from "@/api/entities";
-import { SachiPodcast } from "@/api/entities";
-import { AthaVidVideo } from "@/api/entities";
+import { SachiVideo } from "../api/entities";
+import { SachiComment } from "../api/entities";
+import { BetaTester } from "../api/entities";
+import { SachiPodcast } from "../api/entities";
+import { AthaVidVideo } from "../api/entities";
 
 const COLORS = {
   navy: "#0B0C1A",
