@@ -17,7 +17,7 @@ I want this to be a two-way conversation, so please stop me at any point if you 
 
 ## SLIDE 2 — Goals & Objectives (~4 minutes)
 
-"Before I get into the detail, let me level-set on what this program is and how it is organized, because understanding the four workstreams will give you important context for everything else I am going to cover today.
+"Greg, we've been at this for seven months now, so I'll keep the overview quick — but I want to make sure we're all aligned on how this program is structured before I get into the detail.
 
 The overall goal is to modernize PSEG Long Island's substation communications by replacing aging legacy JMUX equipment with Nokia MPLS nodes — delivering a reliable, scalable, and future-ready network. The JMUX infrastructure in the field is old. Some of it is over 25 years old. It is brittle, parts are no longer available from vendors, and it represents an ongoing risk to operational continuity every day it remains in service. This project exists to eliminate that risk across all three phases.
 
