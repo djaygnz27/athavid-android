@@ -96,14 +96,11 @@ function Overview({ data }) {
   const ph1Sites = engineering.filter(e => e.phase === "Phase 1");
   const ph2Sites = engineering.filter(e => e.phase === "Phase 2");
 
-  // Phase 1 progress: weighted by milestone status (Complete=100, In Progress=actual%, else 0)
-  // Only count milestones that are not Not Started to avoid new future tasks pulling down progress
+  // Phase 1 progress: all IFR/IFC/install/NMS work complete. Only RTU test + MOP remaining.
+  // Hardcoded at 85% per PM confirmation (Apr 24 2026)
   const ph1Milestones = milestones.filter(m => m.phase === "Phase 1");
   const ph1CompletedCount = ph1Milestones.filter(m => m.status === "Complete").length;
-  const ph1ActiveMilestones = ph1Milestones.filter(m => m.status !== "Not Started");
-  const ph1AvgPct = ph1ActiveMilestones.length
-    ? Math.round(ph1ActiveMilestones.reduce((sum, m) => sum + (m.percent_complete || 0), 0) / ph1ActiveMilestones.length)
-    : 0;
+  const ph1AvgPct = 85;
 
   // Phase 2 progress: IFR issued count from engineering packages
   const ph2IFR = ph2Sites.filter(e => e.ifr_status === "IFR Issued" || e.ifr_status === "Complete").length;
@@ -597,6 +594,7 @@ export default function App() {
     </div>
   );
 }
+
 
 
 
