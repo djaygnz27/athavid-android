@@ -5,9 +5,6 @@
     "Install": {
       "title": "Install"
     },
-    "JMUXDashboard": {
-      "title": "JMUXDashboard"
-    },
     "SPICalculator": {
       "title": "SPICalculator"
     },
@@ -34,6 +31,9 @@
     },
     "CodeCopy": {
       "title": "CodeCopy"
+    },
+    "JMUXDashboard": {
+      "title": "JMUXDashboard"
     }
   }
 }
