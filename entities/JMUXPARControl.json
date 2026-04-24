@@ -19,6 +19,12 @@
     "design_owner": {
       "type": "string"
     },
+    "design_planned_start": {
+      "type": "string"
+    },
+    "design_actual_start": {
+      "type": "string"
+    },
     "design_due_date": {
       "type": "string"
     },
@@ -49,16 +55,25 @@
     "rc30_received": {
       "type": "boolean"
     },
+    "rc30_received_date": {
+      "type": "string"
+    },
     "c3794_card_needed": {
       "type": "boolean"
     },
     "c3794_ordered": {
       "type": "boolean"
     },
+    "c3794_order_date": {
+      "type": "string"
+    },
     "c3794_po_number": {
       "type": "string"
     },
     "c3794_expected_delivery": {
+      "type": "string"
+    },
+    "c3794_actual_delivery": {
       "type": "string"
     },
     "installation_status": {
@@ -69,6 +84,12 @@
         "Complete",
         "Scheduled"
       ]
+    },
+    "installation_planned_date": {
+      "type": "string"
+    },
+    "installation_actual_start": {
+      "type": "string"
     },
     "installation_date": {
       "type": "string"

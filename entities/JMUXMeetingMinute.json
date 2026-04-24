@@ -28,11 +28,13 @@
     "status": {
       "type": "string",
       "enum": [
-        "Draft",
-        "Final",
-        "Action Items Open",
+        "Open",
+        "In Progress",
         "Closed"
       ]
+    },
+    "recording_source": {
+      "type": "string"
     }
   },
   "required": [],

@@ -8,48 +8,48 @@
       "type": "string"
     },
     "phase": {
-      "type": "string",
-      "enum": [
-        "Phase 1",
-        "Phase 2",
-        "Phase 3"
-      ]
+      "type": "string"
     },
     "ifr_planned": {
+      "type": "string"
+    },
+    "ifr_actual_start": {
       "type": "string"
     },
     "ifr_actual": {
       "type": "string"
     },
     "ifr_status": {
-      "type": "string",
-      "enum": [
-        "Not Started",
-        "In Review",
-        "Submitted",
-        "Approved"
-      ]
+      "type": "string"
     },
     "ifc_planned": {
+      "type": "string"
+    },
+    "ifc_actual_start": {
       "type": "string"
     },
     "ifc_actual": {
       "type": "string"
     },
     "ifc_status": {
-      "type": "string",
-      "enum": [
-        "Not Started",
-        "In Review",
-        "Submitted",
-        "Issued to Hawkeye",
-        "Approved"
-      ]
+      "type": "string"
     },
     "construction_planned": {
       "type": "string"
     },
+    "construction_actual_start": {
+      "type": "string"
+    },
+    "construction_actual_finish": {
+      "type": "string"
+    },
     "deployment_planned": {
+      "type": "string"
+    },
+    "deployment_actual_start": {
+      "type": "string"
+    },
+    "deployment_actual_finish": {
       "type": "string"
     },
     "notes": {

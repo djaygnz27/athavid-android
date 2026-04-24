@@ -2,12 +2,7 @@
   "type": "object",
   "properties": {
     "phase": {
-      "type": "string",
-      "enum": [
-        "Phase 1",
-        "Phase 2",
-        "Phase 3"
-      ]
+      "type": "string"
     },
     "workstream": {
       "type": "string"
@@ -21,14 +16,21 @@
     "actual_date": {
       "type": "string"
     },
+    "actual_start_date": {
+      "type": "string"
+    },
+    "actual_finish_date": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [
         "Not Started",
         "In Progress",
         "Complete",
-        "Overdue",
-        "At Risk"
+        "Delayed",
+        "At Risk",
+        "On Hold"
       ]
     },
     "pv": {
