@@ -1,0 +1,58 @@
+{
+  "type": "object",
+  "properties": {
+    "phase": {
+      "type": "string",
+      "enum": [
+        "Phase 1",
+        "Phase 2",
+        "Phase 3"
+      ]
+    },
+    "workstream": {
+      "type": "string"
+    },
+    "milestone_name": {
+      "type": "string"
+    },
+    "planned_date": {
+      "type": "string"
+    },
+    "actual_date": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Not Started",
+        "In Progress",
+        "Complete",
+        "Overdue",
+        "At Risk"
+      ]
+    },
+    "pv": {
+      "type": "number"
+    },
+    "ev": {
+      "type": "number"
+    },
+    "weekly_spi": {
+      "type": "number"
+    },
+    "cumulative_spi": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "percent_complete": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "JMUXMilestone"
+}
