@@ -33,6 +33,11 @@ export const SachiNotification = base44.entities.SachiNotification;
 export const SachiHype = base44.entities.SachiHype;
 export const JMUXMilestone = base44.entities.JMUXMilestone;
 export const JMUXWorkstream = base44.entities.JMUXWorkstream;
+export const JMUXMeetingMinute = base44.entities.JMUXMeetingMinute;
+export const JMUXEngPackage = base44.entities.JMUXEngPackage;
+export const JMUXEquipment = base44.entities.JMUXEquipment;
+export const JMUXPARControl = base44.entities.JMUXPARControl;
+export const JMUXSOW = base44.entities.JMUXSOW;
 
 // auth sdk:
 export const User = base44.auth;

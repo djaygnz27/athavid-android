@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "vendor": {
+      "type": "string"
+    },
+    "scope_summary": {
+      "type": "string"
+    },
+    "contract_value": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Under Review",
+        "Executed",
+        "Active",
+        "Complete",
+        "On Hold"
+      ]
+    },
+    "start_date": {
+      "type": "string"
+    },
+    "end_date": {
+      "type": "string"
+    },
+    "open_items": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "JMUXSOW"
+}

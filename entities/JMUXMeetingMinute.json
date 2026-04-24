@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "meeting_date": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "attendees": {
+      "type": "string"
+    },
+    "key_decisions": {
+      "type": "string"
+    },
+    "action_items": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "due_date": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Draft",
+        "Final",
+        "Action Items Open",
+        "Closed"
+      ]
+    }
+  },
+  "required": [],
+  "name": "JMUXMeetingMinute"
+}
