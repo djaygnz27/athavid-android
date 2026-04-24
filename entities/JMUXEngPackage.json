@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "site_number": {
+      "type": "string"
+    },
+    "site_name": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "Phase 1",
+        "Phase 2",
+        "Phase 3"
+      ]
+    },
+    "ifr_planned": {
+      "type": "string"
+    },
+    "ifr_actual": {
+      "type": "string"
+    },
+    "ifr_status": {
+      "type": "string",
+      "enum": [
+        "Not Started",
+        "In Review",
+        "Submitted",
+        "Approved"
+      ]
+    },
+    "ifc_planned": {
+      "type": "string"
+    },
+    "ifc_actual": {
+      "type": "string"
+    },
+    "ifc_status": {
+      "type": "string",
+      "enum": [
+        "Not Started",
+        "In Review",
+        "Submitted",
+        "Issued to Hawkeye",
+        "Approved"
+      ]
+    },
+    "construction_planned": {
+      "type": "string"
+    },
+    "deployment_planned": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "JMUXEngPackage"
+}

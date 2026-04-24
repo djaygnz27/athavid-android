@@ -1,0 +1,80 @@
+{
+  "type": "object",
+  "properties": {
+    "item_name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Nokia MPLS Node",
+        "Iniven RC-30",
+        "C37.94 Card",
+        "Patch Panel",
+        "Fiber Cable",
+        "Power Equipment",
+        "Ancillary",
+        "Other"
+      ]
+    },
+    "quantity_ordered": {
+      "type": "number"
+    },
+    "quantity_received": {
+      "type": "number"
+    },
+    "quantity_staged": {
+      "type": "number"
+    },
+    "quantity_installed": {
+      "type": "number"
+    },
+    "vendor": {
+      "type": "string"
+    },
+    "po_number": {
+      "type": "string"
+    },
+    "po_status": {
+      "type": "string",
+      "enum": [
+        "Not Ordered",
+        "PO Pending",
+        "PO Placed",
+        "Shipped",
+        "Received",
+        "Staged",
+        "Installed"
+      ]
+    },
+    "order_date": {
+      "type": "string"
+    },
+    "expected_delivery": {
+      "type": "string"
+    },
+    "actual_delivery": {
+      "type": "string"
+    },
+    "lead_time_weeks": {
+      "type": "number"
+    },
+    "site": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "Phase 1",
+        "Phase 2",
+        "Phase 3",
+        "All"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "JMUXEquipment"
+}

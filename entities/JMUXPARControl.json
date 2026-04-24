@@ -1,0 +1,58 @@
+{
+  "type": "object",
+  "properties": {
+    "site_name": {
+      "type": "string"
+    },
+    "substation_id": {
+      "type": "string"
+    },
+    "design_status": {
+      "type": "string",
+      "enum": [
+        "Not Started",
+        "In Progress",
+        "Complete",
+        "Approved"
+      ]
+    },
+    "rc30_ordered": {
+      "type": "boolean"
+    },
+    "rc30_order_date": {
+      "type": "string"
+    },
+    "rc30_expected_delivery": {
+      "type": "string"
+    },
+    "rc30_received": {
+      "type": "boolean"
+    },
+    "c3794_card_needed": {
+      "type": "boolean"
+    },
+    "c3794_ordered": {
+      "type": "boolean"
+    },
+    "installation_status": {
+      "type": "string",
+      "enum": [
+        "Not Started",
+        "Scheduled",
+        "In Progress",
+        "Complete"
+      ]
+    },
+    "installation_date": {
+      "type": "string"
+    },
+    "nerc_cip_compliant": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "JMUXPARControl"
+}
