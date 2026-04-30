@@ -4313,15 +4313,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       await loadPodcasts();
       await loadMyShows();
       // Send welcome email to host
-      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          host_email: currentUser?.email || "",
-          host_name: registerForm.host_name,
-          podcast_title: registerForm.title,
-          category: registerForm.category,
-        })
-      }).catch(() => {});
+      // REMOVED Apr 30 2026 — Daminie's podcastWelcome doesn't exist; this call has been silently 404ing.
+        // TODO: rebuild on Sachi Stream post-graduation, similar pattern to podcastGoLiveNotify.
+        // fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+        //   method:"POST", headers:{"Content-Type":"application/json"},
+        //   body: JSON.stringify({ host_email, host_name, podcast_title, category })
+        // }).catch(()=>{});
       setRegisterForm({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 });
     } catch(e) {
       console.error(e);
@@ -4754,15 +4751,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         setNewPodcast(pod);
         await loadPodcasts();
         await loadMyShows();
-        fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
-          method:"POST", headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({
-            host_email: currentUser?.email || "",
-            host_name: registerForm.host_name,
-            podcast_title: registerForm.title,
-            category: registerForm.category,
-          })
-        }).catch(() => {});
+        // REMOVED Apr 30 2026 — Daminie's podcastWelcome doesn't exist; this call has been silently 404ing.
+        // TODO: rebuild on Sachi Stream post-graduation, similar pattern to podcastGoLiveNotify.
+        // fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+        //   method:"POST", headers:{"Content-Type":"application/json"},
+        //   body: JSON.stringify({ host_email, host_name, podcast_title, category })
+        // }).catch(()=>{});
         setWizardStep(2);
       } catch(e) {
         console.error(e);
