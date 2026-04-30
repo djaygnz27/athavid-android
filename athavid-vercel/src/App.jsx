@@ -7033,7 +7033,7 @@ function App() {
                 </svg>
               </div>
               <span style={{ fontSize:8, fontWeight: activeTab==="podcast" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
-                color: activeTab==="podcast" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Waves</span>
+                color: activeTab==="podcast" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Pods</span>
             </button>
 
             {/* Profile orb */}
