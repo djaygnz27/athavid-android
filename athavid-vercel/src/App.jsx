@@ -20,6 +20,45 @@ import FoundingCreatorPage from "./FoundingCreator.jsx";
 import MusicPicker from "./MusicPicker.jsx";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
+// ─────────────────────────────────────────────────────────
+// SACHI HEART — Tiered Glow Aura (Style C, Apr 30 2026)
+// Tier idea by Jay's son. 4 discrete popularity tiers.
+// Threshold tuning lives here — change a number, redeploy.
+// ─────────────────────────────────────────────────────────
+const SACHI_HEART_TIERS = [
+  { min: 1,   max: 50,        name: 'Spark',  color: '#FF3B3B' },
+  { min: 51,  max: 100,       name: 'Rising', color: '#9B4DFF' },
+  { min: 101, max: 500,       name: 'Hot',    color: '#F5C842' },
+  { min: 501, max: Infinity,  name: 'Gold',   color: '#FFD700' },
+];
+
+function getSachiHeartTier(likes) {
+  if (!likes || likes < 1) return null;
+  for (const t of SACHI_HEART_TIERS) {
+    if (likes >= t.min && likes <= t.max) return t;
+  }
+  return SACHI_HEART_TIERS[SACHI_HEART_TIERS.length - 1];
+}
+
+function getSachiHeartProgress(likes) {
+  const tier = getSachiHeartTier(likes);
+  if (!tier) return 0;
+  if (tier.max === Infinity) return Math.min(1, (likes - tier.min) / 4500);
+  return Math.min(1, (likes - tier.min) / (tier.max - tier.min));
+}
+
+function getSachiHeartSize(likes) {
+  if (!likes || likes <= 0) return 40;
+  const logScale = Math.log10(likes + 1) / Math.log10(10001);
+  return 40 + Math.min(1, logScale) * 20;
+}
+
+function sachiHexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 // Module-level mute store — avoids window globals, survives stale closures
 const muteStore = {
@@ -3000,23 +3039,44 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           gap:4,
         }}>
 
-          {/* LIKE */}
-          <button onClick={tap(doLike)} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
-            <div style={{
-              width:52, height:52, borderRadius:16,
-              background: liked ? "radial-gradient(135deg, rgba(255,107,107,0.45), rgba(255,60,60,0.15))" : "rgba(255,255,255,0.07)",
-              border: liked ? "1.5px solid rgba(255,107,107,0.7)" : "1.5px solid rgba(255,255,255,0.1)",
-              boxShadow: liked ? "0 0 18px rgba(255,107,107,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
-              display:"flex", alignItems:"center", justifyContent:"center",
-              transition:"all 0.2s", animation: liked ? "heartpop 0.4s ease forwards" : "none",
-            }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke={liked ? "#FF6B6B" : "rgba(255,255,255,0.85)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </div>
-            <div style={{ color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.likes_count||0)}</div>
-          </button>
-
+{/* LIKE — tiered glow heart (Sachi Apr 30 design, tier idea by Jay's son) */}
+          {(() => {
+            const heartLikes = video.likes_count || 0;
+            const tier = getSachiHeartTier(heartLikes);
+            const progress = getSachiHeartProgress(heartLikes);
+            const iconSize = getSachiHeartSize(heartLikes);
+            const baseColor = tier ? tier.color : "#FFFFFF";
+            const glowAlpha = tier ? (0.25 + progress * 0.55) : 0;
+            const glowSpread = tier ? (8 + progress * 22) : 0;
+            const personalBoost = liked ? 1.3 : 1.0;
+            const heartGlow = tier
+              ? `0 0 ${glowSpread * personalBoost}px ${sachiHexToRgba(baseColor, glowAlpha * personalBoost)}, ` +
+                `0 0 ${glowSpread * 2 * personalBoost}px ${sachiHexToRgba(baseColor, glowAlpha * 0.4 * personalBoost)}, ` +
+                `0 4px 12px rgba(0,0,0,0.4)`
+              : `0 2px 8px rgba(0,0,0,0.3)`;
+            return (
+              <button onClick={tap(doLike)} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                <div style={{
+                  width:52, height:52, borderRadius:16,
+                  background: tier
+                    ? `radial-gradient(circle at 30% 30%, ${sachiHexToRgba(baseColor, 0.35 + progress * 0.25)}, ${sachiHexToRgba(baseColor, 0.08)})`
+                    : "rgba(255,255,255,0.07)",
+                  border: tier ? `1.5px solid ${sachiHexToRgba(baseColor, 0.6)}` : "1.5px solid rgba(255,255,255,0.1)",
+                  boxShadow: heartGlow,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"all 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+                  animation: liked ? "heartpop 0.4s ease forwards" : "none",
+                }}>
+                  <svg width={iconSize/2} height={iconSize/2} viewBox="0 0 24 24" fill={tier ? baseColor : "none"} stroke={tier ? baseColor : "rgba(255,255,255,0.85)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ transition:"all 0.4s ease" }}>
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </div>
+                <div style={{ color: tier ? baseColor : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3, transition:"color 0.4s ease", textShadow: tier ? `0 0 6px ${sachiHexToRgba(baseColor, 0.5)}` : "none" }}>
+                  {formatCount(heartLikes)}
+                </div>
+              </button>
+            );
+          })()}
           {/* COMMENT */}
           <button onClick={tap(() => onCommentOpen(video))} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
             <div style={{
