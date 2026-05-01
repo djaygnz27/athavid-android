@@ -18,10 +18,10 @@ import React, { useState, useEffect, useCallback } from "react";
 
 export const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 
-// Sachi Stream (standalone Base44 App) — graduated Apr 21, 2026
-const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://sachi-truth-sync.base44.app/api";
-
+// Daminie (production Base44) — must match api.js
+// Phase 0 revert (May 1, 2026) — will move to Sachi Stream during Phase 3 cutover
+const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 // ─── Helper: lookup existing Sachi profile by email ──────────────────────────
 async function lookupSachiUser(email) {
   try {
