@@ -23,15 +23,19 @@ export const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.a
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 // ─── Helper: lookup existing Sachi profile by email ──────────────────────────
+// NOTE: Base44 REST API ignores arbitrary field filters in query string,
+// so ?email=foo doesn't actually filter. We fetch up to 1000 users and filter
+// client-side. Fine for current scale (<100 users); revisit at Phase 3 cutover.
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?limit=1000`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
     const items = Array.isArray(data) ? data : (data?.items || []);
-    return items.find(u => u.email === email) || null;
+    const target = email.trim().toLowerCase();
+    return items.find(u => (u.email || "").trim().toLowerCase() === target) || null;
   } catch {
     return null;
   }
