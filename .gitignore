@@ -1,0 +1,36 @@
+# Environment files - NEVER commit secrets
+.env
+.env.local
+.env.development
+.env.production
+*.env
+.agents/.env
+.agents/*.env
+
+# Credentials and keys
+*.pem
+*.key
+secrets/
+credentials/
+*service-account*.json
+
+# Dependencies
+node_modules/
+
+# Build outputs
+build/
+dist/
+.next/
+.vercel/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
