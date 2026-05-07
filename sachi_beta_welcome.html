@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Join Sachi Beta Testing Program</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0B0C1A;
+    font-family: 'Inter', Arial, sans-serif;
+    color: #fff;
+    padding: 0;
+  }
+  .wrapper {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #0B0C1A;
+  }
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0B0C1A 0%, #16183A 100%);
+    padding: 40px 40px 30px;
+    text-align: center;
+    border-bottom: 3px solid #F5C842;
+  }
+  .logo-area img {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 3px solid #F5C842;
+    margin-bottom: 14px;
+  }
+  .logo-name {
+    font-size: 32px;
+    font-weight: 700;
+    color: #F5C842;
+    letter-spacing: 2px;
+  }
+  .logo-tagline {
+    font-size: 13px;
+    color: #aaa;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #16183A 0%, #1A1040 100%);
+    padding: 36px 40px;
+    text-align: center;
+    border-bottom: 1px solid #222;
+  }
+  .badge {
+    display: inline-block;
+    background: #F5C842;
+    color: #0B0C1A;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 5px 16px;
+    border-radius: 20px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.35;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: #F5C842; }
+  .hero p {
+    font-size: 15px;
+    color: #bbb;
+    line-height: 1.7;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  /* Body */
+  .body {
+    padding: 36px 40px;
+  }
+  .greeting {
+    font-size: 15px;
+    color: #ddd;
+    line-height: 1.8;
+    margin-bottom: 24px;
+  }
+  .greeting strong { color: #F5C842; }
+  /* Requirements box */
+  .req-box {
+    background: #16183A;
+    border: 1px solid #F5C842;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 28px;
+  }
+  .req-box h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #F5C842;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .req-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .req-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .req-text strong {
+    display: block;
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+  .req-text span {
+    font-size: 12.5px;
+    color: #999;
+  }
+  /* What you'll do */
+  .duties-box {
+    background: #13152E;
+    border: 1px solid #FF6B6B;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 28px;
+  }
+  .duties-box h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #FF6B6B;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .duty-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .duty-num {
+    background: #FF6B6B;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .duty-text {
+    font-size: 13.5px;
+    color: #ccc;
+    line-height: 1.6;
+  }
+  .duty-text strong { color: #fff; }
+  /* Perks */
+  .perks-box {
+    background: #0E1628;
+    border: 1px solid #7BD4FF;
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 28px;
+  }
+  .perks-box h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #7BD4FF;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .perk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .perk-item {
+    background: #16183A;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    color: #ccc;
+  }
+  .perk-item .perk-emoji { font-size: 18px; display: block; margin-bottom: 6px; }
+  .perk-item strong { color: #fff; display: block; margin-bottom: 3px; font-size: 13px; }
+  /* CTA */
+  .cta-box {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .cta-box p {
+    font-size: 15px;
+    color: #ccc;
+    margin-bottom: 20px;
+    line-height: 1.7;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #F5C842, #E8B020);
+    color: #0B0C1A;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 36px;
+    border-radius: 30px;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .cta-sub {
+    font-size: 12px;
+    color: #777;
+    margin-top: 10px;
+  }
+  /* Reply instruction */
+  .reply-box {
+    background: #16183A;
+    border-left: 4px solid #F5C842;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13.5px;
+    color: #ccc;
+    line-height: 1.7;
+  }
+  .reply-box strong { color: #F5C842; }
+  /* Signature */
+  .signature {
+    padding: 0 0 28px;
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.8;
+  }
+  .signature strong { color: #F5C842; }
+  .sig-name { font-size: 16px; font-weight: 700; color: #fff; margin-top: 8px; }
+  .sig-title { font-size: 13px; color: #999; }
+  /* Footer */
+  .footer {
+    background: #080910;
+    border-top: 1px solid #222;
+    padding: 24px 40px;
+    text-align: center;
+    font-size: 12px;
+    color: #555;
+    line-height: 1.8;
+  }
+  .footer a { color: #F5C842; text-decoration: none; }
+  .footer .footer-logo { font-size: 18px; font-weight: 700; color: #F5C842; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-area">
+      <img src="https://sachistream.com/sachi-logo-512.png" alt="Sachi Logo" />
+    </div>
+    <div class="logo-name">SACHI</div>
+    <div class="logo-tagline">Your Stage &nbsp;·&nbsp; sachistream.com</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="badge">&#127381; Beta Tester Invitation</div>
+    <h1>Help Us Build<br/><span>Something Special</span></h1>
+    <p>We're looking for a select group of Android users to be among the very first to experience Sachi — before it officially launches to the world.</p>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <div class="greeting">
+      <p>Hi there,</p><br/>
+      <p>My name is <strong>Jay Gunaratne</strong>, Founder of <strong>Sachi Stream</strong> — a brand new short-video and live creator platform built for real people, real content, and real community.</p><br/>
+      <p>We're currently in <strong>private beta</strong> and I'm personally reaching out to invite a small group of trusted people to test the platform, share their experience, and help shape what Sachi becomes.</p><br/>
+      <p>This is your chance to be a <strong>Founding Beta Tester</strong> — one of the first people ever on Sachi.</p>
+    </div>
+
+    <!-- Requirements -->
+    <div class="req-box">
+      <h3>&#9989; What You Need to Join</h3>
+      <div class="req-item">
+        <div class="req-icon">📱</div>
+        <div class="req-text">
+          <strong>An Android Phone</strong>
+          <span>Any Android device running Android 8.0 or above. No iPhone version yet — Android first!</span>
+        </div>
+      </div>
+      <div class="req-item">
+        <div class="req-icon">📧</div>
+        <div class="req-text">
+          <strong>A Gmail Account</strong>
+          <span>You'll use your Gmail to sign in via Google — quick and easy, no passwords needed.</span>
+        </div>
+      </div>
+      <div class="req-item">
+        <div class="req-icon">🕐</div>
+        <div class="req-text">
+          <strong>A Little Time Each Week</strong>
+          <span>Just 15–30 minutes a week to explore the app, post content, and share feedback.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- What you'll do -->
+    <div class="duties-box">
+      <h3>🎯 What Beta Testers Do</h3>
+      <div class="duty-item">
+        <div class="duty-num">1</div>
+        <div class="duty-text"><strong>Post content on Sachi</strong> — videos, photos, or text posts. Just use the app like you would TikTok or Instagram and explore freely.</div>
+      </div>
+      <div class="duty-item">
+        <div class="duty-num">2</div>
+        <div class="duty-text"><strong>Report any bugs</strong> — if something doesn't work, looks broken, or feels off, we want to hear about it. There's an easy bug report form built right into the app.</div>
+      </div>
+      <div class="duty-item">
+        <div class="duty-num">3</div>
+        <div class="duty-text"><strong>Share honest feedback</strong> — what you love, what confuses you, what's missing. Your opinion directly shapes the product.</div>
+      </div>
+      <div class="duty-item">
+        <div class="duty-num">4</div>
+        <div class="duty-text"><strong>Be patient with us</strong> — this is beta. Things may not be perfect. But that's exactly why we need testers like you!</div>
+      </div>
+    </div>
+
+    <!-- Perks -->
+    <div class="perks-box">
+      <h3>🎁 Beta Tester Perks</h3>
+      <div class="perk-grid">
+        <div class="perk-item">
+          <span class="perk-emoji">⭐</span>
+          <strong>Founding Tester Badge</strong>
+          Permanent badge on your Sachi profile
+        </div>
+        <div class="perk-item">
+          <span class="perk-emoji">🪙</span>
+          <strong>Free Sachi Coins</strong>
+          Bonus coins credited to your account
+        </div>
+        <div class="perk-item">
+          <span class="perk-emoji">🎤</span>
+          <strong>Priority Creator Access</strong>
+          First access to Live, Podcasts & new features
+        </div>
+        <div class="perk-item">
+          <span class="perk-emoji">📣</span>
+          <strong>Direct Line to Founder</strong>
+          Your feedback goes straight to Jay
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-box">
+      <p>Ready to join? Simply <strong>reply to this email</strong> with your name, Gmail address, and Android phone model — and I'll send you your personal invite link to download the app directly.</p>
+      <a href="mailto:support@sachistream.com?subject=I want to be a Sachi Beta Tester&body=Hi Jay, I'd like to join the Sachi beta program!%0A%0AName: %0AGmail: %0AAndroid Phone Model: " class="cta-btn">
+        &#128640; &nbsp; Yes, I Want to Test Sachi!
+      </a>
+      <div class="cta-sub">Or email us directly at <a href="mailto:support@sachistream.com" style="color:#F5C842;">support@sachistream.com</a></div>
+    </div>
+
+    <!-- Reply instruction -->
+    <div class="reply-box">
+      <strong>How it works:</strong> Reply with your name, Gmail address, and Android phone model. I'll personally send you a Google Play invite link within 24 hours. Spots are limited to keep testing manageable — so don't wait!
+    </div>
+
+    <!-- Signature -->
+    <div class="signature">
+      <p>Looking forward to having you on board,</p>
+      <div class="sig-name">Dhananjaya (Jay) Gunaratne</div>
+      <div class="sig-title">Founder & CEO &nbsp;·&nbsp; Sachi Stream &nbsp;·&nbsp; LDNA Consulting LLC</div>
+      <div style="margin-top:6px; font-size:12px; color:#777;">
+        📧 jaygnz27@gmail.com &nbsp;·&nbsp; 📞 908-255-2195 &nbsp;·&nbsp; 🌐 sachistream.com
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-logo">SACHI</div>
+    <div>sachistream.com &nbsp;·&nbsp; <a href="mailto:support@sachistream.com">support@sachistream.com</a></div>
+    <div style="margin-top:8px;">© 2026 LDNA Consulting LLC. All rights reserved.</div>
+    <div style="margin-top:8px; font-size:11px; color:#444;">You received this because you were personally invited by Jay. To opt out, reply with "unsubscribe".</div>
+  </div>
+
+</div>
+</body>
+</html>
