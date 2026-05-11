@@ -2483,6 +2483,228 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   );
 }
 
+// ── MediaZoom: pinch-to-zoom wrapper for photos and videos ──────────────────
+//
+// Wraps an <img> or <video> element and adds:
+//   - Pinch-out to zoom IN (see details)
+//   - Pinch-in (when zoomed) to zoom OUT
+//   - Pinch-in past 1.0x to "reveal mode": switches from objectFit:cover to
+//     objectFit:contain, letting the user see the full uncropped frame.
+//   - Drag-to-pan when zoomed in
+//   - Double-tap to reset to default (1.0x, cover)
+//   - Mouse wheel (desktop) and double-click also work
+//
+// Design notes for future maintainers:
+//   - Children render via render-prop pattern: <MediaZoom>{(style) => <img style={style} />}</MediaZoom>
+//     This lets the child apply transforms directly while we control the wrapper.
+//   - We control pointer-events on the wrapper: when zoom === 1 we let events
+//     pass through so the parent VideoCard's tap-to-show-UI still works.
+//     When zoomed in, we capture events so drag-to-pan works.
+//   - Reveal mode (zoom < 1 effectively) uses objectFit:contain to show
+//     the full frame, possibly with letterboxing. This is the "I want to
+//     see the whole photo of my dad" case.
+//
+// State machine (zoom values):
+//   zoom === 1.0  → default cover, transparent to parent taps
+//   zoom > 1.0    → zoomed in, capture events, allow pan
+//   zoom < 1.0    → REVEAL MODE: objectFit switches to contain
+//                   (we don't actually scale below 1.0; instead we toggle the fit)
+//
+// Limits:
+//   MAX_ZOOM = 4.0 (4x zoom in is the upper bound)
+//   MIN_ZOOM = 1.0 in scale terms; below that we flip to reveal mode
+function MediaZoom({ children, enabled = true }) {
+  const [zoom, setZoom] = React.useState(1);
+  const [translate, setTranslate] = React.useState({ x: 0, y: 0 });
+  const [revealMode, setRevealMode] = React.useState(false);
+
+  // Refs for gesture tracking
+  const wrapperRef = React.useRef(null);
+  const pinchStateRef = React.useRef(null);     // { initialDistance, initialZoom }
+  const panStateRef = React.useRef(null);       // { startX, startY, startTx, startTy }
+  const lastTapRef = React.useRef(0);           // for double-tap detection
+
+  const MAX_ZOOM = 4.0;
+  const MIN_ZOOM = 1.0;
+  const DOUBLE_TAP_MS = 300;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const distance = (t1, t2) => {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const resetToDefault = () => {
+    setZoom(1);
+    setTranslate({ x: 0, y: 0 });
+    setRevealMode(false);
+  };
+
+  // Clamp the translation so the user can't drag the image entirely off-screen
+  // while zoomed. Math: at zoom Z, image is Z*containerSize. Excess on each
+  // side is (Z-1)*containerSize/2, so translate is bounded by ±that.
+  const clampTranslate = (tx, ty, z) => {
+    if (!wrapperRef.current || z <= 1) return { x: 0, y: 0 };
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const maxX = (rect.width * (z - 1)) / 2;
+    const maxY = (rect.height * (z - 1)) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, tx)),
+      y: Math.max(-maxY, Math.min(maxY, ty)),
+    };
+  };
+
+  // ── Touch event handlers (mobile) ────────────────────────────────────────
+  const handleTouchStart = (e) => {
+    if (!enabled) return;
+
+    if (e.touches.length === 2) {
+      // Pinch start
+      pinchStateRef.current = {
+        initialDistance: distance(e.touches[0], e.touches[1]),
+        initialZoom: zoom,
+      };
+    } else if (e.touches.length === 1 && zoom > 1) {
+      // Pan start (only when zoomed in)
+      panStateRef.current = {
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        startTx: translate.x,
+        startTy: translate.y,
+      };
+    } else if (e.touches.length === 1) {
+      // Possible double-tap
+      const now = Date.now();
+      if (now - lastTapRef.current < DOUBLE_TAP_MS) {
+        // Double-tap: reset (or zoom in if at default)
+        if (zoom === 1 && !revealMode) {
+          setZoom(2);
+        } else {
+          resetToDefault();
+        }
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!enabled) return;
+
+    if (e.touches.length === 2 && pinchStateRef.current) {
+      // Pinch in progress
+      e.preventDefault();
+      const newDist = distance(e.touches[0], e.touches[1]);
+      const { initialDistance, initialZoom } = pinchStateRef.current;
+      const scale = newDist / initialDistance;
+      const target = initialZoom * scale;
+
+      if (target < MIN_ZOOM) {
+        // Pinching past 1.0x → enter reveal mode
+        setRevealMode(true);
+        setZoom(1);
+        setTranslate({ x: 0, y: 0 });
+      } else {
+        setRevealMode(false);
+        const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, target));
+        setZoom(clamped);
+        // Recenter pan if zoom changed significantly
+        setTranslate((t) => clampTranslate(t.x, t.y, clamped));
+      }
+    } else if (e.touches.length === 1 && panStateRef.current && zoom > 1) {
+      // Pan in progress
+      e.preventDefault();
+      const { startX, startY, startTx, startTy } = panStateRef.current;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      setTranslate(clampTranslate(startTx + dx, startTy + dy, zoom));
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!enabled) return;
+    if (e.touches.length < 2) pinchStateRef.current = null;
+    if (e.touches.length === 0) panStateRef.current = null;
+  };
+
+  // ── Mouse handlers (desktop) ─────────────────────────────────────────────
+  const handleWheel = (e) => {
+    if (!enabled) return;
+    // Only zoom on Ctrl+wheel or trackpad pinch (wheel with ctrlKey)
+    // This avoids hijacking normal page scroll.
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const delta = -e.deltaY * 0.01;
+    const target = zoom + delta;
+    if (target < MIN_ZOOM) {
+      setRevealMode(true);
+      setZoom(1);
+      setTranslate({ x: 0, y: 0 });
+    } else {
+      setRevealMode(false);
+      const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, target));
+      setZoom(clamped);
+      setTranslate((t) => clampTranslate(t.x, t.y, clamped));
+    }
+  };
+
+  const handleDoubleClick = (e) => {
+    if (!enabled) return;
+    e.preventDefault();
+    if (zoom === 1 && !revealMode) {
+      setZoom(2);
+    } else {
+      resetToDefault();
+    }
+  };
+
+  // ── Compute child styles based on current state ──────────────────────────
+  // These styles are passed to the child via render-prop.
+  const childStyle = {
+    width: "100%",
+    height: "100%",
+    objectFit: revealMode ? "contain" : "cover",
+    display: "block",
+    transform: `scale(${zoom}) translate(${translate.x / zoom}px, ${translate.y / zoom}px)`,
+    transformOrigin: "center center",
+    transition: pinchStateRef.current || panStateRef.current ? "none" : "transform 0.18s ease, object-fit 0.18s ease",
+    // When zoomed/revealed, capture pointer events on the child so drag works.
+    // When at default, let events pass through so parent taps still work.
+    pointerEvents: zoom > 1 || revealMode ? "auto" : "none",
+    // Hint to browser for smoother gestures
+    touchAction: zoom > 1 ? "none" : "pan-y",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+  };
+
+  // Wrapper captures the gestures. Pointer-events also conditional here so
+  // the parent's tap-to-reveal-UI keeps working at default zoom.
+  const wrapperStyle = {
+    width: "100%",
+    height: "100%",
+    overflow: "hidden",
+    pointerEvents: enabled ? "auto" : "none",
+    touchAction: zoom > 1 ? "none" : "pan-y",
+  };
+
+  return (
+    <div
+      ref={wrapperRef}
+      style={wrapperStyle}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      onWheel={handleWheel}
+      onDoubleClick={handleDoubleClick}
+    >
+      {children(childStyle)}
+    </div>
+  );
+}
+
 // ── HLS Video Component ─────────────────────────────────────────────────────────
 function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause }) {
   React.useEffect(() => {
@@ -2514,9 +2736,13 @@ function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause }) {
     }
   }, [src]);
   return (
-    <video ref={videoRef} poster={poster} loop playsInline preload="auto" muted={muted}
-      onPlay={onPlay} onPause={onPause}
-      style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
+    <MediaZoom>
+      {(zoomStyle) => (
+        <video ref={videoRef} poster={poster} loop playsInline preload="auto" muted={muted}
+          onPlay={onPlay} onPause={onPause}
+          style={zoomStyle} />
+      )}
+    </MediaZoom>
   );
 }
 
@@ -2934,13 +3160,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             </div>
           )}
           {/* Photo takes up most of the space */}
-          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"none", minHeight:0 }}>
-            <img
-              src={resolveMediaUrl(photoUrls[photoIdx])}
-              loading="lazy"
-              style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", display:"block", userSelect:"none", WebkitUserSelect:"none", pointerEvents:"none" }}
-              onError={e => { e.target.style.display="none"; e.target.nextSibling && (e.target.nextSibling.style.display="flex"); }}
-            />
+          <div style={{ flex:1, position:"relative", overflow:"hidden", minHeight:0 }}>
+            <MediaZoom>
+              {(zoomStyle) => (
+                <img
+                  src={resolveMediaUrl(photoUrls[photoIdx])}
+                  loading="lazy"
+                  style={{ ...zoomStyle, position:"absolute", inset:0 }}
+                  onError={e => { e.target.style.display="none"; e.target.nextSibling && (e.target.nextSibling.style.display="flex"); }}
+                />
+              )}
+            </MediaZoom>
             <div style={{ display:"none", position:"absolute", inset:0, alignItems:"center", justifyContent:"center", flexDirection:"column", gap:8, color:"#555" }}>
               <div style={{ fontSize:48 }}>🖼️</div>
               <div style={{ fontSize:13 }}>Image could not load</div>
