@@ -1,5 +1,4 @@
-
-// Sachi v2.2.1 - bulletproof build, mod panel fixed, toast system
+// Sachi Stream — main application
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
@@ -1238,8 +1237,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [uploadTab, setUploadTab] = useState("video");
   const [photos, setPhotos] = useState([]);
   const photoRef = useRef();
-  // Pre-upload crop queue: when user picks photos, we route them through
-  // PhotoCropQueue before storing them in `photos` state. While the queue
+  // Pre-upload crop queue: when user picks photos, they route through
+  // PhotoCropQueue before going into `photos` state. While the queue
   // is active, `pendingPhotos` holds the raw files awaiting crop.
   const [pendingPhotos, setPendingPhotos] = useState(null);
   const [caption, setCaption] = useState("");
@@ -2511,36 +2510,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   );
 }
 
-// ── MediaZoom: pinch-to-zoom wrapper for photos and videos ──────────────────
+// ── MediaZoom ─────────────────────────────────────────────────────────────
+// MediaZoom: pinch-to-zoom wrapper for photos and videos.
+// Renders children via render-prop with a computed style object.
 //
-// Wraps an <img> or <video> element and adds:
-//   - Pinch-out to zoom IN (see details)
-//   - Pinch-in (when zoomed) to zoom OUT
-//   - Pinch-in past 1.0x to "reveal mode": switches from objectFit:cover to
-//     objectFit:contain, letting the user see the full uncropped frame.
-//   - Drag-to-pan when zoomed in
-//   - Double-tap to reset to default (1.0x, cover)
-//   - Mouse wheel (desktop) and double-click also work
+// Gestures:
+//   - Pinch out / wheel up: zoom in (max 4x)
+//   - Pinch in: zoom out
+//   - Pinch in past 1x: reveal mode (objectFit cover -> contain)
+//   - Drag (when zoomed): pan
+//   - Double-tap: reset
 //
-// Design notes for future maintainers:
-//   - Children render via render-prop pattern: <MediaZoom>{(style) => <img style={style} />}</MediaZoom>
-//     This lets the child apply transforms directly while we control the wrapper.
-//   - We control pointer-events on the wrapper: when zoom === 1 we let events
-//     pass through so the parent VideoCard's tap-to-show-UI still works.
-//     When zoomed in, we capture events so drag-to-pan works.
-//   - Reveal mode (zoom < 1 effectively) uses objectFit:contain to show
-//     the full frame, possibly with letterboxing. This is the "I want to
-//     see the whole photo of my dad" case.
-//
-// State machine (zoom values):
-//   zoom === 1.0  → default cover, transparent to parent taps
-//   zoom > 1.0    → zoomed in, capture events, allow pan
-//   zoom < 1.0    → REVEAL MODE: objectFit switches to contain
-//                   (we don't actually scale below 1.0; instead we toggle the fit)
-//
-// Limits:
-//   MAX_ZOOM = 4.0 (4x zoom in is the upper bound)
-//   MIN_ZOOM = 1.0 in scale terms; below that we flip to reveal mode
+// Pointer-events on the child are conditional: 'none' at default zoom so the
+// parent's tap handlers still work, 'auto' when zoomed or in reveal mode.
 function MediaZoom({ children, enabled = true }) {
   const [zoom, setZoom] = React.useState(1);
   const [translate, setTranslate] = React.useState({ x: 0, y: 0 });
@@ -3872,31 +3854,10 @@ const AVATAR_STYLES = [
 ];
 
 // ── Photo Crop Editor ──────────────────────────────────────────────────────
-//
-// Pre-upload crop UI shown when a user picks photos to post.
-// User sees their photo filling a crop frame, can pan/zoom/select aspect ratio,
-// then confirms or cancels. Output is a new File with the cropped result.
-//
-// Aspect ratios offered:
-//   - 9:16 (Feed default — matches the vertical feed)
-//   - 1:1  (Square)
-//   - Original (no crop, just upload as-is)
-//
-// Touch gestures:
-//   - Single finger drag → pan the image inside the crop frame
-//   - Two finger pinch → zoom in/out
-//   - "Fit" button → reset scale so the whole image is visible (letterboxed)
-//   - "Fill" button → reset scale so the image fills the crop frame
-//
-// Design notes for future maintainers:
-//   - We use a Canvas to render the live preview AND to produce the final
-//     cropped File on save. Same draw routine used for both.
-//   - The canvas is sized to the chosen aspect ratio. Output File is a JPEG
-//     because PNG would be too large for phone uploads.
-//   - imgRef stays the same across aspect-ratio changes (we don't reload the image,
-//     we just re-render the canvas at a new shape).
-//   - When user picks "Original", we skip the canvas entirely and return the
-//     original File unchanged. Less code, no quality loss.
+// Pre-upload crop UI. Aspect ratios: 9:16 (feed), 1:1, original (no crop).
+// Touch: drag to pan, pinch to zoom. Buttons: Fit / Fill / Cancel / Confirm.
+// Output is a new File (JPEG) with the cropped result, or the original File
+// unchanged when "original" is selected.
 
 function PhotoCropEditor({ file, onSave, onCancel, photoIndex, totalPhotos }) {
   const canvasRef = useRef();
@@ -7932,5 +7893,4 @@ function App() {
 }
 
 export default App;
-// v1775417720513
 
