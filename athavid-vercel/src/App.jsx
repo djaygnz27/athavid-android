@@ -1238,6 +1238,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [uploadTab, setUploadTab] = useState("video");
   const [photos, setPhotos] = useState([]);
   const photoRef = useRef();
+  // Pre-upload crop queue: when user picks photos, we route them through
+  // PhotoCropQueue before storing them in `photos` state. While the queue
+  // is active, `pendingPhotos` holds the raw files awaiting crop.
+  const [pendingPhotos, setPendingPhotos] = useState(null);
   const [caption, setCaption] = useState("");
   const [isMature, setIsMature] = useState(false);
   const [matureReason, setMatureReason] = useState("other");
@@ -1346,12 +1350,27 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const handlePhotoSelect = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    // Convert any HEIC files to JPEG
+    // Reset the input so the user can re-pick the same file later if needed
+    e.target.value = "";
+    // Convert any HEIC files to JPEG before showing the crop editor
     const converted = await Promise.all(files.map(f => convertHeicToJpeg(f)));
+    // Open the pre-upload crop queue. When user finishes (or cancels),
+    // we update `photos` state.
+    setPendingPhotos(converted);
+  };
+
+  // Called when the crop queue finishes all photos
+  const handleCropComplete = (croppedFiles) => {
     setPhotos(prev => {
-      const combined = [...prev, ...converted];
+      const combined = [...prev, ...croppedFiles];
       return combined.slice(0, 6);
     });
+    setPendingPhotos(null);
+  };
+
+  // Called if user cancels the crop queue
+  const handleCropCancel = () => {
+    setPendingPhotos(null);
   };
 
   const removePhoto = (idx) => setPhotos(p => p.filter((_,i) => i !== idx));
@@ -1746,6 +1765,15 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           setShowEditor(false);
         }}
         onSkip={() => { setEditedFile(null); setShowEditor(false); }}
+      />
+    )}
+    {/* ── PRE-UPLOAD PHOTO CROP QUEUE ── */}
+    {/* Shown after user picks photos but before they go into `photos` state */}
+    {pendingPhotos && pendingPhotos.length > 0 && (
+      <PhotoCropQueue
+        files={pendingPhotos}
+        onComplete={handleCropComplete}
+        onCancel={handleCropCancel}
       />
     )}
     {/* ── POST DETAILS STEP ── */}
@@ -3842,6 +3870,390 @@ const AVATAR_STYLES = [
   { label: "Fun", style: "bottts", seeds: ["R2D2","BB8","Wall-E","Robo","Zap","Bolt","Chip","Digi","Glitch","Mega","Nano","Pixel","Spark","Vibe","Wave","Flux","Glow","Nova","Atom","Echo"] },
   { label: "Minimal", style: "thumbs", seeds: ["Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Eta","Theta","Iota","Kappa","Lambda","Mu","Nu","Xi","Omicron","Pi","Rho","Sigma","Tau","Upsilon"] },
 ];
+
+// ── Photo Crop Editor ──────────────────────────────────────────────────────
+//
+// Pre-upload crop UI shown when a user picks photos to post.
+// User sees their photo filling a crop frame, can pan/zoom/select aspect ratio,
+// then confirms or cancels. Output is a new File with the cropped result.
+//
+// Aspect ratios offered:
+//   - 9:16 (Feed default — matches the vertical feed)
+//   - 1:1  (Square)
+//   - Original (no crop, just upload as-is)
+//
+// Touch gestures:
+//   - Single finger drag → pan the image inside the crop frame
+//   - Two finger pinch → zoom in/out
+//   - "Fit" button → reset scale so the whole image is visible (letterboxed)
+//   - "Fill" button → reset scale so the image fills the crop frame
+//
+// Design notes for future maintainers:
+//   - We use a Canvas to render the live preview AND to produce the final
+//     cropped File on save. Same draw routine used for both.
+//   - The canvas is sized to the chosen aspect ratio. Output File is a JPEG
+//     because PNG would be too large for phone uploads.
+//   - imgRef stays the same across aspect-ratio changes (we don't reload the image,
+//     we just re-render the canvas at a new shape).
+//   - When user picks "Original", we skip the canvas entirely and return the
+//     original File unchanged. Less code, no quality loss.
+
+function PhotoCropEditor({ file, onSave, onCancel, photoIndex, totalPhotos }) {
+  const canvasRef = useRef();
+  const imgRef = useRef(new window.Image());
+  const containerRef = useRef();
+
+  // Crop frame dimensions in display pixels.
+  // Width is fixed; height changes based on aspect ratio choice.
+  const FRAME_W = 320;
+
+  // Aspect ratio: "9:16" | "1:1" | "original"
+  const [aspect, setAspect] = useState("9:16");
+
+  // For aspect="original", we'll skip the canvas crop entirely.
+  // For other aspects, compute the frame height.
+  const frameH = aspect === "1:1" ? FRAME_W : Math.round(FRAME_W * 16 / 9);
+
+  // Image transform state
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Gesture state
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef(null);
+  const pinchStart = useRef(null);
+
+  // Object URL for the image — created once, cleaned up on unmount
+  const imageUrl = useMemo(() => URL.createObjectURL(file), [file]);
+  useEffect(() => () => URL.revokeObjectURL(imageUrl), [imageUrl]);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  // Compute the "fill" scale: image covers the entire frame, cropping if needed.
+  const computeFillScale = (imgW, imgH, fW, fH) => {
+    return Math.max(fW / imgW, fH / imgH);
+  };
+  // Compute the "fit" scale: whole image visible, letterboxed if needed.
+  const computeFitScale = (imgW, imgH, fW, fH) => {
+    return Math.min(fW / imgW, fH / imgH);
+  };
+
+  // Center the image in the frame at a given scale.
+  const centerOffset = (imgW, imgH, fW, fH, s) => ({
+    x: (fW - imgW * s) / 2,
+    y: (fH - imgH * s) / 2,
+  });
+
+  // ── Load the image once when component mounts ────────────────────────────
+  useEffect(() => {
+    const img = imgRef.current;
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const fill = computeFillScale(img.width, img.height, FRAME_W, frameH);
+      setScale(fill);
+      setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fill));
+      setImageLoaded(true);
+    };
+    img.src = imageUrl;
+    // We don't redo this when aspect changes (we'll handle that separately below)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageUrl]);
+
+  // ── When aspect ratio changes, re-center to fill ─────────────────────────
+  useEffect(() => {
+    if (!imageLoaded || aspect === "original") return;
+    const img = imgRef.current;
+    const fill = computeFillScale(img.width, img.height, FRAME_W, frameH);
+    setScale(fill);
+    setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fill));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aspect, imageLoaded]);
+
+  // ── Draw the canvas whenever state changes ───────────────────────────────
+  const draw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imageLoaded) return;
+    const ctx = canvas.getContext("2d");
+    // Clear with white background (JPEG export looks weird with transparent bg)
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, FRAME_W, frameH);
+    ctx.drawImage(
+      imgRef.current,
+      offset.x, offset.y,
+      imgRef.current.width * scale, imgRef.current.height * scale
+    );
+  };
+
+  useEffect(() => { draw(); }, [scale, offset, frameH, imageLoaded]);
+
+  // ── Pointer gesture handlers ─────────────────────────────────────────────
+  const onMouseDown = (e) => {
+    setDragging(true);
+    dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+  };
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    setOffset({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
+  };
+  const onMouseUp = () => setDragging(false);
+
+  // Touch handlers — pinch + drag
+  const distance = (t1, t2) => {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const onTouchStart = (e) => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      // Pinch start
+      pinchStart.current = {
+        distance: distance(e.touches[0], e.touches[1]),
+        scale,
+      };
+    } else if (e.touches.length === 1) {
+      setDragging(true);
+      dragStart.current = {
+        x: e.touches[0].clientX - offset.x,
+        y: e.touches[0].clientY - offset.y,
+      };
+    }
+  };
+
+  const onTouchMove = (e) => {
+    e.preventDefault();
+    if (e.touches.length === 2 && pinchStart.current) {
+      const newDist = distance(e.touches[0], e.touches[1]);
+      const factor = newDist / pinchStart.current.distance;
+      const newScale = Math.max(0.1, Math.min(5, pinchStart.current.scale * factor));
+      setScale(newScale);
+    } else if (e.touches.length === 1 && dragging) {
+      setOffset({
+        x: e.touches[0].clientX - dragStart.current.x,
+        y: e.touches[0].clientY - dragStart.current.y,
+      });
+    }
+  };
+
+  const onTouchEnd = (e) => {
+    if (e.touches.length < 2) pinchStart.current = null;
+    if (e.touches.length === 0) setDragging(false);
+  };
+
+  // ── Save: produce the cropped JPEG File and pass to onSave ───────────────
+  const handleSave = async () => {
+    // "Original" mode: skip crop entirely, return file as-is
+    if (aspect === "original") {
+      onSave(file);
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) { onSave(file); return; }
+
+    // Render at full resolution for upload (not just display size).
+    // We need an OFFSCREEN canvas at the original image's effective size,
+    // not the small preview canvas. So we render larger.
+    const OUTPUT_W = 1080; // common phone-photo width
+    const OUTPUT_H = Math.round(OUTPUT_W * frameH / FRAME_W);
+    const scaleUp = OUTPUT_W / FRAME_W;
+
+    const out = document.createElement("canvas");
+    out.width = OUTPUT_W;
+    out.height = OUTPUT_H;
+    const outCtx = out.getContext("2d");
+    outCtx.fillStyle = "#000000";
+    outCtx.fillRect(0, 0, OUTPUT_W, OUTPUT_H);
+    outCtx.drawImage(
+      imgRef.current,
+      offset.x * scaleUp, offset.y * scaleUp,
+      imgRef.current.width * scale * scaleUp, imgRef.current.height * scale * scaleUp
+    );
+
+    out.toBlob((blob) => {
+      if (!blob) { onSave(file); return; }
+      const cropped = new File([blob], file.name.replace(/\.\w+$/, "") + "_cropped.jpg", { type: "image/jpeg" });
+      onSave(cropped);
+    }, "image/jpeg", 0.9);
+  };
+
+  // ── Reset buttons ────────────────────────────────────────────────────────
+  const handleFitToFrame = () => {
+    if (!imageLoaded) return;
+    const img = imgRef.current;
+    const fit = computeFitScale(img.width, img.height, FRAME_W, frameH);
+    setScale(fit);
+    setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fit));
+  };
+  const handleFillFrame = () => {
+    if (!imageLoaded) return;
+    const img = imgRef.current;
+    const fill = computeFillScale(img.width, img.height, FRAME_W, frameH);
+    setScale(fill);
+    setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fill));
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 3000, background: "#0B0C1A",
+      display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+      {/* Top bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 18px", paddingTop: "calc(env(safe-area-inset-top,0px) + 14px)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <button onClick={onCancel}
+          style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10,
+            width: 36, height: 36, color: "#fff", fontSize: 18, cursor: "pointer" }}>✕</button>
+        <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>
+          ✂️ Crop Photo {totalPhotos > 1 ? `(${photoIndex + 1}/${totalPhotos})` : ""}
+        </div>
+        <div style={{ width: 36 }} />
+      </div>
+
+      {/* Aspect ratio selector */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, padding: "14px 16px 10px" }}>
+        {[
+          { id: "9:16", label: "📱 Feed (9:16)" },
+          { id: "1:1", label: "⬛ Square (1:1)" },
+          { id: "original", label: "🖼️ Original" },
+        ].map(opt => (
+          <button key={opt.id} onClick={() => setAspect(opt.id)}
+            style={{ padding: "8px 14px", borderRadius: 20,
+              border: aspect === opt.id ? "2px solid #F5C842" : "1px solid rgba(255,255,255,0.15)",
+              background: aspect === opt.id ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.04)",
+              color: aspect === opt.id ? "#F5C842" : "#aaa",
+              fontWeight: 700, fontSize: 12, cursor: "pointer",
+              WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Crop preview area */}
+      <div ref={containerRef} style={{ flex: 1, display: "flex", alignItems: "center",
+        justifyContent: "center", padding: "8px 16px", overflow: "hidden", minHeight: 0 }}>
+        {aspect === "original" ? (
+          // "Original" mode: show the raw image, no crop frame
+          <div style={{ maxWidth: "100%", maxHeight: "100%", display: "flex",
+            alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 10 }}>
+            <img src={imageUrl} alt="Original"
+              style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12,
+                border: "2px solid #F5C842", boxShadow: "0 8px 32px rgba(245,200,66,0.2)" }} />
+            <div style={{ color: "#888", fontSize: 12, textAlign: "center" }}>
+              Posting at original aspect ratio<br/>
+              <span style={{ color: "#666" }}>The feed will letterbox if needed</span>
+            </div>
+          </div>
+        ) : (
+          // Crop mode: canvas with gestures
+          <div
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onTouchCancel={onTouchEnd}
+            style={{ cursor: dragging ? "grabbing" : "grab",
+              borderRadius: 12, overflow: "hidden",
+              border: "2px solid #F5C842",
+              boxShadow: "0 8px 32px rgba(245,200,66,0.25)",
+              touchAction: "none" }}>
+            <canvas
+              ref={canvasRef}
+              width={FRAME_W}
+              height={frameH}
+              style={{ display: "block", touchAction: "none" }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Zoom slider + fit/fill buttons — only in crop mode */}
+      {aspect !== "original" && imageLoaded && (
+        <div style={{ padding: "8px 24px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <div style={{ color: "#888", fontSize: 11 }}>🔍 Zoom</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={handleFitToFrame}
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 8, padding: "4px 10px", color: "#aaa", fontSize: 11, cursor: "pointer" }}>
+                Fit
+              </button>
+              <button onClick={handleFillFrame}
+                style={{ background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)",
+                  borderRadius: 8, padding: "4px 10px", color: "#F5C842", fontSize: 11, cursor: "pointer" }}>
+                Fill
+              </button>
+            </div>
+          </div>
+          <input type="range" min={0.1} max={5} step={0.01}
+            value={scale}
+            onChange={e => setScale(parseFloat(e.target.value))}
+            style={{ width: "100%", accentColor: "#F5C842" }} />
+          <div style={{ color: "#666", fontSize: 11, textAlign: "center", marginTop: 4 }}>
+            Drag the photo to position · Pinch to zoom (mobile)
+          </div>
+        </div>
+      )}
+
+      {/* Bottom buttons */}
+      <div style={{ display: "flex", gap: 10, padding: "16px 20px",
+        paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 16px)",
+        borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <button onClick={onCancel}
+          style={{ flex: 1, padding: "14px 0", background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14,
+            color: "#aaa", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
+          Cancel
+        </button>
+        <button onClick={handleSave}
+          style={{ flex: 2, padding: "14px 0",
+            background: "linear-gradient(135deg,#F5C842,#FF9500)",
+            border: "none", borderRadius: 14,
+            color: "#0B0C1A", fontWeight: 900, fontSize: 16, cursor: "pointer",
+            boxShadow: "0 4px 16px rgba(245,200,66,0.3)" }}>
+          ✓ {totalPhotos > 1 && photoIndex < totalPhotos - 1 ? "Next Photo →" : "Confirm"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── PhotoCropQueue ─────────────────────────────────────────────────────────
+//
+// Wrapper that crops a list of photos one at a time.
+// Shows PhotoCropEditor for each photo in sequence.
+// When all are done (or user cancels), calls onComplete with cropped array.
+// If user cancels at any step, the whole batch is cancelled (onCancel).
+
+function PhotoCropQueue({ files, onComplete, onCancel }) {
+  const [idx, setIdx] = useState(0);
+  const [cropped, setCropped] = useState([]);
+
+  const handleSave = (croppedFile) => {
+    const newCropped = [...cropped, croppedFile];
+    if (idx + 1 >= files.length) {
+      // All photos cropped — return the batch
+      onComplete(newCropped);
+    } else {
+      setCropped(newCropped);
+      setIdx(idx + 1);
+    }
+  };
+
+  return (
+    <PhotoCropEditor
+      file={files[idx]}
+      onSave={handleSave}
+      onCancel={onCancel}
+      photoIndex={idx}
+      totalPhotos={files.length}
+    />
+  );
+}
 
 // ── Avatar Crop Editor ──────────────────────────────────────────────────────
 function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
