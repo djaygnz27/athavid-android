@@ -1,3 +1,4 @@
+
 // Sachi Stream — main application
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
@@ -2754,10 +2755,17 @@ function MediaZoom({ children, enabled = true }) {
 }
 
 // ── HLS Video Component ─────────────────────────────────────────────────────────
-function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause }) {
+function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause, preloadMode = "metadata" }) {
   React.useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
+    // Only initialize HLS or set src when we should preload (not "none")
+    if (preloadMode === "none") {
+      // Don't load video data at all — just show the poster
+      video.removeAttribute('src');
+      video.load();
+      return;
+    }
     if (isHLS && !video.canPlayType('application/vnd.apple.mpegurl')) {
       const loadHLS = async () => {
         if (!window.Hls) {
@@ -2782,11 +2790,11 @@ function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause }) {
     } else {
       video.src = src;
     }
-  }, [src]);
+  }, [src, preloadMode]);
   return (
     <MediaZoom>
       {(zoomStyle) => (
-        <video ref={videoRef} poster={poster} loop playsInline preload="auto" muted={muted}
+        <video ref={videoRef} poster={poster} loop playsInline preload={preloadMode} muted={muted}
           onPlay={onPlay} onPause={onPause}
           style={zoomStyle} />
       )}
@@ -2857,7 +2865,7 @@ function FlameIcon({ views = 0 }) {
   );
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, likedVideoIds, likeRecords, onLikeChange, onHashtagPress }) {
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, likedVideoIds, likeRecords, onLikeChange, onHashtagPress, preloadMode = "metadata", onBecomeCurrent }) {
   const [showLikers, setShowLikers] = React.useState(false);
   const [showBruhToast, setShowBruhToast] = React.useState(false);
   const [hyped, setHyped] = React.useState(false);
@@ -2962,6 +2970,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
+        // Notify parent this is now the current video — drives preload strategy
+        onBecomeCurrent && onBecomeCurrent();
         const currentlyMuted = muteStore.get();
         el.muted = video.sound_url ? true : currentlyMuted;
         el.play().catch(() => {});
@@ -3307,6 +3317,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             <HLSVideo src={resolvedVideoUrl} isHLS={isHLS} videoRef={videoRef}
               poster={resolveMediaUrl(video.thumbnail_url)}
               muted={muted || !!video.sound_url}
+              preloadMode={preloadMode}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
                 if (soundRef.current && video.sound_url && !muted) {
@@ -6808,6 +6819,11 @@ function App() {
 
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
+  // Track which video in the feed is currently the one the user is looking at.
+  // This drives the preload strategy: only the current video gets full preload;
+  // adjacent videos get metadata only; far-away videos get none. This keeps the
+  // browser from trying to download 30 videos at once on Fast 4G.
+  const [currentVideoIdx, setCurrentVideoIdx] = useState(0);
   const feedContainerRef = useRef(null);
   const feedSentinelRef = useRef(null);
   const loadingMoreRef = useRef(false);
@@ -7289,20 +7305,20 @@ function App() {
           {(feedTab === "forYou" ? videoList : followingVideos)
             .filter(v => !blockedIds.has(v.user_id))
             .map((v, idx, arr) => {
-              // Preload audio for next 2 videos in background
-              if (v.sound_url) preloadAudio(v.sound_url);
-              const next1 = arr[idx + 1]; if (next1?.sound_url) preloadAudio(next1.sound_url);
-              const next2 = arr[idx + 2]; if (next2?.sound_url) preloadAudio(next2.sound_url);
-              // Preload video for next card so it starts instantly on scroll
-              if (next1?.video_url && !next1?.is_photo) {
-                const preloadVid = next1._preloadEl || (next1._preloadEl = document.createElement('video'));
-                preloadVid.src = resolveMediaUrl(next1.video_url);
-                preloadVid.preload = 'auto';
-                preloadVid.muted = true;
-                preloadVid.playsInline = true;
-              }
+              // Preload audio only for the very next video (not far ahead)
+              if (v.sound_url && idx === currentVideoIdx) preloadAudio(v.sound_url);
+              const next1 = arr[idx + 1]; if (next1?.sound_url && idx === currentVideoIdx) preloadAudio(next1.sound_url);
+              // Smart preload strategy based on distance from current video:
+              //   - Current video: full preload (it's playing or about to)
+              //   - Next 1 video: metadata only (~1KB, ready when scrolled to)
+              //   - Everything else: none (don't waste bandwidth)
+              // Without this every video preloads simultaneously, causing stutter.
+              const distance = Math.abs(idx - currentVideoIdx);
+              const cardPreloadMode = distance === 0 ? "auto" : distance === 1 ? "metadata" : "none";
               return (
                 <VideoCard key={v.id} video={v} currentUser={currentUser}
+                  preloadMode={cardPreloadMode}
+                  onBecomeCurrent={() => setCurrentVideoIdx(idx)}
                   onCommentOpen={setCommentVideo}
                   onLike={handleLike}
                   onView={handleView}
