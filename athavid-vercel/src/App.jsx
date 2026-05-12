@@ -236,40 +236,27 @@ async function convertHeicToJpeg(file) {
 
 // ── Cloudflare Stream Upload ─────────────────────────────────────────────────
 // Routes video through Cloudflare Stream for HLS adaptive streaming & edge CDN
-// Falls back to direct Base44 upload if Stream is unavailable
-// Account ID is public (it's in every Cloudflare URL), safe to commit.
-// Stream token is secret — loaded from Vercel env var VITE_CF_STREAM_TOKEN.
-// Set in Vercel → sachi-prod → Settings → Environments → Production.
-const CF_ACCOUNT_ID = "a346b1c78fc48549d2de3de99a789a2d";
-const CF_STREAM_TOKEN = import.meta.env.VITE_CF_STREAM_TOKEN || "";
+// Falls back to direct R2 upload if Stream is unavailable.
+// Browser → Cloudflare Worker (sachi-upload) → Cloudflare Stream API.
+// The Worker proxies requests server-side (no CORS issue) and holds the
+// CF_STREAM_TOKEN as an encrypted secret. Browser never sees the token.
+const SACHI_WORKER_URL = "https://sachi-upload.jaygnz27.workers.dev";
 
 async function uploadToCloudflareStream(file, onProgress) {
-  // If credentials not set, fall back to Base44
-  // Cloudflare Stream active
-  if (!CF_STREAM_TOKEN) {
-    console.error("[Sachi Stream] VITE_CF_STREAM_TOKEN env var is missing — falling back to R2 upload. Set it in Vercel project settings.");
-    return null;
-  }
   try {
-    // Step 1: Get a one-time upload URL from Cloudflare Stream
+    // Step 1: Ask our Worker for a one-time Stream upload URL.
+    // The Worker uses its CF_STREAM_TOKEN secret to fetch this from Cloudflare.
     onProgress && onProgress(5, "Connecting to Cloudflare Stream...");
     const initRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/direct_upload`,
+      `${SACHI_WORKER_URL}/stream/init`,
       {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${CF_STREAM_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          maxDurationSeconds: 600,
-          requireSignedURLs: false,
-          allowedOrigins: ["sachistream.com", "*.sachistream.com", "localhost"],
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
       }
     );
     if (!initRes.ok) throw new Error(`Stream init failed: ${initRes.status}`);
-    const { result } = await initRes.json();
+    const result = await initRes.json();
     const { uploadURL, uid } = result;
 
     // Step 2: Upload the video file via tus resumable upload
@@ -304,11 +291,10 @@ async function uploadToCloudflareStream(file, onProgress) {
     while (attempts < 30) {
       await new Promise(r => setTimeout(r, 2000)); // poll every 2s
       const statusRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${uid}`,
-        { headers: { "Authorization": `Bearer ${CF_STREAM_TOKEN}` } }
+        `${SACHI_WORKER_URL}/stream/status?uid=${uid}`
       );
       if (!statusRes.ok) { attempts++; continue; }
-      const { result: video } = await statusRes.json();
+      const video = await statusRes.json();
       if (video.readyToStream) {
         // HLS manifest URL — adaptive bitrate, edge delivered
         streamUrl = video.playback?.hls || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/manifest/video.m3u8`;
@@ -7990,4 +7976,3 @@ function App() {
 }
 
 export default App;
-
