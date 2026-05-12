@@ -3459,7 +3459,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         const fId = `f${video.id}`;
 
         const RING_CIRC = 88;
-        const ActionBtn = ({ onClick, label, count, isActive, activeColor, children, ringOffset }) => {
+        const ActionBtn = ({ onClick, label, count, isActive, activeColor, children, ringOffset, onCountClick }) => {
           const [bursting, setBursting] = React.useState(false);
           const handleClick = (e) => { setBursting(true); setTimeout(() => setBursting(false), 600); onClick(e); };
           const offset = ringOffset !== undefined ? ringOffset : (isActive ? 20 : RING_CIRC);
@@ -3493,13 +3493,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   {children}
                 </div>
               </div>
-              <div style={{
-                fontSize:9, fontWeight:700,
-                color: isActive ? activeColor : "rgba(255,255,255,0.4)",
-                lineHeight:1.2, maxWidth:44, textAlign:"center",
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                transition:"color 0.2s",
-              }}>
+              <div
+                onClick={onCountClick ? (e) => { e.stopPropagation(); onCountClick(e); } : undefined}
+                style={{
+                  fontSize:9, fontWeight:700,
+                  color: isActive ? activeColor : "rgba(255,255,255,0.4)",
+                  lineHeight:1.2, maxWidth:44, textAlign:"center",
+                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                  transition:"color 0.2s",
+                  cursor: onCountClick ? "pointer" : "inherit",
+                  textDecoration: onCountClick && count > 0 ? "underline" : "none",
+                  textDecorationStyle: "dotted",
+                  textDecorationColor: isActive ? activeColor : "rgba(255,255,255,0.3)",
+                }}>
                 {count !== undefined ? (formatCount(count) || label) : label}
               </div>
             </button>
@@ -3576,7 +3582,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 )}
 
                 {/* Heart */}
-                <ActionBtn onClick={tap(doLike)} count={video.likes_count||0} label="Like" isActive={liked} activeColor="#FF6B6B" ringOffset={liked ? Math.max(RING_CIRC-((video.likes_count||0)/40)*RING_CIRC,8) : RING_CIRC}>
+                <ActionBtn
+                  onClick={tap(doLike)}
+                  count={video.likes_count||0}
+                  label="Like"
+                  isActive={liked}
+                  activeColor="#FF6B6B"
+                  ringOffset={liked ? Math.max(RING_CIRC-((video.likes_count||0)/40)*RING_CIRC,8) : RING_CIRC}
+                  onCountClick={(video.likes_count||0) > 0 ? async () => {
+                    setShowLikers(true);
+                    setLikersLoading(true);
+                    try {
+                      const rows = await likes.getByVideo(video.id);
+                      setLikersList(rows);
+                    } catch(e) {
+                      console.error("Failed to load likers:", e);
+                      setLikersList([]);
+                    } finally {
+                      setLikersLoading(false);
+                    }
+                  } : undefined}
+                >
                   <svg width="14" height="14" viewBox="0 0 24 24"
                     fill={liked?"#FF6B6B":"none"} stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     style={{ transition:"fill 0.2s", animation:liked?"heartpop 0.4s ease forwards":"none" }}>
