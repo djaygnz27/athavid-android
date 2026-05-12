@@ -455,6 +455,11 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [loading, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState(null); // { id, username }
   const [expandedReplies, setExpandedReplies] = useState({});
+  // Track which comments the current user has reacted to.
+  // Shape: { [commentId]: { thumbsUp: bool, hearts: bool, thumbsDown: bool } }
+  // In-memory only — resets if the user reloads the page. That's fine for now;
+  // database-backed persistence is a future enhancement.
+  const [myReactions, setMyReactions] = useState({});
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -537,6 +542,35 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   };
 
   const reactToComment = (id, reaction, isReply, parentId) => {
+    // Read current reaction state for this comment
+    const existing = myReactions[id] || {};
+
+    // Already voted on this exact reaction? Show Bruh and stop.
+    if (existing[reaction]) {
+      if (reaction === "thumbsUp")    toast.info("Bruh, you already loved this comment! 🔥");
+      else if (reaction === "hearts") toast.info("Bruh, you already hearted this! ❤️");
+      else                            toast.info("Bruh, you already disliked this! 💀");
+      return;
+    }
+
+    // Thumbs-up and thumbs-down are mutually exclusive.
+    // If user picked up but now wants down (or vice versa), block — make up your mind.
+    if (reaction === "thumbsUp" && existing.thumbsDown) {
+      toast.info("Bruh, make up your mind! You already voted.");
+      return;
+    }
+    if (reaction === "thumbsDown" && existing.thumbsUp) {
+      toast.info("Bruh, make up your mind! You already voted.");
+      return;
+    }
+
+    // Lock this reaction for this user-comment combo
+    setMyReactions(prev => ({
+      ...prev,
+      [id]: { ...(prev[id] || {}), [reaction]: true }
+    }));
+
+    // Increment the count on the comment (in-memory, same as before)
     if (isReply) {
       setList(prev => prev.map(x => x.id === parentId ? {
         ...x, replies: (x.replies||[]).map(r => r.id === id ? {...r, [reaction]: (r[reaction]||0)+1} : r)
@@ -546,7 +580,10 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     }
   };
 
-  const CommentRow = ({ c, isReply=false, parentId=null }) => (
+  const CommentRow = ({ c, isReply=false, parentId=null }) => {
+    // What has THIS user already reacted with on this comment?
+    const myR = myReactions[c.id] || {};
+    return (
     <div style={{ display:"flex", gap:10, marginBottom:12, paddingLeft: isReply ? 44 : 0 }}>
       <img src={c.avatar_url} style={{ width: isReply?28:36, height: isReply?28:36, borderRadius:"50%", border:`2px solid rgba(108,99,255,${isReply?0.2:0.3})`, flexShrink:0 }} />
       <div style={{ flex:1 }}>
@@ -554,15 +591,15 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
         <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <button onClick={() => reactToComment(c.id, "thumbsUp", isReply, parentId)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsUp ? "#6bff9a" : "#666", fontSize:12, padding:0 }}>
+            style={{ background: myR.thumbsUp ? "rgba(107,255,154,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.thumbsUp || c.thumbsUp) ? "#6bff9a" : "#666", fontSize:12, padding: myR.thumbsUp ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.thumbsUp ? 700 : 400 }}>
             👍 <span style={{ fontSize:10 }}>{c.thumbsUp || 0}</span>
           </button>
           <button onClick={() => reactToComment(c.id, "hearts", isReply, parentId)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.hearts ? "#ff6b6b" : "#666", fontSize:12, padding:0 }}>
+            style={{ background: myR.hearts ? "rgba(255,107,107,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.hearts || c.hearts) ? "#ff6b6b" : "#666", fontSize:12, padding: myR.hearts ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.hearts ? 700 : 400 }}>
             ❤️ <span style={{ fontSize:10 }}>{c.hearts || 0}</span>
           </button>
           <button onClick={() => reactToComment(c.id, "thumbsDown", isReply, parentId)}
-            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:12, padding:0 }}>
+            style={{ background: myR.thumbsDown ? "rgba(255,142,83,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.thumbsDown || c.thumbsDown) ? "#ff8e53" : "#666", fontSize:12, padding: myR.thumbsDown ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.thumbsDown ? 700 : 400 }}>
             👎 <span style={{ fontSize:10 }}>{c.thumbsDown || 0}</span>
           </button>
           {!isReply && (
@@ -583,7 +620,8 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         ))}
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
