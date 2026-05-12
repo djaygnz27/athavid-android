@@ -1,4 +1,3 @@
-
 // Sachi Stream — main application
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
@@ -238,12 +237,19 @@ async function convertHeicToJpeg(file) {
 // ── Cloudflare Stream Upload ─────────────────────────────────────────────────
 // Routes video through Cloudflare Stream for HLS adaptive streaming & edge CDN
 // Falls back to direct Base44 upload if Stream is unavailable
+// Account ID is public (it's in every Cloudflare URL), safe to commit.
+// Stream token is secret — loaded from Vercel env var VITE_CF_STREAM_TOKEN.
+// Set in Vercel → sachi-prod → Settings → Environments → Production.
 const CF_ACCOUNT_ID = "a346b1c78fc48549d2de3de99a789a2d";
-const CF_STREAM_TOKEN = "cfut_q99HNXQZVyo68QBa5jIqaj8EXs1jXbkFOa0EQHQg0861d85d";
+const CF_STREAM_TOKEN = import.meta.env.VITE_CF_STREAM_TOKEN || "";
 
 async function uploadToCloudflareStream(file, onProgress) {
   // If credentials not set, fall back to Base44
   // Cloudflare Stream active
+  if (!CF_STREAM_TOKEN) {
+    console.error("[Sachi Stream] VITE_CF_STREAM_TOKEN env var is missing — falling back to R2 upload. Set it in Vercel project settings.");
+    return null;
+  }
   try {
     // Step 1: Get a one-time upload URL from Cloudflare Stream
     onProgress && onProgress(5, "Connecting to Cloudflare Stream...");
