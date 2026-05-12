@@ -2829,12 +2829,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [likersList, setLikersList] = React.useState([]);
   const [likersLoading, setLikersLoading] = React.useState(false);
   const [myLikeId, setMyLikeId] = React.useState(() => likeRecords?.[video.id] || null);
+  // Re-sync myLikeId when likeRecords prop changes (same reason as `liked` above).
+  useEffect(() => {
+    setMyLikeId(likeRecords?.[video.id] || null);
+  }, [likeRecords, video.id]);
   const swipeRef = React.useRef({ startX: 0, startY: 0, swiping: false });
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(() => !!(likedVideoIds?.has(video.id)));
+  // Re-sync `liked` state whenever the parent's likedVideoIds set changes.
+  // This handles the case where the VideoCard mounts before the user's likes
+  // have finished loading from the database. Without this, a user who liked
+  // a video yesterday sees an unfilled heart today and can re-like it.
+  useEffect(() => {
+    setLiked(!!(likedVideoIds?.has(video.id)));
+  }, [likedVideoIds, video.id]);
   // Global mute stored in module-level store — readable by stale closures, no prop-drilling
   const [muted, _setMutedLocal] = useState(() => muteStore.get());
   const setMuted = (val) => {
