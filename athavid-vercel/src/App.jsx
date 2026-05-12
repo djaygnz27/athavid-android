@@ -78,20 +78,9 @@ const likes = {
   },
   async getByUser(user_id) {
     try {
-      console.log("[Sachi DEBUG] likes.getByUser asking for user_id:", user_id);
       const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?user_id=${user_id}&limit=500`);
-      console.log("[Sachi DEBUG] likes.getByUser raw response:", res);
-      const items = Array.isArray(res) ? res : (res?.items || []);
-      console.log("[Sachi DEBUG] likes.getByUser parsed items count:", items.length);
-      if (items.length > 0) {
-        console.log("[Sachi DEBUG] likes.getByUser first item:", items[0]);
-        console.log("[Sachi DEBUG] likes.getByUser all user_ids in results:", [...new Set(items.map(i => i.user_id))]);
-      }
-      return items;
-    } catch (e) {
-      console.error("[Sachi DEBUG] likes.getByUser ERROR:", e);
-      return [];
-    }
+      return Array.isArray(res) ? res : (res?.items || []);
+    } catch { return []; }
   },
 };
 
@@ -6728,36 +6717,6 @@ function App() {
   if (path === "/child-safety") return <ChildSafety />;
   if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
 
-  // ── TEMPORARY DEBUG OVERLAY — remove after diagnosing heart bug ──
-  // Captures [Sachi DEBUG] messages and shows them on screen
-  const [debugMessages, setDebugMessages] = useState([]);
-  const [debugVisible, setDebugVisible] = useState(true);
-  useEffect(() => {
-    const origLog = console.log;
-    const origErr = console.error;
-    console.log = function(...args) {
-      origLog.apply(console, args);
-      const txt = args.map(a => {
-        if (typeof a === 'object') { try { return JSON.stringify(a).slice(0, 300); } catch { return String(a); } }
-        return String(a);
-      }).join(' ');
-      if (txt.includes('[Sachi DEBUG]')) {
-        setDebugMessages(prev => [...prev.slice(-30), txt]);
-      }
-    };
-    console.error = function(...args) {
-      origErr.apply(console, args);
-      const txt = args.map(a => {
-        if (typeof a === 'object') { try { return JSON.stringify(a).slice(0, 300); } catch { return String(a); } }
-        return String(a);
-      }).join(' ');
-      if (txt.includes('[Sachi DEBUG]')) {
-        setDebugMessages(prev => [...prev.slice(-30), 'ERR: ' + txt]);
-      }
-    };
-    return () => { console.log = origLog; console.error = origErr; };
-  }, []);
-
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
 
@@ -6982,17 +6941,14 @@ function App() {
   // Load likes, bookmarks and blocks when user logs in
   useEffect(() => {
     if (!currentUser) { setLikedVideoIds(new Set()); setLikeRecords({}); setBookmarkedIds(new Set()); setBookmarkRecords({}); setBlockedIds(new Set()); return; }
-    console.log("[Sachi DEBUG] Loading likes for currentUser.id:", currentUser.id);
     likes.getByUser(currentUser.id).then(res => {
       const items = Array.isArray(res) ? res : (res?.items || []);
       const ids = new Set(items.map(l => l.video_id));
       const recs = {};
       items.forEach(l => { recs[l.video_id] = l.id; });
-      console.log("[Sachi DEBUG] Setting likedVideoIds with", ids.size, "video IDs");
-      console.log("[Sachi DEBUG] First 5 video_ids in likes:", [...ids].slice(0, 5));
       setLikedVideoIds(ids);
       setLikeRecords(recs);
-    }).catch((e) => { console.error("[Sachi DEBUG] likes load FAILED:", e); });
+    }).catch(() => {});
     bookmarks.getByUser(currentUser.id).then(res => {
       const items = res.items || res || [];
       const ids = new Set(items.map(b => b.video_id));
@@ -7135,34 +7091,6 @@ function App() {
   return (
     <div style={{ background:"#0B0C1A", minHeight:"100svh", maxWidth:480, margin:"0 auto", position:"relative", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       <ToastContainer />
-
-      {/* ── TEMPORARY DEBUG OVERLAY — remove after diagnosing heart bug ── */}
-      {debugVisible && debugMessages.length > 0 && (
-        <div style={{
-          position:"fixed", top:60, left:8, right:8, zIndex:99999,
-          background:"rgba(0,0,0,0.92)", color:"#0f0", fontFamily:"monospace",
-          fontSize:10, padding:8, borderRadius:6, maxHeight:"60vh", overflowY:"auto",
-          border:"1px solid #0f0"
-        }}>
-          <div style={{display:"flex", justifyContent:"space-between", marginBottom:6, color:"#fff", fontWeight:700}}>
-            <span>🔍 DEBUG ({debugMessages.length})</span>
-            <button onClick={() => setDebugVisible(false)}
-              style={{background:"#f00", color:"#fff", border:"none", borderRadius:4, padding:"2px 8px", fontSize:10, cursor:"pointer"}}>
-              Hide
-            </button>
-          </div>
-          {debugMessages.map((m, i) => (
-            <div key={i} style={{marginBottom:4, wordBreak:"break-all", borderBottom:"1px solid #030", paddingBottom:4}}>{m}</div>
-          ))}
-        </div>
-      )}
-      {!debugVisible && (
-        <button onClick={() => setDebugVisible(true)}
-          style={{position:"fixed", top:60, right:8, zIndex:99999, background:"#0f0", color:"#000",
-          border:"none", borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer"}}>
-          🔍 Debug
-        </button>
-      )}
 
       {/* Header — Sachi original */}
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
