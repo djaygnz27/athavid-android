@@ -38,7 +38,6 @@
         justify-content: center;
         gap: 20px;
         z-index: 99999;
-        transition: opacity 0.4s ease;
       }
       #splash img {
         width: 90px;
@@ -69,13 +68,28 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Hide splash once React mounts
-      window.addEventListener('load', function() {
+      // Remove the HTML splash the moment React renders its first content
+      // into #root. This avoids the visible "fade out HTML splash + fade in
+      // theme splash" double transition. The HTML splash stays visible for
+      // exactly as long as React takes to boot — no more, no less.
+      (function() {
+        var root = document.getElementById('root');
+        var splash = document.getElementById('splash');
+        if (!root || !splash) return;
+        var obs = new MutationObserver(function() {
+          if (root.children.length > 0) {
+            splash.remove();
+            obs.disconnect();
+          }
+        });
+        obs.observe(root, { childList: true });
+        // Safety fallback: if React fails to mount in 8 seconds for any reason,
+        // remove the splash anyway so the user doesn't stare at a frozen logo.
         setTimeout(function() {
-          var s = document.getElementById('splash');
-          if (s) { s.style.opacity = '0'; setTimeout(function(){ s.remove(); }, 400); }
-        }, 600);
-      });
+          if (document.body.contains(splash)) splash.remove();
+          obs.disconnect();
+        }, 8000);
+      })();
     </script>
   </body>
 </html>
