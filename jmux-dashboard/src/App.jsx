@@ -632,162 +632,199 @@ function Meetings({ items, onRefresh }) {
 function PhaseCompletion({ phase, data }) {
   const { milestones, engineering, par } = data;
 
+  // Filter milestones for this phase
+  const phaseKey = phase.replace(" ✅","").replace(" 🔵","").replace(" 🟣","");
+  const phaseMilestones = milestones.filter(m => m.phase === phaseKey);
+  const completedMS = phaseMilestones.filter(m => m.status === "Complete");
+  const inProgressMS = phaseMilestones.filter(m => m.status === "In Progress");
+  const notStartedMS = phaseMilestones.filter(m => m.status === "Not Started");
+
   const PHASE_CONFIG = {
-    "Phase 1 ✅": {
-      color: "#22c55e",
-      icon: "🟢",
+    "Phase 1": {
+      color: "#22c55e", icon: "🟢", pct: 87,
       label: "Phase 1 — NMS Integration (31 Sites)",
-      pct: 87,
-      completedItems: [
-        { category: "Network", item: "iLO Corporate Connectivity — Melville & Hicksville", date: "Feb 26, 2026", owner: "PSEG/Lee" },
-        { category: "Network", item: "Layer 3 BGP Network Design & Configurations", date: "Mar 9, 2026", owner: "Lee / B&M" },
-        { category: "Network", item: "BGP Design Approved", date: "Mar 16, 2026", owner: "Lee / B&M" },
-        { category: "Network", item: "Remote Access to NSP — Fiber Terminated at Hicksville", date: "Apr 13, 2026", owner: "PSEG" },
-        { category: "Network", item: "Nokia NSP License Received & DNS Resolved", date: "Apr 13, 2026", owner: "Vic / Nokia" },
-        { category: "Hardware", item: "All 31 Nokia MPLS Routers — Received & Staged", date: "Mar 2026", owner: "Graybar / Nokia" },
-        { category: "Hardware", item: "All 31 Nokia MPLS Routers — Installed at Sites", date: "Apr 2026", owner: "Hawkeye" },
-        { category: "Software", item: "All 31 Phase 1 Nodes Built into NSP GUI", date: "Apr 23, 2026", owner: "Lee, Rahiq, Brianna" },
-        { category: "Engineering", item: "All 31 Phase 1 IFR Packages — Issued & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "All 31 Phase 1 IFC Packages — Issued & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "9 Phase 2 IFR/IFC Packages Sent to Hawkeye", date: "Apr 20, 2026", owner: "B&M" },
+      summary: "All 31 Nokia MPLS routers installed and built into NSP GUI. BGP design complete. RTU serial test in progress at Hicksville. Production RTU cutovers next.",
+      hardCompleted: [
+        { item: "iLO Corporate Connectivity — Melville & Hicksville", date: "Feb 26, 2026", owner: "PSEG / Hawkeye" },
+        { item: "Layer 3 BGP Network Design & Configurations", date: "Mar 9, 2026", owner: "B&M / Lee" },
+        { item: "BGP Design Approved", date: "Mar 16, 2026", owner: "Lee / B&M" },
+        { item: "Nokia NSP License Received & DNS Resolved", date: "Apr 13, 2026", owner: "Vic / Nokia" },
+        { item: "All 31 Nokia MPLS Routers — Received, Staged & Installed", date: "Apr 2026", owner: "Graybar / Hawkeye" },
+        { item: "All 31 Phase 1 IFR Packages — Issued & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "All 31 Phase 1 IFC Packages — Issued & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "9 Phase 2 IFR/IFC Packages Sent to Hawkeye", date: "Apr 20, 2026", owner: "B&M" },
       ],
-      pendingItems: [
-        { item: "Beta cable (RJ45→DB25) from Cables Unlimited", note: "Expected May 13, 2026 — Vinny to install", priority: "🔴 BLOCKING" },
-        { item: "RTU Serial Test — Hicksville QA RTU", note: "Target May 13–14, 2026. John Ng + Lee + George.", priority: "🔴 THIS WEEK" },
-        { item: "RTU Production Pilot — 5K SIOS", note: "First production cutover after test confirmed", priority: "🟡 NEXT" },
-        { item: "RTU Production Cutovers — All Phase 1 Sites", note: "After 5K SIOS pilot successful", priority: "🟡 UPCOMING" },
-        { item: "Develop Production RTU Migration MOP", note: "Ethan to draft. Change mgmt ticket required.", priority: "🟡 UPCOMING" },
-        { item: "Layer 3 BGP Head-Ends — Hicksville & Melville", note: "FEMA, DA radio, 2-way radio, substation security", priority: "🟡 UPCOMING" },
-        { item: "Teleprotect Pilot Circuit (1 circuit)", note: "After RTU production mode. John team, relay techs both ends.", priority: "🟡 UPCOMING" },
-        { item: "DRD Monitoring Circuits (2 — Hicksville & Newbridge)", note: "After RTU pilots", priority: "🟡 UPCOMING" },
-        { item: "Remote Node Verification — All 31 Sites", note: "NSP GUI login + config check", priority: "🟡 UPCOMING" },
-        { item: "Nokia Systems Operator Training", note: "First week June 2026. Trainer TBD (Shelton left Nokia).", priority: "🟡 JUNE" },
-      ]
     },
-    "Phase 2 🔵": {
-      color: "#3b82f6",
-      icon: "🔵",
+    "Phase 2": {
+      color: "#3b82f6", icon: "🔵", pct: 25,
       label: "Phase 2 — Expansion (36 Sites)",
-      pct: 25,
-      completedItems: [
-        { category: "Equipment", item: "Nokia Phase 2 Equipment — Ordered & Delivered", date: "Apr 2026", owner: "Nokia / Graybar" },
-        { category: "Equipment", item: "Phase 2 Nodes Staged in Hawkeye Trailer", date: "Apr 2026", owner: "Hawkeye" },
-        { category: "Engineering", item: "2WB Barrett Outside — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "2ZB EF Barrett PS Inside — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "2R Hewlett — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "2R Hewlett Shelter — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "2H Far Rockaway — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "2KB Cedarhurst — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "7BH Bohemia — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Engineering", item: "7J Sterling — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { category: "Survey", item: "Phase 2 Site Surveys Started — First 9 Sites", date: "Apr 2026", owner: "Hawkeye" },
-        { category: "Planning", item: "Phase 3 Acceleration Decision — Engineering Start Aug 2026", date: "May 12, 2026", owner: "Ethan / Jay" },
+      summary: "Nokia Phase 2 equipment ordered, delivered and staged. 9 of 36 IFR/IFC packages sealed and approved. Hawkeye site surveys in progress. Construction starts Aug 5, 2026.",
+      hardCompleted: [
+        { item: "Nokia Phase 2 Equipment — Ordered & Delivered", date: "Apr 2026", owner: "Nokia / Graybar" },
+        { item: "Phase 2 Nodes Staged in Hawkeye Trailer", date: "Apr 2026", owner: "Hawkeye" },
+        { item: "2WB Barrett Outside — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "2ZB EF Barrett PS Inside — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "2R Hewlett — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "2R Hewlett Shelter — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "2H Far Rockaway — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "2KB Cedarhurst — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "7BH Bohemia — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "7J Sterling — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
+        { item: "Phase 2 Site Surveys Started — First 9 Sites", date: "Apr 2026", owner: "Hawkeye" },
+        { item: "Phase 3 Acceleration Decision — Engineering Start Aug 2026", date: "May 12, 2026", owner: "Ethan / Jay" },
       ],
-      pendingItems: [
-        { item: "Remaining 27/36 IFR Submissions", note: "Final deadline: June 29, 2026", priority: "🔴 CRITICAL" },
-        { item: "Lindenhurst (7Z) IFR — OVERDUE", note: "Due Apr 27, 2026. Still In Review.", priority: "🔴 OVERDUE" },
-        { item: "All 36 IFC Packages", note: "Final deadline: July 13, 2026", priority: "🔴 CRITICAL" },
-        { item: "Barrett Power Plant + Inside Plant IFR Review", note: "Packages received May 11. Jay/Lee to review.", priority: "🟡 THIS WEEK" },
-        { item: "Ruland & Pilgrim IFC Packages", note: "Coming week of May 18", priority: "🟡 NEXT WEEK" },
-        { item: "Hawkeye Site Surveys — All 36 Sites", note: "Vinny starting surveys week of May 18", priority: "🟡 ONGOING" },
-        { item: "Phase 2 Construction Start", note: "Planned Aug 5, 2026", priority: "🟢 ON TRACK" },
-        { item: "PAR Circuit Installation — 6 Sites (Parallel)", note: "Aug–Sep 2026. Parallel to Phase 2 construction.", priority: "🟡 PARALLEL" },
-        { item: "Phase 2 Deployment Complete", note: "Planned Sep 28, 2026", priority: "🟢 ON TRACK" },
-      ]
     },
-    "Phase 3 🟣": {
-      color: "#8b5cf6",
-      icon: "🟣",
+    "Phase 3": {
+      color: "#8b5cf6", icon: "🟣", pct: 5,
       label: "Phase 3 — Nokia Expansion + PAR (31 Sites)",
-      pct: 5,
-      completedItems: [
-        { category: "Planning", item: "Phase 3 Scope Confirmed — 31 Sites", date: "May 2026", owner: "Jay / B&M" },
-        { category: "Planning", item: "Phase 3 Acceleration Strategy Approved", date: "May 12, 2026", owner: "Ethan / Jay" },
-        { category: "PAR", item: "PAR Migration Strategy Defined — Iniven RC-30 Selected", date: "Apr 2026", owner: "Jay / Chakrapani" },
-        { category: "PAR", item: "RC-30 Equipment Ordered (6 units)", date: "Apr 2026", owner: "Chakrapani" },
+      summary: "31-site Nokia MPLS expansion. Engineering accelerated into Phase 2 staging (Aug 2026). PAR circuit migration (6 substations, Iniven RC-30, NERC-CIP mandatory, ~$530K) runs parallel to Phase 2 construction.",
+      hardCompleted: [
+        { item: "Phase 3 Scope Confirmed — 31 Sites", date: "May 2026", owner: "Jay / B&M" },
+        { item: "Phase 3 Acceleration Strategy Approved", date: "May 12, 2026", owner: "Ethan / Jay" },
+        { item: "PAR Migration Strategy Defined — Iniven RC-30 Selected", date: "Apr 2026", owner: "Jay / Chakrapani" },
+        { item: "RC-30 Equipment Ordered (6 units, 8-wk lead)", date: "Apr 2026", owner: "Chakrapani" },
       ],
-      pendingItems: [
-        { item: "Hawkeye Site Surveys — 31 Ph3 Sites", note: "Starting week of May 18, 2026", priority: "🟡 NEXT WEEK" },
-        { item: "Chakrapani PAR Design — All 6 Sites", note: "Not started (5 of 6). Design owners unassigned. CRITICAL.", priority: "🔴 CRITICAL" },
-        { item: "RC-30 PO# Confirmation + Delivery Date", note: "PO# unknown. 8-week lead time. CRITICAL PATH.", priority: "🔴 CRITICAL" },
-        { item: "C37.94 Card — Northport (bundle with Ph2 PO)", note: "Not yet ordered", priority: "🔴 ACTION NEEDED" },
-        { item: "B&M Engineering IFR/IFC — 31 Sites", note: "Starts Aug 2026. ~$900K–$1.29M total.", priority: "🟡 AUG 2026" },
-        { item: "Nokia Equipment Pre-Order — Ph3 Nodes", note: "PO target Q3 2026. Must order to avoid 2028 delays.", priority: "🟡 Q3 2026" },
-        { item: "PAR Installation — Johnny's Relay Team", note: "Aug–Sep 2026 parallel to Phase 2. ~$200K–$495K.", priority: "🟡 AUG 2026" },
-        { item: "Ph3 Nokia Router Construction & Installation", note: "Target 2027 after IFC complete", priority: "🟢 2027" },
-        { item: "Ph3 RTU Production Cutovers", note: "After routers installed and tested", priority: "🟢 2027" },
-        { item: "NERC CIP Verification — All PAR Sites", note: "Post-installation mandatory audit", priority: "🟢 POST-INSTALL" },
-        { item: "JMUX Legacy Decommission — All Sites", note: "Phase 3 completion milestone", priority: "🟢 2027" },
-      ]
-    }
+    },
   };
 
-  const cfg = PHASE_CONFIG[phase];
+  const cfg = PHASE_CONFIG[phaseKey];
   if (!cfg) return null;
 
-  const PRIORITY_ORDER = ["🔴 BLOCKING", "🔴 OVERDUE", "🔴 CRITICAL", "🔴 ACTION NEEDED", "🟡 THIS WEEK", "🟡 NEXT WEEK", "🟡 NEXT", "🟡 ONGOING", "🟡 UPCOMING", "🟡 PARALLEL", "🟡 JUNE", "🟡 AUG 2026", "🟡 Q3 2026", "🟢 ON TRACK", "🟢 AUG 2026", "🟢 2027", "🟢 POST-INSTALL"];
+  // Combine hard-coded completions + live completed milestones (deduplicated by name)
+  const liveCompletedNames = new Set(completedMS.map(m => m.milestone_name));
+  const hardFiltered = cfg.hardCompleted.filter(h => !liveCompletedNames.has(h.item));
 
-  const categories = [...new Set(cfg.completedItems.map(i => i.category))];
+  const statusDot = (status) => {
+    const colors = { "Complete": "#22c55e", "In Progress": "#3b82f6", "Not Started": "#6b7280", "At Risk": "#f59e0b", "Delayed": "#ef4444" };
+    return colors[status] || "#6b7280";
+  };
 
   return (
     <div>
-      {/* Header card */}
+      {/* Header */}
       <div style={{ ...s.card, marginBottom: 24, borderLeft: `4px solid ${cfg.color}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <span style={{ fontSize: 28 }}>{cfg.icon}</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: cfg.color }}>{cfg.label}</div>
-            <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 2 }}>
-              {cfg.completedItems.length} items completed · {cfg.pendingItems.length} items remaining
-            </div>
+            <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 2 }}>{cfg.summary}</div>
           </div>
-          <div style={{ marginLeft: "auto", textAlign: "right" }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: cfg.color }}>{cfg.pct}%</div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontSize: 32, fontWeight: 800, color: cfg.color }}>{cfg.pct}%</div>
             <div style={{ fontSize: 11, color: "#94a3b8" }}>Complete</div>
           </div>
         </div>
         {pb(cfg.pct, cfg.color)}
+        <div style={{ display: "flex", gap: 20, marginTop: 12 }}>
+          <span style={{ fontSize: 12, color: "#22c55e" }}>✅ {completedMS.length + cfg.hardCompleted.length} Completed</span>
+          <span style={{ fontSize: 12, color: "#3b82f6" }}>⏳ {inProgressMS.length} In Progress</span>
+          <span style={{ fontSize: 12, color: "#6b7280" }}>○ {notStartedMS.length} Not Started</span>
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        {/* COMPLETED */}
+
+        {/* LEFT: COMPLETED */}
         <div>
-          <div style={{ ...s.sectionTitle, color: "#22c55e" }}>✅ Completed ({cfg.completedItems.length})</div>
-          {categories.map(cat => (
-            <div key={cat} style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, padding: "4px 10px", background: "#0f172a", borderRadius: 4 }}>{cat}</div>
-              {cfg.completedItems.filter(i => i.category === cat).map((item, idx) => (
-                <div key={idx} style={{ display: "flex", gap: 10, padding: "8px 10px", borderBottom: "1px solid #1e293b", alignItems: "flex-start" }}>
+          <div style={{ ...s.sectionTitle, color: "#22c55e", marginBottom: 16 }}>
+            ✅ Completed Milestones
+          </div>
+
+          {/* Live milestones from DB */}
+          {completedMS.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#22c55e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, padding: "4px 10px", background: "#22c55e11", borderRadius: 4, border: "1px solid #22c55e33" }}>
+                📋 Tracked Milestones
+              </div>
+              {completedMS.map((m, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, padding: "10px 12px", marginBottom: 6, background: "#22c55e0a", borderRadius: 8, border: "1px solid #22c55e22" }}>
+                  <span style={{ color: "#22c55e", fontSize: 16, flexShrink: 0 }}>✓</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600 }}>{m.milestone_name}</div>
+                    <div style={{ display: "flex", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
+                      {m.actual_date && <span style={{ fontSize: 11, color: "#22c55e" }}>📅 {m.actual_date}</span>}
+                      {m.owner && <span style={{ fontSize: 11, color: "#64748b" }}>👤 {m.owner}</span>}
+                      {m.planned_date && m.actual_date && m.actual_date > m.planned_date &&
+                        <span style={{ fontSize: 11, color: "#f59e0b" }}>⚠ Late vs {m.planned_date}</span>
+                      }
+                      {m.planned_date && m.actual_date && m.actual_date <= m.planned_date &&
+                        <span style={{ fontSize: 11, color: "#22c55e" }}>✓ On time</span>
+                      }
+                    </div>
+                    {m.notes && <div style={{ fontSize: 11, color: "#475569", marginTop: 4, fontStyle: "italic" }}>{m.notes.substring(0, 100)}{m.notes.length > 100 ? "…" : ""}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Hard-coded completed items not already in DB */}
+          {hardFiltered.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, padding: "4px 10px", background: "#0f172a", borderRadius: 4 }}>
+                📌 Additional Completed Work
+              </div>
+              {hardFiltered.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, padding: "8px 10px", borderBottom: "1px solid #1e293b", alignItems: "flex-start" }}>
                   <span style={{ color: "#22c55e", fontSize: 14, flexShrink: 0 }}>✓</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 500 }}>{item.item}</div>
+                    <div style={{ fontSize: 13, color: "#cbd5e1", fontWeight: 500 }}>{item.item}</div>
                     <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>{item.date} · {item.owner}</div>
                   </div>
                 </div>
               ))}
             </div>
-          ))}
+          )}
         </div>
 
-        {/* PENDING / IN PROGRESS */}
+        {/* RIGHT: IN PROGRESS + NOT STARTED */}
         <div>
-          <div style={{ ...s.sectionTitle, color: "#f59e0b" }}>⏳ Pending / In Progress ({cfg.pendingItems.length})</div>
-          {cfg.pendingItems.map((item, idx) => {
-            const isRed = item.priority.startsWith("🔴");
-            const isAmber = item.priority.startsWith("🟡");
-            const bg = isRed ? "#ef444411" : isAmber ? "#f59e0b11" : "#22c55e11";
-            const border = isRed ? "#ef444433" : isAmber ? "#f59e0b33" : "#22c55e33";
-            return (
-              <div key={idx} style={{ padding: "8px 12px", marginBottom: 6, borderRadius: 6, background: bg, border: `1px solid ${border}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                  <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 500, flex: 1 }}>{item.item}</div>
-                  <span style={{ fontSize: 10, fontWeight: 700, whiteSpace: "nowrap", color: isRed ? "#ef4444" : isAmber ? "#f59e0b" : "#22c55e" }}>{item.priority}</span>
-                </div>
-                {item.note && <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3 }}>{item.note}</div>}
+          {/* In Progress */}
+          {inProgressMS.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ ...s.sectionTitle, color: "#3b82f6", marginBottom: 12 }}>
+                ⏳ In Progress ({inProgressMS.length})
               </div>
-            );
-          })}
+              {inProgressMS.map((m, i) => (
+                <div key={i} style={{ padding: "10px 12px", marginBottom: 8, borderRadius: 8, background: "#3b82f611", border: "1px solid #3b82f633" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600, flex: 1 }}>{m.milestone_name}</div>
+                    <div style={{ flexShrink: 0, textAlign: "right" }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#3b82f6" }}>{m.percent_complete}%</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
+                    {m.planned_date && <span style={{ fontSize: 11, color: m.planned_date < new Date().toISOString().split("T")[0] ? "#ef4444" : "#f59e0b" }}>📅 Due: {m.planned_date}{m.planned_date < new Date().toISOString().split("T")[0] ? " ⚠ OVERDUE" : ""}</span>}
+                    {m.owner && <span style={{ fontSize: 11, color: "#64748b" }}>👤 {m.owner}</span>}
+                  </div>
+                  <div style={{ marginTop: 6, height: 4, borderRadius: 2, background: "#334155" }}>
+                    <div style={{ height: "100%", width: `${m.percent_complete||0}%`, background: "#3b82f6", borderRadius: 2 }} />
+                  </div>
+                  {m.notes && <div style={{ fontSize: 11, color: "#475569", marginTop: 6, fontStyle: "italic" }}>{m.notes.substring(0, 120)}{m.notes.length > 120 ? "…" : ""}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Not Started */}
+          {notStartedMS.length > 0 && (
+            <div>
+              <div style={{ ...s.sectionTitle, color: "#6b7280", marginBottom: 12 }}>
+                ○ Not Started ({notStartedMS.length})
+              </div>
+              {notStartedMS.map((m, i) => (
+                <div key={i} style={{ padding: "10px 12px", marginBottom: 8, borderRadius: 8, background: "#6b728011", border: "1px solid #6b728033" }}>
+                  <div style={{ fontSize: 13, color: "#94a3b8", fontWeight: 500 }}>{m.milestone_name}</div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
+                    {m.planned_date && <span style={{ fontSize: 11, color: "#475569" }}>📅 Planned: {m.planned_date}</span>}
+                    {m.owner && <span style={{ fontSize: 11, color: "#475569" }}>👤 {m.owner}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );
