@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { request } from "./api.js";
 
+const APP_ID = "69e79122bcc8fb5a04cfb834";
+
 const CONTENT_TYPES = [
   "Short Videos","Podcasts","Live Streams","News & Commentary",
   "Music","Comedy","Sports","Fitness & Wellness","Food & Lifestyle",
@@ -38,7 +40,7 @@ export default function FoundingCreatorPage({ onBack }) {
   });
 
   useEffect(() => {
-    request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/filter`, {})
+    request("POST", `/apps/${APP_ID}/entities/FoundingCreator/filter`, {})
       .then(d => { if (Array.isArray(d)) setCount(d.length); })
       .catch(() => {});
   }, []);
@@ -56,7 +58,7 @@ export default function FoundingCreatorPage({ onBack }) {
     }
     setError(""); setLoading(true);
     try {
-      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator`, { ...form, status:"Pending" });
+      await request("POST", `/apps/${APP_ID}/entities/FoundingCreator`, { ...form, status:"Pending" });
       setStep(3);
     } catch { setError("Something went wrong. Please try again."); }
     finally { setLoading(false); }
