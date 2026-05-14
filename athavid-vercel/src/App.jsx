@@ -9,7 +9,7 @@ import ChildSafety from "./ChildSafety.jsx";
 import FoundingCreatorPage from "./FoundingCreator.jsx";
 import MusicPicker from "./MusicPicker.jsx";
 
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 
 // ── Audio Preloader Cache ─────────────────────────────────────────────────
 // Pre-fetches audio for upcoming videos so playback starts instantly
@@ -1566,7 +1566,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
       // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
-      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
+      let apiUrl = `https://app.base44.com/api/apps/${APP_ID}/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
       if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
       let tracks = [];
       try {
@@ -4647,7 +4647,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`);
       const items = res?.items || res || [];
       const userIds = items.map(r => r.follower_id).filter(Boolean);
-      const usersRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500`);
+      const usersRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500`);
       const allUsers = usersRes?.items || usersRes || [];
       setFollowersList(allUsers.filter(u => userIds.includes(u.id)));
     } catch(e) { setFollowersList([]); }
@@ -4661,7 +4661,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`);
       const items = res?.items || res || [];
       const userIds = items.map(r => r.following_id).filter(Boolean);
-      const usersRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500`);
+      const usersRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500`);
       const allUsers = usersRes?.items || usersRes || [];
       setFollowingList(allUsers.filter(u => userIds.includes(u.id)));
     } catch(e) { setFollowingList([]); }
@@ -4671,7 +4671,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=200`).catch(() => null),
+      request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
       request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
@@ -5230,7 +5230,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       await loadPodcasts();
       await loadMyShows();
       // Send welcome email to host
-      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+      fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastWelcome`, {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           host_email: currentUser?.email || "",
@@ -5411,7 +5411,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     if (endingLive) return;
                     setEndingLive(true);
                     try {
-                      await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      await fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastGoLiveNotify`, {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
                       }).catch(()=>{});
@@ -5463,7 +5463,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     setGoingLive(true);
                     try {
                       // Use podcastGoLiveNotify which handles the DB update via service role
-                      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      const resp = await fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastGoLiveNotify`, {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
                       });
@@ -6019,10 +6019,10 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      // Paginate through ALL users (AthaVidUser + legacy User entity merged)
+      // Paginate through ALL users (SachiUser + legacy User entity merged)
       let allUsersFetched = [], uSkip = 0, uMore = true;
       while (uMore) {
-        const uRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
+        const uRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500&skip=${uSkip}&sort=-created_date`);
         const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
         allUsersFetched = [...allUsersFetched, ...uItems];
         uMore = uRes.has_more === true && uItems.length === 500;
@@ -6116,16 +6116,16 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      // Fetch AthaVidUser (Google auth) - paginated
+      // Fetch SachiUser (Google auth) - paginated
       let athavid = [], skip = 0, hasMore = true;
       while (hasMore) {
-        const res = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
+        const res = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500&skip=${skip}&sort=-created_date`);
         const items = res.items || (Array.isArray(res) ? res : []);
         athavid = [...athavid, ...items];
         hasMore = res.has_more === true && items.length === 500;
         skip += 500;
       }
-      // Only use AthaVidUser — legacy User entity returns 401
+      // Only use SachiUser — legacy User entity returns 401
       const merged = [...athavid].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
       setRegisteredUsers(merged);
     } catch(e) { console.error(e); }
@@ -6940,7 +6940,7 @@ function App() {
         // Try to load avatar from DB first (most up to date)
         try {
           // Use authenticated request (with Bearer token) to fetch user profile
-          const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           // DB takes priority — always use latest CDN avatar_url
@@ -7902,11 +7902,11 @@ function App() {
                   try {
                     const newName = editProfileName.trim();
                     const newBio = editProfileBio.trim();
-                    const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
+                    const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
                     const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
                     const match = users.find(u => u.email === currentUser.email);
                     if (match) {
-                      await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, display_name: newName, full_name: newName, bio: newBio });
+                      await request("PUT", `/apps/${APP_ID}/entities/SachiUser/${match.id}`, { ...match, display_name: newName, full_name: newName, bio: newBio });
                     }
                     setCurrentUser(u => ({ ...u, full_name: newName, display_name: newName, bio: newBio }));
                     setUserBio(newBio);
@@ -7948,10 +7948,10 @@ function App() {
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
             // Match by email (works for Google users)
-            const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
+            const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
             const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
             const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, avatar_url: url });
+            if (match) await request("PUT", `/apps/${APP_ID}/entities/SachiUser/${match.id}`, { ...match, avatar_url: url });
           } catch(e) { console.warn("User entity update failed:", e); }
           try {
             // Fetch all user videos by user_id AND created_by to catch all posts
