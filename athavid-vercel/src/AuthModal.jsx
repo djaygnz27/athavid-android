@@ -17,14 +17,14 @@ const COUNTRIES = [
 import React, { useState, useEffect, useCallback } from "react";
 
 export const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
+const BASE_URL = "https://app.base44.com/api";
 
 // ─── Helper: lookup existing Sachi profile by email ──────────────────────────
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
@@ -155,7 +155,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     try {
       // Check username isn't already taken
       const checkRes = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
         { headers: { "Content-Type": "application/json" } }
       );
       const checkData = await checkRes.json();
@@ -167,7 +167,7 @@ function FinishStep({ googlePayload, onSuccess }) {
       }
 
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
