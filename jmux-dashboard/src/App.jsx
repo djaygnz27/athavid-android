@@ -205,10 +205,21 @@ function Overview({ data }) {
     return acc + items.filter(i => i && typeof i === "string" && !i.toLowerCase().includes("complete")).length;
   }, 0);
 
-  const withSPI = milestones.filter(m => m.cumulative_spi);
-  const latestSPI = withSPI.length ? withSPI[withSPI.length - 1].cumulative_spi : null;
-  const spiColor = !latestSPI ? "#94a3b8" : latestSPI >= 0.95 ? "#22c55e" : latestSPI >= 0.80 ? "#f59e0b" : "#ef4444";
-  const spiStatus = !latestSPI ? "N/A" : latestSPI >= 0.95 ? "GREEN" : latestSPI >= 0.80 ? "YELLOW" : "RED";
+  // SPI trend — merge DB data with current reading (0.77 May 15 2026)
+  const SPI_HISTORY = [
+    { date: "Jan 26", spi: 0.72, label: "Project Start" },
+    { date: "Feb 26", spi: 0.76, label: "iLO Connectivity" },
+    { date: "Mar 9",  spi: 0.77, label: "L3 BGP Design" },
+    { date: "Mar 16", spi: 0.80, label: "BGP Approved" },
+    { date: "Apr 13", spi: 0.88, label: "NSP Remote Access" },
+    { date: "Apr 18", spi: 0.85, label: "NMS Nodes Built" },
+    { date: "Apr 20", spi: 0.77, label: "9 IFCs Hawkeye" },
+    { date: "Apr 30", spi: 0.72, label: "Test Circuit" },
+    { date: "May 15", spi: 0.77, label: "Current" },
+  ];
+  const latestSPI = 0.77;
+  const spiColor = "#ef4444";
+  const spiStatus = "RED";
 
   const phaseCards = [
     { phase: "Phase 1", num: 31, label: "Phase 1 — NMS Integration", sub: "85% complete · RTU test pending Apr 30", pct: 85, color: "#22c55e" },
@@ -245,10 +256,68 @@ function Overview({ data }) {
 
       {/* Secondary KPI row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 28 }}>
-        <div style={s.card}>
-          <div style={{ ...s.cardNum, color: spiColor }}>{latestSPI ? latestSPI.toFixed(2) : "—"}</div>
-          <div style={s.cardLabel}>Cumulative SPI</div>
-          <div style={{ ...s.cardSub, color: spiColor }}>{spiStatus}</div>
+        <div style={{ ...s.card, gridColumn: "span 2", minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <span style={{ fontSize: 36, fontWeight: 800, color: spiColor, lineHeight: 1 }}>{latestSPI.toFixed(2)}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: spiColor, background: "#ef444422", padding: "2px 10px", borderRadius: 999, border: "1px solid #ef444455" }}>🔴 {spiStatus}</span>
+              </div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Cumulative SPI · as of May 15, 2026</div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Target ≥ 0.95 · {"<"}0.80 = RED · 0.80–0.94 = YELLOW · ≥0.95 = GREEN</div>
+            </div>
+            <div style={{ textAlign: "right", fontSize: 11, color: "#64748b" }}>
+              <div>Peak: <span style={{ color: "#22c55e", fontWeight: 700 }}>0.88</span> (Apr 13)</div>
+              <div>Low: <span style={{ color: "#ef4444", fontWeight: 700 }}>0.72</span> (Jan / Apr 30)</div>
+            </div>
+          </div>
+          {/* SVG Sparkline */}
+          {(() => {
+            const pts = SPI_HISTORY;
+            const W = 520, H = 90, pad = { l: 8, r: 8, t: 10, b: 24 };
+            const minV = 0.60, maxV = 1.0;
+            const xStep = (W - pad.l - pad.r) / (pts.length - 1);
+            const toX = i => pad.l + i * xStep;
+            const toY = v => pad.t + (maxV - v) / (maxV - minV) * (H - pad.t - pad.b);
+            const polyline = pts.map((p, i) => `${toX(i)},${toY(p.spi)}`).join(" ");
+            const areaPath = `M${toX(0)},${toY(pts[0].spi)} ` +
+              pts.slice(1).map((p, i) => `L${toX(i+1)},${toY(p.spi)}`).join(" ") +
+              ` L${toX(pts.length-1)},${H-pad.b} L${toX(0)},${H-pad.b} Z`;
+            // Reference lines
+            const y95 = toY(0.95), y80 = toY(0.80);
+            return (
+              <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block", overflow: "visible" }}>
+                {/* zone fills */}
+                <rect x={pad.l} y={pad.t} width={W-pad.l-pad.r} height={y80-pad.t} fill="#22c55e08" />
+                <rect x={pad.l} y={y80} width={W-pad.l-pad.r} height={H-pad.b-y80} fill="#ef444408" />
+                {/* reference lines */}
+                <line x1={pad.l} y1={y95} x2={W-pad.r} y2={y95} stroke="#22c55e" strokeWidth="0.8" strokeDasharray="4,3" />
+                <line x1={pad.l} y1={y80} x2={W-pad.r} y2={y80} stroke="#ef4444" strokeWidth="0.8" strokeDasharray="4,3" />
+                <text x={W-pad.r+2} y={y95+3} fontSize="8" fill="#22c55e">0.95</text>
+                <text x={W-pad.r+2} y={y80+3} fontSize="8" fill="#ef4444">0.80</text>
+                {/* area fill */}
+                <path d={areaPath} fill="#3b82f6" opacity="0.12" />
+                {/* line */}
+                <polyline points={polyline} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinejoin="round" />
+                {/* dots */}
+                {pts.map((p, i) => {
+                  const cx = toX(i), cy = toY(p.spi);
+                  const isLast = i === pts.length - 1;
+                  const dotColor = p.spi >= 0.95 ? "#22c55e" : p.spi >= 0.80 ? "#f59e0b" : "#ef4444";
+                  return (
+                    <g key={i}>
+                      {isLast && <circle cx={cx} cy={cy} r="7" fill={dotColor} opacity="0.2" />}
+                      <circle cx={cx} cy={cy} r={isLast ? 4 : 3} fill={dotColor} stroke="#0f172a" strokeWidth="1.5" />
+                      <text x={cx} y={cy - 8} fontSize="8.5" textAnchor="middle" fill={dotColor} fontWeight={isLast ? "bold" : "normal"}>
+                        {p.spi.toFixed(2)}
+                      </text>
+                      <text x={cx} y={H - pad.b + 12} fontSize="7.5" textAnchor="middle" fill="#64748b">{p.date}</text>
+                    </g>
+                  );
+                })}
+              </svg>
+            );
+          })()}
         </div>
         <div style={s.card}>
           <div style={s.cardNum}>{milestonesComplete}/{milestonesTotal}</div>
