@@ -12,6 +12,9 @@
     },
     "last_updated": {
       "type": "string"
+    },
+    "external_id": {
+      "type": "string"
     }
   },
   "required": [],
