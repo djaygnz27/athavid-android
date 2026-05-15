@@ -597,11 +597,67 @@ async function main() {
       video_id:    remap(r.video_id, maps.SachiVideo || {}),
     }), state, idMaps);
 
-    // ── STEP 11: UserInterest ─────────────────────────────────────────────────
-    await migrateEntity("UserInterest", (r, maps) => ({
-      ...r,
-      user_id: remap(r.user_id, maps.User || {}),
-    }), state, idMaps);
+    // ── STEP 11: UserInterest — idempotent upsert on external_id ────────────
+    await (async () => {
+      const ENTITY = "UserInterest";
+      if (state.completed.includes(ENTITY) && RESUME_FROM_STEP !== ENTITY) {
+        console.log(`  ✅ ${ENTITY} — already completed (resuming from state)`);
+        return;
+      }
+      console.log(`\n📦 Migrating ${ENTITY} (idempotent upsert on external_id)...`);
+      const records = await fetchAll(SOURCE_APP_ID, ENTITY);
+      console.log(`  Found ${records.length} source records`);
+      if (records.length === 0) {
+        console.log(`  ⚠️  No records — skipping`);
+        state.completed.push(ENTITY); saveState(state); return;
+      }
+
+      // Fetch all existing target records — build lookup by external_id
+      const existing = await fetchAll(TARGET_APP_ID, ENTITY);
+      const byExtId = {};
+      for (const e of existing) { if (e.external_id) byExtId[e.external_id] = e; }
+      console.log(`  Target has ${existing.length} existing records (${Object.keys(byExtId).length} with external_id)`);
+
+      let created = 0, updated = 0, skipped = 0, failed = 0;
+
+      for (const r of records) {
+        const oldId = r.id;
+        const payload = {
+          user_id:      remap(r.user_id, idMaps.User || {}),
+          hashtag:      r.hashtag,
+          score:        r.score,
+          last_updated: r.last_updated,
+          external_id:  oldId,
+        };
+
+        try {
+          const hit = byExtId[oldId];
+          if (hit) {
+            // Check for meaningful diff before updating
+            const diff =
+              hit.score        !== payload.score        ||
+              hit.hashtag      !== payload.hashtag      ||
+              hit.last_updated !== payload.last_updated ||
+              hit.user_id      !== payload.user_id;
+            if (diff) {
+              await updateRecord(TARGET_APP_ID, ENTITY, hit.id, payload);
+              updated++;
+            } else {
+              skipped++;
+            }
+          } else {
+            await insertRecord(TARGET_APP_ID, ENTITY, payload);
+            created++;
+          }
+        } catch (e) {
+          console.error(`  ❌ Record ${oldId}: ${e.message}`);
+          failed++;
+        }
+      }
+
+      console.log(`  ✅ Created: ${created} | Updated: ${updated} | Skipped: ${skipped}${failed ? ` | ❌ Failed: ${failed}` : ""}`);
+      state.completed.push(ENTITY); saveState(state);
+    })();
 
     // ── STEP 12: SachiNotification ────────────────────────────────────────────
     await migrateEntity("SachiNotification", (r, maps) => ({
