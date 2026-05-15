@@ -95,14 +95,15 @@ function PhaseModal({ phase, data, onClose }) {
       color: "#3b82f6",
       icon: "🔵",
       subtitle: "Nokia SR-Series Expansion — 36 Sites",
-      pct: Math.round((9/36)*100),
-      summary: "Nokia equipment ordered, delivered and staged in Hawkeye trailer. 9 of 36 sites have sealed & approved IFR/IFC packages on shared drive. Hawkeye is conducting site surveys on those 9 sites to assess cable lengths, connectors, and installation requirements.",
+      pct: Math.round((14/36)*100),
+      summary: "Nokia equipment ordered, delivered and staged in Hawkeye trailer. 16 of 36 IFR packages submitted. 14 of 36 IFC packages issued and sent to Hawkeye for site surveys and construction planning. All Phase 2 site surveys complete.",
       checklist: [
         { done: true,  text: "Nokia Phase 2 Equipment Ordered & Delivered", note: "All equipment staged in Hawkeye trailer" },
-        { done: true,  text: "9/36 IFR & IFC Packages — Sealed & Approved", note: "On shared drive. Hawkeye conducting site surveys." },
-        { done: false, text: "Remaining 27/36 IFR Submissions", note: `Final IFR deadline: June 29, 2026` },
+        { done: true,  text: "16/36 IFR Packages Submitted — ✅ Done", note: "16 of 36 IFRs submitted to date. As of May 15, 2026." },
+        { done: true,  text: "14/36 IFC Packages Issued ✅", note: "14 of 36 IFCs issued as of May 15, 2026. Sent to Hawkeye for site survey and construction planning." },
+        { done: false, text: "Remaining 20/36 IFR Submissions", note: `20 IFRs still pending. Final IFR deadline: June 29, 2026` },
         { done: false, text: "All 36 IFC Packages Issued", note: "Final IFC deadline: July 13, 2026" },
-        { done: false, text: "Hawkeye Site Surveys Complete — All 36 Sites", note: "Currently in progress for first 9 sites" },
+        { done: true,  text: "All Phase 2 Site Surveys Complete — 36/36 ✅", note: "All 36 Phase 2 site surveys complete. 14 IFC packages issued to Hawkeye." },
         { done: false, text: "Phase 2 Construction Start", note: "Planned Aug 5, 2026" },
         { done: false, text: "Phase 2 Deployment Complete", note: "Planned Sep 28, 2026" },
       ]
@@ -211,7 +212,7 @@ function Overview({ data }) {
 
   const phaseCards = [
     { phase: "Phase 1", num: 31, label: "Phase 1 — NMS Integration", sub: "85% complete · RTU test pending Apr 30", pct: 85, color: "#22c55e" },
-    { phase: "Phase 2", num: 36, label: "Phase 2 — Expansion", sub: `9/36 IFR & IFC issued · Equipment in Hawkeye trailer`, pct: Math.round((9/36)*100), color: "#3b82f6" },
+    { phase: "Phase 2", num: 36, label: "Phase 2 — Expansion", sub: `16/36 IFR done · 14/36 IFC issued · Equipment staged`, pct: Math.round((14/36)*100), color: "#3b82f6" },
     { phase: "Phase 3", num: 31, label: "Phase 3 — Nokia Expansion + PAR", sub: "31 sites · IFR/IFC starting Aug 2026 · PAR parallel", pct: 5, color: "#8b5cf6" },
     { phase: "Decommission", num: "—", label: "Decommission", sub: "Legacy JMUX removal · Post-cutover", pct: 0, color: "#f59e0b" },
   ];
@@ -360,8 +361,34 @@ function Milestones({ items, onRefresh }) {
 function Engineering({ items, onRefresh }) {
   const [phFilter, setPhFilter] = useState("All");
   const filtered = phFilter === "All" ? items : items.filter(e => e.phase === phFilter);
+
+  // IFR/IFC summary counts — Phase 2 actuals from presentation May 15, 2026
+  const ph1Total = items.filter(e => e.phase === "Phase 1").length;
+  const ph1IFR   = items.filter(e => e.phase === "Phase 1" && e.ifr_status === "IFR Issued").length;
+  const ph1IFC   = items.filter(e => e.phase === "Phase 1" && e.ifc_status === "IFC Issued").length;
+  const ph2Total = 36;
+  const ph2IFR   = 16;  // confirmed May 15, 2026
+  const ph2IFC   = 14;  // confirmed May 15, 2026
+
   return (
     <div>
+      {/* IFR/IFC summary strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 16 }}>
+        {[
+          { label: "Phase 1 IFR Complete", val: `${ph1IFR} / ${ph1Total}`, color: ph1IFR===ph1Total?"#22c55e":"#f59e0b", note: ph1IFR===ph1Total?"All done ✅":"In progress" },
+          { label: "Phase 1 IFC Complete", val: `${ph1IFC} / ${ph1Total}`, color: ph1IFC===ph1Total?"#22c55e":"#f59e0b", note: ph1IFC===ph1Total?"All done ✅":"In progress" },
+          { label: "Phase 2 IFR Submitted", val: `${ph2IFR} / ${ph2Total}`, color: "#3b82f6", note: `${ph2Total-ph2IFR} pending · due Jun 29` },
+          { label: "Phase 2 IFC Issued",    val: `${ph2IFC} / ${ph2Total}`, color: "#10b981", note: `${ph2Total-ph2IFC} pending · due Jul 13` },
+          { label: "Ph2 Site Surveys", val: "36 / 36", color: "#22c55e", note: "All complete ✅" },
+          { label: "Construction Start", val: "Aug 5, 2026", color: "#f59e0b", note: "Phase 2 target" },
+        ].map((kpi, i) => (
+          <div key={i} style={{ background: "#1e293b", borderRadius: 8, padding: "10px 14px", border: "1px solid #334155" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: kpi.color }}>{kpi.val}</div>
+            <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{kpi.label}</div>
+            <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>{kpi.note}</div>
+          </div>
+        ))}
+      </div>
       <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
         {["All", "Phase 1", "Phase 2"].map(p => (
           <button key={p} style={{ ...s.tab(phFilter === p), fontSize: 12 }} onClick={() => setPhFilter(p)}>{p}</button>
@@ -760,25 +787,35 @@ function PhaseCompletion({ phase, data }) {
         { item: "All 31 Nokia MPLS Routers — Received, Staged & Installed", date: "Apr 2026", owner: "Graybar / Hawkeye" },
         { item: "All 31 Phase 1 IFR Packages — Issued & Approved", date: "Apr 2026", owner: "B&M" },
         { item: "All 31 Phase 1 IFC Packages — Issued & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "9 Phase 2 IFR/IFC Packages Sent to Hawkeye", date: "Apr 20, 2026", owner: "B&M" },
+        { item: "16 Phase 2 IFR Packages Submitted; 14 IFCs Issued", date: "Apr 20, 2026", owner: "B&M" },
       ],
     },
     "Phase 2": {
       color: "#3b82f6", icon: "🔵", pct: 25,
       label: "Phase 2 — Expansion (36 Sites)",
-      summary: "Nokia Phase 2 equipment ordered, delivered and staged. 9 of 36 IFR/IFC packages sealed and approved. Hawkeye site surveys in progress. Construction starts Aug 5, 2026.",
+      summary: "Nokia Phase 2 equipment ordered, delivered and staged. 16 of 36 IFR packages submitted. 14 of 36 IFC packages issued. All Phase 2 site surveys complete. Construction starts Aug 5, 2026.",
       hardCompleted: [
         { item: "Nokia Phase 2 Equipment — Ordered & Delivered", date: "Apr 2026", owner: "Nokia / Graybar" },
         { item: "Phase 2 Nodes Staged in Hawkeye Trailer", date: "Apr 2026", owner: "Hawkeye" },
-        { item: "2WB Barrett Outside — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "2ZB EF Barrett PS Inside — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "2R Hewlett — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "2R Hewlett Shelter — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "2H Far Rockaway — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "2KB Cedarhurst — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "7BH Bohemia — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "7J Sterling — IFR & IFC Sealed & Approved", date: "Apr 2026", owner: "B&M" },
-        { item: "Phase 2 Site Surveys Started — First 9 Sites", date: "Apr 2026", owner: "Hawkeye" },
+        { item: "All Phase 2 Site Surveys Complete — 36/36 ✅", date: "Apr 2026", owner: "Hawkeye" },
+        // ── 14 sites: IFR + IFC both done ──
+        { item: "6S Kings Hwy — IFR ✅  IFC ✅", date: "Mar 31, 2026", owner: "B&M" },
+        { item: "2K Valley Stream — IFR ✅  IFC ✅", date: "Mar 9, 2026", owner: "B&M" },
+        { item: "2H Far Rockaway — IFR ✅  IFC ✅", date: "Mar 9, 2026", owner: "B&M" },
+        { item: "2KB Cedarhurst — IFR ✅  IFC ✅", date: "Mar 9, 2026", owner: "B&M" },
+        { item: "7W Berry St — IFR ✅  IFC ✅", date: "Apr 21, 2026", owner: "B&M" },
+        { item: "3J Whiteside — IFR ✅  IFC ✅", date: "Apr 21, 2026", owner: "B&M" },
+        { item: "2RB Green Acres — IFR ✅  IFC ✅", date: "Apr 21, 2026", owner: "B&M" },
+        { item: "7BH Bohemia — IFR ✅  IFC ✅", date: "Apr 21, 2026", owner: "B&M" },
+        { item: "7J Sterling — IFR ✅  IFC ✅", date: "Apr 21, 2026", owner: "B&M" },
+        { item: "2R Hewlett — IFR ✅  IFC ✅", date: "May 11, 2026", owner: "B&M" },
+        { item: "2R Hewlett Shelter — IFR ✅  IFC ✅", date: "May 11, 2026", owner: "B&M" },
+        { item: "4M Baldwin — IFR ✅  IFC ✅", date: "May 11, 2026", owner: "B&M" },
+        { item: "4M1 Baldwin Shelter — IFR ✅  IFC ✅", date: "May 11, 2026", owner: "B&M" },
+        { item: "7Z Lindenhurst — IFR ✅  IFC ✅", date: "May 11, 2026", owner: "B&M" },
+        // ── 2 additional IFR-only sites (IFC pending) ──
+        { item: "6H Hauppauge — IFR ✅  (IFC due May 18)", date: "Apr 20, 2026", owner: "B&M" },
+        { item: "6H Hauppauge Tower — IFR ✅  (IFC due May 18)", date: "Apr 20, 2026", owner: "B&M" },
         { item: "Phase 3 Acceleration Decision — Engineering Start Aug 2026", date: "May 12, 2026", owner: "Ethan / Jay" },
       ],
     },
