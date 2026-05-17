@@ -1,0 +1,35 @@
+<svg width="800" height="340" viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="340" fill="#000000"/>
+
+  <!-- SACHi using styled text with tspan for individual letter colors -->
+  <text y="210" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-size="180" font-weight="900" font-style="normal">
+    <tspan fill="#7C3AED">S</tspan>
+    <tspan fill="#7C3AED">A</tspan>
+    <tspan fill="#7C3AED">C</tspan>
+    <tspan fill="#7C3AED">H</tspan>
+    <tspan fill="#FBBF24">i</tspan>
+  </text>
+
+  <!-- S-wave crossbar on A in SACHi -->
+  <!-- A starts around x=118, crossbar at y~140, spans x=138 to x=228 -->
+  <path d="M 138,138 C 153,118 168,118 183,138 C 198,158 213,158 228,138"
+        stroke="#FBBF24" stroke-width="11" fill="none" stroke-linecap="round"/>
+
+  <!-- STREAM -->
+  <text y="300" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-size="75" font-weight="900" letter-spacing="8" fill="#FFFFFF">
+    <tspan>S</tspan>
+    <tspan>T</tspan>
+    <tspan>R</tspan>
+    <tspan>E</tspan>
+    <tspan>A</tspan>
+    <tspan>M</tspan>
+  </text>
+
+  <!-- S-wave crossbar on A in STREAM -->
+  <!-- A in STREAM is the 5th letter, approx x=500, crossbar at y~265 -->
+  <path d="M 502,263 C 511,251 520,251 529,263 C 538,275 547,275 556,263"
+        stroke="#FBBF24" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+  <!-- EST. 2026 -->
+  <text x="310" y="330" font-family="Arial, sans-serif" font-size="18" fill="#666666" letter-spacing="4">EST. 2026</text>
+</svg>
