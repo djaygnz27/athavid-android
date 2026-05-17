@@ -1,0 +1,33 @@
+<svg width="700" height="320" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" style="background:#000000">
+
+  <!-- Background -->
+  <rect width="700" height="320" fill="#000000"/>
+
+  <!-- S in purple -->
+  <text x="30" y="175" font-family="Arial Black, sans-serif" font-size="155" font-weight="900" fill="#7C3AED">S</text>
+
+  <!-- A built manually in purple with S-curve crossbar -->
+  <!-- Left leg -->
+  <polygon points="152,18 178,18 238,178 212,178" fill="#7C3AED"/>
+  <!-- Right leg -->
+  <polygon points="268,18 294,18 238,178 212,178" fill="#7C3AED"/>
+  <!-- S-curve crossbar in gold ONLY - no fill triangle -->
+  <path d="M172,112 C185,94 200,94 218,112 C236,130 251,130 264,112"
+        stroke="#FBBF24" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- C in purple -->
+  <text x="278" y="175" font-family="Arial Black, sans-serif" font-size="155" font-weight="900" fill="#7C3AED">C</text>
+
+  <!-- H in purple -->
+  <text x="378" y="175" font-family="Arial Black, sans-serif" font-size="155" font-weight="900" fill="#7C3AED">H</text>
+
+  <!-- lowercase i in yellow -->
+  <text x="495" y="175" font-family="Arial Black, sans-serif" font-size="155" font-weight="900" fill="#FBBF24">i</text>
+
+  <!-- STREAM in white -->
+  <text x="72" y="255" font-family="Arial Black, sans-serif" font-size="68" font-weight="900" fill="#FFFFFF" letter-spacing="6">STREAM</text>
+
+  <!-- EST. 2026 -->
+  <text x="268" y="292" font-family="Arial, sans-serif" font-size="20" fill="#777777" letter-spacing="4">EST. 2026</text>
+
+</svg>

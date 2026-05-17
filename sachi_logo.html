@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+</style>
+</head>
+<body>
+<svg width="600" height="300" viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- SACHI line -->
+  <!-- S -->
+  <text x="40" y="160" font-family="Arial Black, Impact, sans-serif" font-size="140" font-weight="900" fill="#7C3AED" letter-spacing="-2">S</text>
+
+  <!-- A with custom S-curve crossbar -->
+  <!-- A shape in purple, but we'll draw the A manually with SVG paths -->
+  <!-- Left leg of A -->
+  <polygon points="138,20 158,20 210,165 188,165" fill="#7C3AED"/>
+  <!-- Right leg of A -->
+  <polygon points="238,20 258,20 208,165 186,165" fill="#7C3AED"/>
+  <!-- S-curve crossbar in gold -->
+  <path d="M158,105 C168,90 178,90 193,105 C208,120 218,120 228,105" 
+        stroke="#FBBF24" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+  <!-- C -->
+  <text x="248" y="160" font-family="Arial Black, Impact, sans-serif" font-size="140" font-weight="900" fill="#7C3AED">C</text>
+
+  <!-- H -->
+  <text x="340" y="160" font-family="Arial Black, Impact, sans-serif" font-size="140" font-weight="900" fill="#7C3AED">H</text>
+
+  <!-- lowercase i in yellow -->
+  <text x="448" y="160" font-family="Arial Black, Impact, sans-serif" font-size="140" font-weight="900" fill="#FBBF24">i</text>
+
+  <!-- STREAM in white below -->
+  <text x="90" y="230" font-family="Arial Black, Impact, sans-serif" font-size="62" font-weight="900" fill="white" letter-spacing="8">STREAM</text>
+
+  <!-- EST 2026 -->
+  <text x="240" y="265" font-family="Arial, sans-serif" font-size="18" fill="#888" letter-spacing="3">EST. 2026</text>
+
+</svg>
+</body>
+</html>
