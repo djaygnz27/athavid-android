@@ -38,7 +38,7 @@ export default function FoundingCreatorPage({ onBack }) {
   });
 
   useEffect(() => {
-    request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/filter`, {})
+    request("POST", `/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator/filter`, {})
       .then(d => { if (Array.isArray(d)) setCount(d.length); })
       .catch(() => {});
   }, []);
@@ -56,7 +56,7 @@ export default function FoundingCreatorPage({ onBack }) {
     }
     setError(""); setLoading(true);
     try {
-      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator`, { ...form, status:"Pending" });
+      await request("POST", `/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator`, { ...form, status:"Pending" });
       setStep(3);
     } catch { setError("Something went wrong. Please try again."); }
     finally { setLoading(false); }
