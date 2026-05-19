@@ -177,7 +177,13 @@ function formatCount(n) {
   return String(n);
 }
 
-const resolveMediaUrl = (url, isVideo) => {
+const resolveMediaUrl = (urlOrVideo, isVideo) => {
+  // Accept either a URL string or a video object. If a video object is passed,
+  // read media_url first (NEW Sachi schema) then fall back to video_url (OLD Daminie schema).
+  // This makes the app tolerant of whichever Base44 app is the current backend.
+  const url = (urlOrVideo && typeof urlOrVideo === "object")
+    ? (urlOrVideo.media_url || urlOrVideo.video_url)
+    : urlOrVideo;
   if (!url) return url;
   // Cloudflare Stream HLS URLs — pass through directly, no proxy needed
   if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.endsWith('.m3u8')) {
@@ -798,6 +804,8 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.display_name || currentUser.full_name || currentUser.username || "",
         avatar_url: currentUser.avatar_url || "",
         video_url: file_url,
+        media_url: file_url,
+        media_type: "video",
         thumbnail_url: thumbUrl,
         caption: caption || "🔴 Live recording",
         hashtags: ["live"],
@@ -1435,6 +1443,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: urls[0],
+        media_url: urls[0],
+        media_type: "photo",
         thumbnail_url: urls[0],
         photo_urls: urls,
         is_photo: true,
@@ -1521,6 +1531,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url, thumbnail_url,
+        media_url: video_url,
+        media_type: "video",
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
@@ -1761,6 +1773,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url, thumbnail_url: img_url,
+        media_url: img_url,
+        media_type: "photo",
         photo_urls: [img_url], is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
@@ -2910,12 +2924,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const uiTimerRef = useRef(null);
 
   // Derived from video prop — must be declared before useEffect that references it
-  // Detect photos — either by is_photo flag OR by video_url being an image
-  const videoUrlIsImage = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+  // Detect photos — either by is_photo flag OR by URL being an image.
+  // Read media_url first (NEW Sachi) with video_url fallback (OLD Daminie) — see resolveMediaUrl.
+  const mediaUrl = video.media_url || video.video_url;
+  const videoUrlIsImage = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(mediaUrl || "");
   const photoUrls = (video.is_photo || videoUrlIsImage) && video.photo_urls
     ? safeParsePhotoUrls(video.photo_urls)
-    : (videoUrlIsImage && video.video_url)
-    ? [video.video_url]
+    : (videoUrlIsImage && mediaUrl)
+    ? [mediaUrl]
     : null;
 
   // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
@@ -3296,7 +3312,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           )}
         </div>
       ) : (() => {
-        const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        const resolvedVideoUrl = resolveMediaUrl(video.media_url || video.video_url);
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
           <img src={resolvedVideoUrl}
@@ -3341,9 +3357,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {!photoUrls && (
           <div
             onClick={tap(() => {
-              const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+              const resolvedVideoUrl = resolveMediaUrl(video.media_url || video.video_url);
               const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
-              if (isImg || !(video.video_url)) {
+              if (isImg || !(video.media_url || video.video_url)) {
                 setShowUI(v => !v);
                 if (!showUI) setShowFullCaption(true);
               } else {
@@ -4557,7 +4573,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
       {/* Video */}
-      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.video_url)} autoPlay playsInline loop muted={muted}
+      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.media_url || v.video_url)} autoPlay playsInline loop muted={muted}
         onClick={() => { if(videoRef.current.paused) videoRef.current.play(); else videoRef.current.pause(); }}
         style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
 
@@ -4856,7 +4872,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                         {v.thumbnail_url ? (
                           <img src={resolveMediaUrl(v.thumbnail_url)} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         ) : (
-                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         )}
                         {/* Play icon overlay */}
                         <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -7526,7 +7542,7 @@ function App() {
                           onClick={() => { setActiveHashtag(null); setActiveTab("feed"); }}>
                           {v.thumbnail_url
                             ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                            : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                            : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                           }
                           <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)" }} />
                           <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
@@ -7555,7 +7571,7 @@ function App() {
                           onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
                           {v.thumbnail_url
                             ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                            : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                            : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                           }
                           <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)" }} />
                           <div style={{ position:"absolute", bottom:4, left:6, right:6, fontSize:10, color:"#fff" }}>@{v.username}</div>
@@ -7601,7 +7617,7 @@ function App() {
                         onClick={() => { setActiveTab("feed"); }}>
                         {v.thumbnail_url
                           ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                          : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         }
                         <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)" }} />
                         <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
@@ -7736,7 +7752,7 @@ function App() {
                   ).map(v => (
                     <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setShowSearch(false); setSearchQuery(""); }}>
-                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                     </div>
                   ))}
