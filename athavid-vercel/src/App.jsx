@@ -506,22 +506,22 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           ? trimmed
           : `@${replyingTo.username} ${trimmed}`;
         const savedReply = await request("POST", `/apps/${APP_ID}/entities/SachiComment`, {
-          video_id: video.id, username,
+          video_id: video.id, user_id: currentUser.id, username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          comment_text: replyText,
+          content: replyText,
           parent_id: replyingTo.id,
           likes_count: 0,
         }).catch(() => null);
-        const reply = savedReply || { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: replyText, thumbsUp:0, hearts:0, thumbsDown:0 };
+        const reply = savedReply || { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, content: replyText, thumbsUp:0, hearts:0, thumbsDown:0 };
         setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
         setText("");
       } else {
         const c = await comments.create({
-          video_id: video.id, username,
+          video_id: video.id, user_id: currentUser.id, username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          comment_text: text.trim(), likes_count: 0,
+          content: text.trim(), likes_count: 0,
         });
         const newCount = list.length + 1;
         setList(prev => [...prev, c]);
@@ -581,7 +581,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <img src={c.avatar_url} style={{ width: isReply?28:36, height: isReply?28:36, borderRadius:"50%", border:`2px solid rgba(108,99,255,${isReply?0.2:0.3})`, flexShrink:0 }} />
       <div style={{ flex:1 }}>
         <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
-        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
+        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.content}</div>
         <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <button onClick={() => reactToComment(c.id, "thumbsUp", isReply, parentId)}
             style={{ background: myR.thumbsUp ? "rgba(107,255,154,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.thumbsUp || c.thumbsUp) ? "#6bff9a" : "#666", fontSize:12, padding: myR.thumbsUp ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.thumbsUp ? 700 : 400 }}>
