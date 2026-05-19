@@ -24,7 +24,7 @@ const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
@@ -155,7 +155,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     try {
       // Check username isn't already taken
       const checkRes = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
         { headers: { "Content-Type": "application/json" } }
       );
       const checkData = await checkRes.json();
@@ -167,7 +167,7 @@ function FinishStep({ googlePayload, onSuccess }) {
       }
 
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
