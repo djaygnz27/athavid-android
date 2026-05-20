@@ -4619,36 +4619,43 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
 
   const v = vids[idx];
 
-  // Swap src directly — NO key remount — so videoRef stays stable
+  // When idx changes: load new src, wait for canplay, then play
   React.useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
-    const newSrc = resolveMediaUrl(v.media_url || v.video_url);
-    if (vid.src !== newSrc) {
-      vid.src = newSrc;
+    const src = resolveMediaUrl(v.media_url || v.video_url);
+
+    const doPlay = () => {
+      if (userPaused.current) return;
+      vid.muted = true; // muted-first = browser always allows it
+      vid.play().then(() => {
+        // Successfully playing — unmute immediately if user hasn't toggled mute
+        vid.muted = !!muted;
+        hasInteracted.current = true;
+        setIsPlaying(true);
+        setPaused(false);
+      }).catch(() => {
+        // Blocked even muted (rare) — show play button
+        setIsPlaying(false);
+        setPaused(true);
+      });
+    };
+
+    // If same src already loaded — just seek and play directly
+    if (vid.currentSrc && vid.currentSrc.includes(src.split('/').pop())) {
+      vid.currentTime = 0;
+      doPlay();
+    } else {
+      // New src — set, load, then play once ready
+      vid.src = src;
       vid.load();
+      vid.oncanplay = () => {
+        vid.oncanplay = null;
+        doPlay();
+      };
     }
-    vid.currentTime = 0;
-    if (!userPaused.current) {
-      // Always try muted first — guaranteed to work; then unmute if allowed
-      vid.muted = true;
-      const playPromise = vid.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          // Playback started — now unmute if user hasn't toggled mute
-          if (!muted) {
-            vid.muted = false;
-          }
-          hasInteracted.current = true;
-          setIsPlaying(true);
-          setPaused(false);
-        }).catch(() => {
-          // Still blocked — stay muted and playing
-          setIsPlaying(true);
-          setPaused(false);
-        });
-      }
-    }
+
+    return () => { vid.oncanplay = null; };
   }, [idx]); // eslint-disable-line
 
   const goNext = () => { if (idx < vids.length - 1) setIdx(i => i + 1); };
