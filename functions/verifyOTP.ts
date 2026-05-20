@@ -1,4 +1,8 @@
-Deno.serve(async (req) => {
+import base44 from "npm:@base44/sdk";
+
+const app = base44.init({ appId: "69e79122bcc8fb5a04cfb834" });
+
+export default async function handler(req: Request): Promise<Response> {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -9,81 +13,44 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-  const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-
   try {
-    const body = await req.json().catch(() => ({}));
-    const { email, code } = body;
-
+    const { email, code } = await req.json();
     if (!email || !code) {
-      return Response.json({ error: "Missing email or code" }, { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Email and code required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    // Find matching OTP record
+    const records = await app.asServiceRole.entities.PasswordReset.filter({ email, code });
 
-    // Fetch OTP record
-    const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/PasswordReset?email=${encodeURIComponent(normalizedEmail)}&limit=5`,
-      { headers: { "Content-Type": "application/json" } }
-    );
-    const data = await res.json();
-    const items = Array.isArray(data) ? data : (data?.items || []);
-    const record = items.find((r: any) => r.email === normalizedEmail);
-
-    if (!record) {
-      return Response.json({ error: "No code found. Please request a new one." }, { status: 400, headers: corsHeaders });
+    if (!records || records.length === 0) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid code" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
+
+    const record = records[0];
 
     // Check expiry
-    if (new Date() > new Date(record.expiry)) {
-      return Response.json({ error: "Code has expired. Please request a new one." }, { status: 400, headers: corsHeaders });
+    if (new Date(record.expiry) < new Date()) {
+      await app.asServiceRole.entities.PasswordReset.delete(record.id);
+      return new Response(JSON.stringify({ success: false, error: "Code expired" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    // Check code
-    if (record.code !== code.trim()) {
-      return Response.json({ error: "Incorrect code. Please try again." }, { status: 400, headers: corsHeaders });
-    }
+    // Valid — delete used code
+    await app.asServiceRole.entities.PasswordReset.delete(record.id);
 
-    // Delete the used OTP
-    await fetch(`${BASE_URL}/apps/${APP_ID}/entities/PasswordReset/${record.id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" }
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
-
-    // Check if user already exists
-    const userRes = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(normalizedEmail)}&limit=5`,
-      { headers: { "Content-Type": "application/json" } }
-    );
-    const userData = await userRes.json();
-    const userItems = Array.isArray(userData) ? userData : (userData?.items || []);
-    const existingUser = userItems.find((u: any) => u.email === normalizedEmail);
-
-    if (existingUser) {
-      return Response.json({
-        success: true,
-        isNewUser: false,
-        user: {
-          id: existingUser.id,
-          email: existingUser.email,
-          full_name: existingUser.display_name || existingUser.email,
-          avatar_url: existingUser.avatar_url || "",
-          username: existingUser.username || existingUser.email.split("@")[0],
-          _sachiProfileId: existingUser.id,
-        }
-      }, { headers: corsHeaders });
-    }
-
-    // New user — needs profile setup
-    return Response.json({
-      success: true,
-      isNewUser: true,
-      email: normalizedEmail,
-    }, { headers: corsHeaders });
 
   } catch (e) {
     console.error("verifyOTP error:", e);
-    return Response.json({ error: "Server error", detail: String(e) }, { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
-});
+}
