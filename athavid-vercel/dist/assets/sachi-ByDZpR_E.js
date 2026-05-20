@@ -364,7 +364,7 @@ var scheduler_production_min = {};
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-(function(exports$1) {
+(function(exports) {
   function f2(a, b) {
     var c = a.length;
     a.push(b);
@@ -397,12 +397,12 @@ var scheduler_production_min = {};
   }
   if ("object" === typeof performance && "function" === typeof performance.now) {
     var l2 = performance;
-    exports$1.unstable_now = function() {
+    exports.unstable_now = function() {
       return l2.now();
     };
   } else {
     var p2 = Date, q2 = p2.now();
-    exports$1.unstable_now = function() {
+    exports.unstable_now = function() {
       return p2.now() - q2;
     };
   }
@@ -438,7 +438,7 @@ var scheduler_production_min = {};
           v2.callback = null;
           y2 = v2.priorityLevel;
           var e = d(v2.expirationTime <= b);
-          b = exports$1.unstable_now();
+          b = exports.unstable_now();
           "function" === typeof e ? v2.callback = e : v2 === h(r2) && k2(r2);
           G2(b);
         } else k2(r2);
@@ -457,11 +457,11 @@ var scheduler_production_min = {};
   }
   var N2 = false, O2 = null, L2 = -1, P2 = 5, Q2 = -1;
   function M2() {
-    return exports$1.unstable_now() - Q2 < P2 ? false : true;
+    return exports.unstable_now() - Q2 < P2 ? false : true;
   }
   function R2() {
     if (null !== O2) {
-      var a = exports$1.unstable_now();
+      var a = exports.unstable_now();
       Q2 = a;
       var b = true;
       try {
@@ -490,31 +490,31 @@ var scheduler_production_min = {};
   }
   function K2(a, b) {
     L2 = D2(function() {
-      a(exports$1.unstable_now());
+      a(exports.unstable_now());
     }, b);
   }
-  exports$1.unstable_IdlePriority = 5;
-  exports$1.unstable_ImmediatePriority = 1;
-  exports$1.unstable_LowPriority = 4;
-  exports$1.unstable_NormalPriority = 3;
-  exports$1.unstable_Profiling = null;
-  exports$1.unstable_UserBlockingPriority = 2;
-  exports$1.unstable_cancelCallback = function(a) {
+  exports.unstable_IdlePriority = 5;
+  exports.unstable_ImmediatePriority = 1;
+  exports.unstable_LowPriority = 4;
+  exports.unstable_NormalPriority = 3;
+  exports.unstable_Profiling = null;
+  exports.unstable_UserBlockingPriority = 2;
+  exports.unstable_cancelCallback = function(a) {
     a.callback = null;
   };
-  exports$1.unstable_continueExecution = function() {
+  exports.unstable_continueExecution = function() {
     A2 || z2 || (A2 = true, I2(J2));
   };
-  exports$1.unstable_forceFrameRate = function(a) {
+  exports.unstable_forceFrameRate = function(a) {
     0 > a || 125 < a ? console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported") : P2 = 0 < a ? Math.floor(1e3 / a) : 5;
   };
-  exports$1.unstable_getCurrentPriorityLevel = function() {
+  exports.unstable_getCurrentPriorityLevel = function() {
     return y2;
   };
-  exports$1.unstable_getFirstCallbackNode = function() {
+  exports.unstable_getFirstCallbackNode = function() {
     return h(r2);
   };
-  exports$1.unstable_next = function(a) {
+  exports.unstable_next = function(a) {
     switch (y2) {
       case 1:
       case 2:
@@ -532,11 +532,11 @@ var scheduler_production_min = {};
       y2 = c;
     }
   };
-  exports$1.unstable_pauseExecution = function() {
+  exports.unstable_pauseExecution = function() {
   };
-  exports$1.unstable_requestPaint = function() {
+  exports.unstable_requestPaint = function() {
   };
-  exports$1.unstable_runWithPriority = function(a, b) {
+  exports.unstable_runWithPriority = function(a, b) {
     switch (a) {
       case 1:
       case 2:
@@ -555,8 +555,8 @@ var scheduler_production_min = {};
       y2 = c;
     }
   };
-  exports$1.unstable_scheduleCallback = function(a, b, c) {
-    var d = exports$1.unstable_now();
+  exports.unstable_scheduleCallback = function(a, b, c) {
+    var d = exports.unstable_now();
     "object" === typeof c && null !== c ? (c = c.delay, c = "number" === typeof c && 0 < c ? d + c : d) : c = d;
     switch (a) {
       case 1:
@@ -579,8 +579,8 @@ var scheduler_production_min = {};
     c > d ? (a.sortIndex = c, f2(t2, a), null === h(r2) && a === h(t2) && (B2 ? (E2(L2), L2 = -1) : B2 = true, K2(H2, c - d))) : (a.sortIndex = e, f2(r2, a), A2 || z2 || (A2 = true, I2(J2)));
     return a;
   };
-  exports$1.unstable_shouldYield = M2;
-  exports$1.unstable_wrapCallback = function(a) {
+  exports.unstable_shouldYield = M2;
+  exports.unstable_wrapCallback = function(a) {
     var b = y2;
     return function() {
       var c = y2;
@@ -7088,7 +7088,7 @@ const __vitePreload = function preload(baseModule, deps, importerUrl) {
   });
 };
 var heic2any$2 = { exports: {} };
-(function(module, exports$1) {
+(function(module, exports) {
   !function(e, t2, r2, i) {
     function n2() {
       return C2.isValid();
@@ -8335,14 +8335,14 @@ function Landing({ onEnter }) {
     } }) })
   ] });
 }
-const APP_ID$3 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID$4 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL$2 = "https://sachi-c7f0261c.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
   sessionToken = t2;
   localStorage.setItem("sachi_token", t2);
 }
-function getToken() {
+function getToken$1() {
   return sessionToken || localStorage.getItem("sachi_token");
 }
 function clearToken() {
@@ -8352,9 +8352,9 @@ function clearToken() {
 }
 async function request$1(method, path, body) {
   const headers = { "Content-Type": "application/json" };
-  const token = getToken();
+  const token = getToken$1();
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${BASE_URL$1}${path}`, {
+  const res = await fetch(`${BASE_URL$2}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : void 0
@@ -8370,34 +8370,34 @@ async function request$1(method, path, body) {
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request$1("POST", `/apps/${APP_ID$3}/auth/login`, { email, password });
+    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request$1("POST", `/apps/${APP_ID$3}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `/apps/${APP_ID$4}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request$1("POST", `/apps/${APP_ID$3}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request$1("POST", `/apps/${APP_ID$3}/auth/resend-otp`, { email });
+    return request$1("POST", `/apps/${APP_ID$4}/auth/resend-otp`, { email });
   },
   getUser() {
     const u2 = localStorage.getItem("sachi_user");
     return u2 ? JSON.parse(u2) : null;
   },
   async forgotPassword(email) {
-    return request$1("POST", `/apps/${APP_ID$3}/auth/reset-password-request`, { email });
+    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request$1("POST", `/apps/${APP_ID$3}/auth/reset-password`, {
+    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -8408,20 +8408,20 @@ const auth = {
 };
 const videos = {
   async list(limit = 200, skip = 0) {
-    return request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$3}/entities/SachiVideo`, data);
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$3}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen2 = /* @__PURE__ */ new Set();
@@ -8433,8 +8433,8 @@ const videos = {
   },
   async byUser(userId) {
     const [res1, res2] = await Promise.all([
-      request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
-      request$1("GET", `/apps/${APP_ID$3}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => [])
+      request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
+      request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => [])
     ]);
     const items1 = Array.isArray(res1) ? res1 : (res1 == null ? void 0 : res1.items) || [];
     const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || [];
@@ -8447,25 +8447,25 @@ const videos = {
     return merged;
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$3}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    return request$1("GET", `/apps/${APP_ID$3}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$3}/entities/SachiComment`, data);
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$3}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$3}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file) {
-  const token = getToken();
+  const token = getToken$1();
   const form = new FormData();
   form.append("file", file);
   const headers = {};
@@ -8486,7 +8486,7 @@ async function uploadFile(file) {
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request$1("POST", `/apps/${APP_ID$3}/entities/Follow`, {
+    return request$1("POST", `/apps/${APP_ID$4}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -8494,52 +8494,52 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request$1("DELETE", `/apps/${APP_ID$3}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/Follow/${recordId}`);
   },
   async getFollowing(follower_id) {
-    return request$1("GET", `/apps/${APP_ID$3}/entities/Follow?follower_id=${follower_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?follower_id=${follower_id}&limit=500`);
   },
   async getFollowers(following_id) {
-    return request$1("GET", `/apps/${APP_ID$3}/entities/Follow?following_id=${following_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const reports = {
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$3}/entities/SachiReport`, data);
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiReport`, data);
   },
   async list() {
-    return request$1("GET", `/apps/${APP_ID$3}/entities/SachiReport?sort=-created_date&limit=200`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiReport?sort=-created_date&limit=200`);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$3}/entities/SachiReport/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiReport/${id2}`, data);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request$1("POST", `/apps/${APP_ID$3}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$3}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request$1("GET", `/apps/${APP_ID$3}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request$1("POST", `/apps/${APP_ID$3}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$3}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request$1("GET", `/apps/${APP_ID$3}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$3}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -8555,13 +8555,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request$1("PUT", `/apps/${APP_ID$3}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `/apps/${APP_ID$4}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request$1("POST", `/apps/${APP_ID$3}/entities/UserInterest`, {
+        await request$1("POST", `/apps/${APP_ID$4}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -8718,12 +8718,12 @@ const COUNTRIES = [
   "Zimbabwe"
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID$3 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID$2}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL$1}/apps/${APP_ID$3}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
@@ -8840,7 +8840,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     setError("");
     try {
       const checkRes = await fetch(
-        `${BASE_URL}/apps/${APP_ID$2}/entities/AthaVidUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
+        `${BASE_URL$1}/apps/${APP_ID$3}/entities/AthaVidUser?username=${encodeURIComponent(username.trim().toLowerCase())}&limit=1`,
         { headers: { "Content-Type": "application/json" } }
       );
       const checkData = await checkRes.json();
@@ -8851,7 +8851,7 @@ function FinishStep({ googlePayload, onSuccess }) {
         return;
       }
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID$2}/entities/AthaVidUser`,
+        `${BASE_URL$1}/apps/${APP_ID$3}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -10073,6 +10073,589 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
       ] })
     ] })
   ] }) });
+}
+const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+function getToken() {
+  return localStorage.getItem("sachi_token");
+}
+async function apiGet(entity, params = "") {
+  const token = getToken();
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/apps/${APP_ID$2}/entities/${entity}?sort=-created_date&limit=500${params}`, { headers });
+  if (!res.ok) throw new Error(`${entity} fetch failed`);
+  return res.json();
+}
+async function apiPut(entity, id2, data) {
+  const token = getToken();
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${BASE_URL}/apps/${APP_ID$2}/entities/${entity}/${id2}`, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
+async function apiDelete(entity, id2) {
+  const token = getToken();
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  await fetch(`${BASE_URL}/apps/${APP_ID$2}/entities/${entity}/${id2}`, { method: "DELETE", headers });
+}
+function Nav({ active, setActive }) {
+  const tabs = [
+    { id: "dashboard", label: "🎛️ Dashboard" },
+    { id: "videos", label: "🎬 Videos" },
+    { id: "users", label: "👤 Users" },
+    { id: "reports", label: "🚩 Reports" },
+    { id: "live", label: "🔴 Live" },
+    { id: "podcasts", label: "🎙️ Podcasts" },
+    { id: "bugs", label: "🐛 Bugs" }
+  ];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#111827", borderBottom: "1px solid #374151", padding: "0 16px", display: "flex", overflowX: "auto", gap: 4 }, children: [
+    tabs.map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        onClick: () => setActive(t2.id),
+        style: {
+          background: active === t2.id ? "#7c3aed" : "transparent",
+          color: active === t2.id ? "#fff" : "#9ca3af",
+          border: "none",
+          borderRadius: 8,
+          padding: "10px 14px",
+          cursor: "pointer",
+          fontWeight: active === t2.id ? 700 : 400,
+          fontSize: 13,
+          whiteSpace: "nowrap"
+        },
+        children: t2.label
+      },
+      t2.id
+    )),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1 } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/", style: { color: "#9ca3af", fontSize: 12, padding: "10px 8px", textDecoration: "none" }, children: "← Back to Sachi" })
+  ] });
+}
+function Dashboard() {
+  const [stats, setStats] = reactExports.useState(null);
+  reactExports.useEffect(() => {
+    Promise.all([
+      apiGet("AthaVidUser"),
+      apiGet("SachiVideo"),
+      apiGet("SachiReport"),
+      apiGet("BugReport"),
+      apiGet("SachiLiveRoom", "&is_live=true"),
+      apiGet("SachiPodcast")
+    ]).then(([users, videos2, reports2, bugs, live, podcasts]) => {
+      setStats({
+        users: users.length,
+        videos: videos2.length,
+        reports: reports2.length,
+        pendingReports: reports2.filter((r2) => r2.status === "pending").length,
+        bugs: bugs.length,
+        openBugs: bugs.filter((b) => b.status === "open").length,
+        live: live.length,
+        podcasts: podcasts.length,
+        recentVideos: videos2.slice(0, 5),
+        recentUsers: users.slice(0, 5)
+      });
+    }).catch(console.error);
+  }, []);
+  if (!stats) return /* @__PURE__ */ jsxRuntimeExports.jsx(Spinner, { text: "Loading dashboard..." });
+  const cards = [
+    { label: "Users", value: stats.users, bg: "#4f46e5", icon: "👤" },
+    { label: "Videos", value: stats.videos, bg: "#7c3aed", icon: "🎬" },
+    { label: "Live Now", value: stats.live, bg: "#dc2626", icon: "🔴" },
+    { label: "Podcasts", value: stats.podcasts, bg: "#d97706", icon: "🎙️" },
+    { label: "Reports", value: stats.reports, sub: `${stats.pendingReports} pending`, bg: "#ea580c", icon: "🚩" },
+    { label: "Bugs", value: stats.bugs, sub: `${stats.openBugs} open`, bg: "#db2777", icon: "🐛" }
+  ];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 24, color: "#fff" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { fontSize: 28, fontWeight: 700, marginBottom: 4 }, children: "🎛️ Sachi Admin" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { style: { color: "#9ca3af", marginBottom: 24, fontSize: 14 }, children: (/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16, marginBottom: 32 }, children: cards.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: c.bg, borderRadius: 16, padding: 16 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28 }, children: c.icon }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28, fontWeight: 700 }, children: c.value }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13, opacity: 0.9 }, children: c.label }),
+      c.sub && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 11, opacity: 0.7 }, children: c.sub })
+    ] }, c.label)) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1f2937", borderRadius: 16, padding: 20 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: { color: "#fbbf24", fontSize: 15, fontWeight: 700, marginBottom: 12 }, children: "🎬 Recent Videos" }),
+        stats.recentVideos.map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 10, background: "#111827", borderRadius: 10, padding: 10 }, children: [
+          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: v2.thumbnail_url, style: { width: 44, height: 44, borderRadius: 8, objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, borderRadius: 8, background: "#374151", display: "flex", alignItems: "center", justifyContent: "center" }, children: "🎬" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: v2.caption || "No caption" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 11, color: "#9ca3af" }, children: [
+              "@",
+              v2.username,
+              " · ",
+              v2.views_count || 0,
+              " views"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, padding: "2px 8px", borderRadius: 20, background: v2.is_approved ? "#166534" : "#991b1b" }, children: v2.is_approved ? "✓" : "Pending" })
+        ] }, v2.id))
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1f2937", borderRadius: 16, padding: 20 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { style: { color: "#60a5fa", fontSize: 15, fontWeight: 700, marginBottom: 12 }, children: "👤 Recent Users" }),
+        stats.recentUsers.map((u2) => {
+          var _a;
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 10, background: "#111827", borderRadius: 10, padding: 10 }, children: [
+            u2.avatar_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: u2.avatar_url, style: { width: 36, height: 36, borderRadius: "50%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 36, height: 36, borderRadius: "50%", background: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }, children: ((_a = u2.display_name) == null ? void 0 : _a[0]) || "?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: u2.display_name || u2.username }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 11, color: "#9ca3af" }, children: [
+                "@",
+                u2.username
+              ] })
+            ] })
+          ] }, u2.id);
+        })
+      ] })
+    ] })
+  ] });
+}
+function Videos() {
+  const [videos2, setVideos] = reactExports.useState([]);
+  const [search, setSearch] = reactExports.useState("");
+  const [filter, setFilter] = reactExports.useState("all");
+  const [loading, setLoading] = reactExports.useState(true);
+  reactExports.useEffect(() => {
+    apiGet("SachiVideo").then((d) => {
+      setVideos(d);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+  const filtered = videos2.filter((v2) => {
+    const m2 = (v2.caption || "").toLowerCase().includes(search.toLowerCase()) || (v2.username || "").toLowerCase().includes(search.toLowerCase());
+    if (filter === "pending") return m2 && !v2.is_approved;
+    if (filter === "approved") return m2 && v2.is_approved;
+    if (filter === "archived") return m2 && v2.is_archived;
+    if (filter === "ai") return m2 && v2.is_ai_detected;
+    return m2;
+  });
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx(Spinner, { text: "Loading videos..." });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 24, color: "#fff" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 4 }, children: "🎬 Videos" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#9ca3af", marginBottom: 20, fontSize: 13 }, children: [
+      videos2.length,
+      " total"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SearchFilter, { value: search, onChange: setSearch, filters: ["all", "pending", "approved", "archived", "ai"], active: filter, onFilter: setFilter, accent: "#7c3aed", placeholder: "Search caption or username..." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      filtered.map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1f2937", borderRadius: 16, padding: 16, display: "flex", gap: 12, alignItems: "center" }, children: [
+        v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: v2.thumbnail_url, style: { width: 60, height: 60, borderRadius: 10, objectFit: "cover", flexShrink: 0 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 60, height: 60, borderRadius: 10, background: "#374151", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: "🎬" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: v2.caption || "No caption" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 12, color: "#9ca3af" }, children: [
+            "@",
+            v2.username,
+            " · ",
+            v2.views_count || 0,
+            " views · ",
+            v2.likes_count || 0,
+            " likes"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }, children: [
+            v2.is_approved && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#166534", children: "✓ Approved" }),
+            v2.is_archived && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#374151", children: "Archived" }),
+            v2.is_ai_detected && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#991b1b", children: "🤖 AI" }),
+            v2.is_mature && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#92400e", children: "🔞" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: v2.is_approved ? "#854d0e" : "#166534", onClick: () => apiPut("SachiVideo", v2.id, { is_approved: !v2.is_approved }).then(() => apiGet("SachiVideo").then(setVideos)), children: v2.is_approved ? "Unapprove" : "Approve" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#374151", onClick: () => apiPut("SachiVideo", v2.id, { is_archived: !v2.is_archived }).then(() => apiGet("SachiVideo").then(setVideos)), children: v2.is_archived ? "Unarchive" : "Archive" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#7f1d1d", onClick: () => confirm("Delete?") && apiDelete("SachiVideo", v2.id).then(() => setVideos((vs) => vs.filter((x2) => x2.id !== v2.id))), children: "Delete" })
+        ] })
+      ] }, v2.id)),
+      filtered.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(Empty, {})
+    ] })
+  ] });
+}
+function Users() {
+  const [users, setUsers] = reactExports.useState([]);
+  const [search, setSearch] = reactExports.useState("");
+  const [filter, setFilter] = reactExports.useState("all");
+  const [loading, setLoading] = reactExports.useState(true);
+  reactExports.useEffect(() => {
+    apiGet("AthaVidUser").then((d) => {
+      setUsers(d);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+  const filtered = users.filter((u2) => {
+    const m2 = (u2.display_name || "").toLowerCase().includes(search.toLowerCase()) || (u2.username || "").toLowerCase().includes(search.toLowerCase()) || (u2.email || "").toLowerCase().includes(search.toLowerCase());
+    if (filter === "verified") return m2 && u2.is_verified;
+    if (filter === "banned") return m2 && u2.status === "banned";
+    if (filter === "18+") return m2 && u2.is_18_plus;
+    return m2;
+  });
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx(Spinner, { text: "Loading users..." });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 24, color: "#fff" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 4 }, children: "👤 Users" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#9ca3af", marginBottom: 20, fontSize: 13 }, children: [
+      users.length,
+      " total"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SearchFilter, { value: search, onChange: setSearch, filters: ["all", "verified", "banned", "18+"], active: filter, onFilter: setFilter, accent: "#4f46e5", placeholder: "Search name, username, email..." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      filtered.map((u2) => {
+        var _a;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1f2937", borderRadius: 16, padding: 16, display: "flex", gap: 12, alignItems: "center" }, children: [
+          u2.avatar_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: u2.avatar_url, style: { width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 48, height: 48, borderRadius: "50%", background: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, flexShrink: 0 }, children: ((_a = u2.display_name) == null ? void 0 : _a[0]) || "?" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600 }, children: u2.display_name || u2.username }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 12, color: "#9ca3af" }, children: [
+              "@",
+              u2.username,
+              " · ",
+              u2.email
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }, children: [
+              u2.is_verified && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#1e3a5f", children: "✓ Verified" }),
+              u2.is_18_plus && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#92400e", children: "18+" }),
+              u2.status === "banned" && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#7f1d1d", children: "🚫 Banned" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(Badge, { color: "#374151", children: [
+                u2.followers_count || 0,
+                " followers"
+              ] })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: u2.is_verified ? "#374151" : "#1e40af", onClick: () => apiPut("AthaVidUser", u2.id, { is_verified: !u2.is_verified }).then(() => apiGet("AthaVidUser").then(setUsers)), children: u2.is_verified ? "Unverify" : "Verify" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: u2.status === "banned" ? "#166534" : "#7f1d1d", onClick: () => apiPut("AthaVidUser", u2.id, { status: u2.status === "banned" ? "active" : "banned" }).then(() => apiGet("AthaVidUser").then(setUsers)), children: u2.status === "banned" ? "Unban" : "Ban" })
+          ] })
+        ] }, u2.id);
+      }),
+      filtered.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(Empty, {})
+    ] })
+  ] });
+}
+function Reports() {
+  const [reports2, setReports] = reactExports.useState([]);
+  const [search, setSearch] = reactExports.useState("");
+  const [filter, setFilter] = reactExports.useState("all");
+  const [loading, setLoading] = reactExports.useState(true);
+  reactExports.useEffect(() => {
+    apiGet("SachiReport").then((d) => {
+      setReports(d);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+  const filtered = reports2.filter((r2) => {
+    const m2 = (r2.video_caption || "").toLowerCase().includes(search.toLowerCase()) || (r2.reporter_username || "").toLowerCase().includes(search.toLowerCase());
+    if (filter !== "all") return m2 && r2.status === filter;
+    return m2;
+  });
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx(Spinner, { text: "Loading reports..." });
+  const statusBg = { pending: "#92400e", reviewed: "#1e40af", resolved: "#166534", dismissed: "#374151" };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 24, color: "#fff" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 4 }, children: "🚩 Reports" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#9ca3af", marginBottom: 20, fontSize: 13 }, children: [
+      reports2.length,
+      " total · ",
+      reports2.filter((r2) => r2.status === "pending").length,
+      " pending"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SearchFilter, { value: search, onChange: setSearch, filters: ["all", "pending", "reviewed", "resolved", "dismissed"], active: filter, onFilter: setFilter, accent: "#ea580c", placeholder: "Search reporter or video..." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      filtered.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#1f2937", borderRadius: 16, padding: 16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, alignItems: "flex-start" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, marginBottom: 6, flexWrap: "wrap" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: statusBg[r2.status] || "#374151", children: r2.status || "pending" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, color: "#6b7280" }, children: new Date(r2.created_date).toLocaleDateString() })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontWeight: 600 }, children: [
+            "Reported by: ",
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#fb923c" }, children: [
+              "@",
+              r2.reporter_username
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 13, color: "#9ca3af" }, children: [
+            "Video by: @",
+            r2.video_username
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 13, marginTop: 4 }, children: [
+            "Reason: ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fbbf24" }, children: r2.reason })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#1e40af", onClick: () => apiPut("SachiReport", r2.id, { status: "reviewed" }).then(() => apiGet("SachiReport").then(setReports)), children: "Reviewed" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#166534", onClick: () => apiPut("SachiReport", r2.id, { status: "resolved" }).then(() => apiGet("SachiReport").then(setReports)), children: "Resolve" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#374151", onClick: () => apiPut("SachiReport", r2.id, { status: "dismissed" }).then(() => apiGet("SachiReport").then(setReports)), children: "Dismiss" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#7f1d1d", onClick: () => confirm("Delete?") && apiDelete("SachiReport", r2.id).then(() => setReports((rs) => rs.filter((x2) => x2.id !== r2.id))), children: "Delete" })
+        ] })
+      ] }) }, r2.id)),
+      filtered.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(Empty, {})
+    ] })
+  ] });
+}
+function Live() {
+  const [rooms, setRooms] = reactExports.useState([]);
+  const [search, setSearch] = reactExports.useState("");
+  const [filter, setFilter] = reactExports.useState("all");
+  const [loading, setLoading] = reactExports.useState(true);
+  reactExports.useEffect(() => {
+    apiGet("SachiLiveRoom").then((d) => {
+      setRooms(d);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+  const filtered = rooms.filter((r2) => {
+    const m2 = (r2.title || "").toLowerCase().includes(search.toLowerCase()) || (r2.host_username || "").toLowerCase().includes(search.toLowerCase());
+    if (filter === "live") return m2 && r2.is_live;
+    if (filter === "ended") return m2 && !r2.is_live;
+    return m2;
+  });
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx(Spinner, { text: "Loading live rooms..." });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 24, color: "#fff" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 4 }, children: "🔴 Live Rooms" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#9ca3af", marginBottom: 20, fontSize: 13 }, children: [
+      rooms.length,
+      " total · ",
+      rooms.filter((r2) => r2.is_live).length,
+      " live now"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SearchFilter, { value: search, onChange: setSearch, filters: ["all", "live", "ended"], active: filter, onFilter: setFilter, accent: "#dc2626", placeholder: "Search title or host..." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      filtered.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1f2937", borderRadius: 16, padding: 16, display: "flex", gap: 12, alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 48, height: 48, borderRadius: "50%", background: "#7f1d1d", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }, children: "🔴" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginBottom: 4 }, children: [
+            r2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#dc2626", pulse: true, children: "● LIVE" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#374151", children: r2.category || "General" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: r2.title || "Untitled Room" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 12, color: "#9ca3af" }, children: [
+            "@",
+            r2.host_username,
+            " · ",
+            r2.viewer_count || 0,
+            " viewers"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+          r2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#c2410c", onClick: () => apiPut("SachiLiveRoom", r2.id, { is_live: false }).then(() => apiGet("SachiLiveRoom").then(setRooms)), children: "End Room" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#7f1d1d", onClick: () => confirm("Delete?") && apiDelete("SachiLiveRoom", r2.id).then(() => setRooms((rs) => rs.filter((x2) => x2.id !== r2.id))), children: "Delete" })
+        ] })
+      ] }, r2.id)),
+      filtered.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(Empty, {})
+    ] })
+  ] });
+}
+function Podcasts() {
+  const [podcasts, setPodcasts] = reactExports.useState([]);
+  const [episodes, setEpisodes] = reactExports.useState([]);
+  const [search, setSearch] = reactExports.useState("");
+  const [filter, setFilter] = reactExports.useState("all");
+  const [expanded, setExpanded] = reactExports.useState(null);
+  const [loading, setLoading] = reactExports.useState(true);
+  reactExports.useEffect(() => {
+    Promise.all([apiGet("SachiPodcast"), apiGet("SachiPodcastEpisode")]).then(([p2, e]) => {
+      setPodcasts(p2);
+      setEpisodes(e);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+  const filtered = podcasts.filter((p2) => {
+    const m2 = (p2.title || "").toLowerCase().includes(search.toLowerCase()) || (p2.host_username || "").toLowerCase().includes(search.toLowerCase());
+    if (filter === "live") return m2 && p2.is_live;
+    if (filter === "active") return m2 && p2.status === "active";
+    if (filter === "inactive") return m2 && p2.status === "inactive";
+    return m2;
+  });
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx(Spinner, { text: "Loading podcasts..." });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 24, color: "#fff" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 4 }, children: "🎙️ Podcasts" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#9ca3af", marginBottom: 20, fontSize: 13 }, children: [
+      podcasts.length,
+      " podcasts · ",
+      episodes.length,
+      " episodes"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SearchFilter, { value: search, onChange: setSearch, filters: ["all", "live", "active", "inactive"], active: filter, onFilter: setFilter, accent: "#d97706", placeholder: "Search title or host..." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      filtered.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1f2937", borderRadius: 16, overflow: "hidden" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 16, display: "flex", gap: 12, alignItems: "center" }, children: [
+          p2.cover_image_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: p2.cover_image_url, style: { width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 52, height: 52, borderRadius: 10, background: "#92400e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: "🎙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }, children: [
+              p2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: "#dc2626", pulse: true, children: "● LIVE" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: p2.status === "active" ? "#166534" : "#374151", children: p2.status || "active" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: p2.title }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 12, color: "#9ca3af" }, children: [
+              "@",
+              p2.host_username,
+              " · ",
+              p2.episode_count || 0,
+              " eps · ",
+              p2.follower_count || 0,
+              " followers"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#374151", onClick: () => setExpanded(expanded === p2.id ? null : p2.id), children: expanded === p2.id ? "Hide" : "Episodes" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: p2.status === "active" ? "#854d0e" : "#166534", onClick: () => apiPut("SachiPodcast", p2.id, { status: p2.status === "active" ? "inactive" : "active" }).then(() => apiGet("SachiPodcast").then(setPodcasts)), children: p2.status === "active" ? "Deactivate" : "Activate" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#7f1d1d", onClick: () => confirm("Delete?") && apiDelete("SachiPodcast", p2.id).then(() => setPodcasts((ps) => ps.filter((x2) => x2.id !== p2.id))), children: "Delete" })
+          ] })
+        ] }),
+        expanded === p2.id && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { borderTop: "1px solid #374151", padding: 16 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fbbf24", fontSize: 13, fontWeight: 700, marginBottom: 10 }, children: "Episodes" }),
+          episodes.filter((e) => e.podcast_id === p2.id).length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#6b7280", fontSize: 13 }, children: "No episodes yet." }) : episodes.filter((e) => e.podcast_id === p2.id).map((ep) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center", background: "#111827", borderRadius: 10, padding: 10, marginBottom: 6 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 13, fontWeight: 600 }, children: [
+                "Ep ",
+                ep.episode_number || "?",
+                " — ",
+                ep.title
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 11, color: "#9ca3af" }, children: [
+                ep.duration_seconds ? `${Math.floor(ep.duration_seconds / 60)}m` : "N/A",
+                " · ",
+                ep.like_count || 0,
+                " likes"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#7f1d1d", onClick: () => confirm("Delete episode?") && apiDelete("SachiPodcastEpisode", ep.id).then(() => setEpisodes((es) => es.filter((x2) => x2.id !== ep.id))), children: "Delete" })
+          ] }, ep.id))
+        ] })
+      ] }, p2.id)),
+      filtered.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(Empty, {})
+    ] })
+  ] });
+}
+function Bugs() {
+  const [bugs, setBugs] = reactExports.useState([]);
+  const [search, setSearch] = reactExports.useState("");
+  const [filter, setFilter] = reactExports.useState("all");
+  const [loading, setLoading] = reactExports.useState(true);
+  reactExports.useEffect(() => {
+    apiGet("BugReport").then((d) => {
+      setBugs(d);
+      setLoading(false);
+    }).catch(console.error);
+  }, []);
+  const filtered = bugs.filter((b) => {
+    const m2 = (b.bug_description || "").toLowerCase().includes(search.toLowerCase()) || (b.tester_name || "").toLowerCase().includes(search.toLowerCase());
+    if (filter !== "all") return m2 && b.status === filter;
+    return m2;
+  });
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx(Spinner, { text: "Loading bug reports..." });
+  const sevBg = { critical: "#7f1d1d", high: "#c2410c", medium: "#854d0e", low: "#166534" };
+  const stBg = { open: "#7f1d1d", "in-progress": "#1e40af", resolved: "#166534", closed: "#374151" };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: 24, color: "#fff" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { style: { fontSize: 24, fontWeight: 700, marginBottom: 4 }, children: "🐛 Bug Reports" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { style: { color: "#9ca3af", marginBottom: 20, fontSize: 13 }, children: [
+      bugs.length,
+      " total · ",
+      bugs.filter((b) => b.status === "open").length,
+      " open · ",
+      bugs.filter((b) => b.severity === "critical").length,
+      " critical"
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(SearchFilter, { value: search, onChange: setSearch, filters: ["all", "open", "in-progress", "resolved", "closed"], active: filter, onFilter: setFilter, accent: "#db2777", placeholder: "Search description or tester..." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+      filtered.map((b) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#1f2937", borderRadius: 16, padding: 16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, alignItems: "flex-start" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: sevBg[b.severity] || "#374151", children: b.severity || "unknown" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { color: stBg[b.status] || "#374151", children: b.status || "open" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, color: "#6b7280" }, children: new Date(b.created_date).toLocaleDateString() })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 600 }, children: b.bug_description }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontSize: 13, color: "#9ca3af", marginTop: 4 }, children: [
+            "👤 ",
+            b.tester_name,
+            " · 📱 ",
+            b.device || "Unknown"
+          ] }),
+          b.screenshot_url && /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: b.screenshot_url, target: "_blank", rel: "noreferrer", style: { fontSize: 12, color: "#60a5fa" }, children: "📸 Screenshot" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#1e40af", onClick: () => apiPut("BugReport", b.id, { status: "in-progress" }).then(() => apiGet("BugReport").then(setBugs)), children: "In Progress" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#166534", onClick: () => apiPut("BugReport", b.id, { status: "resolved" }).then(() => apiGet("BugReport").then(setBugs)), children: "Resolve" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#374151", onClick: () => apiPut("BugReport", b.id, { status: "closed" }).then(() => apiGet("BugReport").then(setBugs)), children: "Close" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Btn, { color: "#7f1d1d", onClick: () => confirm("Delete?") && apiDelete("BugReport", b.id).then(() => setBugs((bs) => bs.filter((x2) => x2.id !== b.id))), children: "Delete" })
+        ] })
+      ] }) }, b.id)),
+      filtered.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(Empty, {})
+    ] })
+  ] });
+}
+function Spinner({ text }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#9ca3af", fontSize: 18 }, children: text }) });
+}
+function Empty() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#6b7280", textAlign: "center", padding: 32 }, children: "Nothing found." });
+}
+function Badge({ color, children, pulse }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+    background: color,
+    color: "#fff",
+    fontSize: 11,
+    padding: "2px 8px",
+    borderRadius: 20,
+    fontWeight: 500,
+    animation: pulse ? "pulse 2s infinite" : "none"
+  }, children });
+}
+function Btn({ color, onClick, children }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick, style: {
+    background: color,
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    padding: "5px 12px",
+    fontSize: 12,
+    cursor: "pointer",
+    fontWeight: 500,
+    transition: "opacity 0.15s"
+  }, onMouseOver: (e) => e.target.style.opacity = 0.8, onMouseOut: (e) => e.target.style.opacity = 1, children });
+}
+function SearchFilter({ value, onChange, filters, active, onFilter, accent, placeholder }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        value,
+        onChange: (e) => onChange(e.target.value),
+        placeholder,
+        style: { background: "#1f2937", color: "#fff", border: `1px solid ${active !== "all" ? accent : "#374151"}`, borderRadius: 10, padding: "8px 14px", flex: 1, minWidth: 200, outline: "none", fontSize: 13 }
+      }
+    ),
+    filters.map((f2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        onClick: () => onFilter(f2),
+        style: { background: active === f2 ? accent : "#1f2937", color: active === f2 ? "#fff" : "#9ca3af", border: "none", borderRadius: 10, padding: "8px 14px", cursor: "pointer", fontSize: 12, fontWeight: active === f2 ? 700 : 400, textTransform: "capitalize" },
+        children: f2
+      },
+      f2
+    ))
+  ] });
+}
+function AdminPanel$1() {
+  const [tab, setTab] = reactExports.useState("dashboard");
+  const pages = {
+    dashboard: /* @__PURE__ */ jsxRuntimeExports.jsx(Dashboard, {}),
+    videos: /* @__PURE__ */ jsxRuntimeExports.jsx(Videos, {}),
+    users: /* @__PURE__ */ jsxRuntimeExports.jsx(Users, {}),
+    reports: /* @__PURE__ */ jsxRuntimeExports.jsx(Reports, {}),
+    live: /* @__PURE__ */ jsxRuntimeExports.jsx(Live, {}),
+    podcasts: /* @__PURE__ */ jsxRuntimeExports.jsx(Podcasts, {}),
+    bugs: /* @__PURE__ */ jsxRuntimeExports.jsx(Bugs, {})
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { minHeight: "100vh", background: "#030712", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Nav, { active: tab, setActive: setTab }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { maxWidth: 900, margin: "0 auto" }, children: pages[tab] })
+  ] });
 }
 if (!document.getElementById("sachi-popup-css")) {
   const s = document.createElement("style");
@@ -17562,6 +18145,7 @@ function App() {
   if (path === "/privacy") return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
   if (path === "/child-safety") return /* @__PURE__ */ jsxRuntimeExports.jsx(ChildSafety, {});
   if (path === "/founding-creator" || path === "/apply") return /* @__PURE__ */ jsxRuntimeExports.jsx(FoundingCreatorPage, { onBack: () => window.location.href = "/" });
+  if (path === "/admin") return /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPanel$1, {});
   const [hasEntered, setHasEntered] = reactExports.useState(false);
   const [currentUser, setCurrentUser] = reactExports.useState(() => auth.getUser());
   reactExports.useEffect(() => {
@@ -17579,6 +18163,19 @@ function App() {
     if (localStorage.getItem("sachi_auth_intent") && window.location.hash.includes("id_token")) {
       localStorage.removeItem("sachi_auth_intent");
     }
+  }, []);
+  reactExports.useEffect(() => {
+    window.testCfStream = async () => {
+      try {
+        const r2 = await request$1("POST", "/functions/cfStreamUpload", { maxDurationSeconds: 60 });
+        console.log("✅ cfStreamUpload response:", r2);
+        return r2;
+      } catch (e) {
+        console.error("❌ cfStreamUpload error:", e);
+        return { error: e.message };
+      }
+    };
+    console.log("[diagnostic] Call window.testCfStream() in console to test");
   }, []);
   (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
@@ -17747,7 +18344,28 @@ function App() {
       const overflow = scored.filter((v2) => !cappedIds.has(v2.id));
       capped.push(...overflow);
     }
-    return capped;
+    const interleave = (posts) => {
+      const buckets = {};
+      for (const p2 of posts) {
+        const uid = p2.user_id || p2.username || "unknown";
+        if (!buckets[uid]) buckets[uid] = [];
+        buckets[uid].push(p2);
+      }
+      const groups = Object.values(buckets);
+      const result = [];
+      let filled = true;
+      while (filled) {
+        filled = false;
+        for (const g of groups) {
+          if (g.length > 0) {
+            result.push(g.shift());
+            filled = true;
+          }
+        }
+      }
+      return result;
+    };
+    return interleave(capped);
   };
   const loadVideos = async (user, append = false, page = 1) => {
     if (!append) setLoading(true);
