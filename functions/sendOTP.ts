@@ -51,18 +51,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ email: normalizedEmail, code: otp, expiry })
     });
 
-    // Send via Zoho SMTP port 587 (STARTTLS) using app password
-    const zohoPassword = Deno.env.get("ZOHO_APP_PASSWORD") || "";
-
-    const { SMTPClient } = await import("npm:emailjs@4.0.3");
-
-    const client = new SMTPClient({
-      user: "support@sachistream.com",
-      password: zohoPassword,
-      host: "smtppro.zoho.com",
-      port: 587,
-      tls: true,
-    });
+    // Send via Resend HTTP API
+    const resendKey = Deno.env.get("RESEND_API_KEY") || "";
 
     const htmlBody = `
       <div style="font-family:sans-serif;background:#0B0C1A;color:#fff;padding:40px;max-width:480px;margin:0 auto;border-radius:16px;">
@@ -80,15 +70,28 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    await client.sendAsync({
-      text: `Your Sachi verification code is: ${otp} (expires in 10 minutes)`,
-      from: "Sachi Stream <support@sachistream.com>",
-      to: normalizedEmail,
-      subject: "Your Sachi verification code",
-      attachment: [{ data: htmlBody, alternative: true }],
+    const resendRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Sachi Stream <support@sachistream.com>",
+        to: [normalizedEmail],
+        subject: "Your Sachi verification code",
+        html: htmlBody,
+        text: `Your Sachi verification code is: ${otp} (expires in 10 minutes)`,
+      }),
     });
 
-    console.log(`OTP sent to ${normalizedEmail}`);
+    const resendData = await resendRes.json().catch(() => ({}));
+    console.log("Resend response:", JSON.stringify(resendData));
+
+    if (!resendRes.ok) {
+      throw new Error(`Resend error: ${JSON.stringify(resendData)}`);
+    }
+
     return Response.json({ success: true }, { headers: corsHeaders });
 
   } catch (e) {
