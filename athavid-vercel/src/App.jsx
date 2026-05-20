@@ -7023,9 +7023,13 @@ function App() {
       });
       setFeedHasMore(false);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
-      // Sort by original post date (external_id) when available, else created_date
-      const sorted = [...raw].sort((a,b) => new Date(b.external_id||b.created_date||0) - new Date(a.external_id||a.created_date||0));
-      setVideoList(sorted);
+      // CF videos bubble to top (newest CF first), then R2/other by date
+      const cfVideos = [...raw].filter(v => (v.media_url||v.video_url||'').includes('cloudflarestream'))
+        .sort((a,b) => new Date(b.external_id||b.created_date||0) - new Date(a.external_id||a.created_date||0));
+      const otherVideos = [...raw].filter(v => !(v.media_url||v.video_url||'').includes('cloudflarestream'))
+        .sort((a,b) => new Date(b.external_id||b.created_date||0) - new Date(a.external_id||a.created_date||0));
+      const reordered = [...cfVideos, ...otherVideos];
+      setVideoList(reordered);
       requestAnimationFrame(() => {
         const el = feedContainerRef.current;
         if (el) el.scrollTo({ top: 0, behavior: 'instant' });
