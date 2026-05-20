@@ -11,6 +11,7 @@ import MusicPicker from "./MusicPicker.jsx";
 import SachiAdminPanel from "./AdminPanel.jsx";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
+const APP_VERSION = "2.2.1";
 
 // ── Audio Preloader Cache ─────────────────────────────────────────────────
 // Pre-fetches audio for upcoming videos so playback starts instantly
