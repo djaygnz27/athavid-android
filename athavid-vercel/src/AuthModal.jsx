@@ -119,8 +119,17 @@ async function signInWithGooglePopup(onSuccess) {
   });
   google.accounts.id.prompt((notification) => {
     if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      // One Tap blocked — render a visible button and auto-click it
       const div = document.getElementById("sachi-google-btn-hidden");
-      if (div) google.accounts.id.renderButton(div, { theme:"outline", size:"large" });
+      if (div) {
+        div.style.display = "block";
+        google.accounts.id.renderButton(div, { theme:"filled_black", size:"large", width:280 });
+        // Auto-click the rendered button after a short delay
+        setTimeout(() => {
+          const btn = div.querySelector("div[role=button]") || div.querySelector("button");
+          if (btn) btn.click();
+        }, 300);
+      }
     }
   });
 }
@@ -569,7 +578,7 @@ export default function AuthModal({ onClose, onSuccess }) {
         &amp;{" "}
         <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
       </div>
-      <div id="sachi-google-btn-hidden" style={{ display:"none" }} />
+      <div id="sachi-google-btn-hidden" style={{ display:"none", position:"absolute", opacity:0, pointerEvents:"none" }} />
     </>
   );
 }
