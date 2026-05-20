@@ -8718,8 +8718,9 @@ const COUNTRIES = [
   "Zimbabwe"
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID$3 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
+const BASE_URL$1 = "https://sachi-04cfb834.base44.app/api";
+const FUNCTIONS_URL = "https://sachi-c7f0261c.base44.app/functions";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
@@ -8821,14 +8822,160 @@ async function signInWithGooglePopup(onSuccess) {
     }
   });
 }
-function FinishStep({ googlePayload, onSuccess }) {
-  const { email, name, picture } = googlePayload;
+function EmailOTPStep({ onSuccess, onBack }) {
+  const [email, setEmail] = reactExports.useState("");
+  const [verifiedEmail, setVerifiedEmail] = reactExports.useState("");
+  const [code, setCode] = reactExports.useState("");
+  const [codeSent, setCodeSent] = reactExports.useState(false);
+  const [loading, setLoading] = reactExports.useState(false);
+  const [error, setError] = reactExports.useState("");
+  const [resendTimer, setResendTimer] = reactExports.useState(0);
+  const [isNewUser, setIsNewUser] = reactExports.useState(false);
+  reactExports.useEffect(() => {
+    if (resendTimer > 0) {
+      const t2 = setTimeout(() => setResendTimer((r2) => r2 - 1), 1e3);
+      return () => clearTimeout(t2);
+    }
+  }, [resendTimer]);
+  const inp = {
+    display: "block",
+    width: "100%",
+    boxSizing: "border-box",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(245,200,66,0.15)",
+    borderRadius: 12,
+    padding: "11px 14px",
+    color: "#fff",
+    fontSize: 14,
+    outline: "none",
+    marginBottom: 10
+  };
+  const btn = {
+    display: "block",
+    width: "100%",
+    padding: "14px 0",
+    background: "linear-gradient(135deg,#F5C842,#FF9500)",
+    border: "none",
+    borderRadius: 14,
+    color: "#0B0C1A",
+    fontWeight: 800,
+    fontSize: 16,
+    cursor: "pointer",
+    marginBottom: 10
+  };
+  const sendCode = async () => {
+    if (!email.trim() || !email.includes("@")) return setError("Please enter a valid email address.");
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${FUNCTIONS_URL}/sendOTP`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed to send code");
+      setVerifiedEmail(email.trim().toLowerCase());
+      setCodeSent(true);
+      setResendTimer(60);
+    } catch (e) {
+      setError(e.message || "Could not send code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const verifyCode = async () => {
+    if (code.length !== 6) return setError("Please enter the 6-digit code.");
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${FUNCTIONS_URL}/verifyOTP`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifiedEmail, code })
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Invalid code");
+      if (data.isNewUser) {
+        localStorage.setItem("sachi_pending_email", JSON.stringify({ email: verifiedEmail }));
+        setIsNewUser(true);
+      } else {
+        const sessionUser = data.user;
+        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+        onSuccess(sessionUser);
+      }
+    } catch (e) {
+      setError(e.message || "Invalid code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  if (isNewUser) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { emailPayload: { email: verifiedEmail }, onSuccess });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onBack, style: { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 13, marginBottom: 16, padding: 0, display: "flex", alignItems: "center", gap: 6 }, children: "← Back" }),
+    !codeSent ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 20, marginBottom: 6, textAlign: "center" }, children: "Sign in with Email" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 20, textAlign: "center" }, children: "We'll send a 6-digit code to your inbox" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          value: email,
+          onChange: (e) => {
+            setEmail(e.target.value);
+            setError("");
+          },
+          placeholder: "Enter your email address",
+          type: "email",
+          style: inp,
+          onKeyDown: (e) => e.key === "Enter" && sendCode(),
+          autoFocus: true
+        }
+      ),
+      error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 10 }, children: error }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: sendCode, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Sending code…" : "Send Code 📧" })
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 20, marginBottom: 6, textAlign: "center" }, children: "Check your inbox" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 4, textAlign: "center" }, children: "Code sent to" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 20, textAlign: "center" }, children: verifiedEmail }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          value: code,
+          onChange: (e) => {
+            setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+            setError("");
+          },
+          placeholder: "000000",
+          type: "text",
+          inputMode: "numeric",
+          maxLength: 6,
+          style: { ...inp, fontSize: 28, fontWeight: 800, letterSpacing: 10, textAlign: "center" },
+          onKeyDown: (e) => e.key === "Enter" && verifyCode(),
+          autoFocus: true
+        }
+      ),
+      error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontSize: 13, marginBottom: 10 }, children: error }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: verifyCode, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Verifying…" : "Verify & Continue ✓" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginTop: 4 }, children: resendTimer > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#555", fontSize: 13 }, children: [
+        "Resend in ",
+        resendTimer,
+        "s"
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: sendCode, disabled: loading, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 13, fontWeight: 600 }, children: "Resend code" }) })
+    ] })
+  ] });
+}
+function FinishStep({ googlePayload, emailPayload, onSuccess }) {
+  const email = (googlePayload == null ? void 0 : googlePayload.email) || (emailPayload == null ? void 0 : emailPayload.email) || "";
+  const name = (googlePayload == null ? void 0 : googlePayload.name) || "";
+  const picture = (googlePayload == null ? void 0 : googlePayload.picture) || "";
   const suggested = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
   const [username, setUsername] = reactExports.useState(suggested);
   const [dob, setDob] = reactExports.useState("");
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
-  const [is18, setIs18] = reactExports.useState(false);
   const [agreedToTerms, setAgreedToTerms] = reactExports.useState(false);
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
@@ -8858,7 +9005,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     cursor: "pointer",
     marginBottom: 10
   };
-  React.useEffect(() => {
+  reactExports.useEffect(() => {
     fetch("https://ipapi.co/json/").then((r2) => r2.json()).then((d) => {
       if (d.city && !city) setCity(d.city);
       if (d.country_name && !country) setCountry(d.country_name);
@@ -8875,7 +9022,7 @@ function FinishStep({ googlePayload, onSuccess }) {
     let age = today.getFullYear() - birthDate.getFullYear();
     const m2 = today.getMonth() - birthDate.getMonth();
     if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
-    if (age < 13) return setError("⚠️ Incorrect birthday! Your birth year appears wrong — please go back and select the correct year.");
+    if (age < 13) return setError("⚠️ You must be 13 or older to join Sachi.");
     setLoading(true);
     setError("");
     try {
@@ -8903,13 +9050,14 @@ function FinishStep({ googlePayload, onSuccess }) {
       if (country) localStorage.setItem("sachi_country", country);
       if (city) localStorage.setItem("sachi_city", city);
       localStorage.removeItem("sachi_pending_google");
+      localStorage.removeItem("sachi_pending_email");
       const sessionUser = {
         id: created.id,
         email,
         full_name: name || username.trim(),
         avatar_url: picture || "",
         username: username.trim().toLowerCase(),
-        _google: true,
+        _google: !!googlePayload,
         _sachiProfileId: created.id
       };
       localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
@@ -8923,11 +9071,15 @@ function FinishStep({ googlePayload, onSuccess }) {
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }, children: [
-      picture && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: picture, style: { width: 72, height: 72, borderRadius: "50%", border: "3px solid #F5C842", marginBottom: 10 } }),
+    picture && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: picture, style: { width: 72, height: 72, borderRadius: "50%", border: "3px solid #F5C842", marginBottom: 10 } }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 17 }, children: name }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13 }, children: email }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(80,200,80,0.12)", border: "1px solid rgba(80,200,80,0.3)", borderRadius: 20, padding: "4px 14px", marginTop: 8, color: "#6fcf6f", fontSize: 12, fontWeight: 700 }, children: "✓ Verified with Google" })
+    ] }),
+    !picture && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13 }, children: email }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(80,200,80,0.12)", border: "1px solid rgba(80,200,80,0.3)", borderRadius: 20, padding: "4px 14px", marginTop: 8, color: "#6fcf6f", fontSize: 12, fontWeight: 700, display: "inline-block" }, children: "✓ Email Verified" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 16 }, children: "Just a few more details to set up your profile:" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -8945,114 +9097,47 @@ function FinishStep({ googlePayload, onSuccess }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8, marginBottom: 10 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
-        {
-          value: dob ? dob.split("-")[1] : "",
-          onChange: (e) => {
-            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
-            parts[1] = e.target.value;
-            setDob(parts.join("-"));
-          },
-          style: { ...inp, marginBottom: 0, flex: 1 },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Month" }),
-            ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map(
-              (m2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: m2, children: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i] }, m2)
-            )
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
-        {
-          value: dob ? dob.split("-")[2] : "",
-          onChange: (e) => {
-            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
-            parts[2] = e.target.value;
-            setDob(parts.join("-"));
-          },
-          style: { ...inp, marginBottom: 0, flex: 1 },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Day" }),
-            Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map(
-              (d) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: d, children: parseInt(d) }, d)
-            )
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "select",
-        {
-          value: dob ? dob.split("-")[0] : "",
-          onChange: (e) => {
-            const parts = dob ? dob.split("-") : ["1990", "01", "01"];
-            parts[0] = e.target.value;
-            setDob(parts.join("-"));
-          },
-          style: { ...inp, marginBottom: 0, flex: 1.2 },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Year" }),
-            Array.from({ length: 100 }, (_, i) => String((/* @__PURE__ */ new Date()).getFullYear() - 13 - i)).map(
-              (y2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: y2, children: y2 }, y2)
-            )
-          ]
-        }
-      )
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("select", { value: dob ? dob.split("-")[1] : "", onChange: (e) => {
+        const p2 = dob ? dob.split("-") : ["1990", "01", "01"];
+        p2[1] = e.target.value;
+        setDob(p2.join("-"));
+      }, style: { ...inp, marginBottom: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Month" }),
+        ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map((m2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: m2, children: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][i] }, m2))
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("select", { value: dob ? dob.split("-")[2] : "", onChange: (e) => {
+        const p2 = dob ? dob.split("-") : ["1990", "01", "01"];
+        p2[2] = e.target.value;
+        setDob(p2.join("-"));
+      }, style: { ...inp, marginBottom: 0, flex: 1 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Day" }),
+        Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map((d) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: d, children: parseInt(d) }, d))
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("select", { value: dob ? dob.split("-")[0] : "", onChange: (e) => {
+        const p2 = dob ? dob.split("-") : ["1990", "01", "01"];
+        p2[0] = e.target.value;
+        setDob(p2.join("-"));
+      }, style: { ...inp, marginBottom: 0, flex: 1.2 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", children: "Year" }),
+        Array.from({ length: 100 }, (_, i) => String((/* @__PURE__ */ new Date()).getFullYear() - 13 - i)).map((y2) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: y2, children: y2 }, y2))
+      ] })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: -6, marginBottom: 8 }, children: "Must be 13 or older to join" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
       "City ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional)" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "input",
-      {
-        value: city,
-        onChange: (e) => setCity(e.target.value),
-        placeholder: "e.g. Sydney, Colombo, New York",
-        style: inp,
-        maxLength: 60
-      }
-    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: city, onChange: (e) => setCity(e.target.value), placeholder: "e.g. Sydney, Colombo, New York", style: inp, maxLength: 60 }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
       "Country ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ff6b6b" }, children: "*" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "select",
-      {
-        value: country,
-        onChange: (e) => setCountry(e.target.value),
-        style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: country ? "1px solid rgba(245,200,66,0.6)" : "1px solid rgba(255,107,107,0.5)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" },
-        children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
-          COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
-        ]
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "center", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "input",
-        {
-          type: "checkbox",
-          checked: is18,
-          onChange: (e) => setIs18(e.target.checked),
-          style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0 }
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ccc", fontSize: 14, fontWeight: 600 }, children: "I confirm I am 13 years or older" })
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("select", { value: country, onChange: (e) => setCountry(e.target.value), style: { display: "block", width: "100%", boxSizing: "border-box", background: "#1a1b2e", border: country ? "1px solid rgba(245,200,66,0.6)" : "1px solid rgba(255,107,107,0.5)", borderRadius: 12, padding: "14px 16px", color: country ? "#fff" : "#888", fontSize: 15, outline: "none", marginBottom: 12, cursor: "pointer" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
+      COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "input",
-        {
-          type: "checkbox",
-          checked: agreedToTerms,
-          onChange: (e) => setAgreedToTerms(e.target.checked),
-          style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0, marginTop: 2 }
-        }
-      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "checkbox", checked: agreedToTerms, onChange: (e) => setAgreedToTerms(e.target.checked), style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0, marginTop: 2 } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ccc", fontSize: 13, lineHeight: 1.5 }, children: [
         "I have read and agree to Sachi's",
         " ",
@@ -9070,16 +9155,16 @@ function FinishStep({ googlePayload, onSuccess }) {
   ] });
 }
 function AuthModal({ onClose, onSuccess }) {
-  const pendingRaw = localStorage.getItem("sachi_pending_google");
-  const pending = pendingRaw ? (() => {
+  const pendingGoogleRaw = localStorage.getItem("sachi_pending_google");
+  const pendingGoogle = pendingGoogleRaw ? (() => {
     try {
-      return JSON.parse(pendingRaw);
+      return JSON.parse(pendingGoogleRaw);
     } catch {
       return null;
     }
   })() : null;
-  const [step, setStep] = reactExports.useState(pending ? "finish" : "signin");
-  const [googlePayload, setGooglePayload] = reactExports.useState(pending || null);
+  const [step, setStep] = reactExports.useState(pendingGoogle ? "finish-google" : "signin");
+  const [googlePayload, setGooglePayload] = reactExports.useState(pendingGoogle || null);
   const [loading, setLoading] = reactExports.useState(false);
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -9090,7 +9175,7 @@ function AuthModal({ onClose, onSuccess }) {
           onClose();
         } else if (result.needsProfile && result.payload) {
           setGooglePayload(result.payload);
-          setStep("finish");
+          setStep("finish-google");
         }
         setLoading(false);
       });
@@ -9099,32 +9184,7 @@ function AuthModal({ onClose, onSuccess }) {
       setLoading(false);
     }
   };
-  if (step === "finish" && googlePayload) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.88)" } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-        position: "relative",
-        zIndex: 3001,
-        background: "#12132A",
-        borderRadius: 24,
-        border: "1px solid rgba(245,200,66,0.1)",
-        padding: "32px 24px",
-        width: "100%",
-        maxWidth: 380,
-        maxHeight: "90vh",
-        overflowY: "auto",
-        boxShadow: "0 24px 80px rgba(0,0,0,0.8)"
-      }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 22, cursor: "pointer", lineHeight: 1 }, children: "✕" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌸" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }, children: "Almost there!" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, onSuccess })
-      ] })
-    ] });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }, children: [
+  const modalShell = (children) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.88)" } }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       position: "relative",
@@ -9135,9 +9195,35 @@ function AuthModal({ onClose, onSuccess }) {
       padding: "32px 24px",
       width: "100%",
       maxWidth: 380,
+      maxHeight: "90vh",
+      overflowY: "auto",
       boxShadow: "0 24px 80px rgba(0,0,0,0.8)"
     }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { position: "absolute", top: 16, right: 16, background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 22, cursor: "pointer", lineHeight: 1 }, children: "✕" }),
+      children
+    ] })
+  ] });
+  if (step === "finish-google" && googlePayload) {
+    return modalShell(
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌸" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }, children: "Almost there!" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, onSuccess })
+      ] })
+    );
+  }
+  if (step === "email-otp") {
+    return modalShell(
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌸" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(EmailOTPStep, { onSuccess, onBack: () => setStep("signin") })
+      ] })
+    );
+  }
+  return modalShell(
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 28 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 8 }, children: "🌸" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 24, letterSpacing: -0.5, marginBottom: 4 }, children: "Join Sachi" }),
@@ -9163,16 +9249,14 @@ function AuthModal({ onClose, onSuccess }) {
             fontWeight: 700,
             color: "#1a1a2e",
             boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
-            transition: "transform 0.15s, box-shadow 0.15s",
-            marginBottom: 20
+            marginBottom: 12,
+            transition: "transform 0.15s"
           },
           onMouseEnter: (e) => {
             e.currentTarget.style.transform = "scale(1.02)";
-            e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.4)";
           },
           onMouseLeave: (e) => {
             e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.3)";
           },
           children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 48 48", children: [
@@ -9185,7 +9269,42 @@ function AuthModal({ onClose, onSuccess }) {
           ]
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center", marginBottom: 20 }, children: "Free to join. No spam. No BS." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 12 }, children: "or" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.1)" } })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: () => setStep("email-otp"),
+          style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            width: "100%",
+            padding: "15px 20px",
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(245,200,66,0.25)",
+            borderRadius: 14,
+            cursor: "pointer",
+            fontSize: 16,
+            fontWeight: 700,
+            color: "#fff",
+            marginBottom: 20,
+            transition: "background 0.15s"
+          },
+          onMouseEnter: (e) => {
+            e.currentTarget.style.background = "rgba(245,200,66,0.1)";
+          },
+          onMouseLeave: (e) => {
+            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+          },
+          children: "✉️ Continue with Email"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center", marginBottom: 12 }, children: "Free to join. No spam. No BS." }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#444", fontSize: 11, textAlign: "center", lineHeight: 1.6 }, children: [
         "By continuing you agree to our",
         " ",
@@ -9198,7 +9317,7 @@ function AuthModal({ onClose, onSuccess }) {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "sachi-google-btn-hidden", style: { display: "none" } })
     ] })
-  ] });
+  );
 }
 const EFFECTIVE_DATE$1 = "April 1, 2026";
 const COMPANY$1 = "LDNA Consulting LLC";
