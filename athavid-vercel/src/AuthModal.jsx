@@ -30,7 +30,12 @@ async function lookupSachiUser(email) {
     );
     const data = await res.json();
     const items = Array.isArray(data) ? data : (data?.items || []);
-    return items.find(u => u.email === email) || null;
+    const found = items.find(u => u.email === email) || null;
+    // Restore DOB from DB to localStorage so age-gate works across devices/browsers
+    if (found?.date_of_birth) {
+      localStorage.setItem("sachi_dob", found.date_of_birth);
+    }
+    return found;
   } catch {
     return null;
   }
@@ -341,6 +346,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
             following_count: 0,
             videos_count: 0,
             location: (city && country) ? city + ", " + country : (city || country || ""),
+            date_of_birth: dob,
           })
         }
       ).then(r => r.json());
