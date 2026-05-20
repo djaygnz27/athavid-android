@@ -251,74 +251,78 @@ async function convertHeicToJpeg(file) {
 const SACHI_WORKER_URL = "https://sachi-upload.jaygnz27.workers.dev";
 
 async function uploadToCloudflareStream(file, onProgress) {
-  try {
-    // Step 1: Ask our Worker for a one-time Stream upload URL.
-    // The Worker uses its CF_STREAM_TOKEN secret to fetch this from Cloudflare.
-    onProgress && onProgress(5, "Connecting to Cloudflare Stream...");
-    const initRes = await fetch(
-      `${SACHI_WORKER_URL}/stream/init`,
-      {
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 1) {
+        onProgress && onProgress(5, `Retrying upload (attempt ${attempt}/${MAX_RETRIES})...`);
+        await new Promise(r => setTimeout(r, 2000 * attempt)); // back-off
+      }
+
+      // Step 1: Get a one-time upload URL from our Worker
+      onProgress && onProgress(5, attempt === 1 ? "Connecting to Cloudflare Stream..." : `Reconnecting... (${attempt}/${MAX_RETRIES})`);
+      const initRes = await fetch(`${SACHI_WORKER_URL}/stream/init`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: "{}",
+      });
+      if (!initRes.ok) throw new Error(`Stream init failed: ${initRes.status}`);
+      const { uploadURL, uid } = await initRes.json();
+
+      // Step 2: Upload with progress + timeout guard
+      onProgress && onProgress(15, "Uploading to Cloudflare Stream...");
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        // 5-minute timeout — covers large files on slow connections
+        xhr.timeout = 5 * 60 * 1000;
+        xhr.open("POST", uploadURL);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 60) + 15;
+            onProgress && onProgress(pct, `Uploading... ${Math.round((e.loaded / e.total) * 100)}%`);
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Upload failed: ${xhr.status}`));
+        };
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.ontimeout = () => reject(new Error("Upload timed out"));
+        const formData = new FormData();
+        formData.append("file", file);
+        xhr.send(formData);
+      });
+
+      // Step 3: Poll for HLS readiness (up to 60s)
+      onProgress && onProgress(80, "Processing video for fast streaming...");
+      let streamUrl = null;
+      let thumbnailUrl = null;
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const statusRes = await fetch(`${SACHI_WORKER_URL}/stream/status?uid=${uid}`);
+          if (!statusRes.ok) continue;
+          const video = await statusRes.json();
+          if (video.readyToStream) {
+            streamUrl = video.playback?.hls || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/manifest/video.m3u8`;
+            thumbnailUrl = video.thumbnail || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`;
+            break;
+          }
+        } catch {}
       }
-    );
-    if (!initRes.ok) throw new Error(`Stream init failed: ${initRes.status}`);
-    const result = await initRes.json();
-    const { uploadURL, uid } = result;
+      if (!streamUrl) throw new Error("Stream processing timed out");
+      onProgress && onProgress(95, "Almost there...");
+      return { streamUrl, thumbnailUrl, uid };
 
-    // Step 2: Upload the video file via tus resumable upload
-    onProgress && onProgress(15, "Uploading to Cloudflare Stream...");
-
-    // Use XMLHttpRequest for upload progress tracking
-    await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", uploadURL);
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const pct = Math.round((e.loaded / e.total) * 60) + 15;
-          onProgress && onProgress(pct, `Uploading... ${Math.round((e.loaded / e.total) * 100)}%`);
-        }
-      };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else reject(new Error(`Upload failed: ${xhr.status}`));
-      };
-      xhr.onerror = () => reject(new Error("Network error during upload"));
-      const formData = new FormData();
-      formData.append("file", file);
-      xhr.send(formData);
-    });
-
-    // Step 3: Wait for Stream to process (transcode to HLS)
-    onProgress && onProgress(80, "Processing video for fast streaming...");
-    let attempts = 0;
-    let streamUrl = null;
-    let thumbnailUrl = null;
-
-    while (attempts < 30) {
-      await new Promise(r => setTimeout(r, 2000)); // poll every 2s
-      const statusRes = await fetch(
-        `${SACHI_WORKER_URL}/stream/status?uid=${uid}`
-      );
-      if (!statusRes.ok) { attempts++; continue; }
-      const video = await statusRes.json();
-      if (video.readyToStream) {
-        // HLS manifest URL — adaptive bitrate, edge delivered
-        streamUrl = video.playback?.hls || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/manifest/video.m3u8`;
-        thumbnailUrl = video.thumbnail || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`;
-        break;
+    } catch(e) {
+      console.warn(`[Sachi] CF upload attempt ${attempt} failed:`, e.message);
+      if (attempt === MAX_RETRIES) {
+        console.error("[Sachi] All CF upload attempts failed, falling back to R2");
+        return null;
       }
-      attempts++;
     }
-
-    if (!streamUrl) throw new Error("Stream processing timed out");
-    onProgress && onProgress(95, "Almost there...");
-    return { streamUrl, thumbnailUrl, uid };
-  } catch(e) {
-    console.error("[Sachi Stream] Upload failed:", e);
-    return null; // Fall back to Base44
   }
+  return null;
 }
 
 // Get user's location for post geo-tagging
@@ -1516,9 +1520,20 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setProgress(95);
         setStep("Saving to feed...");
       } else {
-        // Fall back to Base44 direct upload
-        setStep("Uploading video...");
-        video_url = await uploadFile(editedFile || file);
+        // Fall back to R2 upload (never use Base44 storage for videos)
+        setStep("Uploading to backup server...");
+        try {
+          const r2Res = await fetch(`${SACHI_WORKER_URL}/upload`, {
+            method: "POST",
+            body: (() => { const fd = new FormData(); fd.append("file", editedFile || file); return fd; })(),
+          });
+          if (r2Res.ok) {
+            const r2Data = await r2Res.json();
+            video_url = r2Data.url;
+          }
+        } catch(r2Err) {
+          console.error("[Sachi] R2 fallback also failed:", r2Err);
+        }
         setProgress(60);
         setStep("Generating thumbnail...");
         try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
