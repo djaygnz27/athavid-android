@@ -4606,186 +4606,78 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 
 // ─── User Profile Sheet ──────────────────────────────────────────────────────
 // ─── Profile Video Player (full-screen TikTok-style) ────────────────────────
-function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username, showManage }) {
-  const [idx, setIdx] = React.useState(startIndex || 0);
-  const [muted, setMuted] = React.useState(false);
-  const [paused, setPaused] = React.useState(false);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const videoRef = React.useRef(null);
-  const touchStartY = React.useRef(null);
-  const touchStartX = React.useRef(null);
-  const userPaused = React.useRef(false);
-  const hasInteracted = React.useRef(false); // becomes true after first user play
+function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username, showManage, currentUser }) {
+  const containerRef = React.useRef(null);
 
-  const v = vids[idx];
-
-  // When idx changes: load new src, wait for canplay, then play
+  // Set playStore so IntersectionObserver in VideoCard auto-plays on scroll
   React.useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    const src = resolveMediaUrl(v.media_url || v.video_url);
-
-    const doPlay = () => {
-      if (userPaused.current) return;
-      vid.muted = true; // muted-first = browser always allows it
-      vid.play().then(() => {
-        // Successfully playing — unmute immediately if user hasn't toggled mute
-        vid.muted = !!muted;
-        hasInteracted.current = true;
-        setIsPlaying(true);
-        setPaused(false);
-      }).catch(() => {
-        // Blocked even muted (rare) — show play button
-        setIsPlaying(false);
-        setPaused(true);
-      });
-    };
-
-    // If same src already loaded — just seek and play directly
-    if (vid.currentSrc && vid.currentSrc.includes(src.split('/').pop())) {
-      vid.currentTime = 0;
-      doPlay();
-    } else {
-      // New src — set, load, then play once ready
-      vid.src = src;
-      vid.load();
-      vid.oncanplay = () => {
-        vid.oncanplay = null;
-        doPlay();
-      };
+    playStore.set(true);
+    window.dispatchEvent(new CustomEvent('sachi-user-played'));
+    // Scroll to startIndex video
+    if (containerRef.current) {
+      const cards = containerRef.current.querySelectorAll('.profile-vid-card');
+      if (cards[startIndex]) {
+        cards[startIndex].scrollIntoView({ behavior: 'instant', block: 'start' });
+      }
     }
-
-    return () => { vid.oncanplay = null; };
-  }, [idx]); // eslint-disable-line
-
-  const goNext = () => { if (idx < vids.length - 1) setIdx(i => i + 1); };
-  const goPrev = () => { if (idx > 0) setIdx(i => i - 1); };
-
-  const togglePlay = () => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    if (vid.paused) {
-      vid.muted = true;
-      vid.play().then(() => {
-        if (!muted) vid.muted = false;
-        userPaused.current = false;
-        setPaused(false);
-        setIsPlaying(true);
-        hasInteracted.current = true;
-      }).catch(() => {});
-    } else {
-      vid.pause();
-      userPaused.current = true;
-      setPaused(true);
-      setIsPlaying(false);
-    }
-  };
-
-  const onTouchStart = (e) => {
-    touchStartY.current = e.touches[0].clientY;
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const onTouchEnd = (e) => {
-    if (touchStartY.current === null) return;
-    const diffY = touchStartY.current - e.changedTouches[0].clientY;
-    const diffX = Math.abs(touchStartX.current - e.changedTouches[0].clientX);
-    // Only swipe vertically if horizontal movement is small (not a scroll)
-    if (Math.abs(diffY) > 50 && diffX < 40) {
-      diffY > 0 ? goNext() : goPrev();
-    }
-    touchStartY.current = null;
-    touchStartX.current = null;
-  };
-
-  if (!v) return null;
+  }, []);
 
   return (
-    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-      style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-
-      {/* Video — tap to pause/resume */}
-      <video ref={videoRef}
-        playsInline loop muted={muted}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onClick={togglePlay}
-        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
-
-      {/* Pause indicator */}
-      {paused && (
-        <div onClick={togglePlay} style={{ position:"absolute", inset:0, zIndex:8, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto" }}>
-          <div style={{ background:"rgba(0,0,0,0.5)", borderRadius:"50%", width:72, height:72,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>▶</div>
-        </div>
-      )}
-
-      {/* Gradient overlay */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents:"none" }} />
-
-      {/* Top bar */}
-      <div style={{ position:"absolute", top:0, left:0, right:0, display:"flex", alignItems:"center", padding:"50px 16px 16px", zIndex:10 }}>
+    <div style={{ position:'fixed', inset:0, zIndex:5000, background:'#000', display:'flex', flexDirection:'column' }}>
+      {/* Header */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:20,
+        display:'flex', alignItems:'center', padding:'50px 16px 12px',
+        background:'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
         <button onClick={onClose}
-          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
-            color:"#fff", fontSize:20, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
-        <div style={{ flex:1, textAlign:"center", color:"#fff", fontWeight:800, fontSize:15 }}>
+          style={{ background:'rgba(0,0,0,0.4)', border:'none', borderRadius:'50%',
+            width:40, height:40, color:'#fff', fontSize:20, cursor:'pointer',
+            display:'flex', alignItems:'center', justifyContent:'center' }}>←</button>
+        <div style={{ flex:1, textAlign:'center', color:'#fff', fontWeight:800, fontSize:15 }}>
           {profile?.display_name || username}
         </div>
-        <button onClick={() => setMuted(m => !m)}
-          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
-            color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-          {muted ? "🔇" : "🔊"}
-        </button>
+        <div style={{ width:40 }} />
       </div>
 
-      {/* Bottom info */}
-      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"0 16px 40px", zIndex:10 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-          <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`}
-            style={{ width:36, height:36, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
-          <div style={{ color:"#fff", fontWeight:800, fontSize:14 }}>@{username}</div>
-        </div>
-        {v.caption && <div style={{ color:"#fff", fontSize:13, lineHeight:1.5, marginBottom:8 }}>{v.caption}</div>}
-        <div style={{ display:"flex", gap:16 }}>
-          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>❤️ {v.likes_count || 0}</span>
-          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>💬 {v.comments_count || 0}</span>
-          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>👁 {v.views_count || 0}</span>
-        </div>
-      </div>
-
-      {/* Swipe hint dots */}
-      <div style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", display:"flex", flexDirection:"column", gap:4, zIndex:10 }}>
-        {vids.map((_, i) => (
-          <div key={i} onClick={() => setIdx(i)}
-            style={{ width:4, height: i === idx ? 20 : 6, borderRadius:4,
-              background: i === idx ? "#ff6b6b" : "rgba(255,255,255,0.3)", cursor:"pointer",
-              transition:"height 0.2s" }} />
+      {/* Vertical scroll feed — same as main feed, autoplay just works */}
+      <div ref={containerRef}
+        style={{ flex:1, overflowY:'scroll', scrollSnapType:'y mandatory',
+          WebkitOverflowScrolling:'touch' }}>
+        {vids.map((v, i) => (
+          <div key={v.id} className="profile-vid-card"
+            style={{ height:'100dvh', scrollSnapAlign:'start', scrollSnapStop:'always',
+              position:'relative', flexShrink:0 }}>
+            <VideoCard
+              video={v}
+              currentUser={currentUser}
+              preloadMode={i === 0 ? 'auto' : 'metadata'}
+              onCommentOpen={() => {}}
+              onLike={() => {}}
+              onView={() => {}}
+              onNeedAuth={() => {}}
+              onDelete={() => {}}
+              onProfileOpen={() => {}}
+              onFollowChange={() => {}}
+              onShareCount={() => {}}
+              onHashtagPress={() => {}}
+              onBookmark={{ isBookmarked: () => false, handle: () => {} }}
+              likedVideoIds={new Set()}
+              likeRecords={{}}
+              onLikeChange={() => {}}
+              followedUserIds={new Set()}
+              blockedIds={new Set()}
+            />
+            {/* Manage button for own videos */}
+            {showManage && (
+              <button onClick={() => { onClose(); setTimeout(() => showManage(v), 150); }}
+                style={{ position:'absolute', top:60, right:16, zIndex:30,
+                  background:'rgba(0,0,0,0.55)', border:'1px solid rgba(255,255,255,0.2)',
+                  borderRadius:20, padding:'6px 14px', color:'#fff', fontSize:13,
+                  fontWeight:700, cursor:'pointer' }}>
+                ⋮ Manage
+              </button>
+            )}
+          </div>
         ))}
-      </div>
-      {/* Manage button (own profile only) */}
-      {showManage && (
-        <button onClick={() => showManage(v)}
-          style={{ position:"absolute", top:50, right:16, zIndex:20, background:"rgba(0,0,0,0.5)",
-            border:"none", borderRadius:20, padding:"6px 14px", color:"#fff", fontSize:13,
-            fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-          ⋮ Manage
-        </button>
-      )}
-
-      {/* Nav arrows (desktop) */}
-      {idx > 0 && (
-        <button onClick={goPrev}
-          style={{ position:"absolute", top:"50%", left:12, transform:"translateY(-50%)", background:"rgba(0,0,0,0.5)",
-            border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", zIndex:10 }}>↑</button>
-      )}
-      {idx < vids.length - 1 && (
-        <button onClick={goNext}
-          style={{ position:"absolute", top:"50%", right:54, transform:"translateY(-50%)", background:"rgba(0,0,0,0.5)",
-            border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", zIndex:10 }}>↓</button>
-      )}
-
-      {/* Counter */}
-      <div style={{ position:"absolute", bottom:16, right:16, color:"rgba(255,255,255,0.5)", fontSize:11, zIndex:10 }}>
-        {idx + 1} / {vids.length}
       </div>
     </div>
   );
