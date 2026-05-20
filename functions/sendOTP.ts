@@ -1,4 +1,8 @@
-Deno.serve(async (req) => {
+import base44 from "npm:@base44/sdk";
+
+const app = base44.init({ appId: "69e79122bcc8fb5a04cfb834" });
+
+export default async function handler(req: Request): Promise<Response> {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -9,93 +13,71 @@ Deno.serve(async (req) => {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-  const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-
-  function generateOTP(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
   try {
-    const body = await req.json().catch(() => ({}));
-    const { email } = body;
-
-    if (!email || !email.includes("@")) {
-      return Response.json({ error: "Invalid email address" }, { status: 400, headers: corsHeaders });
+    const { email } = await req.json();
+    if (!email) {
+      return new Response(JSON.stringify({ error: "Email required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const otp = generateOTP();
-    const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    // Generate 6-digit OTP
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
 
-    // Delete any existing OTPs for this email
-    try {
-      const existing = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/PasswordReset?email=${encodeURIComponent(normalizedEmail)}&limit=10`,
-        { headers: { "Content-Type": "application/json" } }
-      );
-      const existingData = await existing.json();
-      const items = Array.isArray(existingData) ? existingData : (existingData?.items || []);
-      for (const item of items) {
-        await fetch(`${BASE_URL}/apps/${APP_ID}/entities/PasswordReset/${item.id}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-    } catch (_) {}
+    // Delete any existing codes for this email
+    const existing = await app.asServiceRole.entities.PasswordReset.filter({ email });
+    for (const rec of existing) {
+      await app.asServiceRole.entities.PasswordReset.delete(rec.id);
+    }
 
-    // Store new OTP in database
-    await fetch(`${BASE_URL}/apps/${APP_ID}/entities/PasswordReset`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: normalizedEmail, code: otp, expiry })
-    });
+    // Store new OTP
+    await app.asServiceRole.entities.PasswordReset.create({ email, code, expiry });
 
-    // Send via Resend HTTP API
-    const resendKey = Deno.env.get("RESEND_API_KEY") || "";
-
-    const htmlBody = `
-      <div style="font-family:sans-serif;background:#0B0C1A;color:#fff;padding:40px;max-width:480px;margin:0 auto;border-radius:16px;">
-        <div style="text-align:center;margin-bottom:24px;">
-          <div style="font-size:40px;">🌸</div>
-          <h2 style="color:#F5C842;margin:8px 0;">Sachi Stream</h2>
-          <p style="color:#aaa;font-size:14px;">Where truth meets community</p>
-        </div>
-        <div style="background:#1a1b2e;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px;">
-          <p style="color:#ccc;font-size:14px;margin:0 0 16px;">Your verification code is:</p>
-          <div style="font-size:42px;font-weight:900;letter-spacing:12px;color:#F5C842;">${otp}</div>
-          <p style="color:#666;font-size:12px;margin:16px 0 0;">Expires in 10 minutes</p>
-        </div>
-        <p style="color:#555;font-size:12px;text-align:center;">If you didn't request this, ignore this email.</p>
-      </div>
-    `;
-
+    // Send via Resend
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${resendKey}`,
+        "Authorization": `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Sachi Stream <support@sachistream.com>",
-        to: [normalizedEmail],
+        from: "Sachi Stream <noreply@sachistream.com>",
+        to: [email],
         subject: "Your Sachi verification code",
-        html: htmlBody,
-        text: `Your Sachi verification code is: ${otp} (expires in 10 minutes)`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0B0C1A;color:#fff;border-radius:12px;">
+            <div style="text-align:center;margin-bottom:24px;">
+              <span style="font-size:40px;">🌸</span>
+              <h1 style="color:#F5C842;margin:8px 0;font-size:24px;">Sachi Stream</h1>
+            </div>
+            <p style="color:#ccc;font-size:16px;">Your verification code is:</p>
+            <div style="background:#1a1b2e;border:2px solid #F5C842;border-radius:8px;padding:20px;text-align:center;margin:16px 0;">
+              <span style="font-size:40px;font-weight:bold;letter-spacing:8px;color:#F5C842;">${code}</span>
+            </div>
+            <p style="color:#888;font-size:13px;">This code expires in 10 minutes. Don't share it with anyone.</p>
+            <p style="color:#555;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
       }),
     });
 
-    const resendData = await resendRes.json().catch(() => ({}));
-    console.log("Resend response:", JSON.stringify(resendData));
-
     if (!resendRes.ok) {
-      throw new Error(`Resend error: ${JSON.stringify(resendData)}`);
+      const err = await resendRes.text();
+      console.error("Resend error:", err);
+      return new Response(JSON.stringify({ error: "Failed to send email" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
-    return Response.json({ success: true }, { headers: corsHeaders });
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
 
   } catch (e) {
     console.error("sendOTP error:", e);
-    return Response.json({ error: "Server error", detail: String(e) }, { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
-});
+}
