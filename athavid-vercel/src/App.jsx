@@ -7023,7 +7023,8 @@ function App() {
       });
       setFeedHasMore(false);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
-      const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
+      // Sort by original post date (external_id) when available, else created_date
+      const sorted = [...raw].sort((a,b) => new Date(b.external_id||b.created_date||0) - new Date(a.external_id||a.created_date||0));
       setVideoList(sorted);
       requestAnimationFrame(() => {
         const el = feedContainerRef.current;
