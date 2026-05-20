@@ -51,9 +51,18 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ email: normalizedEmail, code: otp, expiry })
     });
 
-    // Send via Zoho Transactional Email API (no SMTP port needed)
+    // Send via Zoho SMTP port 587 (STARTTLS) using app password
     const zohoPassword = Deno.env.get("ZOHO_APP_PASSWORD") || "";
-    const credentials = btoa(`support@sachistream.com:${zohoPassword}`);
+
+    const { SMTPClient } = await import("npm:emailjs@4.0.3");
+
+    const client = new SMTPClient({
+      user: "support@sachistream.com",
+      password: zohoPassword,
+      host: "smtppro.zoho.com",
+      port: 587,
+      tls: true,
+    });
 
     const htmlBody = `
       <div style="font-family:sans-serif;background:#0B0C1A;color:#fff;padding:40px;max-width:480px;margin:0 auto;border-radius:16px;">
@@ -71,29 +80,15 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    // Use Zoho Mail Send API
-    const mailRes = await fetch("https://mail.zoho.com/api/accounts/me/messages", {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${credentials}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        fromAddress: "support@sachistream.com",
-        toAddress: normalizedEmail,
-        subject: "Your Sachi verification code",
-        mailFormat: "html",
-        content: htmlBody,
-      }),
+    await client.sendAsync({
+      text: `Your Sachi verification code is: ${otp} (expires in 10 minutes)`,
+      from: "Sachi Stream <support@sachistream.com>",
+      to: normalizedEmail,
+      subject: "Your Sachi verification code",
+      attachment: [{ data: htmlBody, alternative: true }],
     });
 
-    const mailData = await mailRes.json().catch(() => ({}));
-    console.log("Zoho mail response:", JSON.stringify(mailData));
-
-    if (!mailRes.ok) {
-      throw new Error(`Zoho API error: ${JSON.stringify(mailData)}`);
-    }
-
+    console.log(`OTP sent to ${normalizedEmail}`);
     return Response.json({ success: true }, { headers: corsHeaders });
 
   } catch (e) {
