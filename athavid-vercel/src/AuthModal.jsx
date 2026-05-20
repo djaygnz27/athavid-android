@@ -25,15 +25,15 @@ const FUNCTIONS_URL = "https://sachi-c7f0261c.base44.app/functions"; // OTP func
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
     const items = Array.isArray(data) ? data : (data?.items || []);
     const found = items.find(u => u.email === email) || null;
     // Restore DOB from DB to localStorage so age-gate works across devices/browsers
-    if (found?.date_of_birth) {
-      localStorage.setItem("sachi_dob", found.date_of_birth);
+    if (found?.dob) {
+      localStorage.setItem("sachi_dob", found.dob);
     }
     return found;
   } catch {
@@ -330,7 +330,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
     setLoading(true); setError("");
     try {
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -345,8 +345,9 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
             followers_count: 0,
             following_count: 0,
             videos_count: 0,
-            location: (city && country) ? city + ", " + country : (city || country || ""),
-            date_of_birth: dob,
+            location_city: city || "",
+            location_country: country || "",
+            dob: dob,
           })
         }
       ).then(r => r.json());
