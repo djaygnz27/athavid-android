@@ -297,7 +297,7 @@ export default function FoundingCreatorPage({ onBack }) {
       {/* Nav */}
       <nav style={{ position:"sticky",top:0,zIndex:100,background:"rgba(13,11,26,0.8)",backdropFilter:"blur(18px)",borderBottom:"1px solid rgba(255,255,255,0.06)",padding:"12px 24px",display:"flex",alignItems:"center",justifyContent:"space-between" }}>
         <div style={{ display:"flex",alignItems:"center",gap:9,cursor:"pointer" }} onClick={onBack}>
-          <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:34,height:34,borderRadius:10,filter:"drop-shadow(0 0 8px rgba(245,200,66,0.4))" }} />
+          <img src="/sachi-neon-logo.jpg" alt="Sachi" style={{ width:90,height:36,objectFit:"contain",borderRadius:8,filter:"drop-shadow(0 0 8px rgba(245,200,66,0.4))" }} />
           <span style={{ fontSize:21,fontWeight:900,background:"linear-gradient(135deg,#F5C842,#FFB020)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent" }}>Sachi</span>
           <span style={{ fontSize:11,color:"rgba(245,200,66,0.7)",fontWeight:700 }}>™</span>
         </div>
@@ -315,7 +315,7 @@ export default function FoundingCreatorPage({ onBack }) {
           <div className="float-logo f1" style={{ display:"flex",alignItems:"center",justifyContent:"center",marginBottom:30,position:"relative" }}>
             <div style={{ position:"absolute",inset:"-18px",borderRadius:"50%",border:"1.5px solid rgba(245,200,66,0.18)",animation:"ringOut 3.5s ease-out 0.8s infinite" }} />
             <div style={{ position:"absolute",inset:"-18px",borderRadius:"50%",border:"1.5px solid rgba(245,200,66,0.12)",animation:"ringOut 3.5s ease-out 2.1s infinite" }} />
-            <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:108,height:108,borderRadius:30,display:"block",filter:"drop-shadow(0 4px 24px rgba(245,200,66,0.45)) drop-shadow(0 0 60px rgba(120,60,200,0.3))" }} />
+            <img src="/sachi-neon-logo.jpg" alt="Sachi" style={{ width:200,height:100,borderRadius:16,objectFit:"contain",display:"block",filter:"drop-shadow(0 4px 24px rgba(245,200,66,0.45)) drop-shadow(0 0 60px rgba(120,60,200,0.3))" }} />
           </div>
 
           {/* Badge pill */}
