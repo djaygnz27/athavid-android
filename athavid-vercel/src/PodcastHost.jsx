@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const API = "https://sachi-c7f0261c.base44.app/api";
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const API = "https://sachi-04cfb834.base44.app/api";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 const APP_BASE = `/apps/${APP_ID}`;
 const SACHI_FN = "https://sachi-c7f0261c.base44.app/functions";
 
@@ -493,7 +493,7 @@ export default function PodcastHost() {
               <div style={{ marginTop:14, paddingTop:12, borderTop:"1px solid rgba(108,60,247,0.2)", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
                 <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Need a step-by-step walkthrough?</div>
                 <a
-                  href="https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/files/mp/public/69b2ee18a8e6fb58c7f0261c/bbc3469b5_Sachi_OBS_Setup_Guide.pdf"
+                  href="https://base44.app/api/apps/69e79122bcc8fb5a04cfb834/files/mp/public/69e79122bcc8fb5a04cfb834/bbc3469b5_Sachi_OBS_Setup_Guide.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:8, padding:"7px 14px", color:"#F5C842", fontSize:12, fontWeight:700, textDecoration:"none" }}
@@ -582,7 +582,7 @@ export default function PodcastHost() {
                   <div style={{ marginTop:12, paddingTop:10, borderTop:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                     <div style={{ color:"rgba(255,255,255,0.35)", fontSize:11 }}>New to OBS? Download the setup guide</div>
                     <a
-                      href="https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/files/mp/public/69b2ee18a8e6fb58c7f0261c/bbc3469b5_Sachi_OBS_Setup_Guide.pdf"
+                      href="https://base44.app/api/apps/69e79122bcc8fb5a04cfb834/files/mp/public/69e79122bcc8fb5a04cfb834/bbc3469b5_Sachi_OBS_Setup_Guide.pdf"
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{ display:"flex", alignItems:"center", gap:5, background:"rgba(245,200,66,0.12)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:8, padding:"5px 12px", color:"#F5C842", fontSize:11, fontWeight:600, textDecoration:"none", cursor:"pointer" }}
