@@ -4606,7 +4606,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 
 // ─── User Profile Sheet ──────────────────────────────────────────────────────
 // ─── Profile Video Player (full-screen TikTok-style) ────────────────────────
-function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username }) {
+function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username, showManage }) {
   const [idx, setIdx] = React.useState(startIndex || 0);
   const [muted, setMuted] = React.useState(false);
   const videoRef = React.useRef(null);
@@ -4685,6 +4685,15 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
               transition:"height 0.2s" }} />
         ))}
       </div>
+      {/* Manage button (own profile only) */}
+      {showManage && (
+        <button onClick={() => showManage(v)}
+          style={{ position:"absolute", top:50, right:16, zIndex:20, background:"rgba(0,0,0,0.5)",
+            border:"none", borderRadius:20, padding:"6px 14px", color:"#fff", fontSize:13,
+            fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+          ⋮ Manage
+        </button>
+      )}
 
       {/* Nav arrows (desktop) */}
       {idx > 0 && (
@@ -4972,12 +4981,14 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
 }
 
 // ─── VideoManageGrid ────────────────────────────────────────────────────────
-function VideoManageGrid({ videos: vids, onRefresh }) {
+function VideoManageGrid({ videos: vids, onRefresh, currentUser }) {
   const [menuVideo, setMenuVideo] = React.useState(null);
   const [editVideo, setEditVideo] = React.useState(null);
   const [editCaption, setEditCaption] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(null);
+  const [playerIndex, setPlayerIndex] = React.useState(null);
+  const pressTimer = React.useRef(null);
 
   const handleDelete = async () => {
     try {
@@ -5008,20 +5019,39 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
 
   return (
     <>
+      {/* TikTok-style fullscreen player for own profile */}
+      {playerIndex !== null && (
+        <ProfileVideoPlayer
+          videos={vids}
+          startIndex={playerIndex}
+          profile={currentUser}
+          username={currentUser?.username || currentUser?.full_name || ""}
+          onClose={() => setPlayerIndex(null)}
+          showManage={(v) => { setPlayerIndex(null); setTimeout(() => setMenuVideo(v), 100); }}
+        />
+      )}
+
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-        {vids.map(v => (
+        {vids.map((v, i) => (
           <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
-            onClick={() => setMenuVideo(v)}>
+            onPointerDown={() => { pressTimer.current = setTimeout(() => { pressTimer.current = null; setMenuVideo(v); }, 600); }}
+            onPointerUp={() => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; setPlayerIndex(i); } }}
+            onPointerLeave={() => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } }}>
             {v.thumbnail_url
               ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
-            {/* Three-dot indicator */}
-            <div style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
-              width:24, height:24, display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:14, color:"#fff", lineHeight:1 }}>⋮</div>
+            {/* Play icon overlay */}
+            <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
+              <div style={{ fontSize:24, opacity:0.85 }}>▶</div>
+            </div>
+            <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)", pointerEvents:"none" }} />
             {/* Views badge */}
             {v.views_count > 0 && <div style={{ position:"absolute", bottom:4, left:4, background:"rgba(0,0,0,0.6)",
-              borderRadius:8, padding:"2px 6px", fontSize:10, color:"#fff" }}>👁 {v.views_count}</div>}
+              borderRadius:8, padding:"2px 6px", fontSize:10, color:"#fff", pointerEvents:"none" }}>👁 {v.views_count}</div>}
+            {/* Long-press hint */}
+            <div style={{ position:"absolute", top:5, right:5, background:"rgba(0,0,0,0.5)", borderRadius:"50%",
+              width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:13, color:"#fff", pointerEvents:"none" }}>⋮</div>
           </div>
         ))}
       </div>
@@ -7569,7 +7599,7 @@ function App() {
                   </button>
                 </div>
               </div>
-              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
+              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} currentUser={currentUser} />
 
               {/* Founding Creator CTA */}
               <div style={{ padding:"0 20px 12px" }}>
