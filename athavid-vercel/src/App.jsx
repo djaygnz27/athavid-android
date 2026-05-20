@@ -4611,18 +4611,38 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
 
   const [activeIdx, setActiveIdx] = React.useState(startIndex || 0);
 
-  // Set playStore so IntersectionObserver in VideoCard auto-plays on scroll
+  // Set playStore + directly play the first visible video
   React.useEffect(() => {
+    // Unlock autoplay for all VideoCards
     playStore.set(true);
     window.dispatchEvent(new CustomEvent('sachi-user-played'));
-    // Delay scroll slightly so React has painted the cards first
+
     setTimeout(() => {
+      // 1. Scroll to the tapped video
       if (containerRef.current) {
         const cards = containerRef.current.querySelectorAll('.profile-vid-card');
         if (cards[startIndex]) {
           cards[startIndex].scrollIntoView({ behavior: 'instant', block: 'start' });
         }
       }
+      // 2. Directly find and play the first video element —
+      //    IntersectionObserver fires async so we force-play immediately
+      setTimeout(() => {
+        if (containerRef.current) {
+          const cards = containerRef.current.querySelectorAll('.profile-vid-card');
+          const targetCard = cards[startIndex] || cards[0];
+          if (targetCard) {
+            const vid = targetCard.querySelector('video');
+            if (vid) {
+              vid.muted = true;
+              vid.currentTime = 0;
+              vid.play().then(() => {
+                vid.muted = false; // unmute after play starts
+              }).catch(() => {});
+            }
+          }
+        }
+      }, 150);
     }, 50);
   }, []);
 
