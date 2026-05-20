@@ -3001,14 +3001,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
+    const isVisibleRef = { current: false };
     const obs = new IntersectionObserver(([e]) => {
+      isVisibleRef.current = e.isIntersecting;
       if (e.isIntersecting) {
         // Notify parent this is now the current video — drives preload strategy
         onBecomeCurrent && onBecomeCurrent();
         const currentlyMuted = muteStore.get();
         el.muted = video.sound_url ? true : currentlyMuted;
-        // Only auto-play if user has already interacted with a video (TikTok UX)
         if (playStore.get()) {
+          // User has already interacted — auto-play immediately
           el.play().catch(() => {});
           setPlaying(true);
           if (!currentlyMuted && soundRef.current && video.sound_url) {
@@ -3016,7 +3018,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           }
           setShowUI(false);
         } else {
-          // First video — show play button, wait for user tap
+          // First time — show play button, wait for user tap
           setShowUI(true);
           setUserTapped(false);
         }
@@ -3032,7 +3034,23 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       }
     }, { threshold: 0.4 });
     obs.observe(el);
-    return () => obs.disconnect();
+
+    // When user first plays ANY video, this card should immediately play if visible
+    const onUserPlayed = () => {
+      if (isVisibleRef.current && el.paused) {
+        const currentlyMuted = muteStore.get();
+        el.muted = video.sound_url ? true : currentlyMuted;
+        el.play().catch(() => {});
+        setPlaying(true);
+        setShowUI(false);
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
+          soundRef.current.play().catch(() => {});
+        }
+      }
+    };
+    window.addEventListener('sachi-user-played', onUserPlayed);
+
+    return () => { obs.disconnect(); window.removeEventListener('sachi-user-played', onUserPlayed); };
   }, []);
 
   // For photo posts — pause sound when card scrolls out of view
@@ -3088,8 +3106,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (el.paused) {
       el.play();
       setPlaying(true);
-      // User just interacted — unlock auto-play for all future cards
-      playStore.set(true);
+      // First play — unlock auto-play globally and notify all visible cards
+      if (!playStore.get()) {
+        playStore.set(true);
+        window.dispatchEvent(new CustomEvent('sachi-user-played'));
+      }
       // Immediately hide UI when resuming play
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       uiTimerRef.current = setTimeout(() => { setShowUI(false); }, 400);
