@@ -1,12 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-
-function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
 Deno.serve(async (req) => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -16,6 +7,13 @@ Deno.serve(async (req) => {
 
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+  const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+
+  function generateOTP(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
   try {
@@ -46,16 +44,25 @@ Deno.serve(async (req) => {
       }
     } catch (_) {}
 
-    // Store new OTP
+    // Store new OTP in database
     await fetch(`${BASE_URL}/apps/${APP_ID}/entities/PasswordReset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: normalizedEmail, code: otp, expiry })
     });
 
-    // Send via Zoho SMTP using smtplib-style TCP (use fetch to Zoho API)
-    const zohoToken = Deno.env.get("ZOHO_API_TOKEN") || "";
-    const zohoAccountId = Deno.env.get("ZOHO_ACCOUNT_ID") || "";
+    // Send email via Zoho SMTP using SmtpClient
+    const { SMTPClient } = await import("npm:emailjs@4.0.3");
+
+    const zohoPassword = Deno.env.get("ZOHO_APP_PASSWORD") || "";
+
+    const client = new SMTPClient({
+      user: "support@sachistream.com",
+      password: zohoPassword,
+      host: "smtppro.zoho.com",
+      port: 465,
+      ssl: true,
+    });
 
     const htmlBody = `
       <div style="font-family:sans-serif;background:#0B0C1A;color:#fff;padding:40px;max-width:480px;margin:0 auto;border-radius:16px;">
@@ -73,24 +80,15 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    const zohoRes = await fetch(`https://mail.zoho.com/api/accounts/${zohoAccountId}/messages`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Zoho-oauthtoken ${zohoToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        fromAddress: "support@sachistream.com",
-        toAddress: normalizedEmail,
-        subject: "Your Sachi verification code",
-        mailFormat: "html",
-        content: htmlBody,
-      }),
+    await client.sendAsync({
+      text: `Your Sachi verification code is: ${otp} (expires in 10 minutes)`,
+      from: "Sachi Stream <support@sachistream.com>",
+      to: normalizedEmail,
+      subject: "Your Sachi verification code",
+      attachment: [{ data: htmlBody, alternative: true }],
     });
 
-    const zohoData = await zohoRes.json().catch(() => ({}));
-    console.log("Zoho response:", JSON.stringify(zohoData));
-
+    console.log(`OTP sent to ${normalizedEmail}`);
     return Response.json({ success: true }, { headers: corsHeaders });
 
   } catch (e) {
