@@ -6812,9 +6812,8 @@ function AdminPanel({ currentUser }) {
 // ─── Splash Screen — logo rotates every 3 days ───────────────────────────────
 // Add new logos here — they will cycle automatically every 3 days
 const SPLASH_LOGOS = [
-  { src: "/sachi-logo-512.png",   label: "Classic" },
   { src: "/sachi-neon-logo.jpg",  label: "Neon" },
-  { src: "/sachi-icon-v4.png",    label: "Icon" },
+  { src: "/sachi-logo-512.png",   label: "Classic" },
 ];
 
 function getSplashLogoIndex() {
