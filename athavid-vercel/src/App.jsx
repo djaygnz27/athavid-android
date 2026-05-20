@@ -4609,27 +4609,65 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username, showManage }) {
   const [idx, setIdx] = React.useState(startIndex || 0);
   const [muted, setMuted] = React.useState(false);
+  const [paused, setPaused] = React.useState(false);  // user intentionally paused
+  const [isPlaying, setIsPlaying] = React.useState(false);
   const videoRef = React.useRef(null);
   const touchStartY = React.useRef(null);
+  const touchStartX = React.useRef(null);
+  const userPaused = React.useRef(false); // track if user manually paused
 
   const v = vids[idx];
 
+  // When idx changes (swipe), autoplay UNLESS user manually paused
   React.useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
+    const vid = videoRef.current;
+    if (!vid) return;
+    vid.currentTime = 0;
+    if (!userPaused.current) {
+      vid.muted = false; // try unmuted first
+      vid.play().catch(() => {
+        vid.muted = true;  // browser blocked unmuted — go muted
+        setMuted(true);
+        vid.play().catch(() => {});
+      });
+      setIsPlaying(true);
+      setPaused(false);
     }
   }, [idx]);
 
   const goNext = () => { if (idx < vids.length - 1) setIdx(i => i + 1); };
   const goPrev = () => { if (idx > 0) setIdx(i => i - 1); };
 
-  const onTouchStart = (e) => { touchStartY.current = e.touches[0].clientY; };
+  const togglePlay = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.paused) {
+      vid.play().catch(() => {});
+      userPaused.current = false;
+      setPaused(false);
+      setIsPlaying(true);
+    } else {
+      vid.pause();
+      userPaused.current = true;
+      setPaused(true);
+      setIsPlaying(false);
+    }
+  };
+
+  const onTouchStart = (e) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
+  };
   const onTouchEnd = (e) => {
     if (touchStartY.current === null) return;
-    const diff = touchStartY.current - e.changedTouches[0].clientY;
-    if (Math.abs(diff) > 50) { diff > 0 ? goNext() : goPrev(); }
+    const diffY = touchStartY.current - e.changedTouches[0].clientY;
+    const diffX = Math.abs(touchStartX.current - e.changedTouches[0].clientX);
+    // Only swipe vertically if horizontal movement is small (not a scroll)
+    if (Math.abs(diffY) > 50 && diffX < 40) {
+      diffY > 0 ? goNext() : goPrev();
+    }
     touchStartY.current = null;
+    touchStartX.current = null;
   };
 
   if (!v) return null;
@@ -4638,10 +4676,22 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
     <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
       style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
-      {/* Video */}
-      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.media_url || v.video_url)} autoPlay playsInline loop muted={muted}
-        onClick={() => { if(videoRef.current.paused) videoRef.current.play(); else videoRef.current.pause(); }}
+      {/* Video — tap to pause/resume */}
+      <video ref={videoRef} key={v.id}
+        src={resolveMediaUrl(v.media_url || v.video_url)}
+        autoPlay playsInline loop muted={muted}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onClick={togglePlay}
         style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+
+      {/* Pause indicator */}
+      {paused && (
+        <div onClick={togglePlay} style={{ position:"absolute", inset:0, zIndex:8, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto" }}>
+          <div style={{ background:"rgba(0,0,0,0.5)", borderRadius:"50%", width:72, height:72,
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:32 }}>▶</div>
+        </div>
+      )}
 
       {/* Gradient overlay */}
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents:"none" }} />
