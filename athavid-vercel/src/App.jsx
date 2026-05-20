@@ -6809,6 +6809,80 @@ function AdminPanel({ currentUser }) {
   );
 }
 
+// ─── Splash Screen with rotating logos ───────────────────────────────────────
+const SPLASH_LOGOS = [
+  "/sachi-logo-512.png",
+  "/sachi-neon-logo.jpg",
+  "/sachi-icon-v4.png",
+];
+
+function SachiSplash() {
+  const [idx, setIdx] = React.useState(0);
+  const [fade, setFade] = React.useState(true);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % SPLASH_LOGOS.length);
+        setFade(true);
+      }, 400);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      height:"100svh", display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center",
+      background:"#0B0C1A", overflow:"hidden", gap:0
+    }}>
+      <style>{`
+        @keyframes sachiShimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+        @keyframes sachiPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+        @keyframes sachiSpin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .sachi-skeleton { background:linear-gradient(90deg,#1a1a2e 25%,#252540 50%,#1a1a2e 75%); background-size:400px 100%; animation:sachiShimmer 1.4s infinite; border-radius:8px; }
+      `}</style>
+      {/* Rotating logo */}
+      <div style={{
+        width:220, height:220, borderRadius:28, overflow:"hidden",
+        boxShadow:"0 0 60px rgba(124,58,237,0.4), 0 0 20px rgba(245,200,66,0.2)",
+        opacity: fade ? 1 : 0,
+        transition: "opacity 0.4s ease",
+        background:"#111120",
+        display:"flex", alignItems:"center", justifyContent:"center"
+      }}>
+        <img
+          src={SPLASH_LOGOS[idx]}
+          alt="Sachi"
+          style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:28 }}
+          onError={e => { e.target.style.display="none"; }}
+        />
+      </div>
+      {/* Dot indicators */}
+      <div style={{ display:"flex", gap:8, marginTop:24 }}>
+        {SPLASH_LOGOS.map((_, i) => (
+          <div key={i} style={{
+            width: i === idx ? 20 : 6, height:6, borderRadius:3,
+            background: i === idx ? "#F5C842" : "#333",
+            transition:"all 0.3s ease"
+          }} />
+        ))}
+      </div>
+      {/* Loading spinner */}
+      <div style={{ marginTop:32, display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{
+          width:18, height:18, borderRadius:"50%",
+          border:"2.5px solid #333", borderTopColor:"#F5C842",
+          animation:"sachiSpin 0.8s linear infinite"
+        }} />
+        <div style={{ color:"#555", fontSize:13, letterSpacing:1 }}>Loading Sachi…</div>
+      </div>
+    </div>
+  );
+}
+
+
 function App() {
   // Simple client-side routing for terms/privacy pages
   const path = window.location.pathname;
@@ -7299,43 +7373,7 @@ function App() {
             </div>
           )}
           {loading && (
-            <div style={{ height:"100svh", display:"flex", flexDirection:"column", background:"#0B0C1A", overflow:"hidden" }}>
-              <style>{`
-                @keyframes sachiShimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
-                @keyframes sachiPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
-                .sachi-skeleton { background:linear-gradient(90deg,#1a1a2e 25%,#252540 50%,#1a1a2e 75%); background-size:400px 100%; animation:sachiShimmer 1.4s infinite; border-radius:8px; }
-              `}</style>
-              {/* Branded logo pulse at top */}
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"16px 0 8px", gap:10 }}>
-                <div style={{ width:32, height:32, borderRadius:10, animation:"sachiPulse 1.5s ease-in-out infinite", background:"linear-gradient(135deg,#F5C842,#FF9500)" }} />
-                <div style={{ color:"#F5C842", fontWeight:900, fontSize:22, letterSpacing:0.5, animation:"sachiPulse 1.5s ease-in-out infinite" }}>Sachi</div>
-              </div>
-              {/* Skeleton video card */}
-              <div style={{ flex:1, position:"relative", margin:"0 0 4px", borderRadius:0, overflow:"hidden", background:"#111120" }}>
-                <div className="sachi-skeleton" style={{ position:"absolute", inset:0 }} />
-                {/* Skeleton avatar + name bottom left */}
-                <div style={{ position:"absolute", bottom:80, left:16, display:"flex", flexDirection:"column", gap:8 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div className="sachi-skeleton" style={{ width:40, height:40, borderRadius:"50%" }} />
-                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                      <div className="sachi-skeleton" style={{ width:100, height:12 }} />
-                      <div className="sachi-skeleton" style={{ width:70, height:10 }} />
-                    </div>
-                  </div>
-                  <div className="sachi-skeleton" style={{ width:200, height:10, marginTop:4 }} />
-                  <div className="sachi-skeleton" style={{ width:150, height:10 }} />
-                </div>
-                {/* Skeleton action buttons right */}
-                <div style={{ position:"absolute", bottom:80, right:16, display:"flex", flexDirection:"column", gap:20, alignItems:"center" }}>
-                  {[1,2,3,4].map(i => (
-                    <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                      <div className="sachi-skeleton" style={{ width:28, height:28, borderRadius:8 }} />
-                      <div className="sachi-skeleton" style={{ width:16, height:8 }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <SachiSplash />
           )}
           {!loading && videoList.length === 0 && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
