@@ -585,7 +585,7 @@ export default function AuthModal({ onClose, onSuccess }) {
         &amp;{" "}
         <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
       </div>
-      <div id="sachi-google-btn-hidden" style={{ display:"none", position:"absolute", opacity:0, pointerEvents:"none" }} />
+      <div id="sachi-google-btn-hidden" style={{ display:"none" }} />
     </>
   );
 }
