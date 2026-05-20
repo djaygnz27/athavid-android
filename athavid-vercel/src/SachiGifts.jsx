@@ -11,7 +11,7 @@ const _toastBus = typeof window !== "undefined" ? (window._sachiBus = window._sa
 const toast = { error:(m)=>_toastBus.emit(m,"error"), success:(m)=>_toastBus.emit(m,"success"), warn:(m)=>_toastBus.emit(m,"warn") };
 const BASE_URL = "https://sachi-04cfb834.base44.app/api";
 const APP_BASE = `/apps/${APP_ID}`;
-const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
+const COINS_FN = "https://sachi-04cfb834.base44.app/functions/sachiCoins";
 
 // ── Sachi Gift catalog — totally unique, not TikTok ─────────────────────────
 export const GIFTS = [
