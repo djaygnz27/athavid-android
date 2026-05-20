@@ -4609,31 +4609,47 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username, showManage }) {
   const [idx, setIdx] = React.useState(startIndex || 0);
   const [muted, setMuted] = React.useState(false);
-  const [paused, setPaused] = React.useState(false);  // user intentionally paused
+  const [paused, setPaused] = React.useState(false);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const videoRef = React.useRef(null);
   const touchStartY = React.useRef(null);
   const touchStartX = React.useRef(null);
-  const userPaused = React.useRef(false); // track if user manually paused
+  const userPaused = React.useRef(false);
+  const hasInteracted = React.useRef(false); // becomes true after first user play
 
   const v = vids[idx];
 
-  // When idx changes (swipe), autoplay UNLESS user manually paused
+  // Swap src directly — NO key remount — so videoRef stays stable
   React.useEffect(() => {
     const vid = videoRef.current;
     if (!vid) return;
+    const newSrc = resolveMediaUrl(v.media_url || v.video_url);
+    if (vid.src !== newSrc) {
+      vid.src = newSrc;
+      vid.load();
+    }
     vid.currentTime = 0;
     if (!userPaused.current) {
-      vid.muted = false; // try unmuted first
-      vid.play().catch(() => {
-        vid.muted = true;  // browser blocked unmuted — go muted
-        setMuted(true);
-        vid.play().catch(() => {});
-      });
-      setIsPlaying(true);
-      setPaused(false);
+      // Always try muted first — guaranteed to work; then unmute if allowed
+      vid.muted = true;
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          // Playback started — now unmute if user hasn't toggled mute
+          if (!muted) {
+            vid.muted = false;
+          }
+          hasInteracted.current = true;
+          setIsPlaying(true);
+          setPaused(false);
+        }).catch(() => {
+          // Still blocked — stay muted and playing
+          setIsPlaying(true);
+          setPaused(false);
+        });
+      }
     }
-  }, [idx]);
+  }, [idx]); // eslint-disable-line
 
   const goNext = () => { if (idx < vids.length - 1) setIdx(i => i + 1); };
   const goPrev = () => { if (idx > 0) setIdx(i => i - 1); };
@@ -4642,10 +4658,14 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
     const vid = videoRef.current;
     if (!vid) return;
     if (vid.paused) {
-      vid.play().catch(() => {});
-      userPaused.current = false;
-      setPaused(false);
-      setIsPlaying(true);
+      vid.muted = true;
+      vid.play().then(() => {
+        if (!muted) vid.muted = false;
+        userPaused.current = false;
+        setPaused(false);
+        setIsPlaying(true);
+        hasInteracted.current = true;
+      }).catch(() => {});
     } else {
       vid.pause();
       userPaused.current = true;
@@ -4677,9 +4697,8 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
       {/* Video — tap to pause/resume */}
-      <video ref={videoRef} key={v.id}
-        src={resolveMediaUrl(v.media_url || v.video_url)}
-        autoPlay playsInline loop muted={muted}
+      <video ref={videoRef}
+        playsInline loop muted={muted}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onClick={togglePlay}
