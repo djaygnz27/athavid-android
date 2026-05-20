@@ -24,6 +24,7 @@ import Privacy from "./Privacy.jsx";
 import ChildSafety from "./ChildSafety.jsx";
 import FoundingCreatorPage from "./FoundingCreator.jsx";
 import MusicPicker from "./MusicPicker.jsx";
+import SachiAdminPanel from "./AdminPanel.jsx";
 
 const APP_ID = "69b2ee18a8e6fb58c7f0261c";
 
@@ -6350,6 +6351,7 @@ function App() {
   if (path === "/privacy") return <Privacy />;
   if (path === "/child-safety") return <ChildSafety />;
   if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
+  if (path === "/admin") return <SachiAdminPanel />;
 
   const [hasEntered, setHasEntered] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
