@@ -4609,17 +4609,21 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username, showManage, currentUser }) {
   const containerRef = React.useRef(null);
 
+  const [activeIdx, setActiveIdx] = React.useState(startIndex || 0);
+
   // Set playStore so IntersectionObserver in VideoCard auto-plays on scroll
   React.useEffect(() => {
     playStore.set(true);
     window.dispatchEvent(new CustomEvent('sachi-user-played'));
-    // Scroll to startIndex video
-    if (containerRef.current) {
-      const cards = containerRef.current.querySelectorAll('.profile-vid-card');
-      if (cards[startIndex]) {
-        cards[startIndex].scrollIntoView({ behavior: 'instant', block: 'start' });
+    // Delay scroll slightly so React has painted the cards first
+    setTimeout(() => {
+      if (containerRef.current) {
+        const cards = containerRef.current.querySelectorAll('.profile-vid-card');
+        if (cards[startIndex]) {
+          cards[startIndex].scrollIntoView({ behavior: 'instant', block: 'start' });
+        }
       }
-    }
+    }, 50);
   }, []);
 
   return (
@@ -4650,6 +4654,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
               video={v}
               currentUser={currentUser}
               preloadMode={i === 0 ? 'auto' : 'metadata'}
+              onBecomeCurrent={() => setActiveIdx(i)}
               onCommentOpen={() => {}}
               onLike={() => {}}
               onView={() => {}}
@@ -4942,6 +4947,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
           startIndex={playerIndex}
           profile={profile}
           username={username}
+          currentUser={currentUser}
           onClose={() => setPlayerIndex(null)} />
       )}
     </>
@@ -4994,6 +5000,7 @@ function VideoManageGrid({ videos: vids, onRefresh, currentUser }) {
           startIndex={playerIndex}
           profile={currentUser}
           username={currentUser?.username || currentUser?.full_name || ""}
+          currentUser={currentUser}
           onClose={() => setPlayerIndex(null)}
           showManage={(v) => { setPlayerIndex(null); setTimeout(() => setMenuVideo(v), 100); }}
         />
