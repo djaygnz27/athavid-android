@@ -3009,10 +3009,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       el.play().then(() => {
         setPlaying(true);
         manuallyPausedRef.current = false;
-        // After play succeeds, restore sound if user hasn't muted globally
+        // After play succeeds, unmute unless user has explicitly muted
         const currentlyMuted = muteStore.get();
-        if (!currentlyMuted && !video.sound_url) {
-          el.muted = false;
+        if (!currentlyMuted) {
+          el.muted = false; // unmute for all videos
         }
         if (!currentlyMuted && soundRef.current && video.sound_url) {
           soundRef.current.play().catch(() => {});
@@ -3116,7 +3116,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setPlaying(true);
         manuallyPausedRef.current = false;
         const currentlyMuted = muteStore.get();
-        if (!currentlyMuted && !video.sound_url) el.muted = false;
+        if (!currentlyMuted) el.muted = false;
         if (!currentlyMuted && soundRef.current && video.sound_url) soundRef.current.play().catch(() => {});
         // First play — unlock auto-play globally and notify all visible cards
         if (!playStore.get()) {
