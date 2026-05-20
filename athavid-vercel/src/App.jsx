@@ -7003,14 +7003,20 @@ function App() {
   const loadVideos = async (user, append = false, page = 1) => {
     if (!append) setLoading(true);
     try {
-      // Use fetch() directly so this works WITHOUT a login token (public feed)
+      // Fetch 500 records so we get past any archived records mixed in the sort
       const BASE = "https://sachi-04cfb834.base44.app/api";
-      const res = await fetch(`${BASE}/apps/${APP_ID}/entities/SachiVideo?limit=50&sort=-created_date`, {
+      const res = await fetch(`${BASE}/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`, {
         headers: { "Content-Type": "application/json" }
       });
       const data = await res.json();
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const raw = rawAll.filter(v => !v.is_archived && (v.post_visibility == null || v.post_visibility !== "only_me"));
+      // Filter out archived, private, and any broken Daminie file URLs
+      const raw = rawAll.filter(v =>
+        !v.is_archived &&
+        (v.post_visibility == null || v.post_visibility !== "only_me") &&
+        v.video_url &&
+        !v.video_url.includes("69b2ee18a8e6fb58c7f0261c")
+      );
       setFeedHasMore(false);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
