@@ -2914,6 +2914,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
+  const manuallyPausedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(() => !!(likedVideoIds?.has(video.id)));
   // Re-sync `liked` state whenever the parent's likedVideoIds set changes.
@@ -3002,23 +3003,35 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const el = videoRef.current;
     if (!el) return;
     const isVisibleRef = { current: false };
+    const tryPlay = () => {
+      // Always play muted first — browsers always allow muted autoplay
+      el.muted = true;
+      el.play().then(() => {
+        setPlaying(true);
+        manuallyPausedRef.current = false;
+        // After play succeeds, restore sound if user hasn't muted globally
+        const currentlyMuted = muteStore.get();
+        if (!currentlyMuted && !video.sound_url) {
+          el.muted = false;
+        }
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
+          soundRef.current.play().catch(() => {});
+        }
+        setShowUI(false);
+      }).catch(() => {
+        // Play blocked — show play button
+        setShowUI(true);
+      });
+    };
+
     const obs = new IntersectionObserver(([e]) => {
       isVisibleRef.current = e.isIntersecting;
       if (e.isIntersecting) {
-        // Notify parent this is now the current video — drives preload strategy
         onBecomeCurrent && onBecomeCurrent();
-        const currentlyMuted = muteStore.get();
-        el.muted = video.sound_url ? true : currentlyMuted;
-        if (playStore.get()) {
-          // User has already interacted — auto-play immediately
-          el.play().catch(() => {});
-          setPlaying(true);
-          if (!currentlyMuted && soundRef.current && video.sound_url) {
-            soundRef.current.play().catch(() => {});
-          }
-          setShowUI(false);
-        } else {
-          // First time — show play button, wait for user tap
+        if (playStore.get() && !manuallyPausedRef.current) {
+          tryPlay();
+        } else if (!playStore.get()) {
+          // First video ever — show play button
           setShowUI(true);
           setUserTapped(false);
         }
@@ -3031,21 +3044,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
         setShowUI(false);
         setUserTapped(false);
+        manuallyPausedRef.current = false; // reset when scrolled away
       }
     }, { threshold: 0.4 });
     obs.observe(el);
 
-    // When user first plays ANY video, this card should immediately play if visible
+    // When user first plays ANY video, immediately play this card if visible
     const onUserPlayed = () => {
-      if (isVisibleRef.current && el.paused) {
-        const currentlyMuted = muteStore.get();
-        el.muted = video.sound_url ? true : currentlyMuted;
-        el.play().catch(() => {});
-        setPlaying(true);
-        setShowUI(false);
-        if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {});
-        }
+      if (isVisibleRef.current && el.paused && !manuallyPausedRef.current) {
+        tryPlay();
       }
     };
     window.addEventListener('sachi-user-played', onUserPlayed);
@@ -3104,20 +3111,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const el = videoRef.current;
     if (!el) return;
     if (el.paused) {
-      el.play();
-      setPlaying(true);
-      // First play — unlock auto-play globally and notify all visible cards
-      if (!playStore.get()) {
-        playStore.set(true);
-        window.dispatchEvent(new CustomEvent('sachi-user-played'));
-      }
-      // Immediately hide UI when resuming play
-      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-      uiTimerRef.current = setTimeout(() => { setShowUI(false); }, 400);
+      el.muted = true; // play muted first to guarantee success
+      el.play().then(() => {
+        setPlaying(true);
+        manuallyPausedRef.current = false;
+        const currentlyMuted = muteStore.get();
+        if (!currentlyMuted && !video.sound_url) el.muted = false;
+        if (!currentlyMuted && soundRef.current && video.sound_url) soundRef.current.play().catch(() => {});
+        // First play — unlock auto-play globally and notify all visible cards
+        if (!playStore.get()) {
+          playStore.set(true);
+          window.dispatchEvent(new CustomEvent('sachi-user-played'));
+        }
+        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+        uiTimerRef.current = setTimeout(() => { setShowUI(false); }, 400);
+      }).catch(() => {});
     } else {
       el.pause();
       setPlaying(false);
-      // Show controls when paused
+      manuallyPausedRef.current = true; // user explicitly paused — don't re-auto-play
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       setShowUI(true);
     }
