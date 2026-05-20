@@ -6809,27 +6809,23 @@ function AdminPanel({ currentUser }) {
   );
 }
 
-// ─── Splash Screen with rotating logos ───────────────────────────────────────
+// ─── Splash Screen — logo rotates every 3 days ───────────────────────────────
+// Add new logos here — they will cycle automatically every 3 days
 const SPLASH_LOGOS = [
-  "/sachi-logo-512.png",
-  "/sachi-neon-logo.jpg",
-  "/sachi-icon-v4.png",
+  { src: "/sachi-logo-512.png",   label: "Classic" },
+  { src: "/sachi-neon-logo.jpg",  label: "Neon" },
+  { src: "/sachi-icon-v4.png",    label: "Icon" },
 ];
 
-function SachiSplash() {
-  const [idx, setIdx] = React.useState(0);
-  const [fade, setFade] = React.useState(true);
+function getSplashLogoIndex() {
+  // Pick logo based on which 3-day period we're in since epoch
+  const daysSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+  const periodOf3Days = Math.floor(daysSinceEpoch / 3);
+  return periodOf3Days % SPLASH_LOGOS.length;
+}
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setIdx(i => (i + 1) % SPLASH_LOGOS.length);
-        setFade(true);
-      }, 400);
-    }, 2200);
-    return () => clearInterval(interval);
-  }, []);
+function SachiSplash() {
+  const idx = getSplashLogoIndex();
 
   return (
     <div style={{
@@ -6838,42 +6834,41 @@ function SachiSplash() {
       background:"#0B0C1A", overflow:"hidden", gap:0
     }}>
       <style>{`
-        @keyframes sachiShimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
-        @keyframes sachiPulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+        @keyframes sachiPulse { 0%,100%{opacity:0.85} 50%{opacity:1} }
         @keyframes sachiSpin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-        .sachi-skeleton { background:linear-gradient(90deg,#1a1a2e 25%,#252540 50%,#1a1a2e 75%); background-size:400px 100%; animation:sachiShimmer 1.4s infinite; border-radius:8px; }
+        @keyframes sachiFadeIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
       `}</style>
-      {/* Rotating logo */}
+      {/* Current logo for this 3-day period */}
       <div style={{
-        width:220, height:220, borderRadius:28, overflow:"hidden",
-        boxShadow:"0 0 60px rgba(124,58,237,0.4), 0 0 20px rgba(245,200,66,0.2)",
-        opacity: fade ? 1 : 0,
-        transition: "opacity 0.4s ease",
+        width:240, height:240, borderRadius:32, overflow:"hidden",
+        boxShadow:"0 0 80px rgba(124,58,237,0.45), 0 0 30px rgba(245,200,66,0.2)",
         background:"#111120",
-        display:"flex", alignItems:"center", justifyContent:"center"
+        display:"flex", alignItems:"center", justifyContent:"center",
+        animation:"sachiFadeIn 0.6s ease"
       }}>
         <img
-          src={SPLASH_LOGOS[idx]}
+          src={SPLASH_LOGOS[idx].src}
           alt="Sachi"
-          style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:28 }}
+          style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:32 }}
           onError={e => { e.target.style.display="none"; }}
         />
       </div>
-      {/* Dot indicators */}
-      <div style={{ display:"flex", gap:8, marginTop:24 }}>
+      {/* Dot indicators — shows which logo is active */}
+      <div style={{ display:"flex", gap:8, marginTop:28 }}>
         {SPLASH_LOGOS.map((_, i) => (
           <div key={i} style={{
-            width: i === idx ? 20 : 6, height:6, borderRadius:3,
-            background: i === idx ? "#F5C842" : "#333",
-            transition:"all 0.3s ease"
+            width: i === idx ? 24 : 7, height:7, borderRadius:4,
+            background: i === idx ? "#F5C842" : "#2a2a3a",
+            transition:"all 0.3s ease",
+            boxShadow: i === idx ? "0 0 8px rgba(245,200,66,0.6)" : "none"
           }} />
         ))}
       </div>
-      {/* Loading spinner */}
-      <div style={{ marginTop:32, display:"flex", alignItems:"center", gap:8 }}>
+      {/* Spinner */}
+      <div style={{ marginTop:36, display:"flex", alignItems:"center", gap:10 }}>
         <div style={{
           width:18, height:18, borderRadius:"50%",
-          border:"2.5px solid #333", borderTopColor:"#F5C842",
+          border:"2.5px solid #2a2a3a", borderTopColor:"#F5C842",
           animation:"sachiSpin 0.8s linear infinite"
         }} />
         <div style={{ color:"#555", fontSize:13, letterSpacing:1 }}>Loading Sachi…</div>
