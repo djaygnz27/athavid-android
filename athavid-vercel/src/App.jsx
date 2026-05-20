@@ -7994,15 +7994,21 @@ function App() {
                   try {
                     const newName = editProfileName.trim();
                     const newBio = editProfileBio.trim();
-                    const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
-                    const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
-                    const match = users.find(u => u.email === currentUser.email);
-                    if (match) {
-                      await request("PUT", `/apps/${APP_ID}/entities/SachiUser/${match.id}`, { ...match, display_name: newName, full_name: newName, bio: newBio });
+                    // Use updateSachiUser backend function (service role) to bypass RLS for Google users
+                    const fnRes = await fetch("https://sachi-04cfb834.base44.app/functions/updateSachiUser", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email: currentUser.email, display_name: newName, full_name: newName, bio: newBio })
+                    });
+                    if (!fnRes.ok) {
+                      const errData = await fnRes.json().catch(() => ({}));
+                      throw new Error(errData.error || `Update failed: ${fnRes.status}`);
                     }
                     setCurrentUser(u => ({ ...u, full_name: newName, display_name: newName, bio: newBio }));
                     setUserBio(newBio);
-                    localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, full_name: newName, display_name: newName, bio: newBio }));
+                    const stored = JSON.parse(localStorage.getItem("sachi_google_user") || localStorage.getItem("sachi_user") || "{}");
+                    localStorage.setItem("sachi_google_user", JSON.stringify({ ...stored, full_name: newName, display_name: newName, bio: newBio }));
+                    localStorage.setItem("sachi_user", JSON.stringify({ ...stored, full_name: newName, display_name: newName, bio: newBio }));
                     setShowEditProfile(false);
                     toast.success("Profile updated!");
                   } catch(e) { toast.error("Save failed: " + e.message); }
