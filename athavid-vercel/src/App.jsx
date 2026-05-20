@@ -93,6 +93,14 @@ const muteStore = {
   set(val) { this._muted = val; },
 };
 
+// Module-level play store — once user first presses play, all subsequent
+// videos auto-play as they scroll into view (TikTok behaviour)
+const playStore = {
+  _hasPlayed: false,
+  get() { return this._hasPlayed; },
+  set(val) { this._hasPlayed = val; },
+};
+
 // Spotlight colors — assigned per creator for stage effect
 const SPOTLIGHT_COLORS = [
   'rgba(108,60,247,0.18)','rgba(229,57,53,0.15)','rgba(2,136,209,0.15)',
@@ -2999,13 +3007,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         onBecomeCurrent && onBecomeCurrent();
         const currentlyMuted = muteStore.get();
         el.muted = video.sound_url ? true : currentlyMuted;
-        el.play().catch(() => {});
-        setPlaying(true);
-        if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {});
+        // Only auto-play if user has already interacted with a video (TikTok UX)
+        if (playStore.get()) {
+          el.play().catch(() => {});
+          setPlaying(true);
+          if (!currentlyMuted && soundRef.current && video.sound_url) {
+            soundRef.current.play().catch(() => {});
+          }
+          setShowUI(false);
+        } else {
+          // First video — show play button, wait for user tap
+          setShowUI(true);
+          setUserTapped(false);
         }
-        setShowUI(true);
-        hideUIAfterDelay(1500);
         if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
@@ -3074,6 +3088,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (el.paused) {
       el.play();
       setPlaying(true);
+      // User just interacted — unlock auto-play for all future cards
+      playStore.set(true);
       // Immediately hide UI when resuming play
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       uiTimerRef.current = setTimeout(() => { setShowUI(false); }, 400);
