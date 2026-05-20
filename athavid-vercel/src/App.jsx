@@ -7161,9 +7161,9 @@ function App() {
     if (!append) setLoading(true);
     try {
       // Fetch 500 records so we get past any archived records mixed in the sort
-      const BASE = "https://sachi-04cfb834.base44.app/api";
+      const BASE = "https://app.base44.com/api";
       const res = await fetch(`${BASE}/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`, {
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json", "x-api-key": APP_ID }
       });
       const data = await res.json();
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
@@ -7297,6 +7297,7 @@ function App() {
         if (v.id !== videoId) return v;
         const newCount = Math.max(0, (v.likes_count || 0) + delta);
         // Side effects (DB + interests) inside the updater so we read fresh state
+        // NEVER pass comments_count — only update likes_count to avoid clearing comments
         videos.update(videoId, { likes_count: newCount }).catch(() => {});
         if (currentUser && v.hashtags?.length) {
           interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
