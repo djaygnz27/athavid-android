@@ -7011,12 +7011,16 @@ function App() {
       const data = await res.json();
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
       // Filter out archived, private, and any broken Daminie file URLs
-      const raw = rawAll.filter(v =>
-        !v.is_archived &&
-        (v.post_visibility == null || v.post_visibility !== "only_me") &&
-        v.video_url &&
-        !v.video_url.includes("69b2ee18a8e6fb58c7f0261c")
-      );
+      // Check both media_url (new Sachi schema) and video_url (legacy) 
+      const raw = rawAll.filter(v => {
+        const url = v.media_url || v.video_url || "";
+        return (
+          !v.is_archived &&
+          (v.post_visibility == null || v.post_visibility !== "only_me") &&
+          url &&
+          !url.includes("69b2ee18a8e6fb58c7f0261c")
+        );
+      });
       setFeedHasMore(false);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
       const sorted = [...raw].sort((a,b) => new Date(b.created_date||0) - new Date(a.created_date||0));
