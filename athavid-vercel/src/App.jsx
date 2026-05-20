@@ -8,8 +8,9 @@ import Privacy from "./Privacy.jsx";
 import ChildSafety from "./ChildSafety.jsx";
 import FoundingCreatorPage from "./FoundingCreator.jsx";
 import MusicPicker from "./MusicPicker.jsx";
+import SachiAdminPanel from "./AdminPanel.jsx";
 
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 
 // ── Audio Preloader Cache ─────────────────────────────────────────────────
 // Pre-fetches audio for upcoming videos so playback starts instantly
@@ -177,7 +178,13 @@ function formatCount(n) {
   return String(n);
 }
 
-const resolveMediaUrl = (url, isVideo) => {
+const resolveMediaUrl = (urlOrVideo, isVideo) => {
+  // Accept either a URL string or a video object. If a video object is passed,
+  // read media_url first (NEW Sachi schema) then fall back to video_url (OLD Daminie schema).
+  // This makes the app tolerant of whichever Base44 app is the current backend.
+  const url = (urlOrVideo && typeof urlOrVideo === "object")
+    ? (urlOrVideo.media_url || urlOrVideo.video_url)
+    : urlOrVideo;
   if (!url) return url;
   // Cloudflare Stream HLS URLs — pass through directly, no proxy needed
   if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.endsWith('.m3u8')) {
@@ -506,22 +513,22 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           ? trimmed
           : `@${replyingTo.username} ${trimmed}`;
         const savedReply = await request("POST", `/apps/${APP_ID}/entities/SachiComment`, {
-          video_id: video.id, username,
+          video_id: video.id, user_id: currentUser.id, username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          comment_text: replyText,
+          content: replyText,
           parent_id: replyingTo.id,
           likes_count: 0,
         }).catch(() => null);
-        const reply = savedReply || { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, comment_text: replyText, thumbsUp:0, hearts:0, thumbsDown:0 };
+        const reply = savedReply || { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, content: replyText, thumbsUp:0, hearts:0, thumbsDown:0 };
         setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
         setText("");
       } else {
         const c = await comments.create({
-          video_id: video.id, username,
+          video_id: video.id, user_id: currentUser.id, username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          comment_text: text.trim(), likes_count: 0,
+          content: text.trim(), likes_count: 0,
         });
         const newCount = list.length + 1;
         setList(prev => [...prev, c]);
@@ -581,7 +588,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       <img src={c.avatar_url} style={{ width: isReply?28:36, height: isReply?28:36, borderRadius:"50%", border:`2px solid rgba(108,99,255,${isReply?0.2:0.3})`, flexShrink:0 }} />
       <div style={{ flex:1 }}>
         <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
-        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
+        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.content}</div>
         <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <button onClick={() => reactToComment(c.id, "thumbsUp", isReply, parentId)}
             style={{ background: myR.thumbsUp ? "rgba(107,255,154,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.thumbsUp || c.thumbsUp) ? "#6bff9a" : "#666", fontSize:12, padding: myR.thumbsUp ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.thumbsUp ? 700 : 400 }}>
@@ -798,6 +805,8 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.display_name || currentUser.full_name || currentUser.username || "",
         avatar_url: currentUser.avatar_url || "",
         video_url: file_url,
+        media_url: file_url,
+        media_type: "video",
         thumbnail_url: thumbUrl,
         caption: caption || "🔴 Live recording",
         hashtags: ["live"],
@@ -1435,6 +1444,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: urls[0],
+        media_url: urls[0],
+        media_type: "photo",
         thumbnail_url: urls[0],
         photo_urls: urls,
         is_photo: true,
@@ -1521,6 +1532,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url, thumbnail_url,
+        media_url: video_url,
+        media_type: "video",
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
@@ -1566,7 +1579,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
       // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
-      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
+      let apiUrl = `https://app.base44.com/api/apps/${APP_ID}/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
       if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
       let tracks = [];
       try {
@@ -1761,6 +1774,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url, thumbnail_url: img_url,
+        media_url: img_url,
+        media_type: "photo",
         photo_urls: [img_url], is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
@@ -2910,12 +2925,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const uiTimerRef = useRef(null);
 
   // Derived from video prop — must be declared before useEffect that references it
-  // Detect photos — either by is_photo flag OR by video_url being an image
-  const videoUrlIsImage = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(video.video_url || "");
+  // Detect photos — either by is_photo flag OR by URL being an image.
+  // Read media_url first (NEW Sachi) with video_url fallback (OLD Daminie) — see resolveMediaUrl.
+  const mediaUrl = video.media_url || video.video_url;
+  const videoUrlIsImage = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(mediaUrl || "");
   const photoUrls = (video.is_photo || videoUrlIsImage) && video.photo_urls
     ? safeParsePhotoUrls(video.photo_urls)
-    : (videoUrlIsImage && video.video_url)
-    ? [video.video_url]
+    : (videoUrlIsImage && mediaUrl)
+    ? [mediaUrl]
     : null;
 
   // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
@@ -3296,7 +3313,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           )}
         </div>
       ) : (() => {
-        const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        const resolvedVideoUrl = resolveMediaUrl(video.media_url || video.video_url);
         const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
         if (isImg) return (
           <img src={resolvedVideoUrl}
@@ -3341,9 +3358,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       {!photoUrls && (
           <div
             onClick={tap(() => {
-              const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+              const resolvedVideoUrl = resolveMediaUrl(video.media_url || video.video_url);
               const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
-              if (isImg || !(video.video_url)) {
+              if (isImg || !(video.media_url || video.video_url)) {
                 setShowUI(v => !v);
                 if (!showUI) setShowFullCaption(true);
               } else {
@@ -4557,7 +4574,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
       {/* Video */}
-      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.video_url)} autoPlay playsInline loop muted={muted}
+      <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.media_url || v.video_url)} autoPlay playsInline loop muted={muted}
         onClick={() => { if(videoRef.current.paused) videoRef.current.play(); else videoRef.current.pause(); }}
         style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
 
@@ -4647,7 +4664,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`);
       const items = res?.items || res || [];
       const userIds = items.map(r => r.follower_id).filter(Boolean);
-      const usersRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500`);
+      const usersRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500`);
       const allUsers = usersRes?.items || usersRes || [];
       setFollowersList(allUsers.filter(u => userIds.includes(u.id)));
     } catch(e) { setFollowersList([]); }
@@ -4661,7 +4678,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`);
       const items = res?.items || res || [];
       const userIds = items.map(r => r.following_id).filter(Boolean);
-      const usersRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500`);
+      const usersRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500`);
       const allUsers = usersRes?.items || usersRes || [];
       setFollowingList(allUsers.filter(u => userIds.includes(u.id)));
     } catch(e) { setFollowingList([]); }
@@ -4671,7 +4688,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=200`).catch(() => null),
+      request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
       request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
@@ -4856,7 +4873,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                         {v.thumbnail_url ? (
                           <img src={resolveMediaUrl(v.thumbnail_url)} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         ) : (
-                          <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         )}
                         {/* Play icon overlay */}
                         <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -5230,7 +5247,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       await loadPodcasts();
       await loadMyShows();
       // Send welcome email to host
-      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+      fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastWelcome`, {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           host_email: currentUser?.email || "",
@@ -5411,7 +5428,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     if (endingLive) return;
                     setEndingLive(true);
                     try {
-                      await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      await fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastGoLiveNotify`, {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
                       }).catch(()=>{});
@@ -5463,7 +5480,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     setGoingLive(true);
                     try {
                       // Use podcastGoLiveNotify which handles the DB update via service role
-                      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      const resp = await fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastGoLiveNotify`, {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
                       });
@@ -6019,10 +6036,10 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      // Paginate through ALL users (AthaVidUser + legacy User entity merged)
+      // Paginate through ALL users (SachiUser + legacy User entity merged)
       let allUsersFetched = [], uSkip = 0, uMore = true;
       while (uMore) {
-        const uRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
+        const uRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500&skip=${uSkip}&sort=-created_date`);
         const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
         allUsersFetched = [...allUsersFetched, ...uItems];
         uMore = uRes.has_more === true && uItems.length === 500;
@@ -6116,16 +6133,16 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      // Fetch AthaVidUser (Google auth) - paginated
+      // Fetch SachiUser (Google auth) - paginated
       let athavid = [], skip = 0, hasMore = true;
       while (hasMore) {
-        const res = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
+        const res = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500&skip=${skip}&sort=-created_date`);
         const items = res.items || (Array.isArray(res) ? res : []);
         athavid = [...athavid, ...items];
         hasMore = res.has_more === true && items.length === 500;
         skip += 500;
       }
-      // Only use AthaVidUser — legacy User entity returns 401
+      // Only use SachiUser — legacy User entity returns 401
       const merged = [...athavid].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
       setRegisteredUsers(merged);
     } catch(e) { console.error(e); }
@@ -6782,6 +6799,7 @@ function App() {
   if (path === "/terms") return <Terms />;
   if (path === "/privacy") return <Privacy />;
   if (path === "/child-safety") return <ChildSafety />;
+  if (path === "/admin") return <SachiAdminPanel />;
   if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
 
   const [hasEntered, setHasEntered] = useState(false);
@@ -6940,7 +6958,7 @@ function App() {
         // Try to load avatar from DB first (most up to date)
         try {
           // Use authenticated request (with Bearer token) to fetch user profile
-          const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           // DB takes priority — always use latest CDN avatar_url
@@ -7526,7 +7544,7 @@ function App() {
                           onClick={() => { setActiveHashtag(null); setActiveTab("feed"); }}>
                           {v.thumbnail_url
                             ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                            : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                            : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                           }
                           <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)" }} />
                           <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
@@ -7555,7 +7573,7 @@ function App() {
                           onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
                           {v.thumbnail_url
                             ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                            : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                            : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                           }
                           <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)" }} />
                           <div style={{ position:"absolute", bottom:4, left:6, right:6, fontSize:10, color:"#fff" }}>@{v.username}</div>
@@ -7601,7 +7619,7 @@ function App() {
                         onClick={() => { setActiveTab("feed"); }}>
                         {v.thumbnail_url
                           ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                          : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                          : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                         }
                         <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)" }} />
                         <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
@@ -7736,7 +7754,7 @@ function App() {
                   ).map(v => (
                     <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setShowSearch(false); setSearchQuery(""); }}>
-                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                     </div>
                   ))}
@@ -7902,11 +7920,11 @@ function App() {
                   try {
                     const newName = editProfileName.trim();
                     const newBio = editProfileBio.trim();
-                    const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
+                    const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
                     const users = Array.isArray(usersData) ? usersData : (usersData?.items || []);
                     const match = users.find(u => u.email === currentUser.email);
                     if (match) {
-                      await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, display_name: newName, full_name: newName, bio: newBio });
+                      await request("PUT", `/apps/${APP_ID}/entities/SachiUser/${match.id}`, { ...match, display_name: newName, full_name: newName, bio: newBio });
                     }
                     setCurrentUser(u => ({ ...u, full_name: newName, display_name: newName, bio: newBio }));
                     setUserBio(newBio);
@@ -7948,10 +7966,10 @@ function App() {
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
             // Match by email (works for Google users)
-            const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
+            const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
             const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
             const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) await request("PUT", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}`, { ...match, avatar_url: url });
+            if (match) await request("PUT", `/apps/${APP_ID}/entities/SachiUser/${match.id}`, { ...match, avatar_url: url });
           } catch(e) { console.warn("User entity update failed:", e); }
           try {
             // Fetch all user videos by user_id AND created_by to catch all posts
