@@ -19,7 +19,7 @@ const COUNTRIES = [
 export const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID = "69e79122bcc8fb5a04cfb834";
 const BASE_URL = "https://sachi-04cfb834.base44.app/api";
-const FUNCTIONS_URL = "https://sachi-c7f0261c.base44.app/functions"; // OTP functions live here
+const FUNCTIONS_URL = "https://sachi-04cfb834.base44.app/functions"; // OTP functions — Sachi app
 
 // ─── Helper: lookup existing Sachi profile by email ──────────────────────────
 async function lookupSachiUser(email) {
