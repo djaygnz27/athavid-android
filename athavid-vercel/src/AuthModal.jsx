@@ -100,43 +100,55 @@ function loadGSI() {
 }
 
 // ─── Google popup sign-in ─────────────────────────────────────────────────────
-async function signInWithGooglePopup(onSuccess) {
-  const google = await loadGSI();
-  google.accounts.id.initialize({
+// ─── Google redirect — works in ALL browsers including Incognito ──────────────
+function signInWithGoogleRedirect() {
+  const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
-    callback: async (response) => {
-      const payload = decodeJwt(response.credential);
-      if (!payload?.email) return;
-      localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
-      const found = await lookupSachiUser(payload.email);
-      if (found) {
-        const sessionUser = buildSessionUser(found, payload);
-        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-        localStorage.removeItem("sachi_pending_google");
-        onSuccess({ sessionUser, needsProfile: false });
-      } else {
-        onSuccess({ payload, needsProfile: true });
-      }
-    },
-    ux_mode: "popup",
-    cancel_on_tap_outside: false,
+    redirect_uri: window.location.origin + "/",
+    response_type: "token id_token",
+    scope: "openid email profile",
+    nonce: Math.random().toString(36).slice(2),
+    prompt: "select_account",
   });
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      // One Tap blocked — render a visible button and auto-click it
-      const div = document.getElementById("sachi-google-btn-hidden");
-      if (div) {
-        div.style.display = "block";
-        google.accounts.id.renderButton(div, { theme:"filled_black", size:"large", width:280 });
-        // Auto-click the rendered button after a short delay
-        setTimeout(() => {
-          const btn = div.querySelector("div[role=button]") || div.querySelector("button");
-          if (btn) btn.click();
-        }, 300);
+  window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
+}
+
+async function signInWithGooglePopup(onSuccess) {
+  try {
+    const google = await loadGSI();
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        const payload = decodeJwt(response.credential);
+        if (!payload?.email) return;
+        localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+        const found = await lookupSachiUser(payload.email);
+        if (found) {
+          const sessionUser = buildSessionUser(found, payload);
+          localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+          localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+          localStorage.removeItem("sachi_pending_google");
+          onSuccess({ sessionUser, needsProfile: false });
+        } else {
+          onSuccess({ payload, needsProfile: true });
+        }
+      },
+      cancel_on_tap_outside: false,
+    });
+    google.accounts.id.prompt((notification) => {
+      // If One Tap is blocked for ANY reason → redirect (works in Incognito too)
+      if (
+        notification.isNotDisplayed() ||
+        notification.isSkippedMoment() ||
+        notification.isDismissedMoment()
+      ) {
+        signInWithGoogleRedirect();
       }
-    }
-  });
+    });
+  } catch(e) {
+    // GSI failed entirely (network, blocked) → redirect fallback
+    signInWithGoogleRedirect();
+  }
 }
 
 // ─── Email OTP Step ───────────────────────────────────────────────────────────
