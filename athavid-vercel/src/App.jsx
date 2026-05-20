@@ -7003,7 +7003,12 @@ function App() {
   const loadVideos = async (user, append = false, page = 1) => {
     if (!append) setLoading(true);
     try {
-      const data = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=50&sort=-created_date`);
+      // Use fetch() directly so this works WITHOUT a login token (public feed)
+      const BASE = "https://sachi-04cfb834.base44.app/api";
+      const res = await fetch(`${BASE}/apps/${APP_ID}/entities/SachiVideo?limit=50&sort=-created_date`, {
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
       const raw = rawAll.filter(v => !v.is_archived && (v.post_visibility == null || v.post_visibility !== "only_me"));
       setFeedHasMore(false);
