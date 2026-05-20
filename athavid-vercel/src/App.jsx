@@ -1,4 +1,4 @@
-// Sachi Stream — main application
+// Sachi Stream — main application v2.2.1
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
