@@ -3437,9 +3437,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
       {!playing && !photoUrls && (
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
-          <div onClick={tap(doTogglePlay)} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:64, height:64,
-            display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:26 }}>▶</div>
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:60 }}>
+          <div onClick={(e) => { e.stopPropagation(); doTogglePlay(); }} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:72, height:72,
+            display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:30 }}>▶</div>
         </div>
       )}
 
