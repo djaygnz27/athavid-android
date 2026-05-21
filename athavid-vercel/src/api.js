@@ -290,3 +290,37 @@ export const likes = {
     } catch { return []; }
   },
 };
+
+// ── Messages ───────────────────────────────────────────────────────────────
+export const messages = {
+  async send({ sender_id, sender_username, sender_avatar, recipient_id, recipient_username, text, thread_id }) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiMessage`, {
+      sender_id, sender_username, sender_avatar, recipient_id, recipient_username, text,
+      thread_id: thread_id || [sender_id, recipient_id].sort().join("_"),
+      is_read: false
+    });
+  },
+  async getInbox(user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiMessage?recipient_id=${user_id}&limit=500`);
+      return Array.isArray(res) ? res : (res?.items || res?.records || []);
+    } catch { return []; }
+  },
+  async getThread(user_id, other_id) {
+    try {
+      const thread_id = [user_id, other_id].sort().join("_");
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiMessage?thread_id=${thread_id}&limit=500`);
+      return Array.isArray(res) ? res : (res?.items || res?.records || []);
+    } catch { return []; }
+  },
+  async markRead(id) {
+    return request("PUT", `/apps/${APP_ID}/entities/SachiMessage/${id}`, { is_read: true });
+  },
+  async getUnreadCount(user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=500`);
+      const items = Array.isArray(res) ? res : (res?.items || res?.records || []);
+      return items.filter(m => !m.is_read).length;
+    } catch { return 0; }
+  }
+};
