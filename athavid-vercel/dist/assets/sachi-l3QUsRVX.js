@@ -9263,9 +9263,12 @@ function AuthModal({ onClose, onSuccess }) {
   return modalShell(
     /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 28 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12, display: "flex", justifyContent: "center" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 900, fontSize: 28, letterSpacing: 2, color: "#F5C842" }, children: "SACHi" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 400, fontSize: 14, color: "rgba(255,255,255,0.5)", alignSelf: "flex-end", marginLeft: 6, marginBottom: 4 }, children: "STREAM" })
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12, display: "flex", justifyContent: "center", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", alt: "Sachi", style: { width: 48, height: 48, borderRadius: 12, filter: "drop-shadow(0 0 10px rgba(245,200,66,0.6))" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-start" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 900, fontSize: 26, letterSpacing: 2, color: "#F5C842", lineHeight: 1 }, children: "SACHi" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 400, fontSize: 11, color: "rgba(255,255,255,0.45)", letterSpacing: 3 }, children: "STREAM" })
+          ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5, marginBottom: 4 }, children: "Join Sachi" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 14 }, children: "Where truth meets community" })

@@ -520,9 +520,12 @@ export default function AuthModal({ onClose, onSuccess }) {
   return modalShell(
     <>
       <div style={{ textAlign:"center", marginBottom:28 }}>
-        <div style={{ marginBottom:12, display:"flex", justifyContent:"center" }}>
-          <span style={{ fontFamily:"'Georgia', serif", fontWeight:900, fontSize:28, letterSpacing:2, color:"#F5C842" }}>SACHi</span>
-          <span style={{ fontFamily:"'Georgia', serif", fontWeight:400, fontSize:14, color:"rgba(255,255,255,0.5)", alignSelf:"flex-end", marginLeft:6, marginBottom:4 }}>STREAM</span>
+        <div style={{ marginBottom:12, display:"flex", justifyContent:"center", alignItems:"center", gap:10 }}>
+          <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:48, height:48, borderRadius:12, filter:"drop-shadow(0 0 10px rgba(245,200,66,0.6))" }} />
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start" }}>
+            <span style={{ fontFamily:"'Georgia', serif", fontWeight:900, fontSize:26, letterSpacing:2, color:"#F5C842", lineHeight:1 }}>SACHi</span>
+            <span style={{ fontFamily:"'Georgia', serif", fontWeight:400, fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:3 }}>STREAM</span>
+          </div>
         </div>
         <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
         <div style={{ color:"rgba(255,255,255,0.45)", fontSize:14 }}>Where truth meets community</div>
