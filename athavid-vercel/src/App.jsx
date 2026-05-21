@@ -429,6 +429,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         setList(prev => [...prev, c]);
         setText("");
         await videos.update(video.id, { comments_count: newCount });
+        setLocalCommentCount(newCount);
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
       }
@@ -2493,6 +2494,38 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [localCommentCount, setLocalCommentCount] = useState(video.comments_count || 0);
+
+  // Restore liked state from cache/DB on mount
+  useEffect(() => {
+    if (!currentUser) return;
+    const cached = likes.checkUserLiked ? null : null; // will use async below
+    let cancelled = false;
+    (async () => {
+      try {
+        const rec = await likes.checkUserLiked(video.id, currentUser.id);
+        if (!cancelled && rec) setLiked(true);
+      } catch(e) {}
+    })();
+    return () => { cancelled = true; };
+  }, [video.id, currentUser?.id]);
+
+  // Sync comment count from DB on mount (fixes stale zero display)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await comments.list(video.id);
+        const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+        if (!cancelled && items.length !== (video.comments_count || 0)) {
+          setLocalCommentCount(items.length);
+          // Silently patch the DB value so it stays in sync
+          videos.update(video.id, { comments_count: items.length }).catch(() => {});
+        }
+      } catch(e) {}
+    })();
+    return () => { cancelled = true; };
+  }, [video.id]);
   // Global mute stored in module-level store — readable by stale closures, no prop-drilling
   const [muted, _setMutedLocal] = useState(() => muteStore.get());
   const setMuted = (val) => {
@@ -3188,7 +3221,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
             </div>
-            <div style={{ color:"rgba(100,200,255,0.85)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.comments_count||0)}</div>
+            <div style={{ color:"rgba(100,200,255,0.85)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(localCommentCount)}</div>
           </button>
 
           {/* HYPE 🔥 */}
