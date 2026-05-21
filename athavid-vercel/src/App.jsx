@@ -3083,26 +3083,30 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const isVisibleRef = { current: false };
     const tryPlay = () => {
-      // Hide play button immediately — don't wait for promise
-      // This prevents the "tap me" illusion while video loads
-      if (playStore.get()) setShowUI(false);
       el.muted = true;
+      // Optimistically mark as playing & hide button immediately
+      // This prevents the ghost play-button flash during buffering
+      if (playStore.get()) {
+        setPlaying(true);
+        setShowUI(false);
+      }
       const attemptPlay = () => {
         el.play().then(() => {
           setPlaying(true);
+          setShowUI(false);
           manuallyPausedRef.current = false;
           const currentlyMuted = muteStore.get();
           if (!currentlyMuted) el.muted = false;
           if (!currentlyMuted && soundRef.current && video.sound_url) {
             soundRef.current.play().catch(() => {});
           }
-          setShowUI(false);
         }).catch(() => {
-          // HLS/media not ready yet — wait for canplay then retry once
           if (el.readyState < 3) {
+            // Not loaded yet (common with HLS) — wait and retry
             el.addEventListener('canplay', attemptPlay, { once: true });
           } else {
-            // Truly blocked — no user gesture yet, show play button
+            // Truly blocked — revert optimistic state, show button
+            setPlaying(false);
             if (!playStore.get()) setShowUI(true);
           }
         });
@@ -3125,10 +3129,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       } else {
         el.pause();
         el.currentTime = 0;
-        setPlaying(false);
+        setPlaying(false);  // reset so tryPlay can set optimistic true on next entry
+        setShowUI(false);   // hide UI — tryPlay will show button only if blocked
         if (soundRef.current) { soundRef.current.pause(); soundRef.current.currentTime = 0; }
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        // Do NOT call setShowUI(false) here — avoids ghost play-button flash on next entry
         setUserTapped(false);
         manuallyPausedRef.current = false; // reset so next scroll-in auto-plays
       }
