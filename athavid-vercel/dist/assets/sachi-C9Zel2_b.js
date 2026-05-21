@@ -8062,7 +8062,7 @@ function Landing({ onEnter }) {
   }, []);
   reactExports.useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
-    const t2 = setTimeout(() => handleEnter(), 8e3);
+    const t2 = setTimeout(() => handleEnter(), 3e3);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -18512,7 +18512,7 @@ function App() {
   if (path === "/child-safety") return /* @__PURE__ */ jsxRuntimeExports.jsx(ChildSafety, {});
   if (path === "/founding-creator" || path === "/apply") return /* @__PURE__ */ jsxRuntimeExports.jsx(FoundingCreatorPage, { onBack: () => window.location.href = "/" });
   if (path === "/admin") return /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPanel$1, {});
-  const [hasEntered, setHasEntered] = reactExports.useState(false);
+  const [hasEntered, setHasEntered] = reactExports.useState(() => sessionStorage.getItem("sachi_entered") === "1");
   const [currentUser, setCurrentUser] = reactExports.useState(() => auth.getUser());
   reactExports.useEffect(() => {
     handleGoogleRedirectCallback().then((result) => {
@@ -18956,7 +18956,10 @@ function App() {
   };
   const username = (currentUser == null ? void 0 : currentUser.full_name) || ((_a = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a.split("@")[0]) || "";
   if (!hasEntered) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Landing, { onEnter: () => setHasEntered(true) });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Landing, { onEnter: () => {
+      sessionStorage.setItem("sachi_entered", "1");
+      setHasEntered(true);
+    } });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0B0C1A", minHeight: "100svh", maxWidth: 480, margin: "0 auto", position: "relative", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(ToastContainer, {}),

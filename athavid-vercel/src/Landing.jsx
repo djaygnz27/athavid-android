@@ -62,7 +62,7 @@ export default function Landing({ onEnter }) {
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
-    const t2 = setTimeout(() => handleEnter(), 8000);
+    const t2 = setTimeout(() => handleEnter(), 3000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [handleEnter]);
 
