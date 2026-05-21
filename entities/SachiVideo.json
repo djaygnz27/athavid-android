@@ -32,10 +32,6 @@
         "type": "string"
       }
     },
-    "content_category": {
-      "type": "string",
-      "default": "General"
-    },
     "podcast_id": {
       "type": "string"
     },
