@@ -1,5 +1,5 @@
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+const BASE_URL = "https://app.base44.com/api";
 
 let sessionToken = null;
 
@@ -62,7 +62,10 @@ export const videos = {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
+    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, {
+      content_category: "General",
+      ...data
+    });
   },
   async update(id, data) {
     return request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${id}`, data);
