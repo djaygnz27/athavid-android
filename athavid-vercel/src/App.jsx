@@ -1567,7 +1567,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         video_url, thumbnail_url,
         media_url: video_url,
         media_type: "video",
-        content_category: "General",
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
