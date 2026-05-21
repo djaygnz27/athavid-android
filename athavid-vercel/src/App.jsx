@@ -1324,6 +1324,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [showPostDetails, setShowPostDetails] = useState(false);
   const [postTitle, setPostTitle] = useState("");
   const [postVisibility, setPostVisibility] = useState("everyone"); // everyone | followers | only_me
+  const [postCategory, setPostCategory] = useState(""); // required
   const [postLocation, setPostLocation] = useState(null); // { name, city }
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [showCityLocation, setShowCityLocation] = useState(false); // privacy: show city or just flag
@@ -1467,7 +1468,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
-        content_category: "General",
+        content_category: postCategory || "General",
         is_approved: true,
         is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
@@ -1570,7 +1571,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
-        content_category: "General",
+        content_category: postCategory || "General",
         is_approved: true,
         is_archived: false, is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
@@ -1814,7 +1815,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
         like_count:0, comment_count:0, views_count:0, shares_count:0,
-        content_category: "General",
+        content_category: postCategory || "General",
         is_approved: postVisibility !== "only_me", is_archived: false, is_ai_detected: false, is_mature: false,
         sound_title: "Text Post", sound_artist: "sachi",
         post_visibility: postVisibility,
@@ -1894,6 +1895,29 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 borderRadius:12, padding:"12px 14px", color:"#fff", fontSize:14, resize:"none", outline:"none",
                 boxSizing:"border-box" }}
             />
+          </div>
+
+          {/* Category picker — REQUIRED */}
+          <div style={{ marginBottom:20 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+              <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Category</span>
+              <span style={{ background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px", letterSpacing:0.5 }}>REQUIRED</span>
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {["Comedy","Music","Food","Travel","Sports","Gaming","Education","News","Fashion","Fitness","Art","Tech","Pets","DIY","Other"].map(cat => (
+                <button key={cat} onClick={() => setPostCategory(cat)}
+                  style={{
+                    padding:"7px 16px", borderRadius:20, fontSize:13, fontWeight:600, cursor:"pointer",
+                    border: postCategory === cat ? "2px solid #F5C842" : "1px solid rgba(255,255,255,0.15)",
+                    background: postCategory === cat ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.05)",
+                    color: postCategory === cat ? "#F5C842" : "#aaa",
+                    transition:"all 0.15s"
+                  }}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+            {!postCategory && <div style={{ color:"#FF6B6B", fontSize:11, marginTop:6 }}>Pick a category to continue</div>}
           </div>
 
           {/* Divider */}
