@@ -16753,7 +16753,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   if (endingLive) return;
                   setEndingLive(true);
                   try {
-                    await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
+                    await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastGoLiveNotify", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ podcast_id: selectedPodcast.id, set_live: false, admin_email: currentUser == null ? void 0 : currentUser.email })
@@ -16824,7 +16824,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   if (goingLive) return;
                   setGoingLive(true);
                   try {
-                    const resp = await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
+                    const resp = await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastGoLiveNotify", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "", set_live: true, admin_email: currentUser == null ? void 0 : currentUser.email })
@@ -17003,7 +17003,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         setNewPodcast(pod);
         await loadPodcasts();
         await loadMyShows();
-        fetch("https://sachi-04cfb834.base44.app/functions/podcastWelcome", {
+        fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastWelcome", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -17025,7 +17025,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       if (!(newPodcast == null ? void 0 : newPodcast.id)) return;
       setGeneratingKey(true);
       try {
-        const resp = await fetch("https://sachi-04cfb834.base44.app/functions/createLiveStream", {
+        const resp = await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/createLiveStream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ podcast_id: newPodcast.id, podcast_title: newPodcast.title || registerForm.title, host_username: (currentUser == null ? void 0 : currentUser.full_name) || "" })
@@ -17060,7 +17060,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           r2.readAsDataURL(f2);
         });
         const b64 = await toBase64(file);
-        const resp = await fetch("https://sachi-04cfb834.base44.app/functions/uploadAvatar", {
+        const resp = await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/uploadAvatar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image_base64: b64, mime_type: file.type || "image/jpeg", entity_id: null })
@@ -18740,7 +18740,7 @@ function App() {
       const skip = (page - 1) * POOL_SIZE;
       let rawAll = [];
       try {
-        const res = await fetch(`https://sachi-04cfb834.base44.app/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
+        const res = await fetch(`https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
         if (res.ok) {
           const json = await res.json();
           rawAll = Array.isArray(json) ? json : (json == null ? void 0 : json.items) || (json == null ? void 0 : json.records) || [];
