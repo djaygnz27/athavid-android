@@ -3146,11 +3146,6 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const likeLockedRef = React.useRef(false);
   const doLike = async () => {
     if (!currentUser) { onNeedAuth(); return; }
-    if (liked) {
-      setShowBruhToast(true);
-      setTimeout(() => setShowBruhToast(false), 2200);
-      return;
-    }
     if (likeLockedRef.current) return;
     likeLockedRef.current = true;
     setTimeout(() => { likeLockedRef.current = false; }, 800);
