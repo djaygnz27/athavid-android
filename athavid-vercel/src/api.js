@@ -62,10 +62,7 @@ export const videos = {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, {
-      content_category: "General",
-      ...data
-    });
+    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
   },
   async update(id, data) {
     return request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${id}`, data);
