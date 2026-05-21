@@ -2636,11 +2636,41 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       if (e.isIntersecting) {
         const currentlyMuted = muteStore.get();
         el.muted = video.sound_url ? true : currentlyMuted;
-        el.play().catch(() => {});
+
+        // Play video — if rejected (autoplay policy), retry on canplay event
+        const playVideo = () => {
+          el.play().catch(() => {
+            // Browser blocked autoplay — attach one-time canplay retry
+            const onReady = () => {
+              el.play().catch(() => {});
+              el.removeEventListener("canplay", onReady);
+            };
+            el.addEventListener("canplay", onReady);
+          });
+        };
+
+        // If video has enough data, play immediately; otherwise wait
+        if (el.readyState >= 3) {
+          playVideo();
+        } else {
+          const onCanPlay = () => {
+            playVideo();
+            el.removeEventListener("canplay", onCanPlay);
+          };
+          el.addEventListener("canplay", onCanPlay);
+        }
+
         setPlaying(true);
-        // Start sound track if unmuted and post has music (video audio stays muted)
+        // Start sound ONLY after video has actually started playing
+        // This keeps them in sync and avoids the music-without-video problem
         if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {});
+          const startSound = () => {
+            if (soundRef.current && !currentlyMuted) {
+              soundRef.current.play().catch(() => {});
+            }
+            el.removeEventListener("playing", startSound);
+          };
+          el.addEventListener("playing", startSound);
         }
         setShowUI(true);
         hideUIAfterDelay(1500);
@@ -2707,7 +2737,12 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const el = videoRef.current;
     if (!el) return;
     if (el.paused) {
-      el.play();
+      el.play().then(() => {
+        // Video actually started — now start music track in sync
+        if (soundRef.current && video.sound_url && !muted) {
+          soundRef.current.play().catch(() => {});
+        }
+      }).catch(() => {});
       setPlaying(true);
       // Immediately hide UI when resuming play
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
@@ -2715,6 +2750,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     } else {
       el.pause();
       setPlaying(false);
+      // Pause music track too
+      if (soundRef.current && video.sound_url) soundRef.current.pause();
       // Show controls when paused
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       setShowUI(true);
