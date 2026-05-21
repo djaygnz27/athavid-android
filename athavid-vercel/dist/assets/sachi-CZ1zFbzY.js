@@ -8335,8 +8335,8 @@ function Landing({ onEnter }) {
     } }) })
   ] });
 }
-const APP_ID$4 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL$2 = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID$4 = "69e79122bcc8fb5a04cfb834";
+const BASE_URL$2 = "https://sachi-04cfb834.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
   sessionToken = t2;
@@ -8471,7 +8471,7 @@ async function uploadFile(file) {
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(
-    `https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/integration-endpoints/Core/UploadFile`,
+    `https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/integration-endpoints/Core/UploadFile`,
     { method: "POST", headers, body: form }
   );
   const text = await res.text();
@@ -8605,6 +8605,37 @@ const interests = {
       return scoreB - scoreA;
     });
     return scored;
+  }
+};
+const likes = {
+  async add(video_id, user_id, username, display_name, avatar_url) {
+    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiLike`, {
+      video_id,
+      user_id,
+      username,
+      display_name,
+      avatar_url
+    });
+  },
+  async remove(id2) {
+    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiLike/${id2}`);
+  },
+  async checkUserLiked(video_id, user_id) {
+    try {
+      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+      return items.length > 0 ? items[0] : null;
+    } catch {
+      return null;
+    }
+  },
+  async getByVideo(video_id) {
+    try {
+      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&limit=500`);
+      return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+    } catch {
+      return [];
+    }
   }
 };
 const COUNTRIES = [
@@ -11382,7 +11413,6 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         await videos.update(video.id, { comments_count: newCount });
         setLocalCommentCount(newCount);
         if (onCommentPosted) onCommentPosted(video.id, newCount);
-        setTimeout(() => onClose(), 600);
       }
     } catch (e) {
       toast.error("Error: " + e.message);
@@ -13892,14 +13922,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [playing, setPlaying] = reactExports.useState(false);
   const [liked, setLiked] = reactExports.useState(false);
   const [localCommentCount, setLocalCommentCount2] = reactExports.useState(video.comments_count || 0);
+  const [localLikeCount, setLocalLikeCount] = reactExports.useState(video.likes_count || 0);
+  const [localHypeCount, setLocalHypeCount] = reactExports.useState(video.hype_count || 0);
+  const [localHyped, setLocalHyped] = reactExports.useState(false);
   reactExports.useEffect(() => {
     if (!currentUser) return;
-    likes.checkUserLiked ? null : null;
     let cancelled = false;
     (async () => {
       try {
         const rec = await likes.checkUserLiked(video.id, currentUser.id);
-        if (!cancelled && rec) setLiked(true);
+        if (!cancelled && rec) {
+          setLiked(true);
+          likeRecordRef.current = rec.id || null;
+        }
       } catch (e) {
       }
     })();
@@ -13907,6 +13942,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       cancelled = true;
     };
   }, [video.id, currentUser == null ? void 0 : currentUser.id]);
+  reactExports.useEffect(() => {
+    setLocalLikeCount(video.likes_count || 0);
+  }, [video.likes_count]);
+  reactExports.useEffect(() => {
+    setLocalHypeCount(video.hype_count || 0);
+  }, [video.hype_count]);
+  reactExports.useEffect(() => {
+    setLocalCommentCount2(video.comments_count || 0);
+  }, [video.comments_count]);
   reactExports.useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -14153,6 +14197,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       }, 1500);
     }
   };
+  const likeRecordRef = React.useRef(null);
   const doLike = () => {
     if (!currentUser) {
       onNeedAuth();
@@ -14165,8 +14210,35 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }, 500);
     showPopMsg(LIKE_MSGS, setLikePopMsg, likeTapCount, likeTapTimer);
     setLiked((prev) => {
+      var _a2;
       const newLiked = !prev;
-      onLike(video.id, newLiked ? 1 : -1);
+      const delta = newLiked ? 1 : -1;
+      setLocalLikeCount((c) => Math.max(0, c + delta));
+      onLike(video.id, delta);
+      if (newLiked) {
+        likes.add(
+          video.id,
+          currentUser.id,
+          currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]),
+          currentUser.display_name || currentUser.full_name || currentUser.username,
+          currentUser.avatar_url || ""
+        ).then((rec) => {
+          likeRecordRef.current = (rec == null ? void 0 : rec.id) || null;
+        }).catch(() => {
+        });
+      } else {
+        if (likeRecordRef.current) {
+          likes.remove(likeRecordRef.current).catch(() => {
+          });
+          likeRecordRef.current = null;
+        } else {
+          likes.checkUserLiked(video.id, currentUser.id).then((rec) => {
+            if (rec == null ? void 0 : rec.id) likes.remove(rec.id).catch(() => {
+            });
+          }).catch(() => {
+          });
+        }
+      }
       return newLiked;
     });
   };
@@ -14853,7 +14925,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           transition: "all 0.2s",
           animation: liked ? "heartpop 0.4s ease forwards" : "none"
         }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: liked ? "#FF6B6B" : "rgba(255,255,255,0.85)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.likes_count || 0) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(localLikeCount) }),
         likePopMsg && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
           position: "absolute",
           bottom: "calc(100% + 8px)",
@@ -14888,16 +14960,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(100,200,255,0.85)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(localCommentCount) })
       ] }),
       (() => {
-        const isHyped = video._hyped;
         return /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: tap(async () => {
           if (!currentUser) {
             onNeedAuth();
             return;
           }
           showPopMsg(HYPE_MSGS, setHypePopMsg, hypeTapCount, hypeTapTimer);
-          const newHyped = !isHyped;
-          const newCount = Math.max(0, (video.hype_count || 0) + (newHyped ? 1 : -1));
-          onLike(video.id, 0);
+          const newHyped = !localHyped;
+          setLocalHyped(newHyped);
+          const newCount = Math.max(0, localHypeCount + (newHyped ? 1 : -1));
+          setLocalHypeCount(newCount);
           try {
             await videos.update(video.id, { hype_count: newCount });
           } catch (e) {
@@ -14907,15 +14979,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             width: 44,
             height: 44,
             borderRadius: 16,
-            background: isHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
-            border: isHyped ? "1.5px solid rgba(255,180,0,0.8)" : "1.5px solid rgba(255,150,0,0.25)",
-            boxShadow: isHyped ? "0 0 20px rgba(255,160,0,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+            background: localHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
+            border: localHyped ? "1.5px solid rgba(255,180,0,0.8)" : "1.5px solid rgba(255,150,0,0.25)",
+            boxShadow: localHyped ? "0 0 20px rgba(255,160,0,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             transition: "all 0.2s"
           }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 22 }, children: "🔥" }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.hype_count || 0) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: localHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(localHypeCount) }),
           hypePopMsg && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
             position: "absolute",
             bottom: "calc(100% + 8px)",
@@ -18818,6 +18890,7 @@ function App() {
       const updated = vs.map((v2) => {
         var _a2;
         if (v2.id !== videoId) return v2;
+        if (delta === 0) return { ...v2 };
         const newCount = Math.max(0, (v2.likes_count || 0) + delta);
         videos.update(videoId, { likes_count: newCount }).catch(() => {
         });

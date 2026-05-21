@@ -1,5 +1,5 @@
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
+const BASE_URL = "https://sachi-04cfb834.base44.app/api";
 
 let sessionToken = null;
 
@@ -129,7 +129,7 @@ export async function uploadFile(file) {
   const headers = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(
-    `https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/integration-endpoints/Core/UploadFile`,
+    `https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/integration-endpoints/Core/UploadFile`,
     { method: "POST", headers, body: form }
   );
   const text = await res.text();
@@ -264,4 +264,29 @@ export const interests = {
     });
     return scored;
   }
+};
+
+// ── Likes ──────────────────────────────────────────────────────────────────
+export const likes = {
+  async add(video_id, user_id, username, display_name, avatar_url) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiLike`, {
+      video_id, user_id, username, display_name, avatar_url
+    });
+  },
+  async remove(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
+  },
+  async checkUserLiked(video_id, user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const items = Array.isArray(res) ? res : (res?.items || res?.records || []);
+      return items.length > 0 ? items[0] : null;
+    } catch { return null; }
+  },
+  async getByVideo(video_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&limit=500`);
+      return Array.isArray(res) ? res : (res?.items || res?.records || []);
+    } catch { return []; }
+  },
 };
