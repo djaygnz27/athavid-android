@@ -6461,7 +6461,7 @@ function App() {
   if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
   if (path === "/admin") return <SachiAdminPanel />;
 
-  const [hasEntered, setHasEntered] = useState(false);
+  const [hasEntered, setHasEntered] = useState(() => sessionStorage.getItem('sachi_entered') === '1');
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
 
   // ── Handle Google OAuth redirect callback (runs on every page load) ──
@@ -6922,7 +6922,7 @@ function App() {
   const username = currentUser?.full_name || currentUser?.email?.split("@")[0] || "";
 
   if (!hasEntered) {
-    return <Landing onEnter={() => setHasEntered(true)} />;
+    return <Landing onEnter={() => { sessionStorage.setItem('sachi_entered', '1'); setHasEntered(true); }} />;
   }
 
   return (
