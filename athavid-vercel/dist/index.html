@@ -106,21 +106,31 @@
     </script>
   
     <script>
-      // Service Worker — auto-reload on new deploy
+      // Service Worker — auto-reload on new deploy (30-60 sec)
       if ('serviceWorker' in navigator) {
+        let swReg = null;
+
         navigator.serviceWorker.register('/sw.js').then(reg => {
-          // Check for updates every 60 seconds
-          setInterval(() => reg.update(), 60000);
+          swReg = reg;
+          // Poll every 30 seconds
+          setInterval(() => reg.update(), 30000);
         });
 
-        // When SW_UPDATED message received, reload immediately
+        // Also check immediately when user returns to the tab
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && swReg) {
+            swReg.update();
+          }
+        });
+
+        // When SW_UPDATED message received from new SW → reload
         navigator.serviceWorker.addEventListener('message', event => {
           if (event.data && event.data.type === 'SW_UPDATED') {
             window.location.reload(true);
           }
         });
 
-        // Also detect controllerchange (new SW took over) and reload
+        // New SW took control → reload immediately
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!refreshing) {
