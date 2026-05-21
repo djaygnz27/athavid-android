@@ -324,3 +324,30 @@ export const messages = {
     } catch { return 0; }
   }
 };
+
+export const notifications = {
+  async getForUser(user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiNotification?recipient_id=${user_id}&limit=100`);
+      return Array.isArray(res) ? res : (res?.items || res?.records || []);
+    } catch { return []; }
+  },
+  async markRead(id) {
+    return request("PUT", `/apps/${APP_ID}/entities/SachiNotification/${id}`, { is_read: true });
+  },
+  async markAllRead(user_id) {
+    try {
+      const items = await notifications.getForUser(user_id);
+      await Promise.all(items.filter(n => !n.is_read).map(n => notifications.markRead(n.id)));
+    } catch {}
+  },
+  async getUnreadCount(user_id) {
+    try {
+      const items = await notifications.getForUser(user_id);
+      return items.filter(n => !n.is_read).length;
+    } catch { return 0; }
+  },
+  async create(data) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiNotification`, data);
+  }
+};
