@@ -1,6 +1,5 @@
-// v2.3.1 — content_category silently injected, like_count/comment_count fixed
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://app.base44.com/api";
+const BASE_URL = "https://sachi-04cfb834.base44.app/api";
 
 let sessionToken = null;
 
@@ -59,13 +58,11 @@ export const auth = {
 };
 
 export const videos = {
-  async list(limit = 30, skip = 0) {
+  async list(limit = 200, skip = 0) {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    // content_category is required by entity schema — inject silently, users never see it
-    const { content_category, ...rest } = data;
-    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, { ...rest, content_category: "General" });
+    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
   },
   async update(id, data) {
     return request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${id}`, data);
@@ -89,9 +86,21 @@ export const videos = {
     });
   },
   async byUser(userId) {
-    const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
-    const items = Array.isArray(res) ? res : (res?.items || []);
-    return items.filter(v => !v.is_archived);
+    // Try user_id first, also fetch by created_by and merge unique results
+    const [res1, res2] = await Promise.all([
+      request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
+      request("GET", `/apps/${APP_ID}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => []),
+    ]);
+    const items1 = Array.isArray(res1) ? res1 : (res1?.items || []);
+    const items2 = Array.isArray(res2) ? res2 : (res2?.items || []);
+    // Merge and deduplicate by id
+    const seen = new Set();
+    const merged = [...items1, ...items2].filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return !v.is_archived;
+    });
+    return merged;
   },
   async delete(id) {
     return request("DELETE", `/apps/${APP_ID}/entities/SachiVideo/${id}`);
@@ -113,13 +122,16 @@ export const comments = {
   },
 };
 
-// Cloudflare R2 upload via Worker — replaces Base44 file storage
-const R2_WORKER_URL = "https://sachi-upload.jaygnz27.workers.dev";
-
 export async function uploadFile(file) {
+  const token = getToken();
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(R2_WORKER_URL, { method: "POST", body: form });
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(
+    `https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/integration-endpoints/Core/UploadFile`,
+    { method: "POST", headers, body: form }
+  );
   const text = await res.text();
   let data;
   try { data = JSON.parse(text); } catch(_) { throw new Error(`Upload error ${res.status}: ${text.slice(0,100)}`); }
@@ -252,4 +264,29 @@ export const interests = {
     });
     return scored;
   }
+};
+
+// ── Likes ──────────────────────────────────────────────────────────────────
+export const likes = {
+  async add(video_id, user_id, username, display_name, avatar_url) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiLike`, {
+      video_id, user_id, username, display_name, avatar_url
+    });
+  },
+  async remove(id) {
+    return request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
+  },
+  async checkUserLiked(video_id, user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const items = Array.isArray(res) ? res : (res?.items || res?.records || []);
+      return items.length > 0 ? items[0] : null;
+    } catch { return null; }
+  },
+  async getByVideo(video_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&limit=500`);
+      return Array.isArray(res) ? res : (res?.items || res?.records || []);
+    } catch { return []; }
+  },
 };
