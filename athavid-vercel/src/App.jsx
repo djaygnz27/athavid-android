@@ -1,7 +1,23 @@
-// Sachi Stream — main application v2.3.1
+// Sachi v2.1.1 - photo_urls array fix, bottom action bar
+if (!document.getElementById('sachi-popup-css')) {
+  const s = document.createElement('style');
+  s.id = 'sachi-popup-css';
+  s.textContent = `\n@keyframes popBubbleIn {\n  from { opacity: 0; transform: scale(0.6) translateY(8px); }\n  to   { opacity: 1; transform: scale(1) translateY(0); }\n}\n`;
+  document.head.appendChild(s);
+}
+const SACHI_BUILD = "20260417-1";
+if (localStorage.getItem("sachi_build") !== SACHI_BUILD) {
+  localStorage.setItem("sachi_build", SACHI_BUILD);
+  // Clear any stale caches
+  if ('caches' in window) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
+}
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import heic2any from "heic2any";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
@@ -11,109 +27,13 @@ import MusicPicker from "./MusicPicker.jsx";
 import SachiAdminPanel from "./AdminPanel.jsx";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const APP_VERSION = "2.3.1";
-
-// ── Audio Preloader Cache ─────────────────────────────────────────────────
-// Pre-fetches audio for upcoming videos so playback starts instantly
-const audioCache = new Map();
-const MAX_CACHE = 5;
-
-function preloadAudio(url) {
-  if (!url || audioCache.has(url)) return;
-  if (audioCache.size >= MAX_CACHE) {
-    // Evict oldest entry
-    const firstKey = audioCache.keys().next().value;
-    const evicted = audioCache.get(firstKey);
-    evicted.pause();
-    evicted.src = "";
-    audioCache.delete(firstKey);
-  }
-  const audio = new Audio(url);
-  audio.preload = "auto";
-  audio.load();
-  audioCache.set(url, audio);
-}
-
-function getCachedAudio(url) {
-  return audioCache.get(url) || null;
-}
-
-// ── SachiHype API helpers ─────────────────────────────────────────────────
-const hypes = {
-  async add(video_id, user_id, username) {
-    return request("POST", `/apps/${APP_ID}/entities/SachiHype`, { video_id, user_id, username });
-  },
-  async remove(id) {
-    return request("DELETE", `/apps/${APP_ID}/entities/SachiHype/${id}`);
-  },
-  async getByUserAndVideo(video_id, user_id) {
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiHype?video_id=${video_id}&user_id=${user_id}&limit=5`);
-      return Array.isArray(res) ? res : (res?.items || []);
-    } catch { return []; }
-  },
-  async countToday(user_id) {
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiHype?user_id=${user_id}&limit=100`);
-      const all = Array.isArray(res) ? res : (res?.items || []);
-      return all.filter(h => h.created_date?.startsWith(today)).length;
-    } catch { return 0; }
-  }
-};
-
-// ── SachiLike API helpers ─────────────────────────────────────────────────
-const likes = {
-  async add(video_id, user_id, username, display_name, avatar_url) {
-    return request("POST", `/apps/${APP_ID}/entities/SachiLike`, {
-      video_id, user_id, username, display_name, avatar_url
-    });
-  },
-  async remove(id) {
-    return request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
-  },
-  async getByVideo(video_id) {
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&limit=200`);
-      return Array.isArray(res) ? res : (res?.items || []);
-    } catch { return []; }
-  },
-  async getByUser(user_id) {
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?user_id=${user_id}&limit=500`);
-      return Array.isArray(res) ? res : (res?.items || []);
-    } catch { return []; }
-  },
-};
 
 // Module-level mute store — avoids window globals, survives stale closures
 const muteStore = {
-  _muted: false,
+  _muted: true,
   get() { return this._muted; },
   set(val) { this._muted = val; },
 };
-
-// Module-level play store — once user first presses play, all subsequent
-// videos auto-play as they scroll into view (TikTok behaviour)
-const playStore = {
-  _hasPlayed: false,
-  get() { return this._hasPlayed; },
-  set(val) { this._hasPlayed = val; },
-};
-
-// Spotlight colors — assigned per creator for stage effect
-const SPOTLIGHT_COLORS = [
-  'rgba(108,60,247,0.18)','rgba(229,57,53,0.15)','rgba(2,136,209,0.15)',
-  'rgba(46,125,50,0.15)','rgba(245,127,23,0.15)','rgba(173,20,87,0.15)',
-  'rgba(0,131,143,0.15)','rgba(78,52,46,0.12)','rgba(21,101,192,0.15)',
-  'rgba(130,119,23,0.15)',
-];
-function getSpotlightColor(userId) {
-  if (!userId) return SPOTLIGHT_COLORS[0];
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) hash = userId.charCodeAt(i) + ((hash << 5) - hash);
-  return SPOTLIGHT_COLORS[Math.abs(hash) % SPOTLIGHT_COLORS.length];
-}
 
 // Safe JSON parse for photo_urls that may come back as string or array
 function safeParsePhotoUrls(raw) {
@@ -169,7 +89,15 @@ function ToastContainer() {
           </div>
         );
       })}
-      <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }`}</style>
+      <style>{`@keyframes sachiToastIn { from { opacity:0; transform:translateY(-10px) scale(0.96); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes orbitPulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(245,200,66,0.5), inset 0 1px 0 rgba(255,255,255,0.3); transform: scale(1); }
+  50% { box-shadow: 0 0 28px rgba(245,200,66,0.85), 0 0 8px rgba(245,200,66,0.4), inset 0 1px 0 rgba(255,255,255,0.4); transform: scale(1.07); }
+}
+.nav-orb { transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1); }
+.nav-orb:active { transform: scale(0.85) !important; }
+.orb-active { animation: orbitPulse 2s ease-in-out infinite; }`}</style>
     </div>
   );
 }
@@ -187,18 +115,87 @@ function formatCount(n) {
   return String(n);
 }
 
-const resolveMediaUrl = (urlOrVideo, isVideo) => {
-  // Accept either a URL string or a video object. If a video object is passed,
-  // read media_url first (NEW Sachi schema) then fall back to video_url (OLD Daminie schema).
-  // This makes the app tolerant of whichever Base44 app is the current backend.
-  const url = (urlOrVideo && typeof urlOrVideo === "object")
-    ? (urlOrVideo.media_url || urlOrVideo.video_url)
-    : urlOrVideo;
+// Proxy image URLs through wsrv.nl for on-the-fly resize + WebP conversion
+
+// ─── POP-UP VIDEO BUBBLES ─────────────────────────────────────────────────────
+// Plays a soft boing sound and renders timed annotation bubbles over videos
+const boingSound = typeof window !== 'undefined' ? (() => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return () => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(520, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.18);
+      g.gain.setValueAtTime(0.18, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.32);
+      o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.33);
+    };
+  } catch(e) { return () => {}; }
+})() : () => {};
+
+function PopUpBubbles({ annotations, videoRef }) {
+  const [visible, setVisible] = React.useState([]);
+  const firedRef = React.useRef(new Set());
+  React.useEffect(() => {
+    if (!annotations || !annotations.length || !videoRef?.current) return;
+    const el = videoRef.current;
+    const handler = () => {
+      const t = el.currentTime;
+      annotations.forEach((ann, i) => {
+        const key = i + '-' + Math.floor(ann.time);
+        if (t >= ann.time && t < ann.time + 0.5 && !firedRef.current.has(key)) {
+          firedRef.current.add(key);
+          boingSound();
+          const id = Date.now() + i;
+          setVisible(prev => [...prev, { id, text: ann.text, time: ann.time }]);
+          setTimeout(() => setVisible(prev => prev.filter(b => b.id !== id)), 4000);
+        }
+        // Reset fired flag when video loops back
+        if (t < ann.time - 1) firedRef.current.delete(i + '-' + Math.floor(ann.time));
+      });
+    };
+    el.addEventListener('timeupdate', handler);
+    return () => el.removeEventListener('timeupdate', handler);
+  }, [annotations, videoRef]);
+  if (!visible.length) return null;
+  return (
+    <div style={{ position:'absolute', bottom: 160, left: 16, zIndex: 150, display:'flex', flexDirection:'column', gap: 8, pointerEvents:'none', maxWidth:'70%' }}>
+      {visible.map(b => (
+        <div key={b.id} style={{
+          background: 'rgba(255,255,255,0.97)',
+          color: '#111',
+          borderRadius: 18,
+          padding: '9px 16px',
+          fontSize: 13,
+          fontWeight: 600,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+          animation: 'popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
+          lineHeight: 1.4,
+          maxWidth: 220,
+        }}>
+          💬 {b.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Returns null for unrenderable HEIC files (browser can't display them)
+const resolveMediaUrl = (url, isVideo, size = 'feed') => {
   if (!url) return url;
-  // Cloudflare Stream HLS URLs — pass through directly, no proxy needed
-  if (url.includes('videodelivery.net') || url.includes('cloudflarestream.com') || url.endsWith('.m3u8')) {
-    return url;
-  }
+  if (url.includes('wsrv.nl')) return url;
+  // HEIC files from R2 cannot be rendered by browsers and wsrv.nl can't convert them either
+  // Return null so caller can show a friendly error state
+  if (/\.heic$/i.test(url)) return null;
+  const widthMap = { thumb: 40, feed: 800, full: 1200 };
+  const qualityMap = { thumb: 20, feed: 72, full: 85 };
+  const w = widthMap[size] || 800;
+  const q = qualityMap[size] || 72;
+  const buildWsrv = (directUrl) => `https://wsrv.nl/?url=${encodeURIComponent(directUrl)}&w=${w}&q=${q}&output=webp&n=-1`;
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
   if (match) {
     const filename = match[2];
@@ -206,133 +203,27 @@ const resolveMediaUrl = (urlOrVideo, isVideo) => {
     const bucket = isVideoFile ? 'videos' : 'images';
     const directUrl = `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
     if (isVideoFile) return directUrl;
-    return `https://wsrv.nl/?url=${encodeURIComponent(directUrl)}&w=1200&q=75&output=webp`;
+    return buildWsrv(directUrl);
   }
-  if (url.includes('media.base44.com/images/')) {
-    const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
-    if (!isVideoFile) return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp`;
-  }
-  // Cloudflare R2 URLs — try loading directly via wsrv.nl which handles any image format
-  // The .heic extension may be wrong — R2 files are often JPEGs with incorrect extensions
-  if (url.includes('.r2.dev') || url.includes('r2.cloudflarestorage.com')) {
-    const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url);
-    if (isVideoFile) return url;
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=1200&q=75&output=webp`;
-  }
+  if (!isVideo && url.includes('media.base44.com/images')) return buildWsrv(url);
+  if (!isVideo && url.includes('r2.dev') && !/\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(url)) return buildWsrv(url);
   return url;
 };
-// ── HEIC to JPEG converter ───────────────────────────────────────────────────
-async function convertHeicToJpeg(file) {
-  if (!file) return file;
-  const name = file.name || '';
-  const type = file.type || '';
-  const isHeic = /\.heic$/i.test(name) || /\.heif$/i.test(name) || type === 'image/heic' || type === 'image/heif';
-  if (!isHeic) return file;
-  try {
-    // Dynamically load heic2any from CDN
-    if (!window._heic2any) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-      window._heic2any = window.heic2any;
-    }
-    const blob = await window._heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
-    const converted = new File([blob], name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' });
-    console.log(`[Sachi] HEIC converted: ${(file.size/1024).toFixed(0)}KB → ${(converted.size/1024).toFixed(0)}KB`);
-    return converted;
-  } catch(e) {
-    console.warn('[Sachi] HEIC conversion failed, uploading original:', e);
-    return file;
-  }
+
+// Progressive image: shows blurred thumbnail instantly, swaps to full once loaded
+function ProgressiveImg({ src, style, alt = "", size = "feed" }) {
+  const thumbSrc = resolveMediaUrl(src, false, 'thumb');
+  const fullSrc  = resolveMediaUrl(src, false, size);
+  const [loaded, setLoaded] = React.useState(false);
+  return (
+    <div style={{ position:'relative', width:'100%', height:'100%', overflow:'hidden', ...style }}>
+      {/* Blurred placeholder — loads instantly */}
+      <img src={thumbSrc} alt="" style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', filter:'blur(12px)', transform:'scale(1.08)', transition:'opacity 0.3s', opacity: loaded ? 0 : 1, pointerEvents:'none' }} />
+      {/* Full quality image */}
+      <img src={fullSrc} alt={alt} onLoad={() => setLoaded(true)} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', transition:'opacity 0.4s', opacity: loaded ? 1 : 0 }} />
+    </div>
+  );
 }
-
-// ── Cloudflare Stream Upload ─────────────────────────────────────────────────
-// Routes video through Cloudflare Stream for HLS adaptive streaming & edge CDN
-// Falls back to direct R2 upload if Stream is unavailable.
-// Browser → Cloudflare Worker (sachi-upload) → Cloudflare Stream API.
-// The Worker proxies requests server-side (no CORS issue) and holds the
-// CF_STREAM_TOKEN as an encrypted secret. Browser never sees the token.
-const SACHI_WORKER_URL = "https://sachi-upload.jaygnz27.workers.dev";
-
-async function uploadToCloudflareStream(file, onProgress) {
-  const MAX_RETRIES = 3;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      if (attempt > 1) {
-        onProgress && onProgress(5, `Retrying upload (attempt ${attempt}/${MAX_RETRIES})...`);
-        await new Promise(r => setTimeout(r, 2000 * attempt)); // back-off
-      }
-
-      // Step 1: Get a one-time upload URL from our Worker
-      onProgress && onProgress(5, attempt === 1 ? "Connecting to Cloudflare Stream..." : `Reconnecting... (${attempt}/${MAX_RETRIES})`);
-      const initRes = await fetch(`${SACHI_WORKER_URL}/stream/init`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      });
-      if (!initRes.ok) throw new Error(`Stream init failed: ${initRes.status}`);
-      const { uploadURL, uid } = await initRes.json();
-
-      // Step 2: Upload with progress + timeout guard
-      onProgress && onProgress(15, "Uploading to Cloudflare Stream...");
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        // 5-minute timeout — covers large files on slow connections
-        xhr.timeout = 5 * 60 * 1000;
-        xhr.open("POST", uploadURL);
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const pct = Math.round((e.loaded / e.total) * 60) + 15;
-            onProgress && onProgress(pct, `Uploading... ${Math.round((e.loaded / e.total) * 100)}%`);
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) resolve();
-          else reject(new Error(`Upload failed: ${xhr.status}`));
-        };
-        xhr.onerror = () => reject(new Error("Network error during upload"));
-        xhr.ontimeout = () => reject(new Error("Upload timed out"));
-        const formData = new FormData();
-        formData.append("file", file);
-        xhr.send(formData);
-      });
-
-      // Step 3: Poll for HLS readiness (up to 60s)
-      onProgress && onProgress(80, "Processing video for fast streaming...");
-      let streamUrl = null;
-      let thumbnailUrl = null;
-      for (let i = 0; i < 30; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        try {
-          const statusRes = await fetch(`${SACHI_WORKER_URL}/stream/status?uid=${uid}`);
-          if (!statusRes.ok) continue;
-          const video = await statusRes.json();
-          if (video.readyToStream) {
-            streamUrl = video.playback?.hls || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/manifest/video.m3u8`;
-            thumbnailUrl = video.thumbnail || `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`;
-            break;
-          }
-        } catch {}
-      }
-      if (!streamUrl) throw new Error("Stream processing timed out");
-      onProgress && onProgress(95, "Almost there...");
-      return { streamUrl, thumbnailUrl, uid };
-
-    } catch(e) {
-      console.warn(`[Sachi] CF upload attempt ${attempt} failed:`, e.message);
-      if (attempt === MAX_RETRIES) {
-        console.error("[Sachi] All CF upload attempts failed, falling back to R2");
-        return null;
-      }
-    }
-  }
-  return null;
-}
-
 // Get user's location for post geo-tagging
 async function getPostLocation() {
   const savedCode = localStorage.getItem('sachi_country_code');
@@ -467,35 +358,26 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [posting, setPosting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState(null); // { id, username }
-  const [liveCount, setLiveCount] = useState(video.comment_count || 0);
   const [expandedReplies, setExpandedReplies] = useState({});
-  // Track which comments the current user has reacted to.
-  // Shape: { [commentId]: { thumbsUp: bool, hearts: bool, thumbsDown: bool } }
-  // In-memory only — resets if the user reloads the page. That's fine for now;
-  // database-backed persistence is a future enhancement.
-  const [myReactions, setMyReactions] = useState({});
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
     if (!video) return;
-    // Fetch ALL comments for this video including parent_id field
-    request("GET", `/apps/${APP_ID}/entities/SachiComment?video_id=${video.id}&limit=500&sort=created_date`)
+    comments.list(video.id)
       .then(r => {
-        const all = Array.isArray(r) ? r : (r?.items || []);
-        // Separate top-level and replies using parent_id
-        const topLevel = all.filter(c => !c.parent_id);
-        const replies = all.filter(c => !!c.parent_id);
-        // Group replies under their parent
-        const withReplies = topLevel.map(c => ({
+        if (!Array.isArray(r)) { setList([]); return; }
+        // Separate top-level comments from replies, nest replies under parents
+        const topLevel = r.filter(c => !c.parent_id);
+        const replies = r.filter(c => !!c.parent_id);
+        const nested = topLevel.map(c => ({
           ...c,
           replies: replies.filter(rep => rep.parent_id === c.id)
-            .sort((a,b) => new Date(a.created_date) - new Date(b.created_date))
         }));
-        setList(withReplies);
-        // Auto-expand threads with replies
+        setList(nested);
+        // Auto-expand any parent that has replies
         const expanded = {};
-        withReplies.forEach(c => { if (c.replies?.length > 0) expanded[c.id] = true; });
+        nested.forEach(c => { if (c.replies && c.replies.length > 0) expanded[c.id] = true; });
         setExpandedReplies(expanded);
       })
       .catch(() => setList([]))
@@ -507,7 +389,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const startReply = (c) => {
     if (!currentUser) { onNeedAuth(); return; }
     setReplyingTo({ id: c.id, username: c.username });
-    setText(""); // Don't pre-fill — the placeholder shows who they're replying to
+    setText(`@${c.username} `);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
@@ -520,76 +402,42 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     try {
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       if (replyingTo) {
-        // Save reply to DB so it persists across sessions
-        // Avoid double @username if user already typed it
-        const trimmed = text.trim();
-        const replyText = trimmed.toLowerCase().startsWith(`@${replyingTo.username.toLowerCase()}`)
-          ? trimmed
-          : `@${replyingTo.username} ${trimmed}`;
-        const savedReply = await request("POST", `/apps/${APP_ID}/entities/SachiComment`, {
-          video_id: video.id, user_id: currentUser.id, username,
+        // Save reply to DB with parent_id so it persists across sessions
+        const savedReply = await comments.create({
+          video_id: video.id,
+          username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          content: replyText,
+          comment_text: text.trim(),
+          likes_count: 0,
           parent_id: replyingTo.id,
-        }).catch(() => null);
-        const reply = savedReply || { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, content: replyText, thumbsUp:0, hearts:0, thumbsDown:0 };
-        setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
+        });
+        // Nest it under the parent in local state
+        setList(prev => prev.map(x => x.id === replyingTo.id
+          ? { ...x, replies: [...(x.replies || []), savedReply] }
+          : x
+        ));
         setExpandedReplies(prev => ({...prev, [replyingTo.id]: true}));
         setReplyingTo(null);
         setText("");
       } else {
         const c = await comments.create({
-          video_id: video.id, user_id: currentUser.id, username,
+          video_id: video.id, username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          content: text.trim(),
+          comment_text: text.trim(), likes_count: 0,
         });
+        const newCount = list.length + 1;
         setList(prev => [...prev, c]);
         setText("");
-        // Always increment from live DB value — use direct request to avoid SDK confusion
-        let liveCount = video.comment_count || 0;
-        try {
-          const liveVideo = await request("GET", `/apps/${APP_ID}/entities/SachiVideo/${video.id}`);
-          liveCount = liveVideo?.comment_count || liveVideo?.items?.[0]?.comment_count || liveCount;
-        } catch(e) {}
-        const newCount = Number(liveCount) + 1;
-        await videos.update(video.id, { comment_count: newCount });
+        await videos.update(video.id, { comments_count: newCount });
+        setLocalCommentCount(newCount);
         if (onCommentPosted) onCommentPosted(video.id, newCount);
-        setTimeout(() => onClose(), 600);
+        // Don't auto-close — let user stay and keep commenting or see their comment
       }
     } catch(e) { toast.error("Error: " + e.message); }
     finally { setPosting(false); }
   };
 
   const reactToComment = (id, reaction, isReply, parentId) => {
-    // Read current reaction state for this comment
-    const existing = myReactions[id] || {};
-
-    // Already voted on this exact reaction? Show Bruh and stop.
-    if (existing[reaction]) {
-      if (reaction === "thumbsUp")    toast.info("Bruh, you already loved this comment! 🔥");
-      else if (reaction === "hearts") toast.info("Bruh, you already hearted this! ❤️");
-      else                            toast.info("Bruh, you already disliked this! 💀");
-      return;
-    }
-
-    // Thumbs-up and thumbs-down are mutually exclusive.
-    // If user picked up but now wants down (or vice versa), block — make up your mind.
-    if (reaction === "thumbsUp" && existing.thumbsDown) {
-      toast.info("Bruh, make up your mind! You already voted.");
-      return;
-    }
-    if (reaction === "thumbsDown" && existing.thumbsUp) {
-      toast.info("Bruh, make up your mind! You already voted.");
-      return;
-    }
-
-    // Lock this reaction for this user-comment combo
-    setMyReactions(prev => ({
-      ...prev,
-      [id]: { ...(prev[id] || {}), [reaction]: true }
-    }));
-
-    // Increment the count on the comment (in-memory, same as before)
     if (isReply) {
       setList(prev => prev.map(x => x.id === parentId ? {
         ...x, replies: (x.replies||[]).map(r => r.id === id ? {...r, [reaction]: (r[reaction]||0)+1} : r)
@@ -599,26 +447,23 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     }
   };
 
-  const CommentRow = ({ c, isReply=false, parentId=null }) => {
-    // What has THIS user already reacted with on this comment?
-    const myR = myReactions[c.id] || {};
-    return (
+  const CommentRow = ({ c, isReply=false, parentId=null }) => (
     <div style={{ display:"flex", gap:10, marginBottom:12, paddingLeft: isReply ? 44 : 0 }}>
       <img src={c.avatar_url} style={{ width: isReply?28:36, height: isReply?28:36, borderRadius:"50%", border:`2px solid rgba(108,99,255,${isReply?0.2:0.3})`, flexShrink:0 }} />
       <div style={{ flex:1 }}>
         <div style={{ color:"#ff6b6b", fontWeight:700, fontSize: isReply?12:13 }}>@{c.username}</div>
-        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.content}</div>
+        <div style={{ color:"#ccc", fontSize: isReply?13:14, marginBottom:4 }}>{c.comment_text}</div>
         <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <button onClick={() => reactToComment(c.id, "thumbsUp", isReply, parentId)}
-            style={{ background: myR.thumbsUp ? "rgba(107,255,154,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.thumbsUp || c.thumbsUp) ? "#6bff9a" : "#666", fontSize:12, padding: myR.thumbsUp ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.thumbsUp ? 700 : 400 }}>
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsUp ? "#6bff9a" : "#666", fontSize:12, padding:0 }}>
             👍 <span style={{ fontSize:10 }}>{c.thumbsUp || 0}</span>
           </button>
           <button onClick={() => reactToComment(c.id, "hearts", isReply, parentId)}
-            style={{ background: myR.hearts ? "rgba(255,107,107,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.hearts || c.hearts) ? "#ff6b6b" : "#666", fontSize:12, padding: myR.hearts ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.hearts ? 700 : 400 }}>
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.hearts ? "#ff6b6b" : "#666", fontSize:12, padding:0 }}>
             ❤️ <span style={{ fontSize:10 }}>{c.hearts || 0}</span>
           </button>
           <button onClick={() => reactToComment(c.id, "thumbsDown", isReply, parentId)}
-            style={{ background: myR.thumbsDown ? "rgba(255,142,83,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: (myR.thumbsDown || c.thumbsDown) ? "#ff8e53" : "#666", fontSize:12, padding: myR.thumbsDown ? "2px 6px" : 0, borderRadius:8, fontWeight: myR.thumbsDown ? 700 : 400 }}>
+            style={{ background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:2, color: c.thumbsDown ? "#ff8e53" : "#666", fontSize:12, padding:0 }}>
             👎 <span style={{ fontSize:10 }}>{c.thumbsDown || 0}</span>
           </button>
           {!isReply && (
@@ -639,8 +484,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         ))}
       </div>
     </div>
-    );
-  };
+  );
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:1000, display:"flex", flexDirection:"column", justifyContent:"flex-end" }}>
@@ -824,15 +668,11 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.display_name || currentUser.full_name || currentUser.username || "",
         avatar_url: currentUser.avatar_url || "",
         video_url: file_url,
-        media_url: file_url,
-        media_type: "video",
-        content_category: "General",
         thumbnail_url: thumbUrl,
         caption: caption || "🔴 Live recording",
         hashtags: ["live"],
-        like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
-        content_category: "General",
-        is_approved: true, is_archived: false, is_ai_detected: false,
+        likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
+        is_approved: true, is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: false,
         duration_seconds: elapsed,
         ...liveGeo,
       });
@@ -1087,17 +927,7 @@ function VideoEditor({ file, onDone, onSkip }) {
           onLoadedMetadata={onMeta} onTimeUpdate={onTimeUpdate}
           style={{ width:"100%", height:"100%", objectFit:"cover" }}
           autoPlay loop playsInline
-          muted={!!selectedTrack}
         />
-        {/* Play selected track audio when a sound is picked — mutes original video audio */}
-        {selectedTrack && (
-          <audio
-            key={selectedTrack?.sound_url || selectedTrack?.url}
-            src={selectedTrack?.sound_url || selectedTrack?.url}
-            autoPlay loop
-            style={{ display:"none" }}
-          />
-        )}
 
         {/* Text overlays on preview */}
         {textOverlays.map(ov => (
@@ -1308,21 +1138,11 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [uploadTab, setUploadTab] = useState("video");
   const [photos, setPhotos] = useState([]);
   const photoRef = useRef();
-  // Pre-upload crop queue: when user picks photos, they route through
-  // PhotoCropQueue before going into `photos` state. While the queue
-  // is active, `pendingPhotos` holds the raw files awaiting crop.
-  const [pendingPhotos, setPendingPhotos] = useState(null);
   const [caption, setCaption] = useState("");
   const [isMature, setIsMature] = useState(false);
   const [matureReason, setMatureReason] = useState("other");
   const [maxDuration, setMaxDuration] = useState(60);
   const [selectedTrack, setSelectedTrack] = useState(null);
-  // Mute/unmute preview video when track is selected
-  React.useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = !!selectedTrack;
-    }
-  }, [selectedTrack]);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [musicGenreFilter, setMusicGenreFilter] = useState("All");
   const [previewTrack, setPreviewTrack] = useState(null);
@@ -1346,12 +1166,13 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   // Post details step
   const [showPostDetails, setShowPostDetails] = useState(false);
   const [postTitle, setPostTitle] = useState("");
+  const [annotations, setAnnotations] = useState([]); // [{time: 3.5, text: "hello!"}]
+  const [annText, setAnnText] = useState("");
+  const [annTime, setAnnTime] = useState("");
+  const [showAnnEditor, setShowAnnEditor] = useState(false);
   const [postVisibility, setPostVisibility] = useState("everyone"); // everyone | followers | only_me
-  const [postCategory, setPostCategory] = useState(""); // required
   const [postLocation, setPostLocation] = useState(null); // { name, city }
   const [detectingLocation, setDetectingLocation] = useState(false);
-  const [showCityLocation, setShowCityLocation] = useState(false); // privacy: show city or just flag
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showVisibilityPicker, setShowVisibilityPicker] = useState(false);
 
   const checkForExplicitContent = (f, cap) => {
@@ -1410,10 +1231,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
 
   const [explicitBlocked, setExplicitBlocked] = useState(false);
 
-  const handleFileSelect = async (f) => {
+  const handleFileSelect = (f) => {
     if (!f) return;
-    // Convert HEIC before any checks
-    f = await convertHeicToJpeg(f);
     setFile(f);
     setEditedFile(null);
     setAiBlocked(false);
@@ -1424,30 +1243,104 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     if (f.type.startsWith("video/") || f.type.startsWith("image/")) setShowEditor(true);
   };
 
-  const handlePhotoSelect = async (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    // Reset the input so the user can re-pick the same file later if needed
-    e.target.value = "";
-    // Convert any HEIC files to JPEG before showing the crop editor
-    const converted = await Promise.all(files.map(f => convertHeicToJpeg(f)));
-    // Open the pre-upload crop queue. When user finishes (or cancels),
-    // we update `photos` state.
-    setPendingPhotos(converted);
+  // Convert HEIC/HEIF files to JPEG for cross-browser compatibility
+  const convertHeicToJpeg = async (file) => {
+    const isHeic = file.type.includes('heic') || file.type.includes('heif') ||
+                   file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+    if (!isHeic) return file;
+    try {
+      const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+      const outBlob = Array.isArray(blob) ? blob[0] : blob;
+      return new File([outBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+    } catch (e) {
+      console.warn('heic2any failed, falling back to canvas method:', e);
+      // canvas fallback for any edge cases
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            canvas.toBlob((b) => {
+              resolve(new File([b], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' }));
+            }, 'image/jpeg', 0.92);
+          };
+          img.onerror = () => { throw new Error("HEIC conversion failed - cannot render"); };
+          img.src = ev.target.result;
+        };
+        reader.onerror = () => { throw new Error('HEIC file read failed'); };
+        reader.readAsDataURL(file);
+      });
+    }
   };
 
-  // Called when the crop queue finishes all photos
-  const handleCropComplete = (croppedFiles) => {
+  // Resize to max 1200px longest side + compress to under 300KB
+  const compressImage = (file, maxPx = 1200, maxBytes = 300 * 1024) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          // Scale down if either dimension exceeds maxPx
+          if (width > maxPx || height > maxPx) {
+            if (width >= height) { height = Math.round(height * maxPx / width); width = maxPx; }
+            else { width = Math.round(width * maxPx / height); height = maxPx; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+          // Binary search for the right quality to hit < maxBytes
+          const tryCompress = (quality, attempts = 0) => {
+            canvas.toBlob((blob) => {
+              if (!blob) { resolve(file); return; }
+              if (blob.size <= maxBytes || quality <= 0.3 || attempts > 6) {
+                const ext = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                resolve(new File([blob], ext, { type: 'image/jpeg' }));
+              } else {
+                tryCompress(quality - 0.12, attempts + 1);
+              }
+            }, 'image/jpeg', quality);
+          };
+          tryCompress(0.85);
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePhotoSelect = async (e) => {
+    const rawFiles = Array.from(e.target.files);
+    if (!rawFiles.length) return;
+    // Step 1: HEIC → JPEG. Step 2: resize + compress
+    // If conversion fails, we must NOT silently upload the raw HEIC
+    const converted = [];
+    for (const f of rawFiles) {
+      try {
+        const heicFixed = await convertHeicToJpeg(f);
+        // Double-check: if result is still HEIC, reject it
+        if (/\.heic$/i.test(heicFixed.name) || heicFixed.type.includes('heic')) {
+          alert("⚠️ Could not convert this photo. Please try a different image or re-save it from your Photos app as JPG before uploading.");
+          continue;
+        }
+        const compressed = await compressImage(heicFixed);
+        converted.push(compressed);
+      } catch (err) {
+        console.error('Photo conversion failed:', err);
+        alert("⚠️ Could not process this photo. Please try re-saving it from your Photos app as JPG before uploading.");
+      }
+    }
+    if (!converted.length) return;
     setPhotos(prev => {
-      const combined = [...prev, ...croppedFiles];
+      const combined = [...prev, ...converted];
       return combined.slice(0, 6);
     });
-    setPendingPhotos(null);
-  };
-
-  // Called if user cancels the crop queue
-  const handleCropCancel = () => {
-    setPendingPhotos(null);
   };
 
   const removePhoto = (idx) => setPhotos(p => p.filter((_,i) => i !== idx));
@@ -1459,17 +1352,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Uploading photos...");
       const urls = [];
       for (let i = 0; i < photos.length; i++) {
-        let photo = photos[i];
-        // Convert HEIC to JPEG before upload
-        setStep(`Processing photo ${i+1} of ${photos.length}...`);
-        photo = await convertHeicToJpeg(photo);
-        // Check file size — 20MB limit per photo
-        if (photo.size > 20 * 1024 * 1024) {
-          throw new Error(`Photo ${i+1} is too large. Max 20MB per photo.`);
-        }
-        setStep(`Uploading photo ${i+1} of ${photos.length}...`);
-        const url = await uploadFile(photo);
-        if (!url) throw new Error(`Failed to upload photo ${i+1}. Please try again.`);
+        const url = await uploadFile(photos[i]);
         urls.push(url);
         setProgress(10 + Math.round(((i+1)/photos.length)*70));
       }
@@ -1482,22 +1365,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: urls[0],
-        media_url: urls[0],
-        media_type: "photo",
-        content_category: "General",
         thumbnail_url: urls[0],
         photo_urls: urls,
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
+        annotations: annotations.length > 0 ? annotations : [],
         hashtags: tags,
-        like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
-        content_category: postCategory || "General",
-        is_approved: true,
-        is_archived: false, is_ai_detected: isAiGenerated,
+        likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
-        post_location_name: showCityLocation ? (postLocation?.name || null) : null,
-        post_city: showCityLocation ? (postLocation?.city || photoGeo.post_city || null) : null,
+        post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || photoGeo.post_city || null,
         ...photoGeo,
       });
       setProgress(100);
@@ -1541,65 +1421,31 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     } catch {}
     setUploading(true); setProgress(10);
     try {
-      // Try Cloudflare Stream first for HLS adaptive streaming
-      let video_url = null;
+      setStep("Uploading video...");
+      const video_url = await uploadFile(editedFile || file);
+      setProgress(60);
+      setStep("Generating thumbnail...");
       let thumbnail_url = null;
-      const streamResult = await uploadToCloudflareStream(
-        editedFile || file,
-        (pct, msg) => { setProgress(pct); setStep(msg); }
-      );
-      if (streamResult) {
-        // Stream upload succeeded — use HLS URL
-        video_url = streamResult.streamUrl;
-        thumbnail_url = streamResult.thumbnailUrl;
-        setProgress(95);
-        setStep("Saving to feed...");
-      } else {
-        // Fall back to R2 upload (never use Base44 storage for videos)
-        setStep("Uploading to backup server...");
-        try {
-          const r2Res = await fetch(`${SACHI_WORKER_URL}/upload`, {
-            method: "POST",
-            body: (() => { const fd = new FormData(); fd.append("file", editedFile || file); return fd; })(),
-          });
-          if (r2Res.ok) {
-            const r2Data = await r2Res.json();
-            video_url = r2Data.url;
-          }
-        } catch(r2Err) {
-          console.error("[Sachi] R2 fallback also failed:", r2Err);
-        }
-        setProgress(60);
-        setStep("Generating thumbnail...");
-        try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
-        setProgress(80);
-        setStep("Saving to feed...");
-      }
+      try { thumbnail_url = await Promise.race([captureThumbnail(file), new Promise(r => setTimeout(() => r(null), 5000))]); } catch {}
+      setProgress(80);
+      setStep("Saving to feed...");
       const videoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
-      if (!video_url) {
-        toast.error("Upload failed — please check your connection and try again.");
-        setUploading(false); setProgress(0); setStep("");
-        return;
-      }
       await videos.create({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url, thumbnail_url,
-        media_url: video_url,
-        media_type: "video",
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
-        like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
-        content_category: postCategory || "General",
-        is_approved: true,
-        is_archived: false, is_ai_detected: isAiGenerated,
+        likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
+        is_approved: !isAiGenerated && postVisibility !== "only_me",
+        is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: isAiGenerated,
         is_mature: isMature, mature_reason: isMature ? matureReason : null,
         post_visibility: postVisibility,
-        post_location_name: showCityLocation ? (postLocation?.name || null) : null,
-        post_city: showCityLocation ? (postLocation?.city || null) : null,
+        post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || null,
         sound_title: selectedTrack?.sound_title || selectedTrack?.title || null,
         sound_artist: selectedTrack?.sound_artist || selectedTrack?.artist || null,
         sound_url: selectedTrack?.sound_url || selectedTrack?.url || null,
@@ -1636,14 +1482,16 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
       // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
-      let apiUrl = `https://app.base44.com/api/apps/${APP_ID}/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
+      let apiUrl = `https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
       if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
+      console.log("[Sachi Music] Fetching via proxy:", apiUrl);
       let tracks = [];
       try {
         const resp = await fetch(apiUrl);
         if (resp.ok) {
           const data = await resp.json();
           tracks = data.tracks || [];
+          console.log("[Sachi Music] Proxy results:", tracks.length);
         }
       } catch(proxyErr) {
         console.warn("[Sachi Music] Proxy failed, trying direct:", proxyErr);
@@ -1653,6 +1501,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         let directUrl = `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=30&order=popularity_week&include=musicinfo&audioformat=mp31&imagesize=100`;
         if (tag)    directUrl += `&tags=${encodeURIComponent(tag)}`;
         if (search) directUrl += `&namesearch=${encodeURIComponent(search)}`;
+        console.log("[Sachi Music] Trying direct:", directUrl);
         const resp2 = await fetch(directUrl);
         if (resp2.ok) {
           const data2 = await resp2.json();
@@ -1666,6 +1515,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             duration: t.duration,
             image:    t.image,
           })).filter(t => t.url);
+          console.log("[Sachi Music] Direct results:", tracks.length);
         }
       }
       if (tracks.length > 0) {
@@ -1821,7 +1671,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.92));
       const imgFile = new File([blob], `textpost_${Date.now()}.jpg`, { type:"image/jpeg" });
       setStep("Uploading...");
-      const img_url = await uploadFile(imgFile);
+      const compressedImgFile = await compressImage(imgFile);
+      const img_url = await uploadFile(compressedImgFile);
       setProgress(75); setStep("Posting...");
       const textGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
@@ -1831,18 +1682,15 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
           `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url: img_url, thumbnail_url: img_url,
-        media_url: img_url,
-        media_type: "photo",
         photo_urls: [img_url], is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
-        like_count:0, comment_count:0, views_count:0, shares_count:0,
-        content_category: postCategory || "General",
-        is_approved: postVisibility !== "only_me", is_archived: false, is_ai_detected: false, is_mature: false,
+        likes_count:0, comments_count:0, views_count:0, shares_count:0,
+        is_approved: postVisibility !== "only_me", is_archived: false, archive_date: new Date(Date.now() + 60*24*60*60*1000).toISOString(), is_ai_detected: false, is_mature: false,
         sound_title: "Text Post", sound_artist: "sachi",
         post_visibility: postVisibility,
-        post_location_name: showCityLocation ? (postLocation?.name || null) : null,
-        post_city: showCityLocation ? (postLocation?.city || null) : null,
+        post_location_name: postLocation?.name || null,
+        post_city: postLocation?.city || null,
         ...textGeo,
       });
       setProgress(100); setStep("Posted! 🎉");
@@ -1868,15 +1716,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           setShowEditor(false);
         }}
         onSkip={() => { setEditedFile(null); setShowEditor(false); }}
-      />
-    )}
-    {/* ── PRE-UPLOAD PHOTO CROP QUEUE ── */}
-    {/* Shown after user picks photos but before they go into `photos` state */}
-    {pendingPhotos && pendingPhotos.length > 0 && (
-      <PhotoCropQueue
-        files={pendingPhotos}
-        onComplete={handleCropComplete}
-        onCancel={handleCropCancel}
       />
     )}
     {/* ── POST DETAILS STEP ── */}
@@ -1919,55 +1758,84 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             />
           </div>
 
-          {/* Category picker — REQUIRED */}
-          <div style={{
-            marginBottom:20,
-            background: postCategory ? "rgba(245,200,66,0.06)" : "rgba(255,107,107,0.08)",
-            border: postCategory ? "1.5px solid rgba(245,200,66,0.3)" : "1.5px solid rgba(255,107,107,0.5)",
-            borderRadius:16, padding:"14px 16px",
-            transition:"all 0.3s"
-          }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontSize:18 }}>🏷️</span>
-                <span style={{ color: postCategory ? "#fff" : "#FF6B6B", fontWeight:800, fontSize:15 }}>Category</span>
-              </div>
-              <span style={{
-                background: postCategory ? "rgba(245,200,66,0.2)" : "rgba(255,107,107,0.2)",
-                color: postCategory ? "#F5C842" : "#FF6B6B",
-                fontSize:10, fontWeight:800, borderRadius:6, padding:"3px 8px", letterSpacing:0.8
-              }}>
-                {postCategory ? "✓ SET" : "REQUIRED"}
-              </span>
-            </div>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-              {["Comedy","Music","Food","Travel","Sports","Gaming","Education","News","Fashion","Fitness","Art","Tech","Pets","DIY","Other"].map(cat => (
-                <button key={cat} onClick={() => setPostCategory(cat)}
-                  style={{
-                    padding:"7px 16px", borderRadius:20, fontSize:13, fontWeight:600, cursor:"pointer",
-                    border: postCategory === cat ? "2px solid #F5C842" : "1.5px solid rgba(255,107,107,0.4)",
-                    background: postCategory === cat ? "rgba(245,200,66,0.18)" : "rgba(255,107,107,0.07)",
-                    color: postCategory === cat ? "#F5C842" : "#FF6B6B",
-                    transition:"all 0.15s"
-                  }}>
-                  {cat}
-                </button>
-              ))}
-            </div>
-            {!postCategory && (
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:10 }}>
-                <span style={{ color:"#FF6B6B", fontSize:12 }}>⚠️</span>
-                <span style={{ color:"#FF6B6B", fontSize:12, fontWeight:600 }}>You must pick a category before posting</span>
-              </div>
-            )}
-          </div>
-
           {/* Divider */}
           <div style={{ height:1, background:"rgba(255,255,255,0.06)", marginBottom:20 }} />
 
-          {/* Location row - country picker + privacy toggle */}
+          {/* ── POP-UP BUBBLES EDITOR (video only) ── */}
+          {uploadTab === "video" && (
+            <div style={{ marginBottom:20 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:18 }}>💬</span>
+                  <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Pop-Up Bubbles</span>
+                  <span style={{ background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px" }}>NEW</span>
+                </div>
+                <button onClick={() => setShowAnnEditor(v => !v)}
+                  style={{ background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.25)", borderRadius:20,
+                    padding:"5px 14px", color:"#F5C842", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                  {showAnnEditor ? "Done" : "+ Add"}
+                </button>
+              </div>
+              <div style={{ color:"#666", fontSize:12, marginBottom:10 }}>
+                Timed text bubbles that pop up while your video plays — like VH1 Pop-Up Video 🎬
+              </div>
+              {/* Existing annotations */}
+              {annotations.length > 0 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:12 }}>
+                  {annotations.map((a, i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.05)", borderRadius:10, padding:"8px 12px" }}>
+                      <span style={{ color:"#F5C842", fontWeight:800, fontSize:12, minWidth:36 }}>{a.time}s</span>
+                      <span style={{ color:"#fff", fontSize:13, flex:1 }}>💬 {a.text}</span>
+                      <span onClick={() => setAnnotations(prev => prev.filter((_,j)=>j!==i))}
+                        style={{ color:"#ff6b6b", fontSize:16, cursor:"pointer", padding:"0 4px" }}>×</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showAnnEditor && (
+                <div style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:14 }}>
+                  <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ color:"#aaa", fontSize:11, marginBottom:4 }}>At second</div>
+                      <input type="number" min="0" step="0.5"
+                        value={annTime}
+                        onChange={e => setAnnTime(e.target.value)}
+                        placeholder="e.g. 3"
+                        style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)",
+                          borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }}
+                      />
+                    </div>
+                    <div style={{ flex:3 }}>
+                      <div style={{ color:"#aaa", fontSize:11, marginBottom:4 }}>Message</div>
+                      <input type="text" maxLength={80}
+                        value={annText}
+                        onChange={e => setAnnText(e.target.value)}
+                        placeholder="This took me 3 hours 😭"
+                        style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.12)",
+                          borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:14, outline:"none", boxSizing:"border-box" }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const t = parseFloat(annTime);
+                      if (!annText.trim() || isNaN(t) || t < 0) return;
+                      setAnnotations(prev => [...prev, { time: t, text: annText.trim() }].sort((a,b)=>a.time-b.time));
+                      setAnnText(""); setAnnTime("");
+                    }}
+                    style={{ width:"100%", background:"linear-gradient(135deg,#F5C842,#e0a800)", border:"none",
+                      borderRadius:12, padding:"10px", color:"#0B0C1A", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                    + Add Bubble
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Location row - MANDATORY */}
           <div style={{ marginBottom:4 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 0", cursor:"pointer" }}
+              onClick={detectLocation}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <span style={{ fontSize:20 }}>📍</span>
                 <div>
@@ -1975,108 +1843,29 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   <span style={{ marginLeft:8, background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px", letterSpacing:0.5 }}>REQUIRED</span>
                 </div>
               </div>
-              <button onClick={() => setShowCountryPicker(v => !v)}
-                style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:20, padding:"6px 14px", color:"#fff", fontSize:13, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-                {postLocation ? <>{countryFlag(postLocation.country_code)} {postLocation.country_code}</> : "Pick country"}
-                <span style={{ fontSize:10, opacity:0.5 }}>{showCountryPicker ? "▲" : "▼"}</span>
-              </button>
-            </div>
-
-            {/* Country picker dropdown */}
-            {showCountryPicker && (
-              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, marginBottom:12, overflow:"hidden", maxHeight:260, overflowY:"auto" }}>
-                {[
-                  { code:"AU", name:"Australia" },
-                  { code:"US", name:"United States" },
-                  { code:"NZ", name:"New Zealand" },
-                  { code:"LK", name:"Sri Lanka" },
-                  { code:"GB", name:"United Kingdom" },
-                  { code:"CA", name:"Canada" },
-                  { code:"IN", name:"India" },
-                  { code:"ZA", name:"South Africa" },
-                  { code:"NG", name:"Nigeria" },
-                  { code:"GH", name:"Ghana" },
-                  { code:"KE", name:"Kenya" },
-                  { code:"PH", name:"Philippines" },
-                  { code:"SG", name:"Singapore" },
-                  { code:"AE", name:"UAE" },
-                  { code:"DE", name:"Germany" },
-                  { code:"FR", name:"France" },
-                  { code:"BR", name:"Brazil" },
-                  { code:"JP", name:"Japan" },
-                  { code:"OTHER", name:"Other" },
-                ].map(c => (
-                  <div key={c.code} onClick={() => {
-                    // When country selected, auto-detect to get city/state too
-                    setShowCountryPicker(false);
-                    setDetectingLocation(true);
-                    detectLocation().then(() => {
-                      // Override country_code with manually selected if detection fails
-                      setPostLocation(prev => prev || { name: c.name, city: null, state: null, country_code: c.code });
-                    }).finally(() => setDetectingLocation(false));
-                  }}
-                    style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 16px", cursor:"pointer", borderBottom:"1px solid rgba(255,255,255,0.05)",
-                      background: postLocation?.country_code === c.code ? "rgba(245,200,66,0.08)" : "transparent" }}>
-                    <span style={{ fontSize:22 }}>{countryFlag(c.code)}</span>
-                    <span style={{ color:"#fff", fontSize:14, fontWeight: postLocation?.country_code === c.code ? 700 : 400 }}>{c.name}</span>
-                    {postLocation?.country_code === c.code && <span style={{ color:"#F5C842", marginLeft:"auto" }}>✓</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Detected location + privacy checkbox */}
-            {postLocation && !detectingLocation && (
-              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:14, padding:"12px 14px", marginBottom:12 }}>
-                {/* Preview of what will show */}
-                <div style={{ color:"#888", fontSize:11, marginBottom:8, textTransform:"uppercase", letterSpacing:0.8, fontWeight:700 }}>Viewers will see</div>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, background:"rgba(0,0,0,0.3)", borderRadius:10, padding:"8px 12px" }}>
-                  <span style={{ fontSize:18 }}>{countryFlag(postLocation.country_code)}</span>
-                  <span style={{ color:"#fff", fontSize:13, fontWeight:600 }}>
-                    {showCityLocation && postLocation.city
-                      ? `${postLocation.city}${postLocation.state ? ", " + getStateAbbr(postLocation.state, postLocation.country_code) || postLocation.state : ""}`
-                      : postLocation.country_code}
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                {detectingLocation && <span style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>📡 Detecting...</span>}
+                {postLocation && !detectingLocation && (
+                  <span style={{ color:"#8BC34A", fontSize:13, fontWeight:600 }}>
+                    ✓ {postLocation.name}
                   </span>
-                </div>
-
-                {/* Privacy toggle */}
-                <div onClick={() => setShowCityLocation(v => !v)}
-                  style={{ display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", padding:"4px 0" }}>
-                  <div>
-                    <div style={{ color:"#fff", fontSize:13, fontWeight:600 }}>Show my city/state</div>
-                    <div style={{ color:"#888", fontSize:11, marginTop:2 }}>
-                      {showCityLocation ? `Showing: ${postLocation.name}` : "Showing flag only — city is private"}
-                    </div>
-                  </div>
-                  <div style={{ width:44, height:24, borderRadius:12,
-                    background: showCityLocation ? "#F5C842" : "rgba(255,255,255,0.12)",
-                    position:"relative", flexShrink:0, transition:"background 0.2s" }}>
-                    <div style={{ position:"absolute", top:3, left: showCityLocation ? 23 : 3, width:18, height:18,
-                      borderRadius:"50%", background:"#fff", transition:"left 0.2s",
-                      boxShadow:"0 1px 4px rgba(0,0,0,0.3)" }} />
-                  </div>
-                </div>
-
-                <div style={{ marginTop:8, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:8, display:"flex", alignItems:"center", gap:6 }}>
-                  <span style={{ color:"#555", fontSize:11 }}>Wrong country?</span>
-                  <span onClick={() => setShowCountryPicker(true)} style={{ color:"#F5C842", fontSize:11, fontWeight:600, cursor:"pointer" }}>Change ↗</span>
-                  <span style={{ color:"#333", fontSize:11, marginLeft:4 }}>·</span>
-                  <span onClick={detectLocation} style={{ color:"#666", fontSize:11, cursor:"pointer" }}>↺ Re-detect</span>
+                )}
+                {!postLocation && !detectingLocation && (
+                  <span style={{ color:"#ff6b6b", fontSize:12, fontWeight:600 }}>Not set — tap to detect</span>
+                )}
+              </div>
+            </div>
+            {postLocation && !detectingLocation && (
+              <div style={{ display:"flex", gap:8, paddingBottom:12, flexWrap:"wrap" }}>
+                <div style={{ background:"rgba(139,195,74,0.12)", border:"1px solid rgba(139,195,74,0.25)", borderRadius:20, padding:"5px 14px", fontSize:13, color:"#8BC34A", display:"flex", alignItems:"center", gap:6 }}>
+                  📍 {postLocation.name}
+                  <span onClick={detectLocation} style={{ cursor:"pointer", color:"#666", fontSize:11, marginLeft:4 }}>↺ refresh</span>
                 </div>
               </div>
             )}
-
-            {detectingLocation && (
-              <div style={{ color:"#F5C842", fontSize:12, fontWeight:600, padding:"8px 0 12px", display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ animation:"spin 1s linear infinite", display:"inline-block" }}>⟳</span> Detecting your location...
-              </div>
-            )}
-
             {!postLocation && !detectingLocation && (
               <div style={{ paddingBottom:12 }}>
-                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12, lineHeight:1.5 }}>
-                  Pick your country above — only the flag will show by default. You can choose to share your city too.
-                </div>
+                <div style={{ color:"#ff6b6b", fontSize:11, opacity:0.8 }}>📍 Location is required to post on Sachi. Tap above to detect automatically.</div>
               </div>
             )}
           </div>
@@ -2166,21 +1955,19 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </button>
           <button
             onClick={() => {
-              if (!postLocation) { toast.warn('📍 Please pick your country to post on Sachi.'); setShowCountryPicker(true); return; }
-              if (!postCategory) { toast.warn('🏷️ Please pick a category for your post.'); return; }
               if (uploadTab === "text") uploadTextPost();
               else if (uploadTab === "photo") uploadPhotos();
               else upload();
             }}
-            disabled={uploading || detectingLocation}
+            disabled={uploading}
             style={{ flex:2.5, padding:"14px 0",
-              background: uploading ? "#333" : (!postLocation || !postCategory || detectingLocation) ? "rgba(255,107,107,0.25)" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
-              border: (!postLocation && !uploading) ? "1.5px solid rgba(255,107,107,0.4)" : "none",
-              borderRadius:14, color: (!postLocation && !uploading) ? "rgba(255,255,255,0.4)" : "#fff",
-              fontWeight:900, fontSize:16, cursor: (uploading || detectingLocation) ? "default" : "pointer",
-              boxShadow: postLocation && !uploading ? "0 4px 20px rgba(255,107,107,0.35)" : "none",
+              background: uploading ? "#333" : "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+              border: "none",
+              borderRadius:14, color: "#fff",
+              fontWeight:900, fontSize:16, cursor: uploading ? "default" : "pointer",
+              boxShadow: uploading ? "none" : "0 4px 20px rgba(255,107,107,0.35)",
               display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            {uploading ? step : detectingLocation ? "📡 Detecting location..." : !postLocation ? "📍 Pick your country first" : !postCategory ? "🏷️ Pick a category first" : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
+            {uploading ? step : detectingLocation ? "📡 Getting location..." : <><span style={{ fontSize:18 }}>⬆</span> Post</>}
           </button>
         </div>
       </div>
@@ -2658,260 +2445,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   );
 }
 
-// ── MediaZoom ─────────────────────────────────────────────────────────────
-// MediaZoom: pinch-to-zoom wrapper for photos and videos.
-// Renders children via render-prop with a computed style object.
-//
-// Gestures:
-//   - Pinch out / wheel up: zoom in (max 4x)
-//   - Pinch in: zoom out
-//   - Pinch in past 1x: reveal mode (objectFit cover -> contain)
-//   - Drag (when zoomed): pan
-//   - Double-tap: reset
-//
-// Pointer-events on the child are conditional: 'none' at default zoom so the
-// parent's tap handlers still work, 'auto' when zoomed or in reveal mode.
-function MediaZoom({ children, enabled = true }) {
-  const [zoom, setZoom] = React.useState(1);
-  const [translate, setTranslate] = React.useState({ x: 0, y: 0 });
-  const [revealMode, setRevealMode] = React.useState(false);
-
-  // Refs for gesture tracking
-  const wrapperRef = React.useRef(null);
-  const pinchStateRef = React.useRef(null);     // { initialDistance, initialZoom }
-  const panStateRef = React.useRef(null);       // { startX, startY, startTx, startTy }
-  const lastTapRef = React.useRef(0);           // for double-tap detection
-
-  const MAX_ZOOM = 4.0;
-  const MIN_ZOOM = 1.0;
-  const DOUBLE_TAP_MS = 300;
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  const distance = (t1, t2) => {
-    const dx = t1.clientX - t2.clientX;
-    const dy = t1.clientY - t2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const resetToDefault = () => {
-    setZoom(1);
-    setTranslate({ x: 0, y: 0 });
-    setRevealMode(false);
-  };
-
-  // Clamp the translation so the user can't drag the image entirely off-screen
-  // while zoomed. Math: at zoom Z, image is Z*containerSize. Excess on each
-  // side is (Z-1)*containerSize/2, so translate is bounded by ±that.
-  const clampTranslate = (tx, ty, z) => {
-    if (!wrapperRef.current || z <= 1) return { x: 0, y: 0 };
-    const rect = wrapperRef.current.getBoundingClientRect();
-    const maxX = (rect.width * (z - 1)) / 2;
-    const maxY = (rect.height * (z - 1)) / 2;
-    return {
-      x: Math.max(-maxX, Math.min(maxX, tx)),
-      y: Math.max(-maxY, Math.min(maxY, ty)),
-    };
-  };
-
-  // ── Touch event handlers (mobile) ────────────────────────────────────────
-  const handleTouchStart = (e) => {
-    if (!enabled) return;
-
-    if (e.touches.length === 2) {
-      // Pinch start
-      pinchStateRef.current = {
-        initialDistance: distance(e.touches[0], e.touches[1]),
-        initialZoom: zoom,
-      };
-    } else if (e.touches.length === 1 && zoom > 1) {
-      // Pan start (only when zoomed in)
-      panStateRef.current = {
-        startX: e.touches[0].clientX,
-        startY: e.touches[0].clientY,
-        startTx: translate.x,
-        startTy: translate.y,
-      };
-    } else if (e.touches.length === 1) {
-      // Possible double-tap
-      const now = Date.now();
-      if (now - lastTapRef.current < DOUBLE_TAP_MS) {
-        // Double-tap: reset (or zoom in if at default)
-        if (zoom === 1 && !revealMode) {
-          setZoom(2);
-        } else {
-          resetToDefault();
-        }
-        lastTapRef.current = 0;
-      } else {
-        lastTapRef.current = now;
-      }
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (!enabled) return;
-
-    if (e.touches.length === 2 && pinchStateRef.current) {
-      // Pinch in progress
-      e.preventDefault();
-      const newDist = distance(e.touches[0], e.touches[1]);
-      const { initialDistance, initialZoom } = pinchStateRef.current;
-      const scale = newDist / initialDistance;
-      const target = initialZoom * scale;
-
-      if (target < MIN_ZOOM) {
-        // Pinching past 1.0x → enter reveal mode
-        setRevealMode(true);
-        setZoom(1);
-        setTranslate({ x: 0, y: 0 });
-      } else {
-        setRevealMode(false);
-        const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, target));
-        setZoom(clamped);
-        // Recenter pan if zoom changed significantly
-        setTranslate((t) => clampTranslate(t.x, t.y, clamped));
-      }
-    } else if (e.touches.length === 1 && panStateRef.current && zoom > 1) {
-      // Pan in progress
-      e.preventDefault();
-      const { startX, startY, startTx, startTy } = panStateRef.current;
-      const dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
-      setTranslate(clampTranslate(startTx + dx, startTy + dy, zoom));
-    }
-  };
-
-  const handleTouchEnd = (e) => {
-    if (!enabled) return;
-    if (e.touches.length < 2) pinchStateRef.current = null;
-    if (e.touches.length === 0) panStateRef.current = null;
-  };
-
-  // ── Mouse handlers (desktop) ─────────────────────────────────────────────
-  const handleWheel = (e) => {
-    if (!enabled) return;
-    // Only zoom on Ctrl+wheel or trackpad pinch (wheel with ctrlKey)
-    // This avoids hijacking normal page scroll.
-    if (!e.ctrlKey) return;
-    e.preventDefault();
-    const delta = -e.deltaY * 0.01;
-    const target = zoom + delta;
-    if (target < MIN_ZOOM) {
-      setRevealMode(true);
-      setZoom(1);
-      setTranslate({ x: 0, y: 0 });
-    } else {
-      setRevealMode(false);
-      const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, target));
-      setZoom(clamped);
-      setTranslate((t) => clampTranslate(t.x, t.y, clamped));
-    }
-  };
-
-  const handleDoubleClick = (e) => {
-    if (!enabled) return;
-    e.preventDefault();
-    if (zoom === 1 && !revealMode) {
-      setZoom(2);
-    } else {
-      resetToDefault();
-    }
-  };
-
-  // ── Compute child styles based on current state ──────────────────────────
-  // These styles are passed to the child via render-prop.
-  const childStyle = {
-    width: "100%",
-    height: "100%",
-    objectFit: revealMode ? "contain" : "cover",
-    display: "block",
-    transform: `scale(${zoom}) translate(${translate.x / zoom}px, ${translate.y / zoom}px)`,
-    transformOrigin: "center center",
-    transition: pinchStateRef.current || panStateRef.current ? "none" : "transform 0.18s ease, object-fit 0.18s ease",
-    // When zoomed/revealed, capture pointer events on the child so drag works.
-    // When at default, let events pass through so parent taps still work.
-    pointerEvents: zoom > 1 || revealMode ? "auto" : "none",
-    // Hint to browser for smoother gestures
-    touchAction: zoom > 1 ? "none" : "pan-y",
-    userSelect: "none",
-    WebkitUserSelect: "none",
-  };
-
-  // Wrapper captures the gestures. Pointer-events also conditional here so
-  // the parent's tap-to-reveal-UI keeps working at default zoom.
-  const wrapperStyle = {
-    width: "100%",
-    height: "100%",
-    overflow: "hidden",
-    pointerEvents: enabled ? "auto" : "none",
-    touchAction: zoom > 1 ? "none" : "pan-y",
-  };
-
-  return (
-    <div
-      ref={wrapperRef}
-      style={wrapperStyle}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
-      onWheel={handleWheel}
-      onDoubleClick={handleDoubleClick}
-    >
-      {children(childStyle)}
-    </div>
-  );
-}
-
-// ── HLS Video Component ─────────────────────────────────────────────────────────
-function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause, preloadMode = "metadata" }) {
-  React.useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !src) return;
-    // Only initialize HLS or set src when we should preload (not "none")
-    if (preloadMode === "none") {
-      // Don't load video data at all — just show the poster
-      video.removeAttribute('src');
-      video.load();
-      return;
-    }
-    if (isHLS && !video.canPlayType('application/vnd.apple.mpegurl')) {
-      const loadHLS = async () => {
-        if (!window.Hls) {
-          await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js';
-            s.onload = resolve; s.onerror = reject;
-            document.head.appendChild(s);
-          });
-        }
-        if (window.Hls && window.Hls.isSupported()) {
-          if (video._hls) { video._hls.destroy(); }
-          const hls = new window.Hls({ maxBufferLength: 30, startLevel: -1 });
-          hls.loadSource(src);
-          hls.attachMedia(video);
-          hls.on(window.Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); });
-          video._hls = hls;
-        }
-      };
-      loadHLS().catch(console.error);
-      return () => { if (video._hls) { video._hls.destroy(); video._hls = null; } };
-    } else {
-      video.src = src;
-    }
-  }, [src, preloadMode]);
-  return (
-    <MediaZoom>
-      {(zoomStyle) => (
-        <video ref={videoRef} poster={poster} loop playsInline preload={preloadMode} muted={muted}
-          onPlay={onPlay} onPause={onPause}
-          onCanPlay={() => { if (videoRef.current?.paused && !videoRef.current?._userPaused) { videoRef.current.play().catch(() => {}); } }}
-          style={zoomStyle} />
-      )}
-    </MediaZoom>
-  );
-}
-
 // ── Video Card ────────────────────────────────────────────────────────────────
 // ─── Age Gate Helper ──────────────────────────────────────────────────────────
 function getUserAge() {
@@ -2925,84 +2458,91 @@ function getUserAge() {
   return age;
 }
 
-function FlameIcon({ views = 0 }) {
-  const lvl = views >= 10000 ? 3 : views >= 1000 ? 2 : views >= 100 ? 1 : 0;
-  const sizes = [28, 32, 38, 44];
-  const sz = sizes[lvl];
-  const themes = [
-    { outer: '#378ADD', mid: '#85B7EB', inner: '#E6F1FB', glow: 'rgba(55,138,221,0.6)' },
-    { outer: '#BA7517', mid: '#EF9F27', inner: '#FAC775', glow: 'rgba(239,159,39,0.6)' },
-    { outer: '#D85A30', mid: '#EF9F27', inner: '#FAC775', glow: 'rgba(216,90,48,0.7)' },
-    { outer: '#A32D2D', mid: '#D85A30', inner: '#EF9F27', glow: 'rgba(163,45,45,0.8)' },
-  ];
-  const t = themes[lvl];
-  const styleId = 'sachi-flame-css';
-  if (typeof document !== 'undefined' && !document.getElementById(styleId)) {
-    const s = document.createElement('style');
-    s.id = styleId;
-    s.textContent = `
-      @keyframes sachiFlameWave { 0%,100%{transform:scaleX(1) skewX(-2deg)} 25%{transform:scaleX(0.92) skewX(4deg)} 75%{transform:scaleX(1.06) skewX(-5deg)} }
-      @keyframes sachiFlameRise { 0%,100%{transform:scaleY(1) translateY(0)} 50%{transform:scaleY(0.93) translateY(2px)} }
-      @keyframes sachiFlameInner { 0%,100%{transform:scaleX(1) skewX(3deg)} 40%{transform:scaleX(0.88) skewX(-4deg)} }
-      .sachi-flame-outer { animation: sachiFlameWave 1.6s ease-in-out infinite, sachiFlameRise 2s ease-in-out infinite; transform-origin: center bottom; }
-      .sachi-flame-inner { animation: sachiFlameInner 1.2s ease-in-out infinite reverse; transform-origin: center bottom; }
-    `;
-    document.head.appendChild(s);
-  }
+// ── LazyVideoCard: only renders full VideoCard when within 1 screen of viewport ──
+function LazyVideoCard(props) {
+  const ref = React.useRef(null);
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { rootMargin: "400% 0px" } // preload 4 screens ahead for instant swipe
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
   return (
-    <div style={{ filter: `drop-shadow(0 0 6px ${t.glow})`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <svg width={sz} height={sz} viewBox="0 0 40 48" xmlns="http://www.w3.org/2000/svg" style={{overflow:'visible'}}>
-        <defs>
-          <linearGradient id={`sfg${lvl}`} x1="40%" y1="0%" x2="60%" y2="100%">
-            <stop offset="0%" stopColor={t.inner}/>
-            <stop offset="45%" stopColor={t.mid}/>
-            <stop offset="100%" stopColor={t.outer}/>
-          </linearGradient>
-          <linearGradient id={`sfi${lvl}`} x1="50%" y1="0%" x2="50%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95"/>
-            <stop offset="60%" stopColor={t.inner}/>
-            <stop offset="100%" stopColor={t.mid} stopOpacity="0.7"/>
-          </linearGradient>
-        </defs>
-        <path className="sachi-flame-outer"
-          d="M20 47 C8 47 2 39 2 30 C2 20 8 12 12 7 C14 4 13 1 13 1 C17 6 16 11 20 14 C22 9 25 4 23 1 C30 7 38 18 38 29 C38 39 31 47 20 47Z"
-          fill={`url(#sfg${lvl})`}/>
-        <path className="sachi-flame-inner"
-          d="M20 43 C14 43 12 37 12 32 C12 27 16 21 18 17 C20 21 20 25 21 28 C23 23 25 18 24 13 C29 19 28 28 28 32 C28 38 26 43 20 43Z"
-          fill={`url(#sfi${lvl})`}/>
-      </svg>
+    <div ref={ref} style={{ height:"100svh", scrollSnapAlign:"start", flexShrink:0, scrollSnapStop:"always" }}>
+      {visible
+        ? <VideoCard {...props} />
+        : <div style={{ width:"100%", height:"100%",
+            background:"linear-gradient(135deg,#1B1535 0%,#0B0C1A 50%,#2A1E00 100%)",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:40, height:40, borderRadius:"50%",
+              border:"3px solid rgba(245,200,66,0.2)", borderTopColor:"#F5C842",
+              animation:"spin 0.9s linear infinite" }} />
+          </div>
+      }
     </div>
   );
 }
 
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, likedVideoIds, likeRecords, onLikeChange, onHashtagPress, preloadMode = "metadata", onBecomeCurrent }) {
-  const [showLikers, setShowLikers] = React.useState(false);
-  const [showBruhToast, setShowBruhToast] = React.useState(false);
-  const [hyped, setHyped] = React.useState(false);
-  const [hypeCount, setHypeCount] = React.useState(video.hype_count || 0);
-  const [hypeAnim, setHypeAnim] = React.useState(false);
-  const [myHypeId, setMyHypeId] = React.useState(null);
-  const [likersList, setLikersList] = React.useState([]);
-  const [likersLoading, setLikersLoading] = React.useState(false);
-  const [myLikeId, setMyLikeId] = React.useState(() => likeRecords?.[video.id] || null);
-  // Re-sync myLikeId when likeRecords prop changes (same reason as `liked` above).
-  useEffect(() => {
-    setMyLikeId(likeRecords?.[video.id] || null);
-  }, [likeRecords, video.id]);
-  const swipeRef = React.useRef({ startX: 0, startY: 0, swiping: false });
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds, nextVideoUrl, next2VideoUrl }) {
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
-  const manuallyPausedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
-  const [liked, setLiked] = useState(() => !!(likedVideoIds?.has(video.id)));
-  // Re-sync `liked` state whenever the parent's likedVideoIds set changes.
-  // This handles the case where the VideoCard mounts before the user's likes
-  // have finished loading from the database. Without this, a user who liked
-  // a video yesterday sees an unfilled heart today and can re-like it.
+  const [liked, setLiked] = useState(() => {
+    // Read from localStorage cache to avoid flash on mount
+    try {
+      const cache = JSON.parse(localStorage.getItem('sachi_likes') || '{}');
+      return !!cache[video.id];
+    } catch { return false; }
+  });
+  const [localCommentCount, setLocalCommentCount] = useState(video.comments_count || 0);
+  const [localLikeCount, setLocalLikeCount] = useState(video.likes_count || 0);
+  const [localHypeCount, setLocalHypeCount] = useState(video.hype_count || 0);
+  const [localHyped, setLocalHyped] = useState(false);
+
+  // Restore liked state from cache/DB on mount
   useEffect(() => {
-    setLiked(!!(likedVideoIds?.has(video.id)));
-  }, [likedVideoIds, video.id]);
+    if (!currentUser) return;
+    const cached = likes.checkUserLiked ? null : null; // will use async below
+    let cancelled = false;
+    (async () => {
+      try {
+        const rec = await likes.checkUserLiked(video.id, currentUser.id);
+        if (!cancelled && rec) {
+          setLiked(true);
+          likeRecordRef.current = rec.id || null;
+        }
+      } catch(e) {}
+    })();
+    return () => { cancelled = true; };
+  }, [video.id, currentUser?.id]);
+
+  // Keep local counts in sync when parent re-renders with new values
+  useEffect(() => { setLocalLikeCount(video.likes_count || 0); }, [video.likes_count]);
+  useEffect(() => { setLocalHypeCount(video.hype_count || 0); }, [video.hype_count]);
+  useEffect(() => { setLocalCommentCount(video.comments_count || 0); }, [video.comments_count]);
+
+  // Sync comment count from DB on mount (fixes stale zero display)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await comments.list(video.id);
+        const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
+        if (!cancelled && items.length !== (video.comments_count || 0)) {
+          setLocalCommentCount(items.length);
+          // Silently patch the DB value so it stays in sync
+          videos.update(video.id, { comments_count: items.length }).catch(() => {});
+        }
+      } catch(e) {}
+    })();
+    return () => { cancelled = true; };
+  }, [video.id]);
   // Global mute stored in module-level store — readable by stale closures, no prop-drilling
   const [muted, _setMutedLocal] = useState(() => muteStore.get());
   const setMuted = (val) => {
@@ -3019,27 +2559,55 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     return () => window.removeEventListener('sachi-mute-change', handler);
   }, []);
   const [photoIdx, setPhotoIdx] = useState(0);
+  // Reset image loaded state when swiping to new photo
+  useEffect(() => { setImgLoaded(false); }, [photoIdx]);
   const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
   const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [showUI, setShowUI] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
 
   // Derived from video prop — must be declared before useEffect that references it
-  // Detect photos — either by is_photo flag OR by URL being an image.
-  // Read media_url first (NEW Sachi) with video_url fallback (OLD Daminie) — see resolveMediaUrl.
-  const mediaUrl = video.media_url || video.video_url;
-  const videoUrlIsImage = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(mediaUrl || "");
-  const photoUrls = (video.is_photo || videoUrlIsImage) && video.photo_urls
+  const photoUrls = video.is_photo && video.photo_urls
     ? safeParsePhotoUrls(video.photo_urls)
-    : (videoUrlIsImage && mediaUrl)
-    ? [mediaUrl]
     : null;
 
-  // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
+  // Carousel swipe support
+  const swipeTouchStartX = useRef(null);
+  const swipeTouchStartY = useRef(null);
+  const swipeIsHorizontal = useRef(false);
+  const handleCarouselTouchStart = (e) => {
+    swipeTouchStartX.current = e.touches[0].clientX;
+    swipeTouchStartY.current = e.touches[0].clientY;
+    swipeIsHorizontal.current = false;
+  };
+  const handleCarouselTouchMove = (e) => {
+    if (swipeTouchStartX.current === null) return;
+    const dx = Math.abs(e.touches[0].clientX - swipeTouchStartX.current);
+    const dy = Math.abs(e.touches[0].clientY - swipeTouchStartY.current);
+    if (dx > 8) {
+      swipeIsHorizontal.current = true;
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  };
+  const handleCarouselTouchEnd = (e) => {
+    if (swipeTouchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeTouchStartX.current;
+    const dy = e.changedTouches[0].clientY - swipeTouchStartY.current;
+    swipeTouchStartX.current = null;
+    swipeTouchStartY.current = null;
+    if (Math.abs(dx) < 30) return;
+    if (!swipeIsHorizontal.current && Math.abs(dy) > Math.abs(dx)) return;
+    e.stopPropagation();
+    if (dx < 0) setPhotoIdx(p => Math.min(p + 1, photoUrls.length - 1)); // swipe left = next
+    else setPhotoIdx(p => Math.max(p - 1, 0)); // swipe right = prev
+  };
 
 
   const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || (currentUser.username && currentUser.username === video.username));
@@ -3081,96 +2649,81 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-    const isVisibleRef = { current: false };
-    const tryPlay = () => {
-      el.muted = true;
-      // Optimistically mark as playing & hide button immediately
-      // This prevents the ghost play-button flash during buffering
-      if (playStore.get()) {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        const currentlyMuted = muteStore.get();
+        el.muted = video.sound_url ? true : currentlyMuted;
+
+        // Play video — if rejected (autoplay policy), retry on canplay event
+        const playVideo = () => {
+          el.play().catch(() => {
+            // Browser blocked autoplay — attach one-time canplay retry
+            const onReady = () => {
+              el.play().catch(() => {});
+              el.removeEventListener("canplay", onReady);
+            };
+            el.addEventListener("canplay", onReady);
+          });
+        };
+
+        // If video has enough data, play immediately; otherwise wait
+        if (el.readyState >= 3) {
+          playVideo();
+        } else {
+          const onCanPlay = () => {
+            playVideo();
+            el.removeEventListener("canplay", onCanPlay);
+          };
+          el.addEventListener("canplay", onCanPlay);
+        }
+
         setPlaying(true);
-        setShowUI(false);
-      }
-      const attemptPlay = () => {
-        el.play().then(() => {
-          setPlaying(true);
-          setShowUI(false);
-          manuallyPausedRef.current = false;
-          const currentlyMuted = muteStore.get();
-          if (!currentlyMuted) el.muted = false;
-          if (!currentlyMuted && soundRef.current && video.sound_url) {
-            soundRef.current.play().catch(() => {});
-          }
-        }).catch(() => {
-          if (el.readyState < 3) {
-            // Not loaded yet (common with HLS) — wait and retry
-            el.addEventListener('canplay', attemptPlay, { once: true });
+        // Start sound ONLY after video has actually started playing
+        // This keeps them in sync and avoids the music-without-video problem
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
+          const startSound = () => {
+            if (soundRef.current && !currentlyMuted) {
+              soundRef.current.play().catch(() => {});
+            }
+            el.removeEventListener("playing", startSound);
+          };
+          el.addEventListener("playing", startSound);
+        }
+        setShowUI(true);
+        hideUIAfterDelay(1500);
+        if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
+        // Preload next 2 videos + images in background
+        const toPreload = [nextVideoUrl, next2VideoUrl].filter(Boolean);
+        toPreload.forEach((pUrl, idx) => {
+          const isVid = /\.(mp4|mov|webm|m4v)$/i.test(pUrl) || (!pUrl.includes('wsrv.nl') && !(/\.(png|jpe?g|gif|webp|bmp|heic)$/i.test(pUrl)));
+          if (isVid) {
+            const preloadEl = document.createElement("video");
+            preloadEl.src = pUrl;
+            preloadEl.preload = idx === 0 ? "auto" : "metadata";
+            preloadEl.muted = true;
+            preloadEl.style.display = "none";
+            preloadEl.load();
+            document.body.appendChild(preloadEl);
+            setTimeout(() => { try { document.body.removeChild(preloadEl); } catch(e){} }, 15000);
           } else {
-            // Truly blocked — revert optimistic state, show button
-            setPlaying(false);
-            if (!playStore.get()) setShowUI(true);
+            // Pre-fetch image into browser cache
+            const img = new Image();
+            const resolved = resolveMediaUrl(pUrl, false, 'feed');
+            if (resolved) img.src = resolved;
           }
         });
-      };
-      attemptPlay();
-    };
-
-    const obs = new IntersectionObserver(([e]) => {
-      isVisibleRef.current = e.isIntersecting;
-      if (e.isIntersecting) {
-        onBecomeCurrent && onBecomeCurrent();
-        if (playStore.get() && !manuallyPausedRef.current) {
-          tryPlay();
-        } else if (!playStore.get()) {
-          // First video ever — show play button, wait for user tap
-          setShowUI(true);
-          setUserTapped(false);
-        }
-        if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
       } else {
         el.pause();
-        el.currentTime = 0;
-        setPlaying(false);  // reset so tryPlay can set optimistic true on next entry
-        setShowUI(false);   // hide UI — tryPlay will show button only if blocked
-        if (soundRef.current) { soundRef.current.pause(); soundRef.current.currentTime = 0; }
-        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        setUserTapped(false);
-        manuallyPausedRef.current = false; // reset so next scroll-in auto-plays
-      }
-    }, { threshold: 0.75 });
-    obs.observe(el);
-
-    // When user first plays ANY video, immediately play this card if visible
-    const onUserPlayed = () => {
-      if (isVisibleRef.current && el.paused && !manuallyPausedRef.current) {
-        tryPlay();
-      }
-    };
-    window.addEventListener('sachi-user-played', onUserPlayed);
-
-    return () => { obs.disconnect(); window.removeEventListener('sachi-user-played', onUserPlayed); };
-  }, []);
-
-  // For photo posts — pause sound when card scrolls out of view
-  const cardRef = useRef(null);
-  useEffect(() => {
-    if (!photoUrls) return;
-    const el = cardRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) {
-        if (soundRef.current) { soundRef.current.pause(); soundRef.current.currentTime = 0; }
         setPlaying(false);
-      } else {
-        const currentlyMuted = muteStore.get();
-        if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {});
-        }
-        if (!viewedRef.current) { viewedRef.current = true; onView && onView(video.id); }
+        if (soundRef.current) soundRef.current.pause();
+        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+        setShowUI(false);
+        setUserTapped(false);
       }
-    }, { threshold: 0.4 });
+    }, { threshold: 0.6 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [photoUrls]);
+  }, []);
 
   // Follow state is driven by the shared followedUserIds prop — no per-card API call needed
 
@@ -3201,80 +2754,95 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const el = videoRef.current;
     if (!el) return;
     if (el.paused) {
-      el.muted = true; // play muted first to guarantee success
       el.play().then(() => {
-        setPlaying(true);
-        manuallyPausedRef.current = false;
-        const currentlyMuted = muteStore.get();
-        if (!currentlyMuted) el.muted = false;
-        if (!currentlyMuted && soundRef.current && video.sound_url) soundRef.current.play().catch(() => {});
-        // First play — unlock auto-play globally and notify all visible cards
-        if (!playStore.get()) {
-          playStore.set(true);
-          window.dispatchEvent(new CustomEvent('sachi-user-played'));
+        // Video actually started — now start music track in sync
+        if (soundRef.current && video.sound_url && !muted) {
+          soundRef.current.play().catch(() => {});
         }
-        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        uiTimerRef.current = setTimeout(() => { setShowUI(false); }, 400);
       }).catch(() => {});
+      setPlaying(true);
+      // Immediately hide UI when resuming play
+      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+      uiTimerRef.current = setTimeout(() => { setShowUI(false); }, 400);
     } else {
       el.pause();
       setPlaying(false);
-      manuallyPausedRef.current = true; // user explicitly paused — don't re-auto-play
+      // Pause music track too
+      if (soundRef.current && video.sound_url) soundRef.current.pause();
+      // Show controls when paused
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       setShowUI(true);
     }
   };
 
   const likeLockedRef = React.useRef(false);
-  const doLike = async () => {
+  const likeTapCount = React.useRef(0);
+  const likeTapTimer = React.useRef(null);
+  const [likePopMsg, setLikePopMsg] = React.useState(null);
+  const hypeTapCount = React.useRef(0);
+  const hypeTapTimer = React.useRef(null);
+  const [hypePopMsg, setHypePopMsg] = React.useState(null);
+
+  const LIKE_MSGS = ["❤️ Okay okay, we get it!", "😅 You really love this!", "🙈 Obsessed much?", "💘 Alright, settle down!", "🫀 Your heart is showing!"];
+  const HYPE_MSGS = ["🔥 Easy there, pyromaniac!", "😤 Still on fire!", "🚒 Call the fire dept!", "💥 Okay you're HYPED!", "🫠 You're melting the screen!"];
+
+  const showPopMsg = (msgs, setter, countRef, timerRef) => {
+    countRef.current += 1;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (countRef.current >= 3) {
+      const msg = msgs[Math.min(countRef.current - 3, msgs.length - 1)];
+      setter(msg);
+      timerRef.current = setTimeout(() => { setter(null); countRef.current = 0; }, 2200);
+    } else {
+      timerRef.current = setTimeout(() => { countRef.current = 0; }, 1500);
+    }
+  };
+  // Track the like record ID so we can delete it on unlike
+  const likeRecordRef = React.useRef(null);
+
+  const doLike = () => {
     if (!currentUser) { onNeedAuth(); return; }
     if (likeLockedRef.current) return;
     likeLockedRef.current = true;
-    setTimeout(() => { likeLockedRef.current = false; }, 800);
-    const newLiked = !liked;
-    setLiked(newLiked);
-    onLike(video.id, newLiked ? 1 : -1);
-    try {
+    setTimeout(() => { likeLockedRef.current = false; }, 500);
+    showPopMsg(LIKE_MSGS, setLikePopMsg, likeTapCount, likeTapTimer);
+    setLiked(prev => {
+      const newLiked = !prev;
+      const delta = newLiked ? 1 : -1;
+      // Optimistic local update — shows instantly
+      setLocalLikeCount(c => Math.max(0, c + delta));
+      // Propagate to parent list for persistence
+      onLike(video.id, delta);
+      // Persist liked state to localStorage cache
+      try {
+        const cache = JSON.parse(localStorage.getItem('sachi_likes') || '{}');
+        if (newLiked) cache[video.id] = true;
+        else delete cache[video.id];
+        localStorage.setItem('sachi_likes', JSON.stringify(cache));
+      } catch {}
+      // Write/delete SachiLike record in background
       if (newLiked) {
-        const rec = await likes.add(video.id, currentUser.id, currentUser.username || currentUser.email?.split("@")[0], currentUser.full_name || currentUser.display_name || "", currentUser.avatar_url || "");
-        setMyLikeId(rec?.id || null);
-        onLikeChange && onLikeChange(video.id, true, rec?.id || null);
+        likes.add(
+          video.id,
+          currentUser.id,
+          currentUser.username || currentUser.email?.split("@")[0],
+          currentUser.display_name || currentUser.full_name || currentUser.username,
+          currentUser.avatar_url || ""
+        ).then(rec => { likeRecordRef.current = rec?.id || null; }).catch(() => {});
       } else {
-        if (myLikeId) {
-          await likes.remove(myLikeId);
-          setMyLikeId(null);
-          onLikeChange && onLikeChange(video.id, false, null);
+        // Delete the like record
+        if (likeRecordRef.current) {
+          likes.remove(likeRecordRef.current).catch(() => {});
+          likeRecordRef.current = null;
         } else {
-          // Find and delete by user+video
-          const existing = await likes.getByVideo(video.id);
-          const mine = existing.find(l => l.user_id === currentUser.id);
-          if (mine) await likes.remove(mine.id);
+          // No cached record ID — fetch and delete
+          likes.checkUserLiked(video.id, currentUser.id).then(rec => {
+            if (rec?.id) likes.remove(rec.id).catch(() => {});
+          }).catch(() => {});
         }
       }
-    } catch(e) { console.error("Like record error:", e); }
-  };
-
-  const doHype = async () => {
-    if (!currentUser) { onNeedAuth(); return; }
-    if (hyped) { toast.info("You already LIT this! 🔥"); return; }
-    // Check daily limit — 5 hypes per day
-    const todayCount = await hypes.countToday(currentUser.id);
-    if (todayCount >= 5) { toast.warn("You've used all 5 LITs for today! Come back tomorrow 🔥"); return; }
-    try {
-      setHyped(true);
-      setHypeCount(c => c + 1);
-      setHypeAnim(true);
-      setTimeout(() => setHypeAnim(false), 600);
-      const rec = await hypes.add(video.id, currentUser.id, currentUser.username || currentUser.email?.split("@")[0]);
-      setMyHypeId(rec?.id || null);
-      // Update hype_count on the video
-      await videos.update(video.id, { hype_count: (video.hype_count || 0) + 1 });
-      toast.success("🔥 LIT! This post is getting boosted to more feeds!");
-    } catch(e) {
-      setHyped(false);
-      setHypeCount(c => Math.max(0, c - 1));
-      toast.error("Lit failed: " + e.message);
-    }
+      return newLiked;
+    });
   };
 
   const doFollow = async () => {
@@ -3325,7 +2893,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
   return (
-    <div ref={cardRef} style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start" }}>
+    <div style={{ position:"relative", width:"100%", height:"100svh", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start",
+      overflow:"hidden",
+      outline:"2.5px solid transparent",
+      boxShadow:"inset 0 0 0 3px rgba(245,200,66,0.55), inset 0 0 0 5px rgba(245,200,66,0.12), inset 0 0 40px rgba(245,200,66,0.06), 0 0 0 1.5px rgba(245,200,66,0.3)" }}>
 
       {/* ── AGE GATE OVERLAY ── */}
       {showMatureBlock && (
@@ -3356,53 +2927,35 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
       {/* ── MEDIA ── */}
       {photoUrls ? (
-        <div
-          style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"pan-y" }}
-        >
-          {/* Flame icon — top right corner */}
-          <div style={{ position:"absolute", top:8, right:8, zIndex:350, pointerEvents:"none" }}>
-            <FlameIcon views={video.views_count || video.view_count || 0} />
-          </div>
-          {/* Arrow nav — prev */}
-          {photoUrls.length > 1 && photoIdx > 0 && (
-            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.max(p-1, 0)); }}
-              style={{ position:"absolute", left:8, bottom:"38%", zIndex:350,
-                width:36, height:36, borderRadius:"50%", background:"rgba(0,0,0,0.55)",
-                display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
-                border:"1px solid rgba(255,255,255,0.2)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"/>
-              </svg>
-            </div>
-          )}
-          {/* Arrow nav — next */}
-          {photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && (
-            <div onClick={e => { e.stopPropagation(); setPhotoIdx(p => Math.min(p+1, photoUrls.length-1)); }}
-              style={{ position:"absolute", right:48, bottom:"38%", zIndex:350,
-                width:36, height:36, borderRadius:"50%", background:"rgba(0,0,0,0.55)",
-                display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
-                border:"1px solid rgba(255,255,255,0.2)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </div>
-          )}
+        <div onTouchStart={handleCarouselTouchStart} onTouchMove={handleCarouselTouchMove} onTouchEnd={handleCarouselTouchEnd} style={{ width:"100%", height:"100%", position:"relative", overflow:"hidden", background:"#000", display:"flex", flexDirection:"column", touchAction:"none" }}>
           {/* Photo takes up most of the space */}
-          <div style={{ flex:1, position:"relative", overflow:"hidden", minHeight:0 }}>
-            <MediaZoom>
-              {(zoomStyle) => (
-                <img
-                  src={resolveMediaUrl(photoUrls[photoIdx])}
-                  loading="lazy"
-                  style={{ ...zoomStyle, position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain" }}
-                  onError={e => { e.target.style.display="none"; e.target.nextSibling && (e.target.nextSibling.style.display="flex"); }}
-                />
-              )}
-            </MediaZoom>
-            <div style={{ display:"none", position:"absolute", inset:0, alignItems:"center", justifyContent:"center", flexDirection:"column", gap:8, color:"#555" }}>
-              <div style={{ fontSize:48 }}>🖼️</div>
-              <div style={{ fontSize:13 }}>Image could not load</div>
-            </div>
+          <div style={{ flex:1, position:"relative", overflow:"hidden", pointerEvents:"all",
+            background:"linear-gradient(135deg, #1B1535 0%, #0B0C1A 45%, #2A1E00 100%)" }}>
+            {/* Gold shimmer placeholder while image loads */}
+            {!imgLoaded && (
+              <div style={{ position:"absolute", inset:0, zIndex:2,
+                background:"linear-gradient(135deg, #1B1535 0%, #0B0C1A 45%, #2A1E00 100%)",
+                display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ width:48, height:48, borderRadius:"50%",
+                  border:"3px solid rgba(245,200,66,0.25)",
+                  borderTopColor:"#F5C842",
+                  animation:"spin 0.9s linear infinite" }} />
+              </div>
+            )}
+            {/\.heic$/i.test(photoUrls[photoIdx] || "") ? (
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                height:"100%", gap:12, color:"rgba(255,255,255,0.5)", padding:24, textAlign:"center", position:"absolute", inset:0, zIndex:3 }}>
+                <div style={{ fontSize:48 }}>📸</div>
+                <div style={{ fontSize:15, fontWeight:600, color:"#F5C842" }}>Photo needs re-upload</div>
+                <div style={{ fontSize:12, lineHeight:1.5 }}>HEIC format can't display in browser. Delete &amp; re-upload to fix.</div>
+              </div>
+            ) : (
+              <ProgressiveImg
+                src={photoUrls[photoIdx]}
+                size="feed"
+                style={{ objectFit:"contain" }}
+              />
+            )}
             {/* Counter badge top-left */}
             {photoUrls.length > 1 && (
               <div style={{ position:"absolute", top:12, left:12, background:"rgba(0,0,0,0.7)",
@@ -3413,22 +2966,50 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
             )}
           </div>
 
-          {/* Dots only — swipe left/right to navigate */}
+          {/* ── CAROUSEL DOTS + ARROWS inline at bottom ── */}
           {photoUrls.length > 1 && (
             <div style={{
-              position:"absolute", bottom:70, left:"50%", transform:"translateX(-50%)",
-              display:"flex", alignItems:"center", gap:8, zIndex:400,
-              background:"rgba(0,0,0,0.5)", borderRadius:40, padding:"8px 16px",
-              backdropFilter:"blur(4px)"
+              position:"absolute", bottom:160, left:"50%", transform:"translateX(-50%)",
+              display:"flex", gap:10, alignItems:"center", zIndex:9999,
             }}>
+              {/* PREV arrow */}
+              <div
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
+                onClick={e => { e.stopPropagation(); if(photoIdx > 0) setPhotoIdx(p => p-1); }}
+                style={{
+                  background: photoIdx===0 ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.6)",
+                  borderRadius:"50%", width:36, height:36,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:22, fontWeight:900,
+                  color: photoIdx===0 ? "rgba(255,255,255,0.2)" : "#fff",
+                  border:"1.5px solid rgba(255,255,255,0.4)",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+                }}>‹</div>
+
+              {/* DOTS */}
               {photoUrls.map((_,i) => (
                 <div key={i} style={{
-                  width: i===photoIdx ? 28 : 8, height:8, borderRadius:99,
+                  width: i===photoIdx ? 24 : 9, height:9, borderRadius:99,
                   background: i===photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
                   transition:"all 0.25s ease",
-                  boxShadow: i===photoIdx ? "0 0 10px rgba(245,200,66,0.9)" : "none"
+                  boxShadow: i===photoIdx ? "0 0 8px rgba(245,200,66,0.9)" : "none",
+                  pointerEvents:"none"
                 }} />
               ))}
+
+              {/* NEXT arrow */}
+              <div
+                onTouchEnd={e => { e.stopPropagation(); e.preventDefault(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
+                onClick={e => { e.stopPropagation(); if(photoIdx < photoUrls.length-1) setPhotoIdx(p => p+1); }}
+                style={{
+                  background: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.6)",
+                  borderRadius:"50%", width:36, height:36,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:22, fontWeight:900,
+                  color: photoIdx===photoUrls.length-1 ? "rgba(255,255,255,0.2)" : "#fff",
+                  border:"1.5px solid rgba(255,255,255,0.4)",
+                  WebkitTapHighlightColor:"transparent", touchAction:"manipulation", cursor:"pointer"
+                }}>›</div>
             </div>
           )}
 
@@ -3463,22 +3044,38 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           )}
         </div>
       ) : (() => {
-        const resolvedVideoUrl = resolveMediaUrl(video.media_url || video.video_url);
-        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
-        if (isImg) return (
-          <img src={resolvedVideoUrl}
-            loading="lazy"
-            style={{ width:"100%", height:"100%", objectFit:"contain", background:"#000", display:"block" }} />
+        const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        // resolvedVideoUrl is null when original is a raw HEIC file (unconverted iPhone photo)
+        const isHeicFail = !resolvedVideoUrl && /\.heic$/i.test(video.video_url || "");
+        const isImg = /\.(png|jpe?g|gif|webp|bmp)(\?|$)/i.test(resolvedVideoUrl || "");
+        if (isHeicFail) return (
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+            height:"100%", gap:12, color:"rgba(255,255,255,0.5)", padding:24, textAlign:"center" }}>
+            <div style={{ fontSize:48 }}>📸</div>
+            <div style={{ fontSize:15, fontWeight:600, color:"#F5C842" }}>Photo needs re-upload</div>
+            <div style={{ fontSize:12, lineHeight:1.5 }}>This image was uploaded in HEIC format which browsers can't display. Please delete this post and re-upload — the app will auto-convert it.</div>
+          </div>
         );
-        const isHLS = resolvedVideoUrl?.endsWith('.m3u8') || resolvedVideoUrl?.includes('cloudflarestream.com') || resolvedVideoUrl?.includes('customer-i1ij9522l179kiqc');
+        if (isImg) return (
+          <ProgressiveImg src={video.video_url} size="feed"
+            style={{ objectFit:"contain", background:"#000" }} />
+        );
         return (
           <>
-            <HLSVideo src={resolvedVideoUrl} isHLS={isHLS} videoRef={videoRef}
-              poster={resolveMediaUrl(video.thumbnail_url)}
+            {/* Progressive thumbnail shown until video is ready */}
+            {!videoLoaded && video.thumbnail_url && (
+              <div style={{ position:"absolute", inset:0, zIndex:1 }}>
+                <ProgressiveImg src={video.thumbnail_url} size="feed" />
+              </div>
+            )}
+            <video ref={videoRef} src={resolvedVideoUrl} poster={resolveMediaUrl(video.thumbnail_url)}
+              loop playsInline preload="auto"
               muted={muted || !!video.sound_url}
-              preloadMode={preloadMode}
+              onLoadedData={() => setVideoLoaded(true)}
+              onCanPlay={() => setVideoLoaded(true)}
               onPlay={() => {
                 setPlaying(true); hideUIAfterDelay(1500);
+                setVideoLoaded(true);
                 if (soundRef.current && video.sound_url && !muted) {
                   soundRef.current.play().catch(() => {});
                 }
@@ -3487,63 +3084,62 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 setPlaying(false);
                 if (soundRef.current) soundRef.current.pause();
               }}
-            />
+              style={{ width:"100%", height:"100%", objectFit:"cover", pointerEvents:"none", display:"block" }} />
             {video.sound_url && (
               <audio ref={soundRef} src={video.sound_url} loop preload="none"
                 style={{ display:"none" }} />
             )}
-
+            {muted && (
+              <div onTouchStart={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
+                onClick={e=>{e.stopPropagation(); const el=videoRef.current; if(el){ const wasPlaying=!el.paused; el.muted=false; setMuted(false); if(wasPlaying){ el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); if(soundRef.current && video.sound_url){ soundRef.current.play().catch(()=>{}); } } }}}
+                style={{ position:"absolute", bottom:80, left:"50%", transform:"translateX(-50%)", zIndex:200,
+                  background:"rgba(0,0,0,0.7)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:20,
+                  padding:"6px 16px", color:"#fff", fontSize:12, fontWeight:700, letterSpacing:1,
+                  display:"flex", alignItems:"center", gap:6, cursor:"pointer", whiteSpace:"nowrap" }}>
+                🔇 Tap to unmute
+              </div>
+            )}
+            {/* ── POP-UP BUBBLES ── */}
+            {video.annotations && Array.isArray(video.annotations) && video.annotations.length > 0 && (
+              <PopUpBubbles annotations={video.annotations} videoRef={videoRef} />
+            )}
           </>
         );
       })()}
 
-      {/* ── SPOTLIGHT — unique color per creator ── */}
-      <div style={{ position:"absolute", inset:0, background:`radial-gradient(ellipse 80% 60% at 50% 20%, ${getSpotlightColor(video.user_id || video.created_by)}, transparent)`, pointerEvents:"none", zIndex:5 }} />
       {/* ── GRADIENT OVERLAY (no pointer events) ── */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(5,5,18,0.98) 0%, rgba(11,12,26,0.7) 35%, rgba(11,12,26,0.15) 60%, transparent 85%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents:"none", zIndex:10, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }} />
 
       {/* Tap hint removed — content-first UI */}
 
-      {/* ── TAP: toggle play/pause on single tap, toggle mute on double tap ── */}
+      {/* ── TAP: toggle UI visibility on images/photos, toggle play/pause on videos ── */}
       {!photoUrls && (
-          <div
-            onClick={tap(() => {
-              const resolvedVideoUrl = resolveMediaUrl(video.media_url || video.video_url);
-              const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
-              if (isImg || !(video.media_url || video.video_url)) {
-                setShowUI(v => !v);
-                if (!showUI) setShowFullCaption(true);
-              } else {
-                doTogglePlay();
-              }
-            })}
-            onDoubleClick={e => {
-              e.stopPropagation();
-              // Double tap toggles mute
-              const newMuted = !muted;
-              setMuted(newMuted);
-              const el = videoRef.current;
-              if (el) el.muted = newMuted;
-              if (soundRef.current) {
-                if (newMuted) soundRef.current.pause();
-                else if (playing && video.sound_url) soundRef.current.play().catch(()=>{});
-              }
-            }}
-            style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex:50, cursor:"pointer" }} />
+        <div onClick={tap(() => {
+          const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+          if (isImg || !(video.video_url)) {
+            setShowUI(v => !v);
+            if (!showUI) setShowFullCaption(true);
+          } else {
+            // Always toggle play/pause on tap (TikTok-style)
+            doTogglePlay();
+          }
+        })}
+          style={{ position:"absolute", top:60, left:0, right:0, bottom:80, zIndex: photoUrls ? 0 : 50, cursor:"pointer", pointerEvents: photoUrls ? "none" : "auto" }} />
       )}
 
       {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
-      {!playing && !photoUrls && (showUI || !playStore.get()) && (
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:60 }}>
-          <div onClick={(e) => { e.stopPropagation(); doTogglePlay(); }} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:72, height:72,
-            display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:30 }}>▶</div>
+      {!playing && !photoUrls && (
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:20 }}>
+          <div onClick={tap(doTogglePlay)} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:64, height:64,
+            display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:26 }}>▶</div>
         </div>
       )}
 
 
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
-      <div style={{ position:"absolute", bottom:168, left:16, right:16, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
+      <div style={{ position:"absolute", bottom:148, left:16, right:16, zIndex:500, transition:"opacity 0.4s ease", opacity: (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (showUI || !!photoUrls) ? "auto" : "none", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
         <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
@@ -3586,19 +3182,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         </div>
       )}
         {video.hashtags?.length > 0 && (
-          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:4 }}>
-            {video.hashtags.slice(0,4).map((t,i) => {
-              const tag = "#" + t.replace(/^#/,"");
-              return (
-                <span key={i}
-                  onClick={e => { e.stopPropagation(); onHashtagPress && onHashtagPress(tag); }}
-                  style={{ color:"#F5C842", fontSize:13, fontWeight:700, cursor:"pointer",
-                    background:"rgba(245,200,66,0.08)", borderRadius:20, padding:"2px 10px",
-                    border:"1px solid rgba(245,200,66,0.2)", WebkitTapHighlightColor:"transparent" }}>
-                  {tag}
-                </span>
-              );
-            })}
+          <div style={{ color:"#F5C842", fontSize:13, marginTop:4 }}>
+            {video.hashtags.slice(0,4).map(t => `#${t.replace(/^#/,"")}`).join(" ")}
           </div>
         )}
         {video.created_date && (
@@ -3661,254 +3246,222 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         )}
       </div>
 
-      {/* ── BOTTOM ACTION BAR — big, accessible, always visible ── */}
-      {(() => {
-        const isBookmarked = onBookmark?.isBookmarked?.(video.id);
-        const fId = `f${video.id}`;
+      {/* ── BOTTOM ACTION BAR — Sachi style, frosted glass ── */}
+      <div style={{
+        position:"absolute", bottom: 72, left:0, right:0,
+        display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"center",
+        gap:6, paddingLeft:12, paddingRight:12,
+        zIndex:500,
+        transition:"opacity 0.3s ease",
+        opacity: 1,
+        pointerEvents: "auto",
+        visibility: "visible",
+      }}>
+        {/* Frosted glass pill container */}
+        <div style={{
+          display:"flex", flexDirection:"row", alignItems:"center", justifyContent:"space-around",
+          width:"100%", maxWidth:480,
+          background:"rgba(11,12,26,0.72)",
+          backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
+          borderRadius:28,
+          border:"1px solid rgba(245,200,66,0.18)",
+          boxShadow:"0 -2px 32px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(245,200,66,0.08) inset",
+          padding:"8px 4px",
+          gap:2,
+        }}>
 
-        const RING_CIRC = 88;
-        const ActionBtn = ({ onClick, label, count, isActive, activeColor, children, ringOffset, onCountClick }) => {
-          const [bursting, setBursting] = React.useState(false);
-          const handleClick = (e) => { setBursting(true); setTimeout(() => setBursting(false), 600); onClick(e); };
-          const offset = ringOffset !== undefined ? ringOffset : (isActive ? 20 : RING_CIRC);
-          return (
-            <button onClick={handleClick}
-              style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column",
-                alignItems:"center", gap:3, padding:"0 6px", WebkitTapHighlightColor:"transparent",
-                touchAction:"manipulation", flex:1, minWidth:0 }}>
-              <div style={{ position:"relative", width:38, height:38 }}>
-                {/* Ring SVG */}
-                <svg style={{ position:"absolute", inset:0, transform:"rotate(-90deg)" }} viewBox="0 0 38 38" width="38" height="38">
-                  <circle cx="19" cy="19" r="14" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2"/>
-                  <circle cx="19" cy="19" r="14" fill="none" stroke={activeColor} strokeWidth="2"
-                    strokeLinecap="round" strokeDasharray={RING_CIRC} strokeDashoffset={offset}
-                    style={{ transition:"stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1)", opacity: offset < RING_CIRC ? 1 : 0.3 }}/>
-                </svg>
-                {/* Burst ring */}
-                {bursting && (
-                  <div style={{ position:"absolute", inset:-4, borderRadius:"50%", border:`2px solid ${activeColor}`,
-                    animation:"ringBurst 0.5s ease forwards", pointerEvents:"none" }} />
-                )}
-                {/* Icon center */}
-                <div style={{
-                  position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
-                  borderRadius:"50%",
-                  background: isActive ? `${activeColor}18` : "rgba(255,255,255,0.05)",
-                  transition:"background 0.2s",
-                  animation: bursting ? "ringIconPop 0.4s ease forwards" : "none",
-                  filter: isActive ? `drop-shadow(0 0 6px ${activeColor}88)` : "none",
-                }}>
-                  {children}
-                </div>
-              </div>
-              <div
-                onClick={onCountClick ? (e) => { e.stopPropagation(); onCountClick(e); } : undefined}
-                style={{
-                  fontSize:9, fontWeight:700,
-                  color: isActive ? activeColor : "rgba(255,255,255,0.4)",
-                  lineHeight:1.2, maxWidth:44, textAlign:"center",
-                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                  transition:"color 0.2s",
-                  cursor: onCountClick ? "pointer" : "inherit",
-                  textDecoration: onCountClick && count > 0 ? "underline" : "none",
-                  textDecorationStyle: "dotted",
-                  textDecorationColor: isActive ? activeColor : "rgba(255,255,255,0.3)",
-                }}>
-                {count !== undefined ? (formatCount(count) || label) : label}
-              </div>
-            </button>
-          );
-        };
-
-        return (
-          <>
-            {showLikers && (
-              <div onClick={() => setShowLikers(false)}
-                style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-end" }}>
-                <div onClick={e => e.stopPropagation()}
-                  style={{ width:"100%", maxHeight:"60vh", background:"#1a1a2e", borderRadius:"20px 20px 0 0", padding:"20px 0 40px", overflowY:"auto" }}>
-                  <div style={{ textAlign:"center", padding:"0 20px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-                    <div style={{ width:40, height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", margin:"0 auto 16px" }} />
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>❤️ {formatCount(video.like_count||0)} Likes</div>
-                  </div>
-                  {likersLoading ? (
-                    <div style={{ textAlign:"center", padding:32, color:"#555" }}>Loading…</div>
-                  ) : likersList.length === 0 ? (
-                    <div style={{ textAlign:"center", padding:32, color:"#555" }}>No likes yet</div>
-                  ) : likersList.map((l,i) => (
-                    <div key={l.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 20px" }}>
-                      <img src={l.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.display_name||l.username||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
-                        style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
-                      <div>
-                        <div style={{ color:"#fff", fontWeight:600, fontSize:14 }}>{l.display_name || l.username || "Sachi User"}</div>
-                        <div style={{ color:"#555", fontSize:12 }}>@{l.username || "user"}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          {/* LIKE */}
+          <button onClick={tap(doLike)} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", position:"relative" }}>
+            <div style={{
+              width:44, height:44, borderRadius:16,
+              background: liked ? "radial-gradient(135deg, rgba(255,107,107,0.45), rgba(255,60,60,0.15))" : "rgba(255,255,255,0.07)",
+              border: liked ? "1.5px solid rgba(255,107,107,0.7)" : "1.5px solid rgba(255,255,255,0.1)",
+              boxShadow: liked ? "0 0 18px rgba(255,107,107,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              transition:"all 0.2s", animation: liked ? "heartpop 0.4s ease forwards" : "none",
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill={liked ? "#FF6B6B" : "none"} stroke={liked ? "#FF6B6B" : "rgba(255,255,255,0.85)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </div>
+            <div style={{ color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(localLikeCount)}</div>
+            {likePopMsg && (
+              <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:"50%", transform:"translateX(-50%)", zIndex:600,
+                background:"rgba(255,60,60,0.95)", color:"#fff", borderRadius:14, padding:"7px 13px",
+                fontSize:12, fontWeight:700, whiteSpace:"nowrap", pointerEvents:"none",
+                boxShadow:"0 4px 18px rgba(255,60,60,0.5)",
+                animation:"popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both" }}>
+                {likePopMsg}
               </div>
             )}
+          </button>
 
+          {/* COMMENT */}
+          <button onClick={tap(() => onCommentOpen(video))} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
             <div style={{
-              position:"absolute", bottom:76, left:0, right:0, zIndex:500,
-              transition:"opacity 0.35s ease, transform 0.35s ease",
-              opacity: (showUI || !playing || !!photoUrls) ? 1 : 0,
-              transform: (showUI || !playing || !!photoUrls) ? "translateY(0)" : "translateY(30px)",
-              pointerEvents: (showUI || !playing || !!photoUrls) ? "auto" : "none",
+              width:44, height:44, borderRadius:16,
+              background:"rgba(100,180,255,0.1)",
+              border:"1.5px solid rgba(100,180,255,0.3)",
+              boxShadow:"0 0 12px rgba(100,180,255,0.15), 0 2px 8px rgba(0,0,0,0.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              transition:"all 0.2s",
             }}>
-
-              {/* ── FLOATING HEART + COMMENT — right side, independent ── */}
-              <div style={{ position:"absolute", right:10, bottom:8, display:"flex", flexDirection:"column", alignItems:"center", gap:10, zIndex:10 }}>
-
-                {/* Bruh toast — floats up from heart */}
-                {showBruhToast && (
-                  <div style={{
-                    position:"absolute", bottom:88, right:-8, zIndex:999,
-                    animation:"bruhFloat 2.2s ease forwards",
-                    pointerEvents:"none", whiteSpace:"nowrap",
-                  }}>
-                    <div style={{
-                      background:"linear-gradient(135deg,#FF6B6B,#ff3366)",
-                      borderRadius:20, padding:"8px 14px",
-                      boxShadow:"0 4px 20px rgba(255,107,107,0.6)",
-                      animation:"bruhWiggle 0.3s ease-in-out infinite",
-                      position:"relative",
-                    }}>
-                      <div style={{ color:"#fff", fontWeight:900, fontSize:13, letterSpacing:0.3 }}>
-                        Bruh 😂 you already liked this!
-                      </div>
-                      {/* Speech bubble tail */}
-                      <div style={{
-                        position:"absolute", bottom:-8, right:18,
-                        width:0, height:0,
-                        borderLeft:"8px solid transparent",
-                        borderRight:"8px solid transparent",
-                        borderTop:"8px solid #ff3366",
-                      }}/>
-                    </div>
-                  </div>
-                )}
-
-                {/* Heart */}
-                <ActionBtn
-                  onClick={tap(doLike)}
-                  count={video.like_count||0}
-                  label="Like"
-                  isActive={liked}
-                  activeColor="#FF6B6B"
-                  ringOffset={liked ? Math.max(RING_CIRC-((video.like_count||0)/40)*RING_CIRC,8) : RING_CIRC}
-                  onCountClick={(video.like_count||0) > 0 ? async () => {
-                    setShowLikers(true);
-                    setLikersLoading(true);
-                    try {
-                      const rows = await likes.getByVideo(video.id);
-                      setLikersList(rows);
-                    } catch(e) {
-                      console.error("Failed to load likers:", e);
-                      setLikersList([]);
-                    } finally {
-                      setLikersLoading(false);
-                    }
-                  } : undefined}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24"
-                    fill={liked?"#FF6B6B":"none"} stroke="#FF6B6B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    style={{ transition:"fill 0.2s", animation:liked?"heartpop 0.4s ease forwards":"none" }}>
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                </ActionBtn>
-
-                {/* Comment */}
-                <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comment_count||0} label="Comment" isActive={false} activeColor="#6c63ff" ringOffset={Math.max(RING_CIRC-((video.comment_count||0)/15)*RING_CIRC, 12)}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </ActionBtn>
-              </div>
-
-              {/* ── PILL BAR — Sound, LIT, Crown, Share, Delete ── */}
-              <div style={{
-                margin:"0 58px 0 12px",
-                background:"linear-gradient(180deg, rgba(15,15,32,0.92) 0%, rgba(8,8,20,0.97) 100%)",
-                backdropFilter:"blur(24px)",
-                borderRadius:22,
-                border:"1px solid rgba(255,255,255,0.1)",
-                padding:"8px 4px 7px",
-                display:"flex", alignItems:"flex-start", justifyContent:"space-around",
-                boxShadow:"0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)",
-              }}>
-
-                <ActionBtn onClick={tap(doMute)} label={muted ? "Muted" : "Sound"} isActive={!muted} activeColor="#F5C842">
-                  {muted
-                    ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-                    : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                  }
-                </ActionBtn>
-
-                <ActionBtn onClick={tap(doHype)} label={hypeCount > 0 ? String(hypeCount) : "LIT"} isActive={hyped} activeColor="#FF6B00" ringOffset={Math.max(RING_CIRC - (hypeCount/15)*RING_CIRC, hyped?8:RING_CIRC)}>
-                  <div style={{ filter:hyped?"drop-shadow(0 0 8px rgba(255,107,0,0.9))":"none", animation:hypeAnim?"firepop 0.5s ease forwards":"none" }}>
-                    <svg width="14" height="18" viewBox="0 0 20 28" style={{ overflow:"visible" }}>
-                      <defs>
-                        <linearGradient id={fId} x1="50%" y1="0%" x2="50%" y2="100%">
-                          <stop offset="0%" stopColor="#fff176"/><stop offset="35%" stopColor="#ffb300"/>
-                          <stop offset="70%" stopColor="#f4511e"/><stop offset="100%" stopColor="#b71c1c"/>
-                        </linearGradient>
-                        <linearGradient id={fId+"i"} x1="50%" y1="0%" x2="50%" y2="100%">
-                          <stop offset="0%" stopColor="#ffffff"/><stop offset="50%" stopColor="#fff9c4"/>
-                          <stop offset="100%" stopColor="#ffcc02" stopOpacity="0.6"/>
-                        </linearGradient>
-                      </defs>
-                      <path d="M10 27 C4 27 1 22 1 17 C1 12 4 8 6 5 C7 3 7 1 7 1 C9 4 8 7 10 9 C11 6 13 3 14 1 C15 4 19 9 19 16 C19 22 15 27 10 27Z" fill={`url(#${fId})`} style={{ animation:"flameWave 1.8s ease-in-out infinite", transformOrigin:"10px 27px" }}/>
-                      <path d="M10 24 C7 24 6 21 6 18 C6 16 8 13 9 11 C10 13 10 15 11 16 C12 14 13 11 14 10 C15 13 14 17 14 18 C14 22 13 24 10 24Z" fill={`url(#${fId+"i"})`} style={{ animation:"flameWave 1.2s ease-in-out infinite reverse", transformOrigin:"10px 24px" }}/>
-                    </svg>
-                  </div>
-                </ActionBtn>
-
-                {currentUser && (
-                  <ActionBtn
-                    onClick={tap(async()=>{ if(!currentUser){onNeedAuth&&onNeedAuth();return;} onBookmark?.handle&&onBookmark.handle(video.id,!isBookmarked); })}
-                    label={isBookmarked?"Crowned":"Crown"} isActive={isBookmarked} activeColor="#F5C842" ringOffset={isBookmarked ? 16 : RING_CIRC}>
-                    <svg width="14" height="14" viewBox="0 0 24 24"
-                      fill={isBookmarked?"rgba(245,200,66,0.3)":"none"}
-                      stroke={isBookmarked?"#F5C842":"rgba(255,255,255,0.8)"}
-                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                      style={{ transition:"all 0.3s", animation:isBookmarked?"crownFloat 2s ease-in-out infinite":"none", filter:isBookmarked?"drop-shadow(0 0 8px rgba(245,200,66,0.8))":"none" }}>
-                      <path d="M2 20h20M5 20V10l7-6 7 6v10"/><path d="M9 20v-5h6v5"/>
-                    </svg>
-                  </ActionBtn>
-                )}
-
-                {(()=>{ const [pulsing,setPulsing]=React.useState(false); return (
-                  <ActionBtn
-                    onClick={tap(async()=>{
-                      setPulsing(true); setTimeout(()=>setPulsing(false),900);
-                      const shareUrl=`${window.location.origin}?v=${video.id}`;
-                      if(navigator.share){navigator.share({title:video.caption||"Check this out on Sachi",url:shareUrl});}
-                      else{navigator.clipboard?.writeText(shareUrl);toast.success("Link copied!");}
-                      try{ const n=(video.shares_count||0)+1; onShareCount&&onShareCount(video.id,n); await videos.update(video.id,{shares_count:n}); }catch(e){}
-                    })}
-                    count={video.shares_count||0} label="Share" isActive={pulsing} activeColor="#a78bfa" ringOffset={Math.max(RING_CIRC-((video.shares_count||0)/10)*RING_CIRC, pulsing?10:RING_CIRC)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                    </svg>
-                  </ActionBtn>
-                );})()}
-
-                {isOwnVideo && (
-                  <ActionBtn onClick={tap(doDelete)} label="Delete" isActive={false} activeColor="#ff5555">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                      <path d="M10 11v6"/><path d="M14 11v6"/>
-                    </svg>
-                  </ActionBtn>
-                )}
-
-              </div>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(100,200,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
             </div>
-          </>
-        );
-      })()}
+            <div style={{ color:"rgba(100,200,255,0.85)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(localCommentCount)}</div>
+          </button>
+
+          {/* HYPE 🔥 */}
+          {(() => {
+            return (
+              <button onClick={tap(async () => {
+                if (!currentUser) { onNeedAuth(); return; }
+                showPopMsg(HYPE_MSGS, setHypePopMsg, hypeTapCount, hypeTapTimer);
+                const newHyped = !localHyped;
+                setLocalHyped(newHyped);
+                const newCount = Math.max(0, localHypeCount + (newHyped ? 1 : -1));
+                setLocalHypeCount(newCount);
+                try { await videos.update(video.id, { hype_count: newCount }); } catch(e) {}
+              })} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", position:"relative" }}>
+                <div style={{
+                  width:44, height:44, borderRadius:16,
+                  background: localHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
+                  border: localHyped ? "1.5px solid rgba(255,180,0,0.8)" : "1.5px solid rgba(255,150,0,0.25)",
+                  boxShadow: localHyped ? "0 0 20px rgba(255,160,0,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"all 0.2s",
+                }}>
+                  <span style={{ fontSize:22 }}>🔥</span>
+                </div>
+                <div style={{ color: localHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(localHypeCount)}</div>
+                {hypePopMsg && (
+                  <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:"50%", transform:"translateX(-50%)", zIndex:600,
+                    background:"rgba(255,130,0,0.95)", color:"#fff", borderRadius:14, padding:"7px 13px",
+                    fontSize:12, fontWeight:700, whiteSpace:"nowrap", pointerEvents:"none",
+                    boxShadow:"0 4px 18px rgba(255,130,0,0.5)",
+                    animation:"popBubbleIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both" }}>
+                    {hypePopMsg}
+                  </div>
+                )}
+              </button>
+            );
+          })()}
+
+          {/* SHARE */}
+          <button onClick={tap(async () => {
+            const shareUrl = `${window.location.origin}?v=${video.id}`;
+            if(navigator.share){ navigator.share({ title: video.caption||"Check this out on Sachi", url: shareUrl }); }
+            else { navigator.clipboard?.writeText(shareUrl); toast.success("Link copied!"); }
+            try {
+              const newCount = (video.shares_count || 0) + 1;
+              onShareCount && onShareCount(video.id, newCount);
+              await videos.update(video.id, { shares_count: newCount });
+            } catch(e) {}
+          })} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            <div style={{
+              width:44, height:44, borderRadius:16,
+              background:"rgba(160,120,255,0.1)",
+              border:"1.5px solid rgba(160,120,255,0.3)",
+              boxShadow:"0 0 12px rgba(160,120,255,0.15), 0 2px 8px rgba(0,0,0,0.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              transition:"all 0.2s",
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(200,170,255,0.9)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+            </div>
+            <div style={{ color:"rgba(200,170,255,0.85)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.shares_count||0)}</div>
+          </button>
+
+          {/* BOOKMARK */}
+          {currentUser && (() => {
+            const isBookmarked = onBookmark?.isBookmarked?.(video.id);
+            return (
+              <button onClick={tap(async () => {
+                if(!currentUser){ onNeedAuth && onNeedAuth(); return; }
+                onBookmark?.handle && onBookmark.handle(video.id, !isBookmarked);
+              })} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                <div style={{
+                  width:44, height:44, borderRadius:16,
+                  background: isBookmarked ? "radial-gradient(135deg, rgba(245,200,66,0.4), rgba(245,150,0,0.15))" : "rgba(245,200,66,0.06)",
+                  border: isBookmarked ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(245,200,66,0.2)",
+                  boxShadow: isBookmarked ? "0 0 18px rgba(245,200,66,0.45), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"all 0.25s",
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill={isBookmarked ? "#F5C842" : "none"} stroke={isBookmarked ? "#F5C842" : "rgba(245,200,66,0.8)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+                <div style={{ color: isBookmarked ? "#F5C842" : "rgba(245,200,66,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>Save</div>
+              </button>
+            );
+          })()}
+
+          {/* MUTE — compact, right edge */}
+          <button onClick={tap(doMute)} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            <div style={{
+              width:44, height:44, borderRadius:16,
+              background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.06)",
+              border: muted ? "1.5px solid rgba(245,200,66,0.5)" : "1.5px solid rgba(255,255,255,0.1)",
+              boxShadow: muted ? "0 0 12px rgba(245,200,66,0.3)" : "0 2px 8px rgba(0,0,0,0.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              transition:"all 0.25s",
+            }}>
+              {muted
+                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              }
+            </div>
+            <div style={{ color: muted ? "#F5C842" : "rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{muted ? "Muted" : "Sound"}</div>
+          </button>
+
+        </div>
+      </div>
+
+      {/* Delete / Flag row — small, above the action bar */}
+      {(isOwnVideo || currentUser) && (
+        <div style={{
+          position:"absolute", bottom: 144, right:10,
+          display:"flex", flexDirection:"column", alignItems:"center", gap:8,
+          zIndex:500, transition:"opacity 0.4s ease",
+          opacity: 1,
+          pointerEvents: "auto",
+        }}>
+          {/* AI Flag */}
+          <button onClick={tap(async () => {
+            if (!currentUser) { onNeedAuth(); return; }
+            if (!window.confirm(video.is_ai_detected ? "Clear AI flag?" : "Flag as AI-generated?")) return;
+            try {
+              await videos.update(video.id, { is_ai_detected: !video.is_ai_detected });
+              onLike(video.id, 0);
+            } catch(e) {}
+          })} style={{ background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+            <div style={{ width:36, height:36, borderRadius:12,
+              background: video.is_ai_detected ? "rgba(0,255,120,0.15)" : "rgba(255,255,255,0.08)",
+              border: video.is_ai_detected ? "1.5px solid rgba(0,255,120,0.6)" : "1.5px solid rgba(255,255,255,0.12)",
+              display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ fontSize:14 }}>{video.is_ai_detected ? "🤖" : "🚩"}</span>
+            </div>
+          </button>
+          {/* Delete — own videos only */}
+          {isOwnVideo && (
+            <button onClick={tap(doDelete)} style={{ background:"none", border:"none", cursor:"pointer", WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+              <div style={{ width:36, height:36, borderRadius:12,
+                background:"rgba(255,60,60,0.12)",
+                border:"1.5px solid rgba(255,80,80,0.35)",
+                display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6666" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+                </svg>
+              </div>
+            </button>
+          )}
+        </div>
+      )}
 
       {reportTarget && <ReportModal video={reportTarget} currentUser={currentUser} onClose={() => setReportTarget(null)} />}
 
@@ -4025,58 +3578,12 @@ spinStyle.textContent = `
     56%  { transform: scale(1); }
     100% { transform: scale(1); }
   }
-  @keyframes flameWave {
-  0%, 100% { transform: scaleX(1) scaleY(1) rotate(-1deg); }
-  25% { transform: scaleX(0.92) scaleY(1.06) rotate(1.5deg); }
-  50% { transform: scaleX(1.06) scaleY(0.96) rotate(-0.5deg); }
-  75% { transform: scaleX(0.95) scaleY(1.04) rotate(2deg); }
-}
-@keyframes firepop {
-  0%   { transform: scale(1) rotate(0deg); filter: brightness(1); }
-  20%  { transform: scale(1.7) rotate(-12deg); filter: brightness(1.4); }
-  40%  { transform: scale(1.4) rotate(10deg); filter: brightness(1.2); }
-  60%  { transform: scale(1.6) rotate(-8deg); filter: brightness(1.5); }
-  80%  { transform: scale(1.2) rotate(5deg); filter: brightness(1.1); }
-  100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
-}
-@keyframes fireflicker {
-  0%   { transform: scale(1)    rotate(-2deg) translateY(0px);  filter: brightness(1.1)  drop-shadow(0 0 4px #ff6600)  drop-shadow(0 0 8px #ff2200); }
-  15%  { transform: scale(1.1)  rotate(2deg)  translateY(-2px); filter: brightness(1.4)  drop-shadow(0 0 8px #ff8800)  drop-shadow(0 0 16px #ff4400); }
-  30%  { transform: scale(0.95) rotate(-3deg) translateY(1px);  filter: brightness(0.95) drop-shadow(0 0 6px #ff4400)  drop-shadow(0 0 10px #ff1100); }
-  45%  { transform: scale(1.12) rotate(2deg)  translateY(-3px); filter: brightness(1.5)  drop-shadow(0 0 10px #ffaa00) drop-shadow(0 0 20px #ff5500); }
-  60%  { transform: scale(1.04) rotate(-2deg) translateY(0px);  filter: brightness(1.2)  drop-shadow(0 0 7px #ff6600)  drop-shadow(0 0 14px #ff3300); }
-  75%  { transform: scale(0.97) rotate(3deg)  translateY(1px);  filter: brightness(1.0)  drop-shadow(0 0 5px #ff4400)  drop-shadow(0 0 10px #ff2200); }
-  90%  { transform: scale(1.06) rotate(2deg) translateY(-1px); filter: brightness(1.15); }
-  100% { transform: scale(1) rotate(0deg) translateY(0px); filter: brightness(1); }
-}
-@keyframes firerise {
-  0%   { transform: scaleY(1) translateY(0px); }
-  25%  { transform: scaleY(1.1) translateY(-2px); }
-  50%  { transform: scaleY(0.95) translateY(1px); }
-  75%  { transform: scaleY(1.08) translateY(-1px); }
-  100% { transform: scaleY(1) translateY(0px); }
-}
-@keyframes heartpop {
+  @keyframes heartpop {
     0%   { transform: scale(1); }
     30%  { transform: scale(1.5); }
     60%  { transform: scale(0.9); }
     80%  { transform: scale(1.15); }
     100% { transform: scale(1); }
-  }
-  @keyframes ringBurst { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.4);opacity:0} }
-  @keyframes ringParticle { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--tx),var(--ty)) scale(0);opacity:0} }
-  @keyframes crownFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
-  @keyframes broadcastPulse { 0%{transform:scale(1);opacity:0.8} 100%{transform:scale(2.2);opacity:0} }
-  @keyframes ringIconPop { 0%{transform:scale(1)} 35%{transform:scale(1.5)} 65%{transform:scale(0.88)} 100%{transform:scale(1)} }
-  @keyframes bruhFloat {
-    0%   { opacity:0; transform:translateY(0) scale(0.6); }
-    15%  { opacity:1; transform:translateY(-20px) scale(1.05); }
-    75%  { opacity:1; transform:translateY(-60px) scale(1); }
-    100% { opacity:0; transform:translateY(-90px) scale(0.9); }
-  }
-  @keyframes bruhWiggle {
-    0%,100%{ transform:rotate(-2deg); }
-    50%    { transform:rotate(2deg); }
   }
 `;
 if (!document.getElementById('spin-style')) { spinStyle.id='spin-style'; document.head.appendChild(spinStyle); }
@@ -4098,369 +3605,6 @@ const AVATAR_STYLES = [
   { label: "Minimal", style: "thumbs", seeds: ["Alpha","Beta","Gamma","Delta","Epsilon","Zeta","Eta","Theta","Iota","Kappa","Lambda","Mu","Nu","Xi","Omicron","Pi","Rho","Sigma","Tau","Upsilon"] },
 ];
 
-// ── Photo Crop Editor ──────────────────────────────────────────────────────
-// Pre-upload crop UI. Aspect ratios: 9:16 (feed), 1:1, original (no crop).
-// Touch: drag to pan, pinch to zoom. Buttons: Fit / Fill / Cancel / Confirm.
-// Output is a new File (JPEG) with the cropped result, or the original File
-// unchanged when "original" is selected.
-
-function PhotoCropEditor({ file, onSave, onCancel, photoIndex, totalPhotos }) {
-  const canvasRef = useRef();
-  const imgRef = useRef(new window.Image());
-  const containerRef = useRef();
-
-  // Crop frame dimensions in display pixels.
-  // Width is fixed; height changes based on aspect ratio choice.
-  const FRAME_W = 320;
-
-  // Aspect ratio: "9:16" | "1:1" | "original"
-  const [aspect, setAspect] = useState("9:16");
-
-  // For aspect="original", we'll skip the canvas crop entirely.
-  // For other aspects, compute the frame height.
-  const frameH = aspect === "1:1" ? FRAME_W : Math.round(FRAME_W * 16 / 9);
-
-  // Image transform state
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  // Gesture state
-  const [dragging, setDragging] = useState(false);
-  const dragStart = useRef(null);
-  const pinchStart = useRef(null);
-
-  // Object URL for the image — created once, cleaned up on unmount
-  const imageUrl = useMemo(() => URL.createObjectURL(file), [file]);
-  useEffect(() => () => URL.revokeObjectURL(imageUrl), [imageUrl]);
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  // Compute the "fill" scale: image covers the entire frame, cropping if needed.
-  const computeFillScale = (imgW, imgH, fW, fH) => {
-    return Math.max(fW / imgW, fH / imgH);
-  };
-  // Compute the "fit" scale: whole image visible, letterboxed if needed.
-  const computeFitScale = (imgW, imgH, fW, fH) => {
-    return Math.min(fW / imgW, fH / imgH);
-  };
-
-  // Center the image in the frame at a given scale.
-  const centerOffset = (imgW, imgH, fW, fH, s) => ({
-    x: (fW - imgW * s) / 2,
-    y: (fH - imgH * s) / 2,
-  });
-
-  // ── Load the image once when component mounts ────────────────────────────
-  useEffect(() => {
-    const img = imgRef.current;
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const fill = computeFillScale(img.width, img.height, FRAME_W, frameH);
-      setScale(fill);
-      setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fill));
-      setImageLoaded(true);
-    };
-    img.src = imageUrl;
-    // We don't redo this when aspect changes (we'll handle that separately below)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageUrl]);
-
-  // ── When aspect ratio changes, re-center to fill ─────────────────────────
-  useEffect(() => {
-    if (!imageLoaded || aspect === "original") return;
-    const img = imgRef.current;
-    const fill = computeFillScale(img.width, img.height, FRAME_W, frameH);
-    setScale(fill);
-    setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fill));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aspect, imageLoaded]);
-
-  // ── Draw the canvas whenever state changes ───────────────────────────────
-  const draw = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !imageLoaded) return;
-    const ctx = canvas.getContext("2d");
-    // Clear with white background (JPEG export looks weird with transparent bg)
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, FRAME_W, frameH);
-    ctx.drawImage(
-      imgRef.current,
-      offset.x, offset.y,
-      imgRef.current.width * scale, imgRef.current.height * scale
-    );
-  };
-
-  useEffect(() => { draw(); }, [scale, offset, frameH, imageLoaded]);
-
-  // ── Pointer gesture handlers ─────────────────────────────────────────────
-  const onMouseDown = (e) => {
-    setDragging(true);
-    dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
-  };
-  const onMouseMove = (e) => {
-    if (!dragging) return;
-    setOffset({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
-  };
-  const onMouseUp = () => setDragging(false);
-
-  // Touch handlers — pinch + drag
-  const distance = (t1, t2) => {
-    const dx = t1.clientX - t2.clientX;
-    const dy = t1.clientY - t2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const onTouchStart = (e) => {
-    e.preventDefault();
-    if (e.touches.length === 2) {
-      // Pinch start
-      pinchStart.current = {
-        distance: distance(e.touches[0], e.touches[1]),
-        scale,
-      };
-    } else if (e.touches.length === 1) {
-      setDragging(true);
-      dragStart.current = {
-        x: e.touches[0].clientX - offset.x,
-        y: e.touches[0].clientY - offset.y,
-      };
-    }
-  };
-
-  const onTouchMove = (e) => {
-    e.preventDefault();
-    if (e.touches.length === 2 && pinchStart.current) {
-      const newDist = distance(e.touches[0], e.touches[1]);
-      const factor = newDist / pinchStart.current.distance;
-      const newScale = Math.max(0.1, Math.min(5, pinchStart.current.scale * factor));
-      setScale(newScale);
-    } else if (e.touches.length === 1 && dragging) {
-      setOffset({
-        x: e.touches[0].clientX - dragStart.current.x,
-        y: e.touches[0].clientY - dragStart.current.y,
-      });
-    }
-  };
-
-  const onTouchEnd = (e) => {
-    if (e.touches.length < 2) pinchStart.current = null;
-    if (e.touches.length === 0) setDragging(false);
-  };
-
-  // ── Save: produce the cropped JPEG File and pass to onSave ───────────────
-  const handleSave = async () => {
-    // "Original" mode: skip crop entirely, return file as-is
-    if (aspect === "original") {
-      onSave(file);
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) { onSave(file); return; }
-
-    // Render at full resolution for upload (not just display size).
-    // We need an OFFSCREEN canvas at the original image's effective size,
-    // not the small preview canvas. So we render larger.
-    const OUTPUT_W = 1080; // common phone-photo width
-    const OUTPUT_H = Math.round(OUTPUT_W * frameH / FRAME_W);
-    const scaleUp = OUTPUT_W / FRAME_W;
-
-    const out = document.createElement("canvas");
-    out.width = OUTPUT_W;
-    out.height = OUTPUT_H;
-    const outCtx = out.getContext("2d");
-    outCtx.fillStyle = "#000000";
-    outCtx.fillRect(0, 0, OUTPUT_W, OUTPUT_H);
-    outCtx.drawImage(
-      imgRef.current,
-      offset.x * scaleUp, offset.y * scaleUp,
-      imgRef.current.width * scale * scaleUp, imgRef.current.height * scale * scaleUp
-    );
-
-    out.toBlob((blob) => {
-      if (!blob) { onSave(file); return; }
-      const cropped = new File([blob], file.name.replace(/\.\w+$/, "") + "_cropped.jpg", { type: "image/jpeg" });
-      onSave(cropped);
-    }, "image/jpeg", 0.9);
-  };
-
-  // ── Reset buttons ────────────────────────────────────────────────────────
-  const handleFitToFrame = () => {
-    if (!imageLoaded) return;
-    const img = imgRef.current;
-    const fit = computeFitScale(img.width, img.height, FRAME_W, frameH);
-    setScale(fit);
-    setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fit));
-  };
-  const handleFillFrame = () => {
-    if (!imageLoaded) return;
-    const img = imgRef.current;
-    const fill = computeFillScale(img.width, img.height, FRAME_W, frameH);
-    setScale(fill);
-    setOffset(centerOffset(img.width, img.height, FRAME_W, frameH, fill));
-  };
-
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 3000, background: "#0B0C1A",
-      display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
-      {/* Top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 18px", paddingTop: "calc(env(safe-area-inset-top,0px) + 14px)",
-        borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <button onClick={onCancel}
-          style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10,
-            width: 36, height: 36, color: "#fff", fontSize: 18, cursor: "pointer" }}>✕</button>
-        <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>
-          ✂️ Crop Photo {totalPhotos > 1 ? `(${photoIndex + 1}/${totalPhotos})` : ""}
-        </div>
-        <div style={{ width: 36 }} />
-      </div>
-
-      {/* Aspect ratio selector */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 8, padding: "14px 16px 10px" }}>
-        {[
-          { id: "9:16", label: "📱 Feed (9:16)" },
-          { id: "1:1", label: "⬛ Square (1:1)" },
-          { id: "original", label: "🖼️ Original" },
-        ].map(opt => (
-          <button key={opt.id} onClick={() => setAspect(opt.id)}
-            style={{ padding: "8px 14px", borderRadius: 20,
-              border: aspect === opt.id ? "2px solid #F5C842" : "1px solid rgba(255,255,255,0.15)",
-              background: aspect === opt.id ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.04)",
-              color: aspect === opt.id ? "#F5C842" : "#aaa",
-              fontWeight: 700, fontSize: 12, cursor: "pointer",
-              WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}>
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Crop preview area */}
-      <div ref={containerRef} style={{ flex: 1, display: "flex", alignItems: "center",
-        justifyContent: "center", padding: "8px 16px", overflow: "hidden", minHeight: 0 }}>
-        {aspect === "original" ? (
-          // "Original" mode: show the raw image, no crop frame
-          <div style={{ maxWidth: "100%", maxHeight: "100%", display: "flex",
-            alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 10 }}>
-            <img src={imageUrl} alt="Original"
-              style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12,
-                border: "2px solid #F5C842", boxShadow: "0 8px 32px rgba(245,200,66,0.2)" }} />
-            <div style={{ color: "#888", fontSize: 12, textAlign: "center" }}>
-              Posting at original aspect ratio<br/>
-              <span style={{ color: "#666" }}>The feed will letterbox if needed</span>
-            </div>
-          </div>
-        ) : (
-          // Crop mode: canvas with gestures
-          <div
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-            onTouchCancel={onTouchEnd}
-            style={{ cursor: dragging ? "grabbing" : "grab",
-              borderRadius: 12, overflow: "hidden",
-              border: "2px solid #F5C842",
-              boxShadow: "0 8px 32px rgba(245,200,66,0.25)",
-              touchAction: "none" }}>
-            <canvas
-              ref={canvasRef}
-              width={FRAME_W}
-              height={frameH}
-              style={{ display: "block", touchAction: "none" }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Zoom slider + fit/fill buttons — only in crop mode */}
-      {aspect !== "original" && imageLoaded && (
-        <div style={{ padding: "8px 24px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <div style={{ color: "#888", fontSize: 11 }}>🔍 Zoom</div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={handleFitToFrame}
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 8, padding: "4px 10px", color: "#aaa", fontSize: 11, cursor: "pointer" }}>
-                Fit
-              </button>
-              <button onClick={handleFillFrame}
-                style={{ background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)",
-                  borderRadius: 8, padding: "4px 10px", color: "#F5C842", fontSize: 11, cursor: "pointer" }}>
-                Fill
-              </button>
-            </div>
-          </div>
-          <input type="range" min={0.1} max={5} step={0.01}
-            value={scale}
-            onChange={e => setScale(parseFloat(e.target.value))}
-            style={{ width: "100%", accentColor: "#F5C842" }} />
-          <div style={{ color: "#666", fontSize: 11, textAlign: "center", marginTop: 4 }}>
-            Drag the photo to position · Pinch to zoom (mobile)
-          </div>
-        </div>
-      )}
-
-      {/* Bottom buttons */}
-      <div style={{ display: "flex", gap: 10, padding: "16px 20px",
-        paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 16px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <button onClick={onCancel}
-          style={{ flex: 1, padding: "14px 0", background: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14,
-            color: "#aaa", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
-          Cancel
-        </button>
-        <button onClick={handleSave}
-          style={{ flex: 2, padding: "14px 0",
-            background: "linear-gradient(135deg,#F5C842,#FF9500)",
-            border: "none", borderRadius: 14,
-            color: "#0B0C1A", fontWeight: 900, fontSize: 16, cursor: "pointer",
-            boxShadow: "0 4px 16px rgba(245,200,66,0.3)" }}>
-          ✓ {totalPhotos > 1 && photoIndex < totalPhotos - 1 ? "Next Photo →" : "Confirm"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── PhotoCropQueue ─────────────────────────────────────────────────────────
-//
-// Wrapper that crops a list of photos one at a time.
-// Shows PhotoCropEditor for each photo in sequence.
-// When all are done (or user cancels), calls onComplete with cropped array.
-// If user cancels at any step, the whole batch is cancelled (onCancel).
-
-function PhotoCropQueue({ files, onComplete, onCancel }) {
-  const [idx, setIdx] = useState(0);
-  const [cropped, setCropped] = useState([]);
-
-  const handleSave = (croppedFile) => {
-    const newCropped = [...cropped, croppedFile];
-    if (idx + 1 >= files.length) {
-      // All photos cropped — return the batch
-      onComplete(newCropped);
-    } else {
-      setCropped(newCropped);
-      setIdx(idx + 1);
-    }
-  };
-
-  return (
-    <PhotoCropEditor
-      file={files[idx]}
-      onSave={handleSave}
-      onCancel={onCancel}
-      photoIndex={idx}
-      totalPhotos={files.length}
-    />
-  );
-}
-
 // ── Avatar Crop Editor ──────────────────────────────────────────────────────
 function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
   const canvasRef = useRef();
@@ -4473,13 +3617,19 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
 
   useEffect(() => {
     const img = imgRef.current;
-    img.crossOrigin = "anonymous";
+    // Only set crossOrigin for non-blob URLs to avoid tainted canvas
+    if (!imageUrl.startsWith("blob:") && !imageUrl.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    } else {
+      img.crossOrigin = null;
+    }
     img.onload = () => {
       const fit = Math.max(SIZE / img.width, SIZE / img.height);
       setScale(fit);
       setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
       draw(fit, { x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
     };
+    img.onerror = () => console.warn("AvatarCropEditor: image failed to load", imageUrl);
     img.src = imageUrl;
   }, [imageUrl]);
 
@@ -4526,10 +3676,17 @@ function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
   const onTouchEnd = () => setDragging(false);
 
   const handleSave = () => {
-    const canvas = canvasRef.current;
-    // Return base64 data URL directly — works for all auth types (Google, email)
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    onSave(dataUrl);
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) { alert("Canvas not ready, please try again."); return; }
+      // Return base64 data URL directly — works for all auth types (Google, email)
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      if (!dataUrl || dataUrl === "data:,") { alert("Could not process image. Please try a JPG or PNG file."); return; }
+      onSave(dataUrl);
+    } catch(err) {
+      console.error("toDataURL error:", err);
+      alert("Could not crop image. Please try selecting a JPG or PNG photo instead.");
+    }
   };
 
   return (
@@ -4597,9 +3754,17 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
+    let file = e.target.files[0];
     if (!file) return;
-    // Show crop editor first
+    // Convert HEIC/HEIF to JPEG before crop editor
+    const isHeic = file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+    if (isHeic) {
+      try {
+        const heic2any = (await import("heic2any")).default;
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+        file = new File([converted], file.name.replace(/\.(heic|heif)$/i, ".jpg"), { type: "image/jpeg" });
+      } catch(err) { console.warn("HEIC conversion failed:", err); }
+    }
     const url = URL.createObjectURL(file);
     setCropImageUrl(url);
   };
@@ -4608,15 +3773,32 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     setCropImageUrl(null);
     setUploading(true);
     try {
+      if (!dataUrl || dataUrl === "data:,") {
+        toast.error("Image processing failed. Try a JPG or PNG photo.");
+        setUploading(false);
+        return;
+      }
+      // Convert base64 dataUrl to blob/file and upload to CDN
       const res = await fetch(dataUrl);
       const blob = await res.blob();
+      if (blob.size < 100) {
+        toast.error("Image appears empty. Please try selecting a different photo.");
+        setUploading(false);
+        return;
+      }
       const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-      const url = await uploadFile(file);
-      if (!url) throw new Error("No URL returned from upload");
-      onSelect(url);
+      try {
+        const url = await uploadFile(file);
+        onSelect(url);
+        return;
+      } catch(uploadErr) {
+        console.warn("CDN upload failed:", uploadErr);
+        // Use base64 as last resort (stored locally only)
+        onSelect(dataUrl);
+      }
     } catch(e) {
-      console.error("Avatar upload failed:", e);
-      toast.error("Avatar upload failed. Check your connection and try again.");
+      console.error("Avatar save error:", e);
+      toast.error("Could not save photo. Please try a JPG or PNG file.");
     }
     finally { setUploading(false); }
   };
@@ -4691,103 +3873,116 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
 
 // ─── User Profile Sheet ──────────────────────────────────────────────────────
 // ─── Profile Video Player (full-screen TikTok-style) ────────────────────────
-function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username, showManage, currentUser }) {
-  const containerRef = React.useRef(null);
+function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username }) {
+  const [idx, setIdx] = React.useState(startIndex || 0);
+  const [muted, setMuted] = React.useState(false);
+  const videoRef = React.useRef(null);
+  const touchStartY = React.useRef(null);
 
-  const [activeIdx, setActiveIdx] = React.useState(startIndex || 0);
+  const v = vids[idx];
 
-  // Set playStore + directly play the first visible video
   React.useEffect(() => {
-    // Unlock autoplay for all VideoCards
-    playStore.set(true);
-    window.dispatchEvent(new CustomEvent('sachi-user-played'));
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [idx]);
 
-    setTimeout(() => {
-      // 1. Scroll to the tapped video
-      if (containerRef.current) {
-        const cards = containerRef.current.querySelectorAll('.profile-vid-card');
-        if (cards[startIndex]) {
-          cards[startIndex].scrollIntoView({ behavior: 'instant', block: 'start' });
-        }
-      }
-      // 2. Directly find and play the first video element —
-      //    IntersectionObserver fires async so we force-play immediately
-      setTimeout(() => {
-        if (containerRef.current) {
-          const cards = containerRef.current.querySelectorAll('.profile-vid-card');
-          const targetCard = cards[startIndex] || cards[0];
-          if (targetCard) {
-            const vid = targetCard.querySelector('video');
-            if (vid) {
-              vid.muted = true;
-              vid.currentTime = 0;
-              vid.play().then(() => {
-                vid.muted = false; // unmute after play starts
-              }).catch(() => {});
-            }
-          }
-        }
-      }, 150);
-    }, 50);
-  }, []);
+  const goNext = () => { if (idx < vids.length - 1) setIdx(i => i + 1); };
+  const goPrev = () => { if (idx > 0) setIdx(i => i - 1); };
+
+  const onTouchStart = (e) => { touchStartY.current = e.touches[0].clientY; };
+  const onTouchEnd = (e) => {
+    if (touchStartY.current === null) return;
+    const diff = touchStartY.current - e.changedTouches[0].clientY;
+    if (Math.abs(diff) > 50) { diff > 0 ? goNext() : goPrev(); }
+    touchStartY.current = null;
+  };
+
+  if (!v) return null;
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:5000, background:'#000', display:'flex', flexDirection:'column' }}>
-      {/* Header */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, zIndex:20,
-        display:'flex', alignItems:'center', padding:'50px 16px 12px',
-        background:'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)' }}>
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+
+      {/* Video */}
+      {v.is_photo && v.photo_urls?.length > 0 ? (
+        <img src={resolveMediaUrl(Array.isArray(v.photo_urls) ? v.photo_urls[0] : JSON.parse(v.photo_urls||"[]")[0])} 
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", background:"#000" }} />
+      ) : v.is_text_post ? (
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+          background:"linear-gradient(135deg,#1B1535,#0B0C1A,#2A1E00)", padding:32, textAlign:"center" }}>
+          <div style={{ color:"#fff", fontSize:22, fontWeight:700, lineHeight:1.5 }}>{v.caption}</div>
+        </div>
+      ) : (
+        <video ref={videoRef} key={v.id} 
+          src={resolveMediaUrl(v.video_url)} 
+          autoPlay playsInline loop muted={muted}
+          controls={false}
+          onClick={() => { if(videoRef.current?.paused) videoRef.current.play().catch(()=>{}); else videoRef.current?.pause(); }}
+          onError={(e) => { console.log("Video error:", e); }}
+          onLoadedData={() => { videoRef.current?.play().catch(()=>{}); }}
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+      )}
+
+      {/* Gradient overlay */}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents:"none" }} />
+
+      {/* Top bar */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, display:"flex", alignItems:"center", padding:"50px 16px 16px", zIndex:10 }}>
         <button onClick={onClose}
-          style={{ background:'rgba(0,0,0,0.4)', border:'none', borderRadius:'50%',
-            width:40, height:40, color:'#fff', fontSize:20, cursor:'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center' }}>←</button>
-        <div style={{ flex:1, textAlign:'center', color:'#fff', fontWeight:800, fontSize:15 }}>
+          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
+            color:"#fff", fontSize:20, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
+        <div style={{ flex:1, textAlign:"center", color:"#fff", fontWeight:800, fontSize:15 }}>
           {profile?.display_name || username}
         </div>
-        <div style={{ width:40 }} />
+        <button onClick={() => setMuted(m => !m)}
+          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
+            color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {muted ? "🔇" : "🔊"}
+        </button>
       </div>
 
-      {/* Vertical scroll feed — same as main feed, autoplay just works */}
-      <div ref={containerRef}
-        style={{ flex:1, overflowY:'scroll', scrollSnapType:'y mandatory',
-          WebkitOverflowScrolling:'touch' }}>
-        {vids.map((v, i) => (
-          <div key={v.id} className="profile-vid-card"
-            style={{ height:'100dvh', scrollSnapAlign:'start', scrollSnapStop:'always',
-              position:'relative', flexShrink:0 }}>
-            <VideoCard
-              video={v}
-              currentUser={currentUser}
-              preloadMode={i === 0 ? 'auto' : 'metadata'}
-              onBecomeCurrent={() => setActiveIdx(i)}
-              onCommentOpen={() => {}}
-              onLike={() => {}}
-              onView={() => {}}
-              onNeedAuth={() => {}}
-              onDelete={() => {}}
-              onProfileOpen={() => {}}
-              onFollowChange={() => {}}
-              onShareCount={() => {}}
-              onHashtagPress={() => {}}
-              onBookmark={{ isBookmarked: () => false, handle: () => {} }}
-              likedVideoIds={new Set()}
-              likeRecords={{}}
-              onLikeChange={() => {}}
-              followedUserIds={new Set()}
-              blockedIds={new Set()}
-            />
-            {/* Manage button for own videos */}
-            {showManage && (
-              <button onClick={() => { onClose(); setTimeout(() => showManage(v), 150); }}
-                style={{ position:'absolute', top:60, right:16, zIndex:30,
-                  background:'rgba(0,0,0,0.55)', border:'1px solid rgba(255,255,255,0.2)',
-                  borderRadius:20, padding:'6px 14px', color:'#fff', fontSize:13,
-                  fontWeight:700, cursor:'pointer' }}>
-                ⋮ Manage
-              </button>
-            )}
-          </div>
+      {/* Bottom info */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"0 16px 40px", zIndex:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+          <img src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`}
+            style={{ width:36, height:36, borderRadius:"50%", border:"2px solid #ff6b6b" }} />
+          <div style={{ color:"#fff", fontWeight:800, fontSize:14 }}>@{username}</div>
+        </div>
+        {v.caption && <div style={{ color:"#fff", fontSize:13, lineHeight:1.5, marginBottom:8 }}>{v.caption}</div>}
+        <div style={{ display:"flex", gap:16 }}>
+          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>❤️ {v.likes_count || 0}</span>
+          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>💬 {v.comments_count || 0}</span>
+          <span style={{ color:"rgba(255,255,255,0.7)", fontSize:12 }}>👁 {v.views_count || 0}</span>
+        </div>
+      </div>
+
+      {/* Swipe hint dots */}
+      <div style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", display:"flex", flexDirection:"column", gap:4, zIndex:10 }}>
+        {vids.map((_, i) => (
+          <div key={i} onClick={() => setIdx(i)}
+            style={{ width:4, height: i === idx ? 20 : 6, borderRadius:4,
+              background: i === idx ? "#ff6b6b" : "rgba(255,255,255,0.3)", cursor:"pointer",
+              transition:"height 0.2s" }} />
         ))}
+      </div>
+
+      {/* Nav arrows (desktop) */}
+      {idx > 0 && (
+        <button onClick={goPrev}
+          style={{ position:"absolute", top:"50%", left:12, transform:"translateY(-50%)", background:"rgba(0,0,0,0.5)",
+            border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", zIndex:10 }}>↑</button>
+      )}
+      {idx < vids.length - 1 && (
+        <button onClick={goNext}
+          style={{ position:"absolute", top:"50%", right:54, transform:"translateY(-50%)", background:"rgba(0,0,0,0.5)",
+            border:"none", borderRadius:"50%", width:40, height:40, color:"#fff", fontSize:18, cursor:"pointer", zIndex:10 }}>↓</button>
+      )}
+
+      {/* Counter */}
+      <div style={{ position:"absolute", bottom:16, right:16, color:"rgba(255,255,255,0.5)", fontSize:11, zIndex:10 }}>
+        {idx + 1} / {vids.length}
       </div>
     </div>
   );
@@ -4795,56 +3990,26 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
 
 // ─── User Profile Sheet ───────────────────────────────────────────────────────
 function UserProfileSheet({ userId, username, currentUser, onClose }) {
+  const [view, setView] = React.useState("profile"); // "profile" | "followers" | "following"
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [followRecord, setFollowRecord] = React.useState(null);
   const [followLoading, setFollowLoading] = React.useState(false);
   const [playerIndex, setPlayerIndex] = React.useState(null);
-  const [showFollowersList, setShowFollowersList] = React.useState(false);
-  const [showFollowingList, setShowFollowingList] = React.useState(false);
   const [followersList, setFollowersList] = React.useState([]);
   const [followingList, setFollowingList] = React.useState([]);
-  const [listLoading, setListLoading] = React.useState(false);
+  const [listsLoading, setListsLoading] = React.useState(false);
 
   const isOwnProfile = currentUser && currentUser.id === userId;
 
-  const openFollowers = async () => {
-    setShowFollowersList(true);
-    setListLoading(true);
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`);
-      const items = res?.items || res || [];
-      const userIds = items.map(r => r.follower_id).filter(Boolean);
-      const usersRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500`);
-      const allUsers = usersRes?.items || usersRes || [];
-      setFollowersList(allUsers.filter(u => userIds.includes(u.id)));
-    } catch(e) { setFollowersList([]); }
-    setListLoading(false);
-  };
-
-  const openFollowing = async () => {
-    setShowFollowingList(true);
-    setListLoading(true);
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`);
-      const items = res?.items || res || [];
-      const userIds = items.map(r => r.following_id).filter(Boolean);
-      const usersRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500`);
-      const allUsers = usersRes?.items || usersRes || [];
-      setFollowingList(allUsers.filter(u => userIds.includes(u.id)));
-    } catch(e) { setFollowingList([]); }
-    setListLoading(false);
-  };
-
   React.useEffect(() => {
     setLoading(true);
+    setView("profile");
     Promise.all([
-      request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`).catch(() => null),
+      request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
-      // Live follower count: how many people follow this profile
       request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
-      // Live following count: how many people this profile follows
       request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = userRes?.items || userRes || [];
@@ -4852,8 +4017,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       const liveFollowers = (followersRes?.items || followersRes || []).length;
       const liveFollowing = (followingRes?.items || followingRes || []).length;
       setProfile(u ? { ...u, followers_count: liveFollowers, following_count: liveFollowing } : { followers_count: liveFollowers, following_count: liveFollowing });
-      const vidList = Array.isArray(vids) ? vids : (vids?.items || []);
-      setUserVideos(vidList);
+      setUserVideos(Array.isArray(vids) ? vids : (vids?.items || []));
       setLoading(false);
     });
     if (currentUser && !isOwnProfile) {
@@ -4863,6 +4027,20 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       }).catch(() => {});
     }
   }, [userId]);
+
+  const loadFollowers = async () => {
+    setListsLoading(true);
+    const res = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null);
+    setFollowersList(res?.items || res || []);
+    setListsLoading(false);
+  };
+
+  const loadFollowing = async () => {
+    setListsLoading(true);
+    const res = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null);
+    setFollowingList(res?.items || res || []);
+    setListsLoading(false);
+  };
 
   const doFollow = async () => {
     if (!currentUser || isOwnProfile) return;
@@ -4876,20 +4054,11 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         const rec = await follows.follow(
           currentUser.id,
           currentUser.username || currentUser.email?.split("@")[0],
-          userId,
-          username
+          userId, username
         );
         setFollowRecord(rec);
         setProfile(p => p ? { ...p, followers_count: (p.followers_count || 0) + 1 } : p);
       }
-      // Refresh live following count for the current user's Me tab too
-      try {
-        const myFollowingRes = await request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${currentUser.id}&limit=500`);
-        const myFollowingCount = (myFollowingRes?.items || myFollowingRes || []).length;
-        setProfile(p => p ? { ...p } : p); // trigger re-render if needed
-        // store for Me tab
-        localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
-      } catch(e) {}
     } catch(e) { console.error(e); }
     setFollowLoading(false);
   };
@@ -4897,177 +4066,198 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   const displayName = profile?.display_name || username || "User";
   const avatarUrl = profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`;
 
+  // ── FULLSCREEN PLAYER ──
+  if (playerIndex !== null && userVideos.length > 0) {
+    return (
+      <ProfileVideoPlayer
+        videos={userVideos}
+        startIndex={playerIndex}
+        profile={profile}
+        username={username}
+        onClose={() => setPlayerIndex(null)}
+      />
+    );
+  }
+
   return (
-    <>
-      <div style={{ position:"fixed", inset:0, zIndex:4000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-        {/* Backdrop */}
-        <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
+    <div style={{ position:"fixed", inset:0, zIndex:4000, background:"rgba(0,0,0,0.75)" }}
+      onClick={onClose}>
+      <div
+        style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)",
+          width:"100%", maxWidth:480, maxHeight:"88vh", background:"#0f0f1a",
+          borderRadius:"24px 24px 0 0", display:"flex", flexDirection:"column", overflow:"hidden" }}
+        onClick={e => e.stopPropagation()}>
 
-        {/* Sheet */}
-        <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"24px 24px 0 0",
-          width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column",
-          zIndex:4001, overflow:"hidden" }}>
+        {/* Handle + Close */}
+        <div style={{ position:"relative", padding:"14px 20px 0", flexShrink:0 }}>
+          <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"0 auto 0" }} />
+          <button onClick={onClose}
+            style={{ position:"absolute", top:8, right:16, background:"none", border:"none",
+              color:"#888", fontSize:22, cursor:"pointer", lineHeight:1, padding:4 }}>✕</button>
+        </div>
 
-          {/* Handle */}
-          <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"14px auto 0", flexShrink:0 }} />
-
-          {/* Close */}
-          <button onClick={onClose} style={{ position:"absolute", top:12, right:16, background:"none", border:"none",
-            color:"#888", fontSize:22, cursor:"pointer", zIndex:1 }}>✕</button>
-
-          {loading ? (
+        {/* ── VIEW: PROFILE ── */}
+        {view === "profile" && (
+          loading ? (
             <div style={{ textAlign:"center", padding:60, color:"#555" }}>
-              <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>
-              <div>Loading profile...</div>
+              <div style={{ fontSize:36, marginBottom:8 }}>⏳</div>Loading...
             </div>
           ) : (
-            <>
+            <div style={{ display:"flex", flexDirection:"column", overflow:"hidden", flex:1 }}>
               {/* Header */}
-              <div style={{ padding:"16px 20px 20px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
-                <img src={avatarUrl}
-                  style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #ff6b6b", marginBottom:10, background:"#1a1a2e" }} />
+              <div style={{ padding:"12px 20px 16px", textAlign:"center", borderBottom:"1px solid rgba(255,255,255,0.06)", flexShrink:0 }}>
+                <img src={avatarUrl} style={{ width:80, height:80, borderRadius:"50%", border:"3px solid #F5C842", marginBottom:10, background:"#1a1a2e" }} />
                 <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{displayName}</div>
                 <div style={{ color:"#666", fontSize:13, marginBottom:4 }}>@{username}</div>
-                {profile?.bio && <div style={{ color:"#aaa", fontSize:13, marginBottom:8, lineHeight:1.5 }}>{profile.bio}</div>}
-                {profile?.location && <div style={{ color:"#666", fontSize:12, marginBottom:8 }}>📍 {profile.location}</div>}
+                {profile?.bio && <div style={{ color:"#aaa", fontSize:13, marginBottom:6, lineHeight:1.5 }}>{profile.bio}</div>}
 
-                {/* Stats */}
-                <div style={{ display:"flex", justifyContent:"center", gap:28, marginTop:12, marginBottom:14 }}>
-                  <div style={{ textAlign:"center" }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{userVideos.length}</div>
-                    <div style={{ color:"#666", fontSize:11 }}>Videos</div>
+                {/* Stats row */}
+                <div style={{ display:"flex", justifyContent:"center", marginTop:12, marginBottom:14 }}>
+                  <div style={{ textAlign:"center", padding:"8px 20px" }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{userVideos.length}</div>
+                    <div style={{ color:"#888", fontSize:12 }}>Videos</div>
                   </div>
-                  <div style={{ textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"transparent" }} onClick={openFollowers}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.followers_count || 0}</div>
-                    <div style={{ color:"#F5C842", fontSize:11, fontWeight:600 }}>Followers</div>
-                  </div>
-                  <div style={{ textAlign:"center", cursor:"pointer", WebkitTapHighlightColor:"transparent" }} onClick={openFollowing}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:18 }}>{profile?.following_count || 0}</div>
-                    <div style={{ color:"#F5C842", fontSize:11, fontWeight:600 }}>Following</div>
-                  </div>
+                  <button
+                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer", borderLeft:"1px solid rgba(255,255,255,0.08)",
+                      background:"none", border:"none", borderLeft:"1px solid rgba(255,255,255,0.08)", color:"inherit",
+                      WebkitTapHighlightColor:"rgba(245,200,66,0.2)", touchAction:"manipulation", minWidth:80 }}
+                    onClick={(e) => { e.stopPropagation(); console.log("FOLLOWERS CLICKED"); loadFollowers(); setView("followers"); }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{profile?.followers_count || 0}</div>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:700 }}>Followers</div>
+                  </button>
+                  <button
+                    style={{ textAlign:"center", padding:"8px 20px", cursor:"pointer",
+                      background:"none", border:"none", borderLeft:"1px solid rgba(255,255,255,0.08)", color:"inherit",
+                      WebkitTapHighlightColor:"rgba(245,200,66,0.2)", touchAction:"manipulation", minWidth:80 }}
+                    onClick={(e) => { e.stopPropagation(); console.log("FOLLOWING CLICKED"); loadFollowing(); setView("following"); }}>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{profile?.following_count || 0}</div>
+                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:700 }}>Following</div>
+                  </button>
                 </div>
 
                 {!isOwnProfile && currentUser && (
                   <button onClick={doFollow} disabled={followLoading}
                     style={{ padding:"10px 40px", borderRadius:24,
-                      background: followRecord ? "#22c55e" : "#ff0000",
-                      border: "none",
-                      color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
-                      opacity: followLoading ? 0.6 : 1,
-                      boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
-                      transition:"background 0.25s, box-shadow 0.25s",
-                      WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
+                      background: followRecord ? "#22c55e" : "#e53935",
+                      border:"none", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer",
+                      opacity: followLoading ? 0.6 : 1 }}>
                     {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
                   </button>
                 )}
               </div>
 
-              {/* Followers list modal */}
-              {showFollowersList && (
-                <div style={{ position:"absolute", inset:0, zIndex:200, background:"#0B0C1A", display:"flex", flexDirection:"column" }}>
-                  <div style={{ display:"flex", alignItems:"center", padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-                    <button onClick={() => setShowFollowersList(false)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", marginRight:12 }}>←</button>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Followers</div>
-                  </div>
-                  <div style={{ overflowY:"auto", flex:1 }}>
-                    {listLoading && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Loading...</div>}
-                    {!listLoading && followersList.length === 0 && <div style={{ color:"#666", textAlign:"center", padding:32 }}>No followers yet</div>}
-                    {followersList.map(u => (
-                      <div key={u.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
-                        <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.display_name||u.username||'U')}&background=random&color=fff&size=64&bold=true`}
-                          style={{ width:44, height:44, borderRadius:"50%", background:"#1a1a2e" }} loading="lazy" />
-                        <div>
-                          <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{u.display_name || u.username}</div>
-                          <div style={{ color:"#666", fontSize:12 }}>@{u.username}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Following list modal */}
-              {showFollowingList && (
-                <div style={{ position:"absolute", inset:0, zIndex:200, background:"#0B0C1A", display:"flex", flexDirection:"column" }}>
-                  <div style={{ display:"flex", alignItems:"center", padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
-                    <button onClick={() => setShowFollowingList(false)} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", marginRight:12 }}>←</button>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Following</div>
-                  </div>
-                  <div style={{ overflowY:"auto", flex:1 }}>
-                    {listLoading && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Loading...</div>}
-                    {!listLoading && followingList.length === 0 && <div style={{ color:"#666", textAlign:"center", padding:32 }}>Not following anyone yet</div>}
-                    {followingList.map(u => (
-                      <div key={u.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
-                        <img src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.display_name||u.username||'U')}&background=random&color=fff&size=64&bold=true`}
-                          style={{ width:44, height:44, borderRadius:"50%", background:"#1a1a2e" }} loading="lazy" />
-                        <div>
-                          <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{u.display_name || u.username}</div>
-                          <div style={{ color:"#666", fontSize:12 }}>@{u.username}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Video Grid */}
+              {/* Video grid */}
               <div style={{ overflowY:"auto", flex:1, padding:2 }}>
                 {userVideos.length === 0 ? (
                   <div style={{ textAlign:"center", padding:40, color:"#444" }}>
-                    <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
-                    <div>No videos yet</div>
+                    <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>No videos yet
                   </div>
                 ) : (
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:2 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, padding:"6px" }}>
                     {userVideos.map((v, i) => (
                       <div key={v.id} onClick={() => setPlayerIndex(i)}
-                        style={{ position:"relative", aspectRatio:"1/1", background:"#111", overflow:"hidden", cursor:"pointer" }}>
-                        {v.thumbnail_url ? (
-                          <img src={resolveMediaUrl(v.thumbnail_url)} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                        ) : (
-                          <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        style={{ position:"relative", aspectRatio:"9/16", background:"#0d0d1a", overflow:"hidden", cursor:"pointer",
+                          borderRadius:12,
+                          border:"2.5px solid rgba(245,200,66,0.7)",
+                          boxShadow:"0 0 0 1px rgba(245,200,66,0.15), 0 0 16px rgba(245,200,66,0.35), 0 4px 16px rgba(0,0,0,0.6)",
+                          transition:"transform 0.15s, box-shadow 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.transform="scale(1.03)"; e.currentTarget.style.boxShadow="0 0 0 1px rgba(245,200,66,0.3), 0 0 28px rgba(245,200,66,0.55), 0 6px 20px rgba(0,0,0,0.7)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.boxShadow="0 0 0 1px rgba(245,200,66,0.15), 0 0 16px rgba(245,200,66,0.35), 0 4px 16px rgba(0,0,0,0.6)"; }}>
+                        {v.thumbnail_url
+                          ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} />
+                          : <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} muted playsInline preload="metadata" />}
+                        {/* Bottom fade overlay */}
+                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 55%)", borderRadius:10, pointerEvents:"none" }} />
+                        {/* Gold corner accent top-right */}
+                        <div style={{ position:"absolute", top:0, right:0, width:18, height:18,
+                          background:"linear-gradient(135deg, rgba(245,200,66,0.5) 0%, transparent 60%)",
+                          borderRadius:"0 10px 0 8px", pointerEvents:"none" }} />
+                        {/* Like count badge */}
+                        <div style={{ position:"absolute", bottom:6, left:7, color:"#fff", fontSize:10, fontWeight:700,
+                          display:"flex", alignItems:"center", gap:3 }}>
+                          <span style={{ color:"#FF6B6B", fontSize:11 }}>♥</span> {v.likes_count||0}
+                        </div>
+                        {/* Video indicator */}
+                        {!v.is_photo && !v.is_text_post && (
+                          <div style={{ position:"absolute", top:6, left:7,
+                            background:"rgba(0,0,0,0.55)", borderRadius:6, padding:"2px 5px",
+                            fontSize:9, color:"rgba(255,255,255,0.7)", fontWeight:600, letterSpacing:0.3 }}>▶</div>
                         )}
-                        {/* Play icon overlay */}
-                        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                          <div style={{ fontSize:22, opacity:0.8 }}>▶</div>
-                        </div>
-                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
-                        <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
-                          ❤️ {v.like_count || 0}
-                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+          )
+        )}
 
-      {/* Full screen TikTok-style player */}
-      {playerIndex !== null && userVideos.length > 0 && (
-        <ProfileVideoPlayer
-          videos={userVideos}
-          startIndex={playerIndex}
-          profile={profile}
-          username={username}
-          currentUser={currentUser}
-          onClose={() => setPlayerIndex(null)} />
-      )}
-    </>
+        {/* ── VIEW: FOLLOWERS ── */}
+        {view === "followers" && (
+          <div style={{ display:"flex", flexDirection:"column", flex:1, overflow:"hidden" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+              <button onClick={() => setView("profile")}
+                style={{ background:"none", border:"none", color:"#F5C842", fontSize:20, cursor:"pointer", lineHeight:1 }}>‹</button>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Followers ({followersList.length})</div>
+            </div>
+            <div style={{ overflowY:"auto", flex:1 }}>
+              {listsLoading
+                ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>Loading...</div>
+                : followersList.length === 0
+                  ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>No followers yet</div>
+                  : followersList.map(f => (
+                    <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.follower_username||'U')}&background=random&color=fff&size=64&bold=true`}
+                        style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #222", flexShrink:0 }} />
+                      <div>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{f.follower_username || "Unknown"}</div>
+                        <div style={{ color:"#666", fontSize:12 }}>@{f.follower_username}</div>
+                      </div>
+                    </div>
+                  ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── VIEW: FOLLOWING ── */}
+        {view === "following" && (
+          <div style={{ display:"flex", flexDirection:"column", flex:1, overflow:"hidden" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.07)", flexShrink:0 }}>
+              <button onClick={() => setView("profile")}
+                style={{ background:"none", border:"none", color:"#F5C842", fontSize:20, cursor:"pointer", lineHeight:1 }}>‹</button>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>Following ({followingList.length})</div>
+            </div>
+            <div style={{ overflowY:"auto", flex:1 }}>
+              {listsLoading
+                ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>Loading...</div>
+                : followingList.length === 0
+                  ? <div style={{ textAlign:"center", padding:40, color:"#555" }}>Not following anyone yet</div>
+                  : followingList.map(f => (
+                    <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.following_username||'U')}&background=random&color=fff&size=64&bold=true`}
+                        style={{ width:46, height:46, borderRadius:"50%", border:"2px solid #222", flexShrink:0 }} />
+                      <div>
+                        <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{f.following_username || "Unknown"}</div>
+                        <div style={{ color:"#666", fontSize:12 }}>@{f.following_username}</div>
+                      </div>
+                    </div>
+                  ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
   );
 }
 
 // ─── VideoManageGrid ────────────────────────────────────────────────────────
-function VideoManageGrid({ videos: vids, onRefresh, currentUser }) {
+function VideoManageGrid({ videos: vids, onRefresh, onWatch }) {
   const [menuVideo, setMenuVideo] = React.useState(null);
   const [editVideo, setEditVideo] = React.useState(null);
   const [editCaption, setEditCaption] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(null);
-  const [playerIndex, setPlayerIndex] = React.useState(null);
-  const pressTimer = React.useRef(null);
 
   const handleDelete = async () => {
     try {
@@ -5098,40 +4288,27 @@ function VideoManageGrid({ videos: vids, onRefresh, currentUser }) {
 
   return (
     <>
-      {/* TikTok-style fullscreen player for own profile */}
-      {playerIndex !== null && (
-        <ProfileVideoPlayer
-          videos={vids}
-          startIndex={playerIndex}
-          profile={currentUser}
-          username={currentUser?.username || currentUser?.full_name || ""}
-          currentUser={currentUser}
-          onClose={() => setPlayerIndex(null)}
-          showManage={(v) => { setPlayerIndex(null); setTimeout(() => setMenuVideo(v), 100); }}
-        />
-      )}
-
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
         {vids.map((v, i) => (
           <div key={v.id} style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}
-            onPointerDown={() => { pressTimer.current = setTimeout(() => { pressTimer.current = null; setMenuVideo(v); }, 600); }}
-            onPointerUp={() => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; setPlayerIndex(i); } }}
-            onPointerLeave={() => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } }}>
+            onClick={() => { if (onWatch) onWatch(i); }}>
             {v.thumbnail_url
               ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>}
-            {/* Play icon overlay */}
-            <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
-              <div style={{ fontSize:24, opacity:0.85 }}>▶</div>
-            </div>
-            <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)", pointerEvents:"none" }} />
+            {/* Three-dot button — opens manage menu */}
+            <div
+              style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.6)", borderRadius:"50%",
+                width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:16, color:"#fff", lineHeight:1, zIndex:10, cursor:"pointer" }}
+              onClick={e => { e.stopPropagation(); setMenuVideo({ ...v, _idx: i }); }}>⋮</div>
             {/* Views badge */}
             {v.views_count > 0 && <div style={{ position:"absolute", bottom:4, left:4, background:"rgba(0,0,0,0.6)",
-              borderRadius:8, padding:"2px 6px", fontSize:10, color:"#fff", pointerEvents:"none" }}>👁 {v.views_count}</div>}
-            {/* Long-press hint */}
-            <div style={{ position:"absolute", top:5, right:5, background:"rgba(0,0,0,0.5)", borderRadius:"50%",
-              width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:13, color:"#fff", pointerEvents:"none" }}>⋮</div>
+              borderRadius:8, padding:"2px 6px", fontSize:10, color:"#fff" }}>👁 {v.views_count}</div>}
+            {/* Play icon overlay */}
+            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center",
+              opacity:0.0 }} className="play-overlay">
+              <div style={{ fontSize:36 }}>▶️</div>
+            </div>
           </div>
         ))}
       </div>
@@ -5151,9 +4328,20 @@ function VideoManageGrid({ videos: vids, onRefresh, currentUser }) {
               </div>
               <div>
                 <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{menuVideo.caption || "(no caption)"}</div>
-                <div style={{ color:"#888", fontSize:12, marginTop:4 }}>👁 {menuVideo.views_count || 0}  ❤️ {menuVideo.like_count || 0}  💬 {menuVideo.comment_count || 0}</div>
+                <div style={{ color:"#888", fontSize:12, marginTop:4 }}>👁 {menuVideo.views_count || 0}  ❤️ {menuVideo.likes_count || 0}  💬 {menuVideo.comments_count || 0}</div>
               </div>
             </div>
+
+            {/* Watch button */}
+            {onWatch && (
+              <button onClick={() => { const idx = menuVideo._idx ?? 0; setMenuVideo(null); onWatch(idx); }}
+                style={{ width:"100%", padding:"14px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                  border:"1px solid rgba(245,200,66,0.4)", borderRadius:12, color:"#F5C842",
+                  fontSize:15, fontWeight:700, cursor:"pointer", marginBottom:10,
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                ▶️ Watch
+              </button>
+            )}
 
             {/* Edit button */}
             <button onClick={() => { setEditCaption(menuVideo.caption || ""); setEditVideo(menuVideo); setMenuVideo(null); }}
@@ -5339,6 +4527,16 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const [newStreamUrl, setNewStreamUrl] = useState("");
   const [liveNewsChannel, setLiveNewsChannel] = useState(null);
 
+  // Wizard state (must be at top level — React hooks rules)
+  const [wizardStep, setWizardStep] = useState(1);
+  const [generatingKey, setGeneratingKey] = useState(false);
+  const [newPodcast, setNewPodcast] = useState(null);
+  const [streamCopied, setStreamCopied] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+  const logoInputRef = useRef(null);
+
   const LIVE_NEWS_CHANNELS = [
     { id:"ctv",   name:"CTV News",      emoji:"🍁", desc:"Canada's #1 news network",     color:"linear-gradient(135deg,#c62828,#b71c1c)", url:"https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1" },
     { id:"abc",   name:"ABC News",      emoji:"🇺🇸", desc:"Live U.S. news coverage",      color:"linear-gradient(135deg,#1565c0,#0d47a1)", url:"https://www.youtube.com/embed/live_stream?channel=UCBi2mrWuNuyYy4gbM6fU18Q&autoplay=1" },
@@ -5394,17 +4592,13 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const regularPodcasts = filtered.filter(p => !p.is_live);
 
   const handleRegister = async () => {
-    const hostName = registerForm.host_name || currentUser?.full_name || currentUser?.email?.split("@")[0] || "";
-    if (!registerForm.title || !hostName) {
-      showToast("Please enter your podcast title and your name", "error");
-      return;
-    }
+    if (!registerForm.title || !registerForm.host_name) return;
     setRegistering(true);
     try {
       const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
       await request("POST", `/apps/${APP_ID}/entities/SachiPodcast`, {
         title: registerForm.title,
-        host_name: hostName,
+        host_name: registerForm.host_name,
         description: registerForm.description,
         category: registerForm.category,
         live_stream_url: registerForm.live_stream_url || "",
@@ -5422,7 +4616,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       await loadPodcasts();
       await loadMyShows();
       // Send welcome email to host
-      fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastWelcome`, {
+      fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastWelcome", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           host_email: currentUser?.email || "",
@@ -5603,7 +4797,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     if (endingLive) return;
                     setEndingLive(true);
                     try {
-                      await fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastGoLiveNotify`, {
+                      await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastGoLiveNotify", {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
                       }).catch(()=>{});
@@ -5655,7 +4849,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     setGoingLive(true);
                     try {
                       // Use podcastGoLiveNotify which handles the DB update via service role
-                      const resp = await fetch(`https://app.base44.com/api/apps/${APP_ID}/functions/podcastGoLiveNotify`, {
+                      const resp = await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastGoLiveNotify", {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
                       });
@@ -5822,63 +5016,176 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   // ── REGISTER FORM ──
   if (showRegister) {
     const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+    const totalSteps = 5;
+
+    const copyToClipboard = (text, type) => {
+      navigator.clipboard.writeText(text).then(() => {
+        setStreamCopied(type);
+        setTimeout(() => setStreamCopied(null), 2500);
+      }).catch(() => {
+        // fallback
+        const el = document.createElement("textarea");
+        el.value = text; document.body.appendChild(el); el.select();
+        document.execCommand("copy"); document.body.removeChild(el);
+        setStreamCopied(type);
+        setTimeout(() => setStreamCopied(null), 2500);
+      });
+    };
+
+    const handleRegisterAndNext = async () => {
+      if (!registerForm.title || !registerForm.host_name) return;
+      setRegistering(true);
+      try {
+        const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+        const res = await request("POST", `/apps/${APP_ID}/entities/SachiPodcast`, {
+          title: registerForm.title,
+          host_name: registerForm.host_name,
+          description: registerForm.description,
+          category: registerForm.category,
+          live_stream_url: "",
+          cover_color: cover.bg,
+          cover_emoji: cover.emoji,
+          status: "Active",
+          is_live: false,
+          listener_count: 0,
+          episode_count: 0,
+          follower_count: 0,
+          host_user_id: currentUser?.id || "",
+          host_username: currentUser?.full_name || currentUser?.email?.split("@")[0] || "",
+        });
+        const pod = res?.record || res;
+        setNewPodcast(pod);
+        await loadPodcasts();
+        await loadMyShows();
+        fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastWelcome", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            host_email: currentUser?.email || "",
+            host_name: registerForm.host_name,
+            podcast_title: registerForm.title,
+            category: registerForm.category,
+          })
+        }).catch(() => {});
+        setWizardStep(2);
+      } catch(e) {
+        console.error(e);
+        showToast("Something went wrong. Please try again.", "error");
+      }
+      setRegistering(false);
+    };
+
+    const handleGenerateStreamKey = async () => {
+      if (!newPodcast?.id) return;
+      setGeneratingKey(true);
+      try {
+        const resp = await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/createLiveStream", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ podcast_id: newPodcast.id, podcast_title: newPodcast.title || registerForm.title, host_username: currentUser?.full_name || "" })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          setNewPodcast(p => ({...p, stream_key: data.stream_key, rtmp_url: data.rtmp_url, live_stream_url: data.playback_url }));
+          setWizardStep(4);
+        } else {
+          showToast("Failed to generate stream key. Try again.", "error");
+        }
+      } catch(e) {
+        showToast("Connection error. Try again.", "error");
+      }
+      setGeneratingKey(false);
+    };
+
+    const StepDot = ({n}) => (
+      <div style={{ display:"flex", alignItems:"center", gap:0 }}>
+        <div style={{ width:26, height:26, borderRadius:"50%", background: wizardStep >= n ? "#F5C842" : "rgba(255,255,255,0.1)", color: wizardStep >= n ? "#0B0C1A" : "rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:12, flexShrink:0 }}>{n}</div>
+        {n < totalSteps && <div style={{ width:24, height:2, background: wizardStep > n ? "#F5C842" : "rgba(255,255,255,0.08)" }} />}
+      </div>
+    );
+
+    const handleLogoUpload = async (file) => {
+      if (!file) return;
+      setLogoUploading(true);
+      try {
+        // Preview immediately
+        const reader = new FileReader();
+        reader.onload = (e) => setLogoPreview(e.target.result);
+        reader.readAsDataURL(file);
+        // Convert to base64 and upload
+        const toBase64 = (f) => new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = rej;
+          r.readAsDataURL(f);
+        });
+        const b64 = await toBase64(file);
+        const resp = await fetch("https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/uploadAvatar", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ image_base64: b64, mime_type: file.type || "image/jpeg", entity_id: null })
+        });
+        const data = await resp.json();
+        if (data.file_url) {
+          setLogoUrl(data.file_url);
+          setLogoPreview(data.file_url);
+          // Update podcast record if already created
+          if (newPodcast?.id) {
+            await request("PATCH", `/apps/${APP_ID}/entities/SachiPodcast/${newPodcast.id}`, { cover_image_url: data.file_url });
+            setNewPodcast(p => ({...p, cover_image_url: data.file_url}));
+          }
+          showToast("✅ Logo uploaded!", "success");
+        } else {
+          showToast("Upload failed. Try again.", "error");
+        }
+      } catch(e) {
+        showToast("Upload error. Try again.", "error");
+      }
+      setLogoUploading(false);
+    };
+
     return (
       <div style={{ position:"fixed", inset:0, zIndex:600, background:"#0B0C1A", overflowY:"auto" }}>
         {toast && <Toast msg={toast.msg} type={toast.type} />}
-        <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom:60 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-            <button onClick={() => setShowRegister(false)} style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", flexShrink:0 }}>←</button>
-            <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>🎙️ Register Your Podcast</div>
+        <div style={{ padding:"20px", paddingTop:"calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom:80, maxWidth:480, margin:"0 auto" }}>
+
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+            <button onClick={() => { setShowRegister(false); setWizardStep(1); setNewPodcast(null); setRegisterForm({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 }); }}
+              style={{ background:"rgba(255,255,255,0.08)", border:"none", borderRadius:"50%", width:38, height:38, color:"#fff", fontSize:20, cursor:"pointer", flexShrink:0 }}>←</button>
+            <div>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:19 }}>🎙️ Start Your Podcast</div>
+              <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>Step {wizardStep} of {totalSteps} — {["Create Show","Upload Logo","Stream Key","OBS Setup","Done!"][wizardStep-1]}</div>
+            </div>
           </div>
-          {!registerDone && (
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20, padding:"10px 14px", background:"rgba(108,60,247,0.08)", border:"1px solid rgba(108,60,247,0.2)", borderRadius:12 }}>
-              <span style={{ fontSize:18 }}>💡</span>
-              <div style={{ color:"rgba(255,255,255,0.55)", fontSize:12, lineHeight:1.5 }}>
-                Fill in your show details below. Your podcast goes <strong style={{ color:"#a78bfa" }}>live instantly</strong> — no waiting, no approval.
-              </div>
-            </div>
-          )}
-          {registerDone ? (
-            <div style={{ textAlign:"center", padding:"40px 20px" }}>
-              <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
-              <div style={{ color:"#fff", fontWeight:800, fontSize:24, marginBottom:10 }}>Your podcast is LIVE! 🎙️</div>
-              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:15, marginBottom:8, lineHeight:1.6 }}>
-                Your show is <strong style={{ color:"#81c784" }}>live on Sachi right now.</strong><br/>Listeners can find it in the Podcasts tab.
-              </div>
-              <div style={{ background:"rgba(46,125,50,0.1)", border:"1px solid rgba(46,125,50,0.3)", borderRadius:14, padding:16, margin:"20px 0 28px", textAlign:"left" }}>
-                <div style={{ color:"#81c784", fontWeight:700, fontSize:13, marginBottom:8 }}>⚡ You are all set — here's how to go live:</div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.7 }}>
-                  1. Go to <strong style={{ color:"#fff" }}>Podcasts tab</strong> and find your show under "My Shows"<br/>
-                  2. Tap your show to open it<br/>
-                  3. (Optional) Add your stream link — YouTube Live, Twitch, etc.<br/>
-                  4. Tap <strong style={{ color:"#e53935" }}>🔴 Go Live Now</strong> — all Sachi users get notified instantly
-                </div>
-              </div>
-              <button onClick={() => { setRegisterDone(false); setShowRegister(false); }}
-                style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"14px 36px", color:"#fff", fontWeight:800, fontSize:16, cursor:"pointer" }}>
-                Back to Podcasts
-              </button>
-            </div>
-          ) : (
+
+          {/* Step dots */}
+          <div style={{ display:"flex", alignItems:"center", marginBottom:28 }}>
+            {[1,2,3,4,5].map(n => <StepDot key={n} n={n} />)}
+          </div>
+
+          {/* ── STEP 1: Create your show ── */}
+          {wizardStep === 1 && (
             <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
-              {/* COVER PICKER */}
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px", marginBottom:4 }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🎯 Step 1 — Tell us about your show</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Fill in the details below. You can always edit them later.</div>
+              </div>
+
+              {/* Cover picker */}
               <div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:10, fontWeight:600 }}>Choose Your Show Cover</div>
-                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:8, fontWeight:600 }}>Choose a cover colour</div>
+                <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:12 }}>
                   {PODCAST_COVER_COLORS.map((c, i) => (
                     <button key={i} onClick={() => setRegisterForm(p => ({...p, coverIdx:i}))}
-                      style={{ width:52, height:52, borderRadius:14, background:c.bg, border: registerForm.coverIdx===i ? "3px solid #F5C842":"3px solid transparent", cursor:"pointer", fontSize:22, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      style={{ width:48, height:48, borderRadius:12, background:c.bg, border: registerForm.coverIdx===i ? "3px solid #F5C842":"3px solid transparent", cursor:"pointer", fontSize:20, display:"flex", alignItems:"center", justifyContent:"center" }}>
                       {c.emoji}
                     </button>
                   ))}
                 </div>
-                <div style={{ marginTop:12, width:"100%", height:70, borderRadius:16, background:selectedCover.bg, display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
-                  <span style={{ fontSize:32 }}>{selectedCover.emoji}</span>
-                  <span style={{ color:"#fff", fontWeight:800, fontSize:15, opacity: registerForm.title ? 1 : 0.4 }}>{registerForm.title || "Your Show Name"}</span>
+                <div style={{ height:64, borderRadius:14, background:selectedCover.bg, display:"flex", alignItems:"center", justifyContent:"center", gap:12 }}>
+                  <span style={{ fontSize:28 }}>{selectedCover.emoji}</span>
+                  <span style={{ color:"#fff", fontWeight:800, fontSize:14, opacity: registerForm.title ? 1 : 0.4 }}>{registerForm.title || "Your Show Name"}</span>
                 </div>
               </div>
 
-              {/* TITLE */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Podcast Title <span style={{ color:"#e53935" }}>*</span></div>
                 <input value={registerForm.title} onChange={e => setRegisterForm(p => ({...p, title:e.target.value}))}
@@ -5886,25 +5193,21 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
               </div>
 
-              {/* HOST NAME */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Your Name <span style={{ color:"#e53935" }}>*</span></div>
-                <input value={registerForm.host_name || currentUser?.full_name || ""} onChange={e => setRegisterForm(p => ({...p, host_name:e.target.value}))}
-                  placeholder={currentUser?.full_name || "Full name or stage name"}
+                <input value={registerForm.host_name} onChange={e => setRegisterForm(p => ({...p, host_name:e.target.value}))}
+                  placeholder="Full name or stage name"
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
               </div>
 
-              {/* DESCRIPTION */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>What is your podcast about?</div>
-                <textarea value={registerForm.description} onChange={e => setRegisterForm(p => ({...p, description:e.target.value.slice(0,300)}))}
-                  placeholder="Tell listeners what to expect — topics, guests, vibe..."
+                <textarea value={registerForm.description} onChange={e => setRegisterForm(p => ({...p, description:e.target.value}))}
+                  placeholder="Topics, guests, vibe — tell listeners what to expect..."
                   rows={3}
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", resize:"none", boxSizing:"border-box" }} />
-                <div style={{ color:"rgba(255,255,255,0.2)", fontSize:11, textAlign:"right", marginTop:4 }}>{(registerForm.description||"").length}/300</div>
               </div>
 
-              {/* CATEGORY */}
               <div>
                 <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>Category</div>
                 <select value={registerForm.category} onChange={e => setRegisterForm(p => ({...p, category:e.target.value}))}
@@ -5915,32 +5218,213 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                 </select>
               </div>
 
-              {/* STREAM URL - OPTIONAL */}
-              <div>
-                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, marginBottom:6, fontWeight:600 }}>
-                  Stream URL <span style={{ color:"rgba(255,255,255,0.25)", fontWeight:400 }}>(optional — add later too)</span>
+              <button onClick={handleRegisterAndNext} disabled={registering || !registerForm.title || !registerForm.host_name}
+                style={{ width:"100%", padding:"16px 0", background: (!registerForm.title || !registerForm.host_name) ? "rgba(108,60,247,0.3)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: (!registerForm.title || !registerForm.host_name) ? "not-allowed" : "pointer", marginTop:4 }}>
+                {registering ? "⏳ Creating your show..." : "Create My Show →"}
+              </button>
+            </div>
+          )}
+
+          {/* ── STEP 2: Upload podcast logo ── */}
+          {wizardStep === 2 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🖼️ Step 2 — Upload your Podcast Logo</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Give your show a professional face. Upload your logo or brand image — this is what listeners see when they find your podcast.</div>
+              </div>
+
+              {/* Logo preview / upload area */}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+                <div style={{ position:"relative", width:140, height:140 }}>
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="logo" style={{ width:140, height:140, borderRadius:20, objectFit:"cover", border:"3px solid #F5C842" }} />
+                  ) : (
+                    <div style={{ width:140, height:140, borderRadius:20, background: selectedCover.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", border:"3px dashed rgba(245,200,66,0.3)", gap:8 }}>
+                      <span style={{ fontSize:40 }}>{selectedCover.emoji}</span>
+                      <span style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>No logo yet</span>
+                    </div>
+                  )}
+                  {logoUploading && (
+                    <div style={{ position:"absolute", inset:0, background:"rgba(11,12,26,0.7)", borderRadius:20, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ color:"#F5C842", fontSize:13, fontWeight:700 }}>Uploading...</span>
+                    </div>
+                  )}
                 </div>
-                <input value={registerForm.live_stream_url} onChange={e => setRegisterForm(p => ({...p, live_stream_url:e.target.value}))}
-                  placeholder="https://youtube.com/live/... or Twitch link"
-                  style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:12, padding:"13px 14px", color:"#fff", fontSize:15, outline:"none", boxSizing:"border-box" }} />
-                <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, marginTop:5 }}>
-                  Supports YouTube Live, Twitch, Rumble, Spotify. You can add or change this anytime after registering.
+
+                <input ref={logoInputRef} type="file" accept="image/*" style={{ display:"none" }}
+                  onChange={e => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); }} />
+
+                <button onClick={() => logoInputRef.current?.click()} disabled={logoUploading}
+                  style={{ padding:"12px 28px", background:"rgba(245,200,66,0.15)", border:"2px solid rgba(245,200,66,0.4)", borderRadius:14, color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+                  {logoUploading ? "⏳ Uploading..." : logoPreview ? "🔄 Change Logo" : "📷 Upload Logo"}
+                </button>
+
+                <div style={{ color:"rgba(255,255,255,0.3)", fontSize:12, textAlign:"center", lineHeight:1.6 }}>
+                  Supports JPG, PNG, HEIC<br/>Recommended: square image, at least 500×500px
                 </div>
               </div>
 
-              <button onClick={handleRegister} disabled={registering || !registerForm.title || !registerForm.host_name}
-                style={{ width:"100%", padding:"16px 0", background: (!registerForm.title || !registerForm.host_name) ? "rgba(108,60,247,0.3)" : registering ? "rgba(108,60,247,0.5)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: (!registerForm.title || !registerForm.host_name) ? "not-allowed" : "pointer", marginTop:4 }}>
-                {registering ? "⏳ Submitting..." : "Submit My Podcast →"}
+              {/* Tips */}
+              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:14 }}>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:13, marginBottom:10 }}>💡 Logo tips</div>
+                {[
+                  "Use a square image — it looks best in the podcast grid",
+                  "Your logo + show name = instant brand recognition",
+                  "Use contrasting colours so it pops on dark backgrounds",
+                  "PNG with transparent background looks cleanest",
+                ].map((tip, i) => (
+                  <div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}>
+                    <span style={{ color:"#F5C842", fontSize:14, flexShrink:0 }}>✦</span>
+                    <span style={{ color:"rgba(255,255,255,0.5)", fontSize:13, lineHeight:1.5 }}>{tip}</span>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={() => setWizardStep(3)}
+                style={{ width:"100%", padding:"16px 0", background: logoUrl ? "linear-gradient(135deg,#6c3cf7,#4527a0)" : "rgba(108,60,247,0.5)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer" }}>
+                {logoUrl ? "Logo uploaded — Next →" : "Skip for now →"}
               </button>
-              <div style={{ color:"rgba(255,255,255,0.2)", fontSize:12, textAlign:"center" }}>Your show goes live instantly — no approval needed 🎉</div>
+              {!logoUrl && <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, textAlign:"center" }}>You can add a logo later from your show settings</div>}
             </div>
           )}
+
+          {/* ── STEP 3: Generate stream key ── */}
+          {wizardStep === 3 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>🔑 Step 3 — Get your Stream Key</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Your show <strong style={{ color:"#fff" }}>"{registerForm.title}"</strong> is created ✅<br/>Now we need to generate a private stream key for you to go live with OBS or any streaming app.</div>
+              </div>
+
+              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding:20, textAlign:"center" }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>📡</div>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:8 }}>What is a Stream Key?</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.7 }}>
+                  Think of it like a <strong style={{ color:"#F5C842" }}>private password</strong> for your broadcast.<br/>
+                  You paste it into OBS or your streaming app so Sachi knows it&apos;s really you going live.
+                  <br/><br/>
+                  <strong style={{ color:"#ff6b6b" }}>⚠️ Never share it publicly.</strong>
+                </div>
+              </div>
+
+              <button onClick={handleGenerateStreamKey} disabled={generatingKey}
+                style={{ width:"100%", padding:"18px 0", background: generatingKey ? "rgba(108,60,247,0.4)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor: generatingKey ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                {generatingKey ? (
+                  <><span style={{ animation:"spin 1s linear infinite", display:"inline-block" }}>⏳</span> Generating...</>
+                ) : "🔑 Generate My Stream Key"}
+              </button>
+
+              <div style={{ color:"rgba(255,255,255,0.25)", fontSize:12, textAlign:"center" }}>Takes 2–3 seconds. Free forever.</div>
+            </div>
+          )}
+
+          {/* ── STEP 4: OBS Setup ── */}
+          {wizardStep === 4 && newPodcast && (
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+              <div style={{ background:"rgba(245,200,66,0.06)", border:"1px solid rgba(245,200,66,0.15)", borderRadius:14, padding:"14px 16px" }}>
+                <div style={{ color:"#F5C842", fontWeight:700, fontSize:14, marginBottom:4 }}>✅ Step 4 — Copy your OBS settings</div>
+                <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>Copy these two values into OBS Studio (or any RTMP streaming app) to connect your broadcast to Sachi.</div>
+              </div>
+
+              {/* RTMP Server */}
+              <div style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:16 }}>
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>📡 RTMP Server URL</div>
+                <div style={{ fontFamily:"monospace", color:"#a78bfa", fontSize:13, wordBreak:"break-all", background:"rgba(108,60,247,0.08)", borderRadius:10, padding:"10px 12px", marginBottom:10, lineHeight:1.6 }}>
+                  {newPodcast.rtmp_url || "rtmps://live.cloudflare.com:443/live/"}
+                </div>
+                <button onClick={() => copyToClipboard(newPodcast.rtmp_url || "rtmps://live.cloudflare.com:443/live/", "url")}
+                  style={{ width:"100%", padding:"10px 0", background: streamCopied==="url" ? "rgba(46,125,50,0.3)" : "rgba(108,60,247,0.2)", border:"1px solid " + (streamCopied==="url" ? "rgba(46,125,50,0.5)" : "rgba(108,60,247,0.4)"), borderRadius:10, color: streamCopied==="url" ? "#81c784" : "#a78bfa", fontWeight:700, fontSize:14, cursor:"pointer" }}>
+                  {streamCopied==="url" ? "✅ Copied!" : "📋 Copy Server URL"}
+                </button>
+              </div>
+
+              {/* Stream Key */}
+              <div style={{ background:"rgba(229,57,53,0.04)", border:"1px solid rgba(229,57,53,0.2)", borderRadius:14, padding:16 }}>
+                <div style={{ color:"rgba(255,255,255,0.4)", fontSize:11, fontWeight:700, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>🔑 Your Stream Key (PIN)</div>
+                <div style={{ fontFamily:"monospace", color:"#FF6B6B", fontSize:12, wordBreak:"break-all", background:"rgba(229,57,53,0.08)", borderRadius:10, padding:"10px 12px", marginBottom:10, lineHeight:1.6, filter: streamCopied !== "key" ? "blur(4px)" : "none", transition:"filter 0.3s" }}>
+                  {newPodcast.stream_key || "••••••••••••••••••••••••"}
+                </div>
+                <div style={{ color:"rgba(255,100,100,0.6)", fontSize:11, marginBottom:10, textAlign:"center" }}>👆 Tap Copy to reveal & copy your key</div>
+                <button onClick={() => copyToClipboard(newPodcast.stream_key || "", "key")}
+                  style={{ width:"100%", padding:"12px 0", background: streamCopied==="key" ? "rgba(46,125,50,0.3)" : "rgba(229,57,53,0.2)", border:"1px solid " + (streamCopied==="key" ? "rgba(46,125,50,0.5)" : "rgba(229,57,53,0.4)"), borderRadius:10, color: streamCopied==="key" ? "#81c784" : "#FF6B6B", fontWeight:800, fontSize:15, cursor:"pointer" }}>
+                  {streamCopied==="key" ? "✅ Copied! Key is visible above" : "🔑 Copy Stream Key (PIN)"}
+                </button>
+              </div>
+
+              {/* OBS instructions */}
+              <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:16 }}>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:13, marginBottom:12 }}>📺 How to paste into OBS Studio</div>
+                {[
+                  { n:"1", text: "Open OBS → click Settings (bottom right)" },
+                  { n:"2", text: 'Go to the "Stream" tab' },
+                  { n:"3", text: 'Set Service to "Custom..." ' },
+                  { n:"4", text: "Paste the Server URL into the Server field" },
+                  { n:"5", text: "Paste the Stream Key into the Stream Key field" },
+                  { n:"6", text: 'Hit Apply → OK → then click "Start Streaming" in OBS' },
+                ].map(step => (
+                  <div key={step.n} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
+                    <div style={{ width:22, height:22, borderRadius:"50%", background:"rgba(108,60,247,0.3)", color:"#a78bfa", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:11, flexShrink:0 }}>{step.n}</div>
+                    <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13, lineHeight:1.5 }}>{step.text}</div>
+                  </div>
+                ))}
+                <a href="https://obsproject.com/download" target="_blank" rel="noopener noreferrer"
+                  style={{ display:"block", textAlign:"center", marginTop:8, color:"#a78bfa", fontSize:13, textDecoration:"underline" }}>
+                  📥 Don't have OBS? Download it free here
+                </a>
+              </div>
+
+              <button onClick={() => setWizardStep(5)}
+                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#F5C842,#e0a800)", border:"none", borderRadius:16, color:"#0B0C1A", fontWeight:800, fontSize:17, cursor:"pointer" }}>
+                I've copied my settings → Next
+              </button>
+            </div>
+          )}
+
+          {/* ── STEP 5: All done ── */}
+          {wizardStep === 5 && (
+            <div style={{ textAlign:"center", padding:"10px 0" }}>
+              <div style={{ fontSize:72, marginBottom:16 }}>🎉</div>
+              <div style={{ color:"#fff", fontWeight:800, fontSize:26, marginBottom:8 }}>You're all set!</div>
+              <div style={{ color:"rgba(255,255,255,0.5)", fontSize:15, marginBottom:24, lineHeight:1.7 }}>
+                Your show <strong style={{ color:"#F5C842" }}>"{registerForm.title}"</strong> is live on Sachi.<br/>
+                When you're ready to broadcast, just follow these steps:
+              </div>
+
+              {[
+                { emoji:"🎛️", title:"Open OBS", desc:"Make sure your stream key is pasted in. Hit Start Streaming." },
+                { emoji:"📱", title:"Open Sachi → Podcasts", desc:'Find your show under "My Shows" and tap it.' },
+                { emoji:"🔴", title:'Tap "Go Live Now"', desc:"This notifies ALL Sachi users instantly that you're on air." },
+                { emoji:"🎙️", title:"You're live!", desc:"Listeners can tune in directly inside Sachi." },
+              ].map((s, i) => (
+                <div key={i} style={{ display:"flex", gap:14, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:14, padding:"14px 16px", marginBottom:12, textAlign:"left" }}>
+                  <div style={{ fontSize:28, flexShrink:0 }}>{s.emoji}</div>
+                  <div>
+                    <div style={{ color:"#fff", fontWeight:700, fontSize:14, marginBottom:3 }}>{s.title}</div>
+                    <div style={{ color:"rgba(255,255,255,0.45)", fontSize:13, lineHeight:1.5 }}>{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ background:"rgba(46,125,50,0.1)", border:"1px solid rgba(46,125,50,0.25)", borderRadius:14, padding:14, marginBottom:24, textAlign:"left" }}>
+                <div style={{ color:"#81c784", fontWeight:700, fontSize:13, marginBottom:6 }}>💡 Pro tip</div>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, lineHeight:1.6 }}>
+                  Start OBS streaming <strong style={{ color:"#fff" }}>BEFORE</strong> tapping Go Live on Sachi — that way listeners join an already-running stream instantly.
+                </div>
+              </div>
+
+              <button onClick={() => { setShowRegister(false); setWizardStep(1); setNewPodcast(null); setRegisterForm({ title:"", host_name:"", description:"", category:"Business", live_stream_url:"", coverIdx:0 }); }}
+                style={{ width:"100%", padding:"16px 0", background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:16, color:"#fff", fontWeight:800, fontSize:17, cursor:"pointer", marginBottom:12 }}>
+                Go to My Show →
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     );
   }
 
-  // ── MAIN PODCAST LIST ──
+    // ── MAIN PODCAST LIST ──
   return (
     <>
     <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
@@ -5949,7 +5433,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Sachi Podcasts</div>
         <div style={{ color:"#fff", fontWeight:800, fontSize:22, lineHeight:1.3, marginBottom:8 }}>Listen Live.<br/>Discover New Shows.</div>
         <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, marginBottom:16, lineHeight:1.5 }}>Tune into live sessions or browse on-demand — all in one place.</div>
-        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); }}
+        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); setWizardStep(1); setNewPodcast(null); setLogoPreview(null); setLogoUrl(null); setStreamCopied(null); }}
           style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:12, padding:"10px 20px", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" }}>
           🎙️ Register Your Podcast
         </button>
@@ -6114,7 +5598,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         <div style={{ fontSize:32, marginBottom:12 }}>🚀</div>
         <div style={{ color:"#fff", fontWeight:800, fontSize:18, marginBottom:8 }}>Have a podcast?</div>
         <div style={{ color:"rgba(255,255,255,0.5)", fontSize:14, marginBottom:16, lineHeight:1.5 }}>Join Sachi and reach new listeners through our For You feed every day.</div>
-        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); }}
+        <button onClick={() => { if (!currentUser) { onNeedAuth(); return; } setShowRegister(true); setWizardStep(1); setNewPodcast(null); setLogoPreview(null); setLogoUrl(null); setStreamCopied(null); }}
           style={{ background:"linear-gradient(135deg,#6c3cf7,#4527a0)", border:"none", borderRadius:14, padding:"13px 28px", color:"#fff", fontWeight:800, fontSize:15, cursor:"pointer" }}>
           Get Started Free →
         </button>
@@ -6176,34 +5660,22 @@ function AdminPanel({ currentUser }) {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [saving, setSaving] = useState(null);
+  const [modToast, setModToast] = useState(null);
+  const showToast = (msg, type="success") => { setModToast({msg,type}); setTimeout(()=>setModToast(null),3000); };
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
   const [founders, setFounders] = useState([]);
   const [foundersLoading, setFoundersLoading] = useState(false);
   const [founderNote, setFounderNote] = useState("");
-
-  const loadFounders = async () => {
-    setFoundersLoading(true);
-    try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
-      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
-    } catch(e) { console.error(e); }
-    setFoundersLoading(false);
-  };
-
-  const updateFounder = async (founder, status) => {
-    try {
-      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
-      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
-      setFounderNote("");
-    } catch(e) { toast.error("Failed to update: " + e.message); }
-  };
+  const [podcasts, setPodcasts] = useState([]);
+  const [podcastsLoading, setPodcastsLoading] = useState(false);
+  const [podcastConfirmDelete, setPodcastConfirmDelete] = useState(null);
 
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`);
-      setAllVideos(Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []));
+      const res = await request("GET", "/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date");
+      setAllVideos(res.items || res || []);
     } catch(e) { console.error(e); }
     setLoading(false);
   };
@@ -6211,23 +5683,34 @@ function AdminPanel({ currentUser }) {
   const loadAnalytics = async () => {
     setAnalyticsLoading(true);
     try {
-      // Paginate through ALL users (SachiUser + legacy User entity merged)
+      // Paginate through ALL users (AthaVidUser + legacy User entity merged)
       let allUsersFetched = [], uSkip = 0, uMore = true;
       while (uMore) {
-        const uRes = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500&skip=${uSkip}&sort=-created_date`);
+        const uRes = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${uSkip}&sort=-created_date`);
         const uItems = uRes.items || (Array.isArray(uRes) ? uRes : []);
         allUsersFetched = [...allUsersFetched, ...uItems];
         uMore = uRes.has_more === true && uItems.length === 500;
         uSkip += 500;
       }
-      const normalizedLegacy = []; // Legacy User entity removed — 401 Unauthorized
+      let legacyUsers = [], lSkip = 0, lMore = true;
+      while (lMore) {
+        const lRes = await request("GET", `/apps/${APP_ID}/entities/User?limit=500&skip=${lSkip}&sort=-created_date`);
+        const lItems = lRes.items || (Array.isArray(lRes) ? lRes : []);
+        legacyUsers = [...legacyUsers, ...lItems];
+        lMore = lRes.has_more === true && lItems.length === 500;
+        lSkip += 500;
+      }
+      const knownEmails = new Set(allUsersFetched.map(u => (u.email||'').toLowerCase()));
+      const normalizedLegacy = legacyUsers
+        .filter(u => u.email && !knownEmails.has(u.email.toLowerCase()))
+        .map(u => ({ id: u.id, email: u.email, username: u.full_name||u.email.split('@')[0], display_name: u.full_name||u.email.split('@')[0], created_date: u.created_date, status: 'active', _source: 'legacy' }));
       const [vRes, cRes] = await Promise.all([
-        request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`),
-        request("GET", `/apps/${APP_ID}/entities/SachiComment?limit=500&sort=-created_date`),
+        request("GET", "/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date"),
+        request("GET", "/apps/${APP_ID}/entities/SachiComment?limit=500&sort=-created_date"),
       ]);
-      const videos = Array.isArray(vRes?.items) ? vRes.items : (Array.isArray(vRes) ? vRes : []);
+      const videos = vRes.items || vRes || [];
       const users  = [...allUsersFetched, ...normalizedLegacy];
-      const comments = Array.isArray(cRes?.items) ? cRes.items : (Array.isArray(cRes) ? cRes : []);
+      const comments = cRes.items || cRes || [];
       setAllUsers(users);
 
       // Build daily buckets for last 14 days
@@ -6263,7 +5746,7 @@ function AdminPanel({ currentUser }) {
 
       // Totals
       const totalViews  = videos.reduce((s,v) => s+(v.views_count||0), 0);
-      const totalLikes  = videos.reduce((s,v) => s+(v.like_count||0), 0);
+      const totalLikes  = videos.reduce((s,v) => s+(v.likes_count||0), 0);
       const matureCount = videos.filter(v => v.is_mature).length;
 
       // Today & this week registrations
@@ -6289,18 +5772,54 @@ function AdminPanel({ currentUser }) {
         topVideos,
         recentUsers,
       });
-    } catch(e) {
-      console.error("analytics error", e);
-      toast.error("Analytics failed to load: " + e.message);
-    }
+    } catch(e) { console.error("analytics error", e); }
     setAnalyticsLoading(false);
   };
 
+
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
+    } catch(e) { console.error(e); }
+    setFoundersLoading(false);
+  };
+
+  const updateFounder = async (founder, status) => {
+    try {
+      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
+      setFounderNote("");
+    } catch(e) { alert("Failed: " + e.message); }
+  };
 
   useEffect(() => { loadVideos(); }, []);
   useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
   useEffect(() => { if (modTab === "analytics") loadAnalytics(); }, [modTab]);
   useEffect(() => { if (modTab === "users") loadRegisteredUsers(); }, [modTab]);
+  useEffect(() => { if (modTab === "podcasts") loadPodcasts(); }, [modTab]);
+
+  const loadPodcasts = async () => {
+    setPodcastsLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast?limit=200&sort=-created_date`);
+      const items = res.items || (Array.isArray(res) ? res : res.records || []);
+      setPodcasts(items);
+    } catch(e) { console.error("loadPodcasts:", e); }
+    setPodcastsLoading(false);
+  };
+
+  const handleDeletePodcast = async (id) => {
+    try {
+      await request("DELETE", `/apps/${APP_ID}/entities/SachiPodcast/${id}`);
+      setPodcasts(p => p.filter(x => x.id !== id));
+      setPodcastConfirmDelete(null);
+      showToast("Podcast deleted.", "success");
+    } catch(e) {
+      showToast("Delete failed. Try again.", "error");
+    }
+  };
 
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -6308,17 +5827,41 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      // Fetch SachiUser (Google auth) - paginated
+      // Fetch AthaVidUser (Google auth) - paginated
       let athavid = [], skip = 0, hasMore = true;
       while (hasMore) {
-        const res = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=500&skip=${skip}&sort=-created_date`);
+        const res = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser?limit=500&skip=${skip}&sort=-created_date`);
         const items = res.items || (Array.isArray(res) ? res : []);
         athavid = [...athavid, ...items];
         hasMore = res.has_more === true && items.length === 500;
         skip += 500;
       }
-      // Only use SachiUser — legacy User entity returns 401
-      const merged = [...athavid].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
+      // Fetch User entity (old OTP auth users)
+      let oldUsers = [], skip2 = 0, hasMore2 = true;
+      while (hasMore2) {
+        const res2 = await request("GET", `/apps/${APP_ID}/entities/User?limit=500&skip=${skip2}&sort=-created_date`);
+        const items2 = res2.items || (Array.isArray(res2) ? res2 : []);
+        oldUsers = [...oldUsers, ...items2];
+        hasMore2 = res2.has_more === true && items2.length === 500;
+        skip2 += 500;
+      }
+      // Merge: normalize old users to same shape, deduplicate by email
+      const athavid_emails = new Set(athavid.map(u => (u.email||'').toLowerCase()));
+      const normalized = oldUsers
+        .filter(u => u.email && !athavid_emails.has(u.email.toLowerCase()))
+        .map(u => ({
+          id: u.id,
+          email: u.email,
+          username: u.full_name || u.email.split('@')[0],
+          display_name: u.full_name || u.email.split('@')[0],
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(u.full_name||u.email)}&background=random&color=fff&size=128&bold=true&format=png`,
+          status: u.disabled ? 'disabled' : 'active',
+          is_verified: u.is_verified,
+          created_date: u.created_date,
+          updated_date: u.updated_date,
+          _source: 'legacy'
+        }));
+      const merged = [...athavid, ...normalized].sort((a,b) => new Date(b.created_date) - new Date(a.created_date));
       setRegisteredUsers(merged);
     } catch(e) { console.error(e); }
     setUsersLoading(false);
@@ -6378,8 +5921,9 @@ function AdminPanel({ currentUser }) {
           </button>
         </div>
         {/* Tab switcher */}
+        {modToast && <div style={{ position:"fixed", top:20, left:"50%", transform:"translateX(-50%)", zIndex:9999, background: modToast.type==="error" ? "#c62828" : "#2e7d32", color:"#fff", padding:"10px 20px", borderRadius:12, fontWeight:700, fontSize:14, boxShadow:"0 4px 20px rgba(0,0,0,0.4)" }}>{modToast.msg}</div>}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Founders"],["creators","📊 Creators"],["analytics","📈 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Creators"],["podcasts","🎙️ Podcasts"],["analytics","📊 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
@@ -6439,7 +5983,7 @@ function AdminPanel({ currentUser }) {
                 {f.social_links && <div style={{ color:"#6B8AFF", fontSize:12, marginBottom:8 }}>{f.social_links}</div>}
                 <textarea
                   placeholder="Add note…"
-                  value={f.notes||""}
+                  defaultValue={f.notes||""}
                   onChange={e => setFounderNote(e.target.value)}
                   style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, padding:8, color:"#fff", fontSize:12, resize:"vertical", marginBottom:8, boxSizing:"border-box" }}
                   rows={2}
@@ -6482,13 +6026,7 @@ function AdminPanel({ currentUser }) {
           {analyticsLoading ? (
             <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>Loading analytics…</div>
           ) : !analyticsData ? (
-            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>
-              <div style={{ fontSize:36, marginBottom:12 }}>📊</div>
-              <div>Failed to load analytics.</div>
-              <button onClick={loadAnalytics} style={{ marginTop:16, background:"rgba(245,200,66,0.15)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20, padding:"8px 20px", color:"#F5C842", fontWeight:700, fontSize:13, cursor:"pointer" }}>
-                ↻ Try Again
-              </button>
-            </div>
+            <div style={{ textAlign:"center", color:"#555", padding:60, fontSize:14 }}>No data yet.</div>
           ) : (
             <>
               {/* KPI Cards */}
@@ -6820,7 +6358,7 @@ function AdminPanel({ currentUser }) {
                       </div>
                       <div style={{ display:"flex", gap:8 }}>
                         <span style={{ fontSize:11, color:"#555" }}>👁 {video.views_count||0}</span>
-                        <span style={{ fontSize:11, color:"#555" }}>❤️ {video.like_count||0}</span>
+                        <span style={{ fontSize:11, color:"#555" }}>❤️ {video.likes_count||0}</span>
                       </div>
                     </div>
                   </div>
@@ -6841,47 +6379,6 @@ function AdminPanel({ currentUser }) {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ── CREATORS TAB ── */}
-      {modTab === "creators" && (
-        <div style={{ padding:"16px" }}>
-          <div style={{ color:"#F5C842", fontWeight:800, fontSize:15, marginBottom:16 }}>🌟 Top Creators</div>
-          {loading ? (
-            <div style={{ textAlign:"center", color:"#555", padding:40 }}>Loading…</div>
-          ) : (() => {
-            const creatorMap = {};
-            allVideos.forEach(v => {
-              const key = v.user_id || v.username || "unknown";
-              if (!creatorMap[key]) creatorMap[key] = { username: v.username || "unknown", display_name: v.display_name || v.username || "—", avatar_url: v.avatar_url || "", videos: 0, views: 0, likes: 0 };
-              creatorMap[key].videos++;
-              creatorMap[key].views += v.views_count || 0;
-              creatorMap[key].likes += v.like_count || 0;
-            });
-            const creators = Object.values(creatorMap).sort((a,b) => b.videos - a.videos);
-            if (!creators.length) return <div style={{ textAlign:"center", color:"#555", padding:40 }}>No creators yet.</div>;
-            return (
-              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                {creators.map((c, i) => (
-                  <div key={c.username} style={{ background:"rgba(255,255,255,0.04)", borderRadius:14, padding:"12px 14px", border:"1px solid rgba(245,200,66,0.08)", display:"flex", alignItems:"center", gap:12 }}>
-                    <div style={{ color:"#F5C842", fontWeight:900, fontSize:14, width:22, flexShrink:0 }}>#{i+1}</div>
-                    <img src={c.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.display_name)}&background=random&color=fff&size=64&bold=true&format=png`}
-                      style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ color:"#fff", fontWeight:700, fontSize:14, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.display_name}</div>
-                      <div style={{ color:"#555", fontSize:11 }}>@{c.username}</div>
-                    </div>
-                    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
-                      <div style={{ color:"#F5C842", fontWeight:800, fontSize:13 }}>{c.videos} 🎬</div>
-                      <div style={{ color:"#555", fontSize:11 }}>👁 {c.views.toLocaleString()}</div>
-                      <div style={{ color:"#555", fontSize:11 }}>❤️ {c.likes.toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
         </div>
       )}
 
@@ -6926,7 +6423,7 @@ function AdminPanel({ currentUser }) {
                   </div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:6 }}>
                     <span style={{ fontSize:11, color:"#555" }}>👁 {video.views_count||0}</span>
-                    <span style={{ fontSize:11, color:"#555" }}>❤️ {video.like_count||0}</span>
+                    <span style={{ fontSize:11, color:"#555" }}>❤️ {video.likes_count||0}</span>
                     {video.is_mature && (
                       <span style={{ fontSize:11, background:"rgba(255,107,107,0.2)", color:"#ff6b6b", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>
                         🔞 {(video.mature_reason||"mature").replace(/_/g," ")}
@@ -6968,84 +6465,16 @@ function AdminPanel({ currentUser }) {
   );
 }
 
-// ─── Splash Screen — logo rotates every 3 days ───────────────────────────────
-// Add new logos here — they will cycle automatically every 3 days
-const SPLASH_LOGOS = [
-  { src: "/sachi-neon-logo.jpg",  label: "Neon" },
-  { src: "/sachi-logo-512.png",   label: "Classic" },
-];
-
-function getSplashLogoIndex() {
-  // Pick logo based on which 3-day period we're in since epoch
-  const daysSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-  const periodOf3Days = Math.floor(daysSinceEpoch / 3);
-  return periodOf3Days % SPLASH_LOGOS.length;
-}
-
-function SachiSplash() {
-  const idx = getSplashLogoIndex();
-
-  return (
-    <div style={{
-      height:"100svh", display:"flex", flexDirection:"column",
-      alignItems:"center", justifyContent:"center",
-      background:"#0B0C1A", overflow:"hidden", gap:0
-    }}>
-      <style>{`
-        @keyframes sachiPulse { 0%,100%{opacity:0.85} 50%{opacity:1} }
-        @keyframes sachiSpin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-        @keyframes sachiFadeIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
-      `}</style>
-      {/* Current logo for this 3-day period */}
-      <div style={{
-        width:240, height:240, borderRadius:32, overflow:"hidden",
-        boxShadow:"0 0 80px rgba(124,58,237,0.45), 0 0 30px rgba(245,200,66,0.2)",
-        background:"#111120",
-        display:"flex", alignItems:"center", justifyContent:"center",
-        animation:"sachiFadeIn 0.6s ease"
-      }}>
-        <img
-          src={SPLASH_LOGOS[idx].src}
-          alt="Sachi"
-          style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:32 }}
-          onError={e => { e.target.style.display="none"; }}
-        />
-      </div>
-      {/* Dot indicators — shows which logo is active */}
-      <div style={{ display:"flex", gap:8, marginTop:28 }}>
-        {SPLASH_LOGOS.map((_, i) => (
-          <div key={i} style={{
-            width: i === idx ? 24 : 7, height:7, borderRadius:4,
-            background: i === idx ? "#F5C842" : "#2a2a3a",
-            transition:"all 0.3s ease",
-            boxShadow: i === idx ? "0 0 8px rgba(245,200,66,0.6)" : "none"
-          }} />
-        ))}
-      </div>
-      {/* Spinner */}
-      <div style={{ marginTop:36, display:"flex", alignItems:"center", gap:10 }}>
-        <div style={{
-          width:18, height:18, borderRadius:"50%",
-          border:"2.5px solid #2a2a3a", borderTopColor:"#F5C842",
-          animation:"sachiSpin 0.8s linear infinite"
-        }} />
-        <div style={{ color:"#555", fontSize:13, letterSpacing:1 }}>Loading Sachi…</div>
-      </div>
-    </div>
-  );
-}
-
-
 function App() {
   // Simple client-side routing for terms/privacy pages
   const path = window.location.pathname;
   if (path === "/terms") return <Terms />;
   if (path === "/privacy") return <Privacy />;
   if (path === "/child-safety") return <ChildSafety />;
-  if (path === "/admin") return <SachiAdminPanel />;
   if (path === "/founding-creator" || path === "/apply") return <FoundingCreatorPage onBack={() => window.location.href="/"} />;
+  if (path === "/admin") return <SachiAdminPanel />;
 
-  const [hasEntered, setHasEntered] = useState(false);
+  const [hasEntered, setHasEntered] = useState(() => sessionStorage.getItem('sachi_entered') === '1');
   const [currentUser, setCurrentUser] = useState(() => auth.getUser());
 
   // ── Handle Google OAuth redirect callback (runs on every page load) ──
@@ -7070,13 +6499,23 @@ function App() {
     }
   }, []);
 
+  // TEMPORARY: Cloudflare Stream function diagnostic. Remove after verification.
+  useEffect(() => {
+    window.testCfStream = async () => {
+      try {
+        const r = await request("POST", "/functions/cfStreamUpload", { maxDurationSeconds: 60 });
+        console.log("✅ cfStreamUpload response:", r);
+        return r;
+      } catch (e) {
+        console.error("❌ cfStreamUpload error:", e);
+        return { error: e.message };
+      }
+    };
+    console.log("[diagnostic] Call window.testCfStream() in console to test");
+  }, []);
+
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
   const [videoList, setVideoList] = useState([]);
-  // Track which video in the feed is currently the one the user is looking at.
-  // This drives the preload strategy: only the current video gets full preload;
-  // adjacent videos get metadata only; far-away videos get none. This keeps the
-  // browser from trying to download 30 videos at once on Fast 4G.
-  const [currentVideoIdx, setCurrentVideoIdx] = useState(0);
   const feedContainerRef = useRef(null);
   const feedSentinelRef = useRef(null);
   const loadingMoreRef = useRef(false);
@@ -7089,7 +6528,6 @@ function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [authToast, setAuthToast] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeHashtag, setActiveHashtag] = useState(null); // null | "#sydney" — hashtag feed
   const [feedTab, setFeedTab] = useState("forYou"); // forYou | following
   const [followingVideos, setFollowingVideos] = useState([]);
   const [followedUserIds, setFollowedUserIds] = useState(new Set());
@@ -7111,20 +6549,19 @@ function App() {
     });
   };
   const [followingIds, setFollowingIds] = useState([]);
-  const [likedVideoIds, setLikedVideoIds] = useState(new Set()); // persisted like history
-  const [likeRecords, setLikeRecords] = useState({}); // video_id -> SachiLike record id
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set()); // video_id -> bookmark record id
   const [bookmarkRecords, setBookmarkRecords] = useState({}); // video_id -> bookmark record id
   const [blockedIds, setBlockedIds] = useState(new Set()); // blocked user ids
   const [feedPage, setFeedPage] = useState(1);
   const [feedHasMore, setFeedHasMore] = useState(true);
-  const FEED_PAGE_SIZE = 30;
+  const FEED_PAGE_SIZE = 50;
   const [commentVideo, setCommentVideo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadToast, setUploadToast] = useState(false);
   const [loginToast, setLoginToast] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [myVideos, setMyVideos] = useState([]);
+  const [myVideosPlayer, setMyVideosPlayer] = useState(null); // index into myVideos for fullscreen
   const [meFollowersCount, setMeFollowersCount] = useState(0);
   const [meFollowingCount, setMeFollowingCount] = useState(0);
   const [showFollowersList, setShowFollowersList] = useState(false);
@@ -7145,36 +6582,64 @@ function App() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editProfileName, setEditProfileName] = useState('');
-  const [editProfileBio, setEditProfileBio] = useState('');
   const [editProfileSaving, setEditProfileSaving] = useState(false);
-  const [userBio, setUserBio] = useState(currentUser?.bio || '');
 
 
+  const loadFounders = async () => {
+    setFoundersLoading(true);
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/FoundingCreator?sort=-created_date&limit=100`);
+      setFounders(Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : []);
+    } catch(e) { console.error(e); }
+    setFoundersLoading(false);
+  };
 
+  const updateFounder = async (founder, status) => {
+    try {
+      await request("PUT", `/apps/${APP_ID}/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
+      setFounderNote("");
+    } catch(e) { alert("Failed: " + e.message); }
+  };
 
   useEffect(() => { loadVideos(); }, []);
 
-  // Soft-refresh engagement counts every 90s — keeps numbers fresh without reloading videos
+  // Background count sync — refreshes like/comment/hype counts every 90s
+  // so feed cards stay accurate without requiring a page reload
   useEffect(() => {
-    const refreshCounts = async () => {
+    const syncCounts = async () => {
       try {
-        const res = await fetch(`https://app.base44.com/api/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`, {
-          headers: { "Content-Type": "application/json", "x-api-key": APP_ID }
-        });
-        const data = await res.json();
-        const fresh = Array.isArray(data) ? data : (data?.items || []);
+        const APP_ID = "69e79122bcc8fb5a04cfb834";
+        const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+        const res = await fetch(`${BASE_URL}/apps/${APP_ID}/entities/SachiVideo?is_archived=false&is_approved=true&sort=-created_date&limit=200`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const fresh = Array.isArray(json) ? json : (json?.items || json?.records || []);
         if (!fresh.length) return;
+        // Build a map of id → counts
         const countMap = {};
-        fresh.forEach(v => { countMap[v.id] = { like_count: v.like_count, comment_count: v.comment_count, views_count: v.views_count, shares_count: v.shares_count }; });
+        fresh.forEach(v => {
+          countMap[v.id] = {
+            likes_count: v.likes_count || 0,
+            comments_count: v.comments_count || 0,
+            hype_count: v.hype_count || 0,
+          };
+        });
+        // Patch videoList with fresh counts — only update if changed to avoid re-renders
         setVideoList(prev => prev.map(v => {
-          const f = countMap[v.id];
-          if (!f) return v;
-          return { ...v, like_count: f.like_count ?? v.like_count, comment_count: f.comment_count ?? v.comment_count, views_count: f.views_count ?? v.views_count, shares_count: f.shares_count ?? v.shares_count };
+          const c = countMap[v.id];
+          if (!c) return v;
+          if (
+            c.likes_count === (v.likes_count || 0) &&
+            c.comments_count === (v.comments_count || 0) &&
+            c.hype_count === (v.hype_count || 0)
+          ) return v;
+          return { ...v, ...c };
         }));
-      } catch(e) { /* silent — don't disrupt UX */ }
+      } catch(e) { /* silent — never break the feed */ }
     };
-    const iv = setInterval(refreshCounts, 90000);
-    return () => clearInterval(iv);
+    const timer = setInterval(syncCounts, 90000);
+    return () => clearInterval(timer);
   }, []);
 
   // Handle Android share intent from TikTok/Instagram etc.
@@ -7183,38 +6648,12 @@ function App() {
       const { type, uri, url } = e.detail || {};
       if (type === "video" || type === "url") {
         setShowUpload(true);
+        // Store shared data for upload screen to pick up
         window._sachiSharedContent = { type, uri, url };
       }
     };
     window.addEventListener("sachi-share", handleSachiShare);
     return () => window.removeEventListener("sachi-share", handleSachiShare);
-  }, []);
-
-  // ── FIX: Stop ALL audio when user leaves the app (switches to Instagram etc.) ──
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // App went to background — kill everything
-        audioCache.forEach(audio => { audio.pause(); audio.currentTime = 0; });
-        // Stop all video elements
-        document.querySelectorAll('video').forEach(v => { v.pause(); });
-        // Stop all audio elements
-        document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
-      }
-    };
-    const handlePageHide = () => {
-      audioCache.forEach(audio => { audio.pause(); audio.currentTime = 0; });
-      document.querySelectorAll('video').forEach(v => { v.pause(); });
-      document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handlePageHide);
-    window.addEventListener('blur', handlePageHide);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handlePageHide);
-      window.removeEventListener('blur', handlePageHide);
-    };
   }, []);
   useEffect(() => { if (currentUser) loadFollowingVideos(currentUser); }, [currentUser]);
   useEffect(() => {
@@ -7223,7 +6662,7 @@ function App() {
         // Try to load avatar from DB first (most up to date)
         try {
           // Use authenticated request (with Bearer token) to fetch user profile
-          const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           // DB takes priority — always use latest CDN avatar_url
@@ -7258,46 +6697,127 @@ function App() {
       const ids = items.map(r => r.following_id);
       setFollowingIds(ids);
       if (ids.length === 0) { setFollowingVideos([]); return; }
-      const allVids = await request("GET", `/apps/${APP_ID}/entities/SachiVideo?limit=50&sort=-created_date`);
-      const vids = ((allVids?.items || allVids) || []).filter(v => ids.includes(v.user_id));
+      const allVids = await videos.list();
+      const vids = (allVids.items || allVids || []).filter(v => ids.includes(v.user_id));
       setFollowingVideos(vids);
     } catch(e) { console.error(e); }
+  };
+
+  // Smart feed algorithm — loads 200 posts, scores them, caps per-user at 3,
+  // then shuffles with recency + engagement weighting for variety at any scale
+  const buildSmartFeed = (rawAll, existingIds = new Set()) => {
+    const now = new Date();
+    const filtered = rawAll.filter(v => {
+      if (existingIds.has(v.id)) return false;
+      if (v.is_archived) return false;
+      if (v.archive_date && new Date(v.archive_date) < now) return false;
+      if (v.post_visibility && v.post_visibility === "only_me") return false;
+      return true;
+    });
+    // Score each post: recency (0-100) + engagement boost (0-30)
+    const nowMs = now.getTime();
+    const oldest = Math.min(...filtered.map(v => new Date(v.created_date||0).getTime()));
+    const range = nowMs - oldest || 1;
+    const scored = filtered.map(v => {
+      const ageScore = ((new Date(v.created_date||0).getTime() - oldest) / range) * 100;
+      const eng = (v.likes_count||0)*2 + (v.comments_count||0)*3 + (v.views_count||0)*0.01 + (v.hype_count||0)*1.5;
+      const engScore = Math.min(eng / 10, 30);
+      // Add small random jitter so feed feels fresh every session
+      const jitter = Math.random() * 15;
+      return { ...v, _score: ageScore + engScore + jitter };
+    });
+    // Fisher-Yates shuffle weighted by score — true randomness with recency bias
+    for (let i = scored.length - 1; i > 0; i--) {
+      // Weight: higher scored items more likely to stay near top
+      const j = Math.floor(Math.random() * Math.min(i + 1, Math.ceil(i * 0.6) + 1));
+      [scored[i], scored[j]] = [scored[j], scored[i]];
+    }
+    // Cap any single user at 3 posts — prevents one prolific creator dominating
+    const userCounts = {};
+    const capped = [];
+    for (const v of scored) {
+      const uid = v.user_id || v.username;
+      userCounts[uid] = (userCounts[uid] || 0) + 1;
+      if (userCounts[uid] <= 3) capped.push(v);
+    }
+    // If we capped too aggressively (< 15 posts), let the overflow back in
+    if (capped.length < 15) {
+      const cappedIds = new Set(capped.map(v => v.id));
+      const overflow = scored.filter(v => !cappedIds.has(v.id));
+      capped.push(...overflow);
+    }
+    // Interleave by creator — ensures no two consecutive posts from the same user.
+    // Groups posts by creator, then round-robins through groups.
+    const interleave = (posts) => {
+      const buckets = {};
+      for (const p of posts) {
+        const uid = p.user_id || p.username || 'unknown';
+        if (!buckets[uid]) buckets[uid] = [];
+        buckets[uid].push(p);
+      }
+      const groups = Object.values(buckets);
+      const result = [];
+      let filled = true;
+      while (filled) {
+        filled = false;
+        for (const g of groups) {
+          if (g.length > 0) { result.push(g.shift()); filled = true; }
+        }
+      }
+      return result;
+    };
+    return interleave(capped);
   };
 
   const loadVideos = async (user, append = false, page = 1) => {
     if (!append) setLoading(true);
     try {
-      // Fetch 500 records so we get past any archived records mixed in the sort
-      const BASE = "https://app.base44.com/api";
-      const res = await fetch(`${BASE}/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`, {
-        headers: { "Content-Type": "application/json", "x-api-key": APP_ID }
-      });
-      const data = await res.json();
-      const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      // Filter out archived, private, and any broken Daminie file URLs
-      // Check both media_url (new Sachi schema) and video_url (legacy) 
-      const raw = rawAll.filter(v => {
-        const url = v.media_url || v.video_url || "";
-        return (
-          !v.is_archived &&
-          (v.post_visibility == null || v.post_visibility !== "only_me") &&
-          url &&
-          !url.includes("69b2ee18a8e6fb58c7f0261c")
-        );
-      });
-      setFeedHasMore(false);
-      if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
-      // CF videos bubble to top (newest CF first), then R2/other by date
-      const cfVideos = [...raw].filter(v => (v.media_url||v.video_url||'').includes('cloudflarestream'))
-        .sort((a,b) => new Date(b.external_id||b.created_date||0) - new Date(a.external_id||a.created_date||0));
-      const otherVideos = [...raw].filter(v => !(v.media_url||v.video_url||'').includes('cloudflarestream'))
-        .sort((a,b) => new Date(b.external_id||b.created_date||0) - new Date(a.external_id||a.created_date||0));
-      const reordered = [...cfVideos, ...otherVideos];
-      setVideoList(reordered);
-      requestAnimationFrame(() => {
-        const el = feedContainerRef.current;
-        if (el) el.scrollTo({ top: 0, behavior: 'instant' });
-      });
+      // Load a large pool — algorithm handles variety, not pagination size
+      const POOL_SIZE = 200;
+      const skip = (page - 1) * POOL_SIZE;
+      // Use service-role backend function — bypasses RLS so ALL public posts show
+      // regardless of created_by value (fixes "anonymous" created_by issue)
+      let rawAll = [];
+      // Direct entity query — public, no auth needed, bypasses RLS issues
+      // Fetches all approved non-archived videos regardless of created_by
+      try {
+        const APP_ID = "69e79122bcc8fb5a04cfb834";
+        const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+        const res = await fetch(`${BASE_URL}/apps/${APP_ID}/entities/SachiVideo?is_archived=false&is_approved=true&sort=-created_date&limit=${POOL_SIZE}&skip=${skip}`);
+        if (res.ok) {
+          const json = await res.json();
+          rawAll = Array.isArray(json) ? json : (json?.items || json?.records || []);
+        } else { throw new Error("feed fallback"); }
+      } catch {
+        // Secondary fallback
+        const data = await videos.list(POOL_SIZE, skip);
+        rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      }
+      setFeedHasMore(rawAll.length === POOL_SIZE);
+      if (!rawAll.length && !append) { setVideoList([]); setLoading(false); return; }
+      if (append) {
+        setVideoList(prev => {
+          const existingIds = new Set(prev.map(v => v.id));
+          const ranked = buildSmartFeed(rawAll, existingIds);
+          return [...prev, ...ranked];
+        });
+      } else {
+        const ranked = buildSmartFeed(rawAll);
+        setVideoList(ranked);
+        // Eagerly preload first video so it plays instantly
+        if (ranked.length > 0 && ranked[0].video_url) {
+          const firstUrl = ranked[0].video_url;
+          const el = document.createElement("video");
+          el.src = firstUrl; el.preload = "auto"; el.muted = true;
+          el.style.display = "none"; el.load();
+          document.body.appendChild(el);
+          setTimeout(() => { try { document.body.removeChild(el); } catch(e){} }, 15000);
+        }
+        requestAnimationFrame(() => {
+          const el = feedContainerRef.current;
+          if (el) el.scrollTo({ top: 0, behavior: 'instant' });
+        });
+      }
     } catch(err) {
       console.error('loadVideos error:', err);
       if (!append) setVideoList([]);
@@ -7313,17 +6833,9 @@ function App() {
     loadVideos(currentUser, true, nextPage);
   };
 
-  // Load likes, bookmarks and blocks when user logs in
+  // Load bookmarks and blocks when user logs in
   useEffect(() => {
-    if (!currentUser) { setLikedVideoIds(new Set()); setLikeRecords({}); setBookmarkedIds(new Set()); setBookmarkRecords({}); setBlockedIds(new Set()); return; }
-    likes.getByUser(currentUser.id).then(res => {
-      const items = Array.isArray(res) ? res : (res?.items || []);
-      const ids = new Set(items.map(l => l.video_id));
-      const recs = {};
-      items.forEach(l => { recs[l.video_id] = l.id; });
-      setLikedVideoIds(ids);
-      setLikeRecords(recs);
-    }).catch(() => {});
+    if (!currentUser) { setBookmarkedIds(new Set()); setBookmarkRecords({}); setBlockedIds(new Set()); return; }
     bookmarks.getByUser(currentUser.id).then(res => {
       const items = res.items || res || [];
       const ids = new Set(items.map(b => b.video_id));
@@ -7395,24 +6907,29 @@ function App() {
   }, [activeTab, currentUser]);
 
   const handleLike = React.useCallback((videoId, delta) => {
-    // Optimistic update immediately for snappy UX
+    // Save scroll position before state update to prevent snap-to-top
     const feedEl = feedContainerRef.current;
     const savedScroll = feedEl ? feedEl.scrollTop : 0;
-    setVideoList(vs => vs.map(v => v.id !== videoId ? v : { ...v, like_count: Math.max(0, (v.like_count||0) + delta) }));
-    if (feedEl) requestAnimationFrame(() => { feedEl.scrollTop = savedScroll; });
-    // DB-verified update: fetch live count → apply delta → write back (prevents race drift)
-    (async () => {
-      try {
-        const lv = await request("GET", `/apps/${APP_ID}/entities/SachiVideo/${videoId}`);
-        const liveCount = Number(lv?.like_count || 0);
-        const verified = Math.max(0, liveCount + delta);
-        await videos.update(videoId, { like_count: verified }).catch(() => {});
-        setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, like_count: verified } : v));
-        if (currentUser && lv?.hashtags?.length) {
-          interests.signal(currentUser.id, lv.hashtags, delta > 0 ? 3 : -1).catch(() => {});
+    // Single setVideoList call — update count AND fire side effects in one pass
+    setVideoList(vs => {
+      const updated = vs.map(v => {
+        if (v.id !== videoId) return v;
+        // delta=0 means just trigger re-render (e.g. hype)
+        if (delta === 0) return { ...v };
+        const newCount = Math.max(0, (v.likes_count || 0) + delta);
+        // Update DB count + interest signals
+        videos.update(videoId, { likes_count: newCount }).catch(() => {});
+        if (currentUser && v.hashtags?.length) {
+          interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
         }
-      } catch(e) { /* keep optimistic on error */ }
-    })();
+        return { ...v, likes_count: newCount };
+      });
+      return updated;
+    });
+    // Restore scroll position after React re-render
+    if (feedEl) {
+      requestAnimationFrame(() => { feedEl.scrollTop = savedScroll; });
+    }
   }, [currentUser, feedContainerRef]);
 
   // Auto-load more when sentinel scrolls into view
@@ -7449,7 +6966,7 @@ function App() {
   };
 
   const handleCommentCount = (videoId, count) => {
-    setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, comment_count: count } : v));
+    setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, comments_count: count } : v));
   };
 
   const requireAuth = (cb) => { if (currentUser) { cb(); } else { setShowAuth(true); setAuthToast(true); setTimeout(() => setAuthToast(false), 3000); } };
@@ -7457,7 +6974,7 @@ function App() {
   const username = currentUser?.full_name || currentUser?.email?.split("@")[0] || "";
 
   if (!hasEntered) {
-    return <Landing onEnter={() => setHasEntered(true)} />;
+    return <Landing onEnter={() => { sessionStorage.setItem('sachi_entered', '1'); setHasEntered(true); }} />;
   }
 
   return (
@@ -7468,19 +6985,13 @@ function App() {
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px", pointerEvents:"auto" }}>
 
-          {/* Left: Neon SACHi Stream logo */}
-          <div style={{ display:"flex", alignItems:"center" }}>
-            <img
-              src="/sachi-neon-logo.jpg"
-              alt="SACHi Stream"
-              style={{
-                height:38,
-                width:"auto",
-                borderRadius:8,
-                objectFit:"contain",
-                filter:"drop-shadow(0 0 8px rgba(124,58,237,0.6))"
-              }}
-            />
+          {/* Left: Sachi logo + wordmark */}
+          <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+            <img src="/sachi-icon-v5.png" alt="Sachi" style={{ width:30, height:30, borderRadius:8, filter:"drop-shadow(0 0 6px rgba(245,200,66,0.5))" }} />
+            <div style={{ display:"flex", alignItems:"baseline", gap:1 }}>
+              <span style={{ fontSize:24, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
+              <span style={{ fontSize:12, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
+            </div>
           </div>
 
           {/* Center: feed tabs — subtle pill style */}
@@ -7551,7 +7062,10 @@ function App() {
             </div>
           )}
           {loading && (
-            <SachiSplash />
+            <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
+              <div style={{ fontSize:48 }}>🎬</div>
+              <div style={{ color:"rgba(245,200,66,0.7)", fontSize:14, letterSpacing:1, fontWeight:600 }}>Loading...</div>
+            </div>
           )}
           {!loading && videoList.length === 0 && (
             <div style={{ height:"100svh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
@@ -7566,37 +7080,23 @@ function App() {
           )}
           {(feedTab === "forYou" ? videoList : followingVideos)
             .filter(v => !blockedIds.has(v.user_id))
-            .map((v, idx, arr) => {
-              // Preload audio only for the very next video (not far ahead)
-              if (v.sound_url && idx === currentVideoIdx) preloadAudio(v.sound_url);
-              const next1 = arr[idx + 1]; if (next1?.sound_url && idx === currentVideoIdx) preloadAudio(next1.sound_url);
-              // Smart preload strategy based on distance from current video:
-              //   - Current video: full preload (it's playing or about to)
-              //   - Next 1 video: metadata only (~1KB, ready when scrolled to)
-              //   - Everything else: none (don't waste bandwidth)
-              // Without this every video preloads simultaneously, causing stutter.
-              const distance = Math.abs(idx - currentVideoIdx);
-              const cardPreloadMode = distance === 0 ? "auto" : distance === 1 ? "metadata" : "none";
-              return (
-                <VideoCard key={v.id} video={v} currentUser={currentUser}
-                  preloadMode={cardPreloadMode}
-                  onBecomeCurrent={() => setCurrentVideoIdx(idx)}
-                  onCommentOpen={setCommentVideo}
-                  onLike={handleLike}
-                  onView={handleView}
-                  onNeedAuth={() => setShowAuth(true)}
-                  onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
-                  onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
-                  followedUserIds={followedUserIds}
-                  onFollowChange={handleFollowChange}
-                  onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
-                  onHashtagPress={(tag) => { setActiveHashtag(tag); setActiveTab("explore"); setSearchQuery(""); }}
-                  likedVideoIds={likedVideoIds} likeRecords={likeRecords} onLikeChange={(videoId, liked, recId) => { setLikedVideoIds(prev => { const n = new Set(prev); liked ? n.add(videoId) : n.delete(videoId); return n; }); setLikeRecords(prev => { const n = {...prev}; liked ? n[videoId] = recId : delete n[videoId]; return n; }); }}
-                  onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
-                  blockedIds={blockedIds}
-                />
-              );
-            })}
+            .map((v, idx, arr) => (
+            <LazyVideoCard key={v.id} video={v} currentUser={currentUser}
+              nextVideoUrl={arr[idx+1]?.video_url || null}
+              next2VideoUrl={arr[idx+2]?.video_url || null}
+              onCommentOpen={setCommentVideo}
+              onLike={handleLike}
+              onView={handleView}
+              onNeedAuth={() => setShowAuth(true)}
+              onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
+              onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
+              followedUserIds={followedUserIds}
+              onFollowChange={handleFollowChange}
+              onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
+              onBookmark={{ isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark }}
+              blockedIds={blockedIds}
+              />
+          ))}
           {feedTab === "forYou" && feedHasMore && (
             <div ref={feedSentinelRef} style={{ height:1, marginBottom:80 }} />
           )}
@@ -7649,16 +7149,11 @@ function App() {
                   </button>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, cursor:"pointer" }}
-                  onClick={() => { setEditProfileName(currentUser?.full_name || ''); setEditProfileBio(currentUser?.bio || userBio || ''); setShowEditProfile(true); }}>
+                  onClick={() => { setEditProfileName(currentUser?.full_name || ''); setShowEditProfile(true); }}>
                   <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
                   <div style={{ fontSize:13, color:"#888" }}>✏️</div>
                 </div>
                 <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
-                {(userBio || currentUser?.bio) && (
-                  <div style={{ color:"#aaa", fontSize:14, marginTop:8, lineHeight:1.6, maxWidth:300, textAlign:"center" }}>
-                    {userBio || currentUser?.bio}
-                  </div>
-                )}
                 <div style={{ display:"flex", justifyContent:"center", gap:0, marginTop:20, marginBottom:20, pointerEvents:"auto" }}>
                   <div style={{ textAlign:"center", padding:"10px 24px" }}>
                     <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{myVideos.length}</div>
@@ -7669,10 +7164,8 @@ function App() {
                       setShowFollowersList(true);
                       setFollowListLoading(true);
                       try {
-                        const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
                         const r1 = await request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
-                        const r2 = await request("GET", `/apps/${APP_ID}/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
-                        const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+                        const all = r1?.items || r1 || [];
                         const unique = [...new Map(all.map(f=>[f.id,f])).values()];
                         setFollowersList(unique);
                       } catch(e) { setFollowersList([]); }
@@ -7698,7 +7191,18 @@ function App() {
                   </button>
                 </div>
               </div>
-              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} currentUser={currentUser} />
+              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} onWatch={(idx) => setMyVideosPlayer(idx)} />
+
+              {/* ── My Videos Fullscreen Player ── */}
+              {myVideosPlayer !== null && myVideos.length > 0 && (
+                <ProfileVideoPlayer
+                  key={'myplayer-' + myVideosPlayer}
+                  videos={myVideos}
+                  startIndex={myVideosPlayer}
+                  onClose={() => setMyVideosPlayer(null)}
+                  username={currentUser?.full_name || currentUser?.email?.split('@')[0] || 'Me'}
+                />
+              )}
 
               {/* Founding Creator CTA */}
               <div style={{ padding:"0 20px 12px" }}>
@@ -7726,170 +7230,68 @@ function App() {
       )}
 
             {/* Explore Tab */}
-      {activeTab === "explore" && (() => {
-        // Compute trending hashtags from videoList
-        const hashtagCounts = {};
-        videoList.forEach(v => {
-          (v.hashtags || []).forEach(t => {
-            const tag = "#" + t.replace(/^#/,"").toLowerCase();
-            hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
-          });
-        });
-        const trendingTags = Object.entries(hashtagCounts)
-          .sort((a,b) => b[1]-a[1]).slice(0,12)
-          .map(([tag, count]) => ({ tag, count }));
-
-        // Videos for active hashtag
-        const hashtagVideos = activeHashtag
-          ? videoList.filter(v => (v.hashtags||[]).some(t => "#"+t.replace(/^#/,"").toLowerCase() === activeHashtag.toLowerCase()))
-          : [];
-
-        // Search results
-        const searchResults = searchQuery.trim()
-          ? videoList.filter(v =>
-              (v.caption||"").toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (v.username||"").toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (v.hashtags||[]).some(t => t.includes(searchQuery.replace("#","").toLowerCase()))
-            )
-          : [];
-
-        return (
-          <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
-            {/* Search bar */}
-            <div style={{ padding:"12px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
-              <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <input value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setActiveHashtag(null); }}
-                  placeholder="Search videos, users or #hashtags..."
-                  style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
-                {(searchQuery || activeHashtag) && (
-                  <button onClick={() => { setSearchQuery(""); setActiveHashtag(null); }}
-                    style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>
-                )}
-              </div>
+      {activeTab === "explore" && (
+        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A" }}>
+          <div style={{ padding:"16px 16px 8px", display:"flex", alignItems:"center", gap:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ flex:1, display:"flex", alignItems:"center", background:"rgba(255,255,255,0.08)", borderRadius:22, padding:"8px 14px", gap:8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search users or videos..."
+                style={{ flex:1, background:"none", border:"none", outline:"none", color:"#fff", fontSize:15 }} />
+              {searchQuery && <button onClick={() => setSearchQuery("")} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.4)", cursor:"pointer", fontSize:18, padding:0 }}>✕</button>}
             </div>
-
-            <div style={{ padding:"0 16px 16px" }}>
-
-              {/* ── HASHTAG FEED ── */}
-              {activeHashtag && (
-                <>
-                  <div style={{ display:"flex", alignItems:"center", gap:10, padding:"14px 0 12px" }}>
-                    <button onClick={() => setActiveHashtag(null)}
-                      style={{ background:"none", border:"none", color:"#888", fontSize:20, cursor:"pointer", padding:0, lineHeight:1 }}>←</button>
-                    <div>
-                      <div style={{ color:"#F5C842", fontWeight:900, fontSize:22 }}>{activeHashtag}</div>
-                      <div style={{ color:"#666", fontSize:12 }}>{hashtagVideos.length} {hashtagVideos.length === 1 ? "post" : "posts"}</div>
-                    </div>
-                  </div>
-                  {hashtagVideos.length === 0 ? (
-                    <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", padding:"60px 0", fontSize:14 }}>
-                      <div style={{ fontSize:40, marginBottom:12 }}>🏷️</div>
-                      No posts with {activeHashtag} yet
-                    </div>
-                  ) : (
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-                      {hashtagVideos.map(v => (
-                        <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
-                          onClick={() => { setActiveHashtag(null); setActiveTab("feed"); }}>
-                          {v.thumbnail_url
-                            ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                            : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                          }
-                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)" }} />
-                          <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
-                            <div style={{ color:"#fff", fontSize:10, fontWeight:600 }}>@{v.username}</div>
-                            {v.views_count > 0 && <div style={{ color:"rgba(255,255,255,0.6)", fontSize:10 }}>👁 {formatCount(v.views_count)}</div>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* ── SEARCH RESULTS ── */}
-              {!activeHashtag && searchQuery.trim() !== "" && (
-                <>
-                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, padding:"12px 0 10px", letterSpacing:1, textTransform:"uppercase" }}>
-                    Results for "{searchQuery}"
-                  </div>
-                  {searchResults.length === 0 ? (
-                    <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:40, fontSize:14 }}>No results found</div>
-                  ) : (
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-                      {searchResults.map(v => (
-                        <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
-                          onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
-                          {v.thumbnail_url
-                            ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                            : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                          }
-                          <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)" }} />
-                          <div style={{ position:"absolute", bottom:4, left:6, right:6, fontSize:10, color:"#fff" }}>@{v.username}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* ── DEFAULT: Trending hashtags + top videos ── */}
-              {!activeHashtag && searchQuery.trim() === "" && (
-                <>
-                  {/* Trending hashtags */}
-                  {trendingTags.length > 0 && (
-                    <div style={{ marginBottom:24, paddingTop:12 }}>
-                      <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>
-                        🔥 Trending hashtags
-                      </div>
-                      <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-                        {trendingTags.map(({ tag, count }) => (
-                          <button key={tag}
-                            onClick={() => setActiveHashtag(tag)}
-                            style={{ background:"rgba(245,200,66,0.08)", border:"1.5px solid rgba(245,200,66,0.25)",
-                              borderRadius:24, padding:"8px 16px", cursor:"pointer",
-                              display:"flex", alignItems:"center", gap:8, WebkitTapHighlightColor:"transparent" }}>
-                            <span style={{ color:"#F5C842", fontWeight:800, fontSize:14 }}>{tag}</span>
-                            <span style={{ background:"rgba(245,200,66,0.15)", borderRadius:20, padding:"1px 8px",
-                              color:"rgba(245,200,66,0.7)", fontSize:11, fontWeight:700 }}>{count}</span>
-                          </button>
-                        ))}
+          </div>
+          <div style={{ padding:16 }}>
+            {searchQuery.trim() === "" ? (
+              <>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>🔥 Trending Now</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
+                  {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
+                    <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
+                      onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
+                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.8))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        <div>@{v.username}</div>
+                        {v.views_count > 0 && <div style={{ color:"#aaa" }}>👁 {v.views_count}</div>}
                       </div>
                     </div>
-                  )}
-
-                  {/* Top videos grid */}
-                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:700, marginBottom:10, letterSpacing:1, textTransform:"uppercase" }}>
-                    🎬 Top Videos
-                  </div>
+                  ))}
+                </div>
+                {videoList.length === 0 && (
+                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No videos yet — be the first to post!</div>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:13, fontWeight:700, marginBottom:12, letterSpacing:1, textTransform:"uppercase" }}>Results</div>
+                {videoList.filter(v =>
+                  (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+                ).length === 0 ? (
+                  <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No results for "{searchQuery}"</div>
+                ) : (
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:2 }}>
-                    {[...videoList].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,18).map(v => (
+                    {videoList.filter(v =>
+                      (v.caption || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (v.username || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (v.display_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+                    ).map(v => (
                       <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
-                        onClick={() => { setActiveTab("feed"); }}>
-                        {v.thumbnail_url
-                          ? <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} loading="lazy" />
-                          : <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
-                        }
-                        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 55%)" }} />
-                        <div style={{ position:"absolute", bottom:4, left:6, right:6 }}>
-                          <div style={{ fontSize:10, color:"#fff", fontWeight:600 }}>@{v.username}</div>
-                          {v.views_count > 0 && <div style={{ color:"rgba(255,255,255,0.5)", fontSize:10 }}>👁 {formatCount(v.views_count)}</div>}
-                        </div>
+                        onClick={() => { setSearchQuery(""); setActiveTab("feed"); }}>
+                        <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                       </div>
                     ))}
                   </div>
-                  {videoList.length === 0 && (
-                    <div style={{ textAlign:"center", color:"rgba(255,255,255,0.25)", marginTop:60, fontSize:14 }}>No videos yet — be the first to post!</div>
-                  )}
-                </>
-              )}
-            </div>
+                )}
+              </>
+            )}
           </div>
-        );
-      })()}
+        </div>
+      )}
 
       {/* Podcast Tab */}
       {activeTab === "podcast" && (
@@ -7900,75 +7302,183 @@ function App() {
         <AdminPanel currentUser={currentUser} />
       )}
 
-      {/* Bottom Nav — Arc command console */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, pointerEvents:"none" }}>
-        <svg viewBox="0 0 480 70" preserveAspectRatio="none" style={{ width:"100%", height:70, display:"block", pointerEvents:"none" }}>
-          <path d="M0 35 Q240 -8 480 35 L480 70 L0 70 Z" fill="rgba(10,10,25,0.97)"/>
-          <path d="M0 35 Q240 -8 480 35" fill="none" stroke="rgba(245,200,66,0.2)" strokeWidth="1"/>
-        </svg>
-        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:70, paddingBottom:"env(safe-area-inset-bottom,8px)", pointerEvents:"auto", display:"flex", alignItems:"flex-end", justifyContent:"space-around", padding:"0 8px 10px" }}>
+      {/* Bottom Nav — Sachi original style: floating pill */}
+      {/* ── ORBITAL ARC NAV ── */}
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,4px)", pointerEvents:"auto" }}>
+        {/* Aurora top line */}
+        <div style={{ height:1, background:"linear-gradient(90deg, transparent 0%, rgba(123,47,255,0.6) 30%, rgba(245,200,66,0.5) 50%, rgba(0,229,255,0.4) 70%, transparent 100%)", pointerEvents:"none" }} />
+        <div style={{ background:"linear-gradient(to top, rgba(5,3,15,0.98) 0%, rgba(8,5,25,0.95) 100%)",
+          backdropFilter:"blur(30px)", paddingTop:10, paddingBottom:2, pointerEvents:"auto" }}>
 
-          {/* Home */}
-          <button onClick={goHome}
-            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#F5C842" : "none"} stroke={activeTab==="feed" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          {/* Orbital arc container */}
+          <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-around", padding:"0 8px 8px", position:"relative" }}>
+
+            {/* Subtle arc line behind orbs */}
+            <svg style={{ position:"absolute", top:0, left:0, right:0, bottom:0, width:"100%", height:"100%", pointerEvents:"none", opacity:0.2 }}
+              viewBox="0 0 480 60" preserveAspectRatio="none">
+              <path d="M20,55 Q240,5 460,55" fill="none" stroke="url(#arcGrad)" strokeWidth="1.5"/>
+              <defs>
+                <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="transparent"/>
+                  <stop offset="30%" stopColor="#7B2FFF"/>
+                  <stop offset="50%" stopColor="#F5C842"/>
+                  <stop offset="70%" stopColor="#00E5FF"/>
+                  <stop offset="100%" stopColor="transparent"/>
+                </linearGradient>
+              </defs>
             </svg>
-            <div style={{ fontSize:9, color: activeTab==="feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" ? 700 : 400 }}>Home</div>
-          </button>
 
-          {/* Explore */}
-          <button onClick={() => setActiveTab("explore")}
-            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="explore" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <div style={{ fontSize:9, color: activeTab==="explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="explore" ? 700 : 400 }}>Explore</div>
-          </button>
-
-          {/* Post button — elevated center, gold glowing circle */}
-          <button onClick={() => requireAuth(() => setShowUpload(true))}
-            style={{ width:56, marginBottom:14, padding:"0", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent" }}>
-            <div style={{ width:48, height:48, borderRadius:"50%", background:"linear-gradient(135deg,#F5C842,#FF9500)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 0 20px rgba(245,200,66,0.5), 0 4px 12px rgba(0,0,0,0.4)" }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </div>
-            <div style={{ fontSize:9, color:"#F5C842", fontWeight:700 }}>Post</div>
-          </button>
-
-          {/* Podcasts */}
-          <button onClick={() => setActiveTab("podcast")}
-            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="podcast" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
-            <div style={{ fontSize:9, color: activeTab==="podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="podcast" ? 700 : 400 }}>Pods</div>
-          </button>
-
-          {/* Mod (owner only) */}
-          {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
-            <button onClick={() => setActiveTab("admin")}
-              style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={activeTab==="admin" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              </svg>
-              <div style={{ fontSize:9, color: activeTab==="admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="admin" ? 700 : 400 }}>Mod</div>
+            {/* Home orb */}
+            <button onClick={goHome} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="feed" ? "orb-active" : ""} style={{
+                width: activeTab==="feed" ? 46 : 38, height: activeTab==="feed" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="feed"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="feed" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="feed" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="feed" ? 20 : 17} height={activeTab==="feed" ? 20 : 17} viewBox="0 0 24 24"
+                  fill={activeTab==="feed" ? "#0B0C1A" : "none"} stroke={activeTab==="feed" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="feed" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="feed" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Home</span>
             </button>
-          )}
 
-          {/* Profile */}
-          <button onClick={() => setActiveTab("profile")}
-            style={{ width:52, padding:"4px 8px 4px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:2, WebkitTapHighlightColor:"transparent", borderRadius:20 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-            <div style={{ fontSize:9, color: activeTab==="profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="profile" ? 700 : 400 }}>Me</div>
-          </button>
+            {/* Explore orb */}
+            <button onClick={() => setActiveTab("explore")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="explore" ? "orb-active" : ""} style={{
+                width: activeTab==="explore" ? 46 : 38, height: activeTab==="explore" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="explore"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="explore" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="explore" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="explore" ? 20 : 17} height={activeTab==="explore" ? 20 : 17} viewBox="0 0 24 24"
+                  fill="none" stroke={activeTab==="explore" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="explore" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="explore" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Explore</span>
+            </button>
 
+            {/* POST — center elevated gold orb */}
+            <button onClick={() => requireAuth(() => setShowUpload(true))} style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"0 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none", marginBottom:8 }}>
+              <div style={{
+                width:54, height:54, borderRadius:"50%",
+                background:"radial-gradient(circle at 30% 30%, #FFE580, #F5C842, #E08800)",
+                boxShadow:"0 0 0 3px rgba(245,200,66,0.25), 0 0 30px rgba(245,200,66,0.5), 0 6px 20px rgba(0,0,0,0.5)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                border:"2px solid rgba(255,230,100,0.6)",
+                transform:"translateY(-10px)",
+                transition:"transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+              }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0B0C1A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight:800, letterSpacing:1.5, textTransform:"uppercase", color:"#F5C842", marginTop:-6 }}>Post</span>
+            </button>
+
+            {/* Podcasts orb */}
+            <button onClick={() => setActiveTab("podcast")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="podcast" ? "orb-active" : ""} style={{
+                width: activeTab==="podcast" ? 46 : 38, height: activeTab==="podcast" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="podcast"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="podcast" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="podcast" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="podcast" ? 20 : 17} height={activeTab==="podcast" ? 20 : 17} viewBox="0 0 24 24"
+                  fill="none" stroke={activeTab==="podcast" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="podcast" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="podcast" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Waves</span>
+            </button>
+
+            {/* Profile orb */}
+            <button onClick={() => setActiveTab("profile")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+              WebkitTapHighlightColor:"transparent", outline:"none" }}>
+              <div className={activeTab==="profile" ? "orb-active" : ""} style={{
+                width: activeTab==="profile" ? 46 : 38, height: activeTab==="profile" ? 46 : 38,
+                borderRadius:"50%",
+                background: activeTab==="profile"
+                  ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                  : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                border: activeTab==="profile" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                boxShadow: activeTab==="profile" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+              }}>
+                <svg width={activeTab==="profile" ? 20 : 17} height={activeTab==="profile" ? 20 : 17} viewBox="0 0 24 24"
+                  fill={activeTab==="profile" ? "#0B0C1A" : "none"} stroke={activeTab==="profile" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:8, fontWeight: activeTab==="profile" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                color: activeTab==="profile" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Me</span>
+            </button>
+
+            {/* Mod orb — owner only */}
+            {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
+              <button onClick={() => setActiveTab("admin")} className="nav-orb" style={{ background:"none", border:"none", cursor:"pointer",
+                display:"flex", flexDirection:"column", alignItems:"center", gap:4, padding:"4px 8px",
+                WebkitTapHighlightColor:"transparent", outline:"none" }}>
+                <div className={activeTab==="admin" ? "orb-active" : ""} style={{
+                  width: activeTab==="admin" ? 46 : 38, height: activeTab==="admin" ? 46 : 38,
+                  borderRadius:"50%",
+                  background: activeTab==="admin"
+                    ? "radial-gradient(circle at 35% 35%, #FFE070, #F5C842, #C97B00)"
+                    : "radial-gradient(circle at 35% 35%, rgba(80,70,120,0.8), rgba(20,15,50,0.9))",
+                  border: activeTab==="admin" ? "1.5px solid rgba(245,200,66,0.8)" : "1.5px solid rgba(255,255,255,0.1)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                  boxShadow: activeTab==="admin" ? "0 0 20px rgba(245,200,66,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" : "inset 0 1px 0 rgba(255,255,255,0.05)",
+                }}>
+                  <svg width={activeTab==="admin" ? 20 : 17} height={activeTab==="admin" ? 20 : 17} viewBox="0 0 24 24"
+                    fill="none" stroke={activeTab==="admin" ? "#0B0C1A" : "rgba(255,255,255,0.35)"}
+                    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <span style={{ fontSize:8, fontWeight: activeTab==="admin" ? 800 : 400, letterSpacing:1.5, textTransform:"uppercase",
+                  color: activeTab==="admin" ? "#F5C842" : "rgba(255,255,255,0.25)", transition:"all 0.2s" }}>Mod</span>
+              </button>
+            )}
+
+          </div>
         </div>
       </div>
 
@@ -8006,7 +7516,7 @@ function App() {
                   ).map(v => (
                     <div key={v.id} style={{ aspectRatio:"9/16", background:"#111", borderRadius:4, overflow:"hidden", position:"relative", cursor:"pointer" }}
                       onClick={() => { setShowSearch(false); setSearchQuery(""); }}>
-                      <video src={resolveMediaUrl(v.media_url || v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
+                      <video src={resolveMediaUrl(v.video_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} muted playsInline preload="metadata" />
                       <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"4px 6px", background:"linear-gradient(transparent,rgba(0,0,0,0.7))", fontSize:10, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>@{v.username}</div>
                     </div>
                   ))}
@@ -8130,37 +7640,22 @@ function App() {
           </div>
         </div>
       )}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(result) => { const user = result?.sessionUser || result; setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => setShowEditProfile(false)}>
           <div style={{ background:"#1a1a2e", borderRadius:20, padding:24, width:"100%", maxWidth:420 }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:16 }}>✏️ Edit Profile</div>
-            
-            <div style={{ color:"#888", fontSize:12, fontWeight:600, marginBottom:6, textTransform:"uppercase", letterSpacing:0.8 }}>Display Name</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:17, marginBottom:16 }}>✏️ Edit Display Name</div>
             <input
               value={editProfileName}
               onChange={e => setEditProfileName(e.target.value)}
               placeholder={currentUser?.full_name || username || "Your display name"}
               style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
                 borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:15, outline:"none",
-                fontFamily:"inherit", boxSizing:"border-box", marginBottom:16 }}
+                fontFamily:"inherit", boxSizing:"border-box" }}
             />
-
-            <div style={{ color:"#888", fontSize:12, fontWeight:600, marginBottom:6, textTransform:"uppercase", letterSpacing:0.8 }}>Bio</div>
-            <textarea
-              value={editProfileBio}
-              onChange={e => setEditProfileBio(e.target.value.slice(0, 150))}
-              placeholder="Tell people who you are — influencer, trainer, mom, dad, musician... 🌸"
-              rows={3}
-              style={{ width:"100%", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.15)",
-                borderRadius:12, color:"#fff", padding:"12px 14px", fontSize:14, outline:"none",
-                fontFamily:"inherit", boxSizing:"border-box", resize:"none", lineHeight:1.5 }}
-            />
-            <div style={{ color:"#555", fontSize:11, textAlign:"right", marginBottom:16 }}>{editProfileBio.length}/150</div>
-
-            <div style={{ display:"flex", gap:10, marginTop:4 }}>
+            <div style={{ display:"flex", gap:10, marginTop:14 }}>
               <button onClick={() => setShowEditProfile(false)}
                 style={{ flex:1, padding:"12px 0", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)",
                   borderRadius:12, color:"#aaa", fontSize:14, cursor:"pointer" }}>
@@ -8170,25 +7665,9 @@ function App() {
                   if (!editProfileName.trim()) return;
                   setEditProfileSaving(true);
                   try {
-                    const newName = editProfileName.trim();
-                    const newBio = editProfileBio.trim();
-                    // Use updateSachiUser backend function (service role) to bypass RLS for Google users
-                    const fnRes = await fetch("https://sachi-04cfb834.base44.app/functions/updateSachiUser", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ email: currentUser.email, display_name: newName, full_name: newName, bio: newBio })
-                    });
-                    if (!fnRes.ok) {
-                      const errData = await fnRes.json().catch(() => ({}));
-                      throw new Error(errData.error || `Update failed: ${fnRes.status}`);
-                    }
-                    setCurrentUser(u => ({ ...u, full_name: newName, display_name: newName, bio: newBio }));
-                    setUserBio(newBio);
-                    const stored = JSON.parse(localStorage.getItem("sachi_google_user") || localStorage.getItem("sachi_user") || "{}");
-                    localStorage.setItem("sachi_google_user", JSON.stringify({ ...stored, full_name: newName, display_name: newName, bio: newBio }));
-                    localStorage.setItem("sachi_user", JSON.stringify({ ...stored, full_name: newName, display_name: newName, bio: newBio }));
+                    await request("PUT", `/apps/${APP_ID}/auth/me`, { full_name: editProfileName.trim() });
+                    setCurrentUser(u => ({ ...u, full_name: editProfileName.trim() }));
                     setShowEditProfile(false);
-                    toast.success("Profile updated!");
                   } catch(e) { toast.error("Save failed: " + e.message); }
                   finally { setEditProfileSaving(false); }
                 }}
@@ -8196,7 +7675,7 @@ function App() {
                 style={{ flex:2, padding:"12px 0", background:"linear-gradient(135deg,#e91e63,#9c27b0)",
                   border:"none", borderRadius:12, color:"#fff", fontSize:14, fontWeight:700,
                   cursor:editProfileSaving?"not-allowed":"pointer" }}>
-                {editProfileSaving ? "Saving..." : "Save Profile"}
+                {editProfileSaving ? "Saving..." : "Save Name"}
               </button>
             </div>
           </div>
@@ -8220,28 +7699,21 @@ function App() {
         // Background sync to DB — only for CDN URLs (not base64, too large for DB)
         if (currentUser && !url.startsWith("data:")) {
           try {
-            // Skip auth/me — Base44 doesn't allow PUT on auth endpoint
+            await request("PUT", `/apps/${APP_ID}/auth/me`, { avatar_url: url });
           } catch(e) { console.warn("Auth avatar update failed:", e); }
           try {
             // Match by email (works for Google users)
-            const usersData = await request("GET", `/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=5`);
+            const usersData = await request("GET", `/apps/${APP_ID}/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
             const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
             const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
-            if (match) await request("PUT", `/apps/${APP_ID}/entities/SachiUser/${match.id}`, { ...match, avatar_url: url });
+            if (match) await request("PATCH", `/apps/${APP_ID}/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           } catch(e) { console.warn("User entity update failed:", e); }
           try {
-            // Fetch all user videos by user_id AND created_by to catch all posts
-            const [vRes1, vRes2] = await Promise.all([
-              request("GET", `/apps/${APP_ID}/entities/SachiVideo?user_id=${currentUser.id}&limit=500`).catch(()=>null),
-              request("GET", `/apps/${APP_ID}/entities/SachiVideo?created_by=${encodeURIComponent(currentUser.email)}&limit=500`).catch(()=>null),
-            ]);
-            const all = [...(Array.isArray(vRes1)?vRes1:(vRes1?.items||[])), ...(Array.isArray(vRes2)?vRes2:(vRes2?.items||[]))];
-            const seen = new Set();
-            const vids = all.filter(v => { if(seen.has(v.id)) return false; seen.add(v.id); return true; });
-            await Promise.all(vids.map(v => request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${v.id}`, { ...v, avatar_url: url }).catch(()=>{})));
-            // Update feed in real time
+            const vidsData = await request("GET", `/apps/${APP_ID}/entities/SachiVideo/?created_by=${currentUser.id}&limit=200`);
+            const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
+            await Promise.all(vids.map(v => request("PATCH", `/apps/${APP_ID}/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
             setVideoList(vs => vs.map(v =>
-              (v.user_id === currentUser.id || v.created_by === currentUser.id || v.created_by === currentUser.email)
+              (v.user_id === currentUser.id || v.created_by === currentUser.id)
                 ? { ...v, avatar_url: url } : v
             ));
           } catch(e) { console.warn("Video avatar sync failed:", e); }
@@ -8252,3 +7724,5 @@ function App() {
 }
 
 export default App;
+// v1776000000000
+
