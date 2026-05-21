@@ -1,9 +1,18 @@
-.vercel
+# Dependencies
 node_modules/
 
-# Secrets
+# Vercel
+.vercel
+
+# Secrets & agent files — NEVER commit these
 .agents/
 .env
 *.env
-.agents/
-.env
+*.local
+
+# Incoming uploads
+incoming_files/
+
+# OS
+.DS_Store
+Thumbs.db
