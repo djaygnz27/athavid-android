@@ -542,9 +542,11 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
           content: text.trim(),
         });
-        const newCount = list.length + 1;
         setList(prev => [...prev, c]);
         setText("");
+        // Always increment from current DB value — never use list.length (stale)
+        const currentVideo = await videos.get(video.id).catch(() => null);
+        const newCount = (currentVideo?.comment_count || video.comment_count || 0) + 1;
         await videos.update(video.id, { comment_count: newCount });
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
