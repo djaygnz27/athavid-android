@@ -104,5 +104,32 @@
         }, 600);
       });
     </script>
+  
+    <script>
+      // Service Worker — auto-reload on new deploy
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          // Check for updates every 60 seconds
+          setInterval(() => reg.update(), 60000);
+        });
+
+        // When SW_UPDATED message received, reload immediately
+        navigator.serviceWorker.addEventListener('message', event => {
+          if (event.data && event.data.type === 'SW_UPDATED') {
+            window.location.reload(true);
+          }
+        });
+
+        // Also detect controllerchange (new SW took over) and reload
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload(true);
+          }
+        });
+      }
+    </script>
+
   </body>
 </html>
