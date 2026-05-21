@@ -530,7 +530,6 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
           content: replyText,
           parent_id: replyingTo.id,
-          likes_count: 0,
         }).catch(() => null);
         const reply = savedReply || { id: Date.now().toString(), username, avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`, content: replyText, thumbsUp:0, hearts:0, thumbsDown:0 };
         setList(prev => prev.map(x => x.id === replyingTo.id ? {...x, replies: [...(x.replies||[]), reply]} : x));
@@ -541,12 +540,12 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         const c = await comments.create({
           video_id: video.id, user_id: currentUser.id, username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          content: text.trim(), likes_count: 0,
+          content: text.trim(),
         });
         const newCount = list.length + 1;
         setList(prev => [...prev, c]);
         setText("");
-        await videos.update(video.id, { comments_count: newCount });
+        await videos.update(video.id, { comment_count: newCount });
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
       }
@@ -823,7 +822,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         thumbnail_url: thumbUrl,
         caption: caption || "🔴 Live recording",
         hashtags: ["live"],
-        likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
+        like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
         content_category: "General",
         is_approved: true, is_archived: false, is_ai_detected: false,
         duration_seconds: elapsed,
@@ -1465,7 +1464,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
-        likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
+        like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
         content_category: "General",
         is_approved: true,
         is_archived: false, is_ai_detected: isAiGenerated,
@@ -1567,7 +1566,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         media_type: "video",
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
-        likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,
+        like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
         content_category: "General",
         is_approved: true,
         is_archived: false, is_ai_detected: isAiGenerated,
@@ -1811,7 +1810,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         photo_urls: [img_url], is_photo: true,
         caption: (postTitle ? postTitle + "\n" : "") + textPostContent.trim(),
         hashtags: (textPostContent.match(/#\w+/g) || []).map(t => t.toLowerCase()),
-        likes_count:0, comments_count:0, views_count:0, shares_count:0,
+        like_count:0, comment_count:0, views_count:0, shares_count:0,
         content_category: "General",
         is_approved: postVisibility !== "only_me", is_archived: false, is_ai_detected: false, is_mature: false,
         sound_title: "Text Post", sound_artist: "sachi",
@@ -3653,7 +3652,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   style={{ width:"100%", maxHeight:"60vh", background:"#1a1a2e", borderRadius:"20px 20px 0 0", padding:"20px 0 40px", overflowY:"auto" }}>
                   <div style={{ textAlign:"center", padding:"0 20px 16px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
                     <div style={{ width:40, height:4, borderRadius:2, background:"rgba(255,255,255,0.15)", margin:"0 auto 16px" }} />
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>❤️ {formatCount(video.likes_count||0)} Likes</div>
+                    <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>❤️ {formatCount(video.like_count||0)} Likes</div>
                   </div>
                   {likersLoading ? (
                     <div style={{ textAlign:"center", padding:32, color:"#555" }}>Loading…</div>
@@ -3720,8 +3719,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                   label="Like"
                   isActive={liked}
                   activeColor="#FF6B6B"
-                  ringOffset={liked ? Math.max(RING_CIRC-((video.likes_count||0)/40)*RING_CIRC,8) : RING_CIRC}
-                  onCountClick={(video.likes_count||0) > 0 ? async () => {
+                  ringOffset={liked ? Math.max(RING_CIRC-((video.like_count||0)/40)*RING_CIRC,8) : RING_CIRC}
+                  onCountClick={(video.like_count||0) > 0 ? async () => {
                     setShowLikers(true);
                     setLikersLoading(true);
                     try {
@@ -6187,7 +6186,7 @@ function AdminPanel({ currentUser }) {
 
       // Totals
       const totalViews  = videos.reduce((s,v) => s+(v.views_count||0), 0);
-      const totalLikes  = videos.reduce((s,v) => s+(v.likes_count||0), 0);
+      const totalLikes  = videos.reduce((s,v) => s+(v.like_count||0), 0);
       const matureCount = videos.filter(v => v.is_mature).length;
 
       // Today & this week registrations
@@ -6781,7 +6780,7 @@ function AdminPanel({ currentUser }) {
               if (!creatorMap[key]) creatorMap[key] = { username: v.username || "unknown", display_name: v.display_name || v.username || "—", avatar_url: v.avatar_url || "", videos: 0, views: 0, likes: 0 };
               creatorMap[key].videos++;
               creatorMap[key].views += v.views_count || 0;
-              creatorMap[key].likes += v.likes_count || 0;
+              creatorMap[key].likes += v.like_count || 0;
             });
             const creators = Object.values(creatorMap).sort((a,b) => b.videos - a.videos);
             if (!creators.length) return <div style={{ textAlign:"center", color:"#555", padding:40 }}>No creators yet.</div>;
@@ -7304,14 +7303,14 @@ function App() {
     setVideoList(vs => {
       const updated = vs.map(v => {
         if (v.id !== videoId) return v;
-        const newCount = Math.max(0, (v.likes_count || 0) + delta);
+        const newCount = Math.max(0, (v.like_count || 0) + delta);
         // Side effects (DB + interests) inside the updater so we read fresh state
-        // NEVER pass comments_count — only update likes_count to avoid clearing comments
-        videos.update(videoId, { likes_count: newCount }).catch(() => {});
+        // NEVER pass comment_count — only update like_count to avoid clearing comments
+        videos.update(videoId, { like_count: newCount }).catch(() => {});
         if (currentUser && v.hashtags?.length) {
           interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
         }
-        return { ...v, likes_count: newCount };
+        return { ...v, like_count: newCount };
       });
       return updated;
     });
