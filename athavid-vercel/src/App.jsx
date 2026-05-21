@@ -1,4 +1,4 @@
-// Sachi Stream — main application v2.2.1
+// Sachi Stream — main application v2.3.1
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
@@ -11,7 +11,7 @@ import MusicPicker from "./MusicPicker.jsx";
 import SachiAdminPanel from "./AdminPanel.jsx";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const APP_VERSION = "2.2.1";
+const APP_VERSION = "2.3.1";
 
 // ── Audio Preloader Cache ─────────────────────────────────────────────────
 // Pre-fetches audio for upcoming videos so playback starts instantly
@@ -819,6 +819,7 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
         video_url: file_url,
         media_url: file_url,
         media_type: "video",
+        content_category: "General",
         thumbnail_url: thumbUrl,
         caption: caption || "🔴 Live recording",
         hashtags: ["live"],
@@ -1459,6 +1460,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         video_url: urls[0],
         media_url: urls[0],
         media_type: "photo",
+        content_category: "General",
         thumbnail_url: urls[0],
         photo_urls: urls,
         is_photo: true,
@@ -1564,6 +1566,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         video_url, thumbnail_url,
         media_url: video_url,
         media_type: "video",
+        content_category: "General",
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         like_count: 0, comment_count: 0, views_count: 0, shares_count: 0,
