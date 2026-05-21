@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Sachi — Your Stage</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <!-- v3.0.0 constellation -->
 
     <!-- PWA Meta Tags -->
     <meta name="application-name" content="Sachi" />
@@ -19,12 +23,12 @@
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/sachi-logo-512.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/sachi-logo-512.png" />
+    <link rel="apple-touch-icon" href="/sachi-logo-v5.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/sachi-logo-v5.png" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" href="/sachi-logo-512.png" />
+    <link rel="icon" type="image/png" href="/sachi-logo-v5.png" />
 
     <style>
       body { margin: 0; background: #0B0C1A; }
@@ -38,6 +42,7 @@
         justify-content: center;
         gap: 20px;
         z-index: 99999;
+        transition: opacity 0.4s ease;
       }
       #splash img {
         width: 90px;
@@ -56,40 +61,59 @@
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.8; transform: scale(0.96); }
       }
+      #static-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        padding: 8px;
+        background: transparent;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 11px;
+        z-index: 1;
+        pointer-events: none;
+      }
+      #static-footer a {
+        color: rgba(245,200,66,0.6);
+        text-decoration: none;
+        margin: 0 8px;
+      }
     </style>
   </head>
   <body>
+    <!-- Static footer — visible to crawlers before JS loads -->
+    <div id="static-footer">
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+    </div>
+
     <!-- Inline splash shown while JS loads -->
     <div id="splash">
-      <img src="/sachi-neon-logo.jpg" alt="Sachi" style="width:200px;border-radius:16px;" />
+      <img src="/sachi-logo-v5.png" alt="Sachi" />
       <div id="splash-text">sachi</div>
     </div>
 
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Remove the HTML splash the moment React renders its first content
-      // into #root. This avoids the visible "fade out HTML splash + fade in
-      // theme splash" double transition. The HTML splash stays visible for
-      // exactly as long as React takes to boot — no more, no less.
-      (function() {
-        var root = document.getElementById('root');
-        var splash = document.getElementById('splash');
-        if (!root || !splash) return;
-        var obs = new MutationObserver(function() {
-          if (root.children.length > 0) {
-            splash.remove();
-            obs.disconnect();
-          }
-        });
-        obs.observe(root, { childList: true });
-        // Safety fallback: if React fails to mount in 8 seconds for any reason,
-        // remove the splash anyway so the user doesn't stare at a frozen logo.
+      // Hide splash once React mounts
+      window.addEventListener('load', function() {
         setTimeout(function() {
-          if (document.body.contains(splash)) splash.remove();
-          obs.disconnect();
-        }, 8000);
-      })();
+          var s = document.getElementById('splash');
+          if (s) { s.style.opacity = '0'; setTimeout(function(){ s.remove(); }, 400); }
+          var f = document.getElementById('static-footer');
+          if (f) { f.style.opacity = '0'; setTimeout(function(){ f.remove(); }, 400); }
+        }, 600);
+      });
     </script>
+  
+    <script>
+      // Service Worker — register only, NO forced reloads
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
+    </script>
+
   </body>
 </html>
