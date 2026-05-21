@@ -17,7 +17,7 @@ if (localStorage.getItem("sachi_build") !== SACHI_BUILD) {
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import heic2any from "heic2any";
 import Landing from "./Landing";
-import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks } from "./api.js";
+import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
 import Terms from "./Terms.jsx";
 import Privacy from "./Privacy.jsx";
@@ -431,7 +431,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         await videos.update(video.id, { comments_count: newCount });
         setLocalCommentCount(newCount);
         if (onCommentPosted) onCommentPosted(video.id, newCount);
-        setTimeout(() => onClose(), 600);
+        // Don't auto-close — let user stay and keep commenting or see their comment
       }
     } catch(e) { toast.error("Error: " + e.message); }
     finally { setPosting(false); }
@@ -2495,6 +2495,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
   const [localCommentCount, setLocalCommentCount] = useState(video.comments_count || 0);
+  const [localLikeCount, setLocalLikeCount] = useState(video.likes_count || 0);
+  const [localHypeCount, setLocalHypeCount] = useState(video.hype_count || 0);
+  const [localHyped, setLocalHyped] = useState(false);
 
   // Restore liked state from cache/DB on mount
   useEffect(() => {
@@ -2504,11 +2507,19 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     (async () => {
       try {
         const rec = await likes.checkUserLiked(video.id, currentUser.id);
-        if (!cancelled && rec) setLiked(true);
+        if (!cancelled && rec) {
+          setLiked(true);
+          likeRecordRef.current = rec.id || null;
+        }
       } catch(e) {}
     })();
     return () => { cancelled = true; };
   }, [video.id, currentUser?.id]);
+
+  // Keep local counts in sync when parent re-renders with new values
+  useEffect(() => { setLocalLikeCount(video.likes_count || 0); }, [video.likes_count]);
+  useEffect(() => { setLocalHypeCount(video.hype_count || 0); }, [video.hype_count]);
+  useEffect(() => { setLocalCommentCount(video.comments_count || 0); }, [video.comments_count]);
 
   // Sync comment count from DB on mount (fixes stale zero display)
   useEffect(() => {
@@ -2780,6 +2791,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       timerRef.current = setTimeout(() => { countRef.current = 0; }, 1500);
     }
   };
+  // Track the like record ID so we can delete it on unlike
+  const likeRecordRef = React.useRef(null);
+
   const doLike = () => {
     if (!currentUser) { onNeedAuth(); return; }
     if (likeLockedRef.current) return;
@@ -2788,7 +2802,32 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     showPopMsg(LIKE_MSGS, setLikePopMsg, likeTapCount, likeTapTimer);
     setLiked(prev => {
       const newLiked = !prev;
-      onLike(video.id, newLiked ? 1 : -1);
+      const delta = newLiked ? 1 : -1;
+      // Optimistic local update — shows instantly
+      setLocalLikeCount(c => Math.max(0, c + delta));
+      // Propagate to parent list for persistence
+      onLike(video.id, delta);
+      // Write/delete SachiLike record in background
+      if (newLiked) {
+        likes.add(
+          video.id,
+          currentUser.id,
+          currentUser.username || currentUser.email?.split("@")[0],
+          currentUser.display_name || currentUser.full_name || currentUser.username,
+          currentUser.avatar_url || ""
+        ).then(rec => { likeRecordRef.current = rec?.id || null; }).catch(() => {});
+      } else {
+        // Delete the like record
+        if (likeRecordRef.current) {
+          likes.remove(likeRecordRef.current).catch(() => {});
+          likeRecordRef.current = null;
+        } else {
+          // No cached record ID — fetch and delete
+          likes.checkUserLiked(video.id, currentUser.id).then(rec => {
+            if (rec?.id) likes.remove(rec.id).catch(() => {});
+          }).catch(() => {});
+        }
+      }
       return newLiked;
     });
   };
@@ -3232,7 +3271,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
               </svg>
             </div>
-            <div style={{ color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.likes_count||0)}</div>
+            <div style={{ color: liked ? "#FF6B6B" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(localLikeCount)}</div>
             {likePopMsg && (
               <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:"50%", transform:"translateX(-50%)", zIndex:600,
                 background:"rgba(255,60,60,0.95)", color:"#fff", borderRadius:14, padding:"7px 13px",
@@ -3263,28 +3302,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
 
           {/* HYPE 🔥 */}
           {(() => {
-            const isHyped = video._hyped;
             return (
               <button onClick={tap(async () => {
                 if (!currentUser) { onNeedAuth(); return; }
                 showPopMsg(HYPE_MSGS, setHypePopMsg, hypeTapCount, hypeTapTimer);
-                // Toggle hype
-                const newHyped = !isHyped;
-                const newCount = Math.max(0, (video.hype_count || 0) + (newHyped ? 1 : -1));
-                onLike(video.id, 0); // re-render trigger
+                const newHyped = !localHyped;
+                setLocalHyped(newHyped);
+                const newCount = Math.max(0, localHypeCount + (newHyped ? 1 : -1));
+                setLocalHypeCount(newCount);
                 try { await videos.update(video.id, { hype_count: newCount }); } catch(e) {}
               })} style={{ background:"none", border:"none", cursor:"pointer", flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4, WebkitTapHighlightColor:"transparent", touchAction:"manipulation", position:"relative" }}>
                 <div style={{
                   width:44, height:44, borderRadius:16,
-                  background: isHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
-                  border: isHyped ? "1.5px solid rgba(255,180,0,0.8)" : "1.5px solid rgba(255,150,0,0.25)",
-                  boxShadow: isHyped ? "0 0 20px rgba(255,160,0,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
+                  background: localHyped ? "radial-gradient(135deg, rgba(255,180,0,0.45), rgba(255,100,0,0.2))" : "rgba(255,150,0,0.08)",
+                  border: localHyped ? "1.5px solid rgba(255,180,0,0.8)" : "1.5px solid rgba(255,150,0,0.25)",
+                  boxShadow: localHyped ? "0 0 20px rgba(255,160,0,0.5), 0 4px 12px rgba(0,0,0,0.4)" : "0 2px 8px rgba(0,0,0,0.3)",
                   display:"flex", alignItems:"center", justifyContent:"center",
                   transition:"all 0.2s",
                 }}>
                   <span style={{ fontSize:22 }}>🔥</span>
                 </div>
-                <div style={{ color: isHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(video.hype_count||0)}</div>
+                <div style={{ color: localHyped ? "#FFB300" : "rgba(255,255,255,0.7)", fontSize:11, fontWeight:700, letterSpacing:0.3 }}>{formatCount(localHypeCount)}</div>
                 {hypePopMsg && (
                   <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:"50%", transform:"translateX(-50%)", zIndex:600,
                     background:"rgba(255,130,0,0.95)", color:"#fff", borderRadius:14, padding:"7px 13px",
@@ -6820,8 +6858,10 @@ function App() {
     setVideoList(vs => {
       const updated = vs.map(v => {
         if (v.id !== videoId) return v;
+        // delta=0 means just trigger re-render (e.g. hype)
+        if (delta === 0) return { ...v };
         const newCount = Math.max(0, (v.likes_count || 0) + delta);
-        // Side effects (DB + interests) inside the updater so we read fresh state
+        // Update DB count + interest signals
         videos.update(videoId, { likes_count: newCount }).catch(() => {});
         if (currentUser && v.hashtags?.length) {
           interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
