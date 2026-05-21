@@ -7304,9 +7304,9 @@ function App() {
 
       {/* Bottom Nav — Sachi original style: floating pill */}
       {/* ── ORBITAL ARC NAV ── */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,4px)", pointerEvents:"none" }}>
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,4px)", pointerEvents:"auto" }}>
         {/* Aurora top line */}
-        <div style={{ height:1, background:"linear-gradient(90deg, transparent 0%, rgba(123,47,255,0.6) 30%, rgba(245,200,66,0.5) 50%, rgba(0,229,255,0.4) 70%, transparent 100%)" }} />
+        <div style={{ height:1, background:"linear-gradient(90deg, transparent 0%, rgba(123,47,255,0.6) 30%, rgba(245,200,66,0.5) 50%, rgba(0,229,255,0.4) 70%, transparent 100%)", pointerEvents:"none" }} />
         <div style={{ background:"linear-gradient(to top, rgba(5,3,15,0.98) 0%, rgba(8,5,25,0.95) 100%)",
           backdropFilter:"blur(30px)", paddingTop:10, paddingBottom:2, pointerEvents:"auto" }}>
 

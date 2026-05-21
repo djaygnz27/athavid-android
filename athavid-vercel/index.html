@@ -72,6 +72,7 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 11px;
         z-index: 1;
+        pointer-events: none;
       }
       #static-footer a {
         color: rgba(245,200,66,0.6);
@@ -101,6 +102,8 @@
         setTimeout(function() {
           var s = document.getElementById('splash');
           if (s) { s.style.opacity = '0'; setTimeout(function(){ s.remove(); }, 400); }
+          var f = document.getElementById('static-footer');
+          if (f) { f.style.opacity = '0'; setTimeout(function(){ f.remove(); }, 400); }
         }, 600);
       });
     </script>

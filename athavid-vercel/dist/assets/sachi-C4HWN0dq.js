@@ -19471,8 +19471,8 @@ function App() {
     ] }),
     activeTab === "podcast" && /* @__PURE__ */ jsxRuntimeExports.jsx(PodcastPage, { currentUser, onNeedAuth: () => setShowAuth(true) }),
     activeTab === "admin" && /* @__PURE__ */ jsxRuntimeExports.jsx(AdminPanel, { currentUser }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,4px)", pointerEvents: "none" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(123,47,255,0.6) 30%, rgba(245,200,66,0.5) 50%, rgba(0,229,255,0.4) 70%, transparent 100%)" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,4px)", pointerEvents: "auto" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "linear-gradient(90deg, transparent 0%, rgba(123,47,255,0.6) 30%, rgba(245,200,66,0.5) 50%, rgba(0,229,255,0.4) 70%, transparent 100%)", pointerEvents: "none" } }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         background: "linear-gradient(to top, rgba(5,3,15,0.98) 0%, rgba(8,5,25,0.95) 100%)",
         backdropFilter: "blur(30px)",
