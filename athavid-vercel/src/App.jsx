@@ -3715,7 +3715,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 {/* Heart */}
                 <ActionBtn
                   onClick={tap(doLike)}
-                  count={video.likes_count||0}
+                  count={video.like_count||0}
                   label="Like"
                   isActive={liked}
                   activeColor="#FF6B6B"
@@ -3742,7 +3742,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
                 </ActionBtn>
 
                 {/* Comment */}
-                <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comments_count||0} label="Comment" isActive={false} activeColor="#6c63ff" ringOffset={Math.max(RING_CIRC-((video.comments_count||0)/15)*RING_CIRC, 12)}>
+                <ActionBtn onClick={tap(()=>onCommentOpen(video))} count={video.comment_count||0} label="Comment" isActive={false} activeColor="#6c63ff" ringOffset={Math.max(RING_CIRC-((video.comment_count||0)/15)*RING_CIRC, 12)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                   </svg>
@@ -4956,7 +4956,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                         </div>
                         <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" }} />
                         <div style={{ position:"absolute", bottom:4, left:6, color:"#fff", fontSize:11, fontWeight:700 }}>
-                          ❤️ {v.likes_count || 0}
+                          ❤️ {v.like_count || 0}
                         </div>
                       </div>
                     ))}
@@ -5074,7 +5074,7 @@ function VideoManageGrid({ videos: vids, onRefresh, currentUser }) {
               </div>
               <div>
                 <div style={{ color:"#fff", fontWeight:700, fontSize:14 }}>{menuVideo.caption || "(no caption)"}</div>
-                <div style={{ color:"#888", fontSize:12, marginTop:4 }}>👁 {menuVideo.views_count || 0}  ❤️ {menuVideo.likes_count || 0}  💬 {menuVideo.comments_count || 0}</div>
+                <div style={{ color:"#888", fontSize:12, marginTop:4 }}>👁 {menuVideo.views_count || 0}  ❤️ {menuVideo.like_count || 0}  💬 {menuVideo.comment_count || 0}</div>
               </div>
             </div>
 
@@ -6743,7 +6743,7 @@ function AdminPanel({ currentUser }) {
                       </div>
                       <div style={{ display:"flex", gap:8 }}>
                         <span style={{ fontSize:11, color:"#555" }}>👁 {video.views_count||0}</span>
-                        <span style={{ fontSize:11, color:"#555" }}>❤️ {video.likes_count||0}</span>
+                        <span style={{ fontSize:11, color:"#555" }}>❤️ {video.like_count||0}</span>
                       </div>
                     </div>
                   </div>
@@ -6849,7 +6849,7 @@ function AdminPanel({ currentUser }) {
                   </div>
                   <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:6 }}>
                     <span style={{ fontSize:11, color:"#555" }}>👁 {video.views_count||0}</span>
-                    <span style={{ fontSize:11, color:"#555" }}>❤️ {video.likes_count||0}</span>
+                    <span style={{ fontSize:11, color:"#555" }}>❤️ {video.like_count||0}</span>
                     {video.is_mature && (
                       <span style={{ fontSize:11, background:"rgba(255,107,107,0.2)", color:"#ff6b6b", padding:"2px 8px", borderRadius:20, fontWeight:700 }}>
                         🔞 {(video.mature_reason||"mature").replace(/_/g," ")}
@@ -7354,7 +7354,7 @@ function App() {
   };
 
   const handleCommentCount = (videoId, count) => {
-    setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, comments_count: count } : v));
+    setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, comment_count: count } : v));
   };
 
   const requireAuth = (cb) => { if (currentUser) { cb(); } else { setShowAuth(true); setAuthToast(true); setTimeout(() => setAuthToast(false), 3000); } };
