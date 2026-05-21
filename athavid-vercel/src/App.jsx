@@ -6726,14 +6726,18 @@ function App() {
       // Use service-role backend function — bypasses RLS so ALL public posts show
       // regardless of created_by value (fixes "anonymous" created_by issue)
       let rawAll = [];
+      // Direct entity query — public, no auth needed, bypasses RLS issues
+      // Fetches all approved non-archived videos regardless of created_by
       try {
-        const res = await fetch(`https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
+        const APP_ID = "69e79122bcc8fb5a04cfb834";
+        const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+        const res = await fetch(`${BASE_URL}/apps/${APP_ID}/entities/SachiVideo?is_archived=false&is_approved=true&sort=-created_date&limit=${POOL_SIZE}&skip=${skip}`);
         if (res.ok) {
           const json = await res.json();
           rawAll = Array.isArray(json) ? json : (json?.items || json?.records || []);
         } else { throw new Error("feed fallback"); }
       } catch {
-        // Fallback to direct entity API if backend function unavailable
+        // Secondary fallback
         const data = await videos.list(POOL_SIZE, skip);
         rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
       }

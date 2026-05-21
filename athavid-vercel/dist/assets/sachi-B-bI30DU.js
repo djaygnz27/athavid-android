@@ -18740,7 +18740,9 @@ function App() {
       const skip = (page - 1) * POOL_SIZE;
       let rawAll = [];
       try {
-        const res = await fetch(`https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
+        const APP_ID2 = "69e79122bcc8fb5a04cfb834";
+        const BASE_URL2 = "https://sachi-04cfb834.base44.app/api";
+        const res = await fetch(`${BASE_URL2}/apps/${APP_ID2}/entities/SachiVideo?is_archived=false&is_approved=true&sort=-created_date&limit=${POOL_SIZE}&skip=${skip}`);
         if (res.ok) {
           const json = await res.json();
           rawAll = Array.isArray(json) ? json : (json == null ? void 0 : json.items) || (json == null ? void 0 : json.records) || [];
