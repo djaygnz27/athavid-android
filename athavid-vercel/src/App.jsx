@@ -544,9 +544,13 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         });
         setList(prev => [...prev, c]);
         setText("");
-        // Always increment from current DB value — never use list.length (stale)
-        const currentVideo = await videos.get(video.id).catch(() => null);
-        const newCount = (currentVideo?.comment_count || video.comment_count || 0) + 1;
+        // Always increment from live DB value — use direct request to avoid SDK confusion
+        let liveCount = video.comment_count || 0;
+        try {
+          const liveVideo = await request("GET", `/apps/${APP_ID}/entities/SachiVideo/${video.id}`);
+          liveCount = liveVideo?.comment_count || liveVideo?.items?.[0]?.comment_count || liveCount;
+        } catch(e) {}
+        const newCount = Number(liveCount) + 1;
         await videos.update(video.id, { comment_count: newCount });
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
