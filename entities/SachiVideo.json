@@ -1,5 +1,10 @@
 {
+  "type": "object",
+  "required": [],
   "properties": {
+    "external_id": {
+      "type": "string"
+    },
     "user_id": {
       "type": "string"
     },
@@ -9,13 +14,13 @@
     "display_name": {
       "type": "string"
     },
-    "avatar_url": {
+    "media_url": {
       "type": "string"
     },
     "video_url": {
       "type": "string"
     },
-    "thumbnail_url": {
+    "media_type": {
       "type": "string"
     },
     "caption": {
@@ -27,10 +32,17 @@
         "type": "string"
       }
     },
-    "likes_count": {
+    "content_category": {
+      "type": "string",
+      "default": "General"
+    },
+    "podcast_id": {
+      "type": "string"
+    },
+    "like_count": {
       "type": "number"
     },
-    "comments_count": {
+    "comment_count": {
       "type": "number"
     },
     "views_count": {
@@ -45,26 +57,14 @@
     "is_archived": {
       "type": "boolean"
     },
-    "is_ai_detected": {
-      "type": "boolean"
-    },
     "is_approved": {
       "type": "boolean"
     },
-    "archive_date": {
-      "type": "string"
+    "is_ai_detected": {
+      "type": "boolean"
     },
-    "duration_seconds": {
-      "type": "number"
-    },
-    "sound_title": {
-      "type": "string"
-    },
-    "sound_artist": {
-      "type": "string"
-    },
-    "sound_url": {
-      "type": "string"
+    "is_ai_generated": {
+      "type": "boolean"
     },
     "is_mature": {
       "type": "boolean"
@@ -81,6 +81,9 @@
         "type": "string"
       }
     },
+    "thumbnail_url": {
+      "type": "string"
+    },
     "post_country": {
       "type": "string"
     },
@@ -96,18 +99,27 @@
     "post_visibility": {
       "type": "string"
     },
-    "is_text_post": {
-      "type": "boolean"
+    "sound_url": {
+      "type": "string"
+    },
+    "sound_title": {
+      "type": "string"
+    },
+    "sound_artist": {
+      "type": "string"
     },
     "annotations": {
       "type": "array",
       "items": {
         "type": "object"
-      },
-      "description": "Timed pop-up bubbles [{time: 3.5, text: 'hello!'}]"
+      }
+    },
+    "evidence_links": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
-  "type": "object",
-  "required": [],
   "name": "SachiVideo"
 }
