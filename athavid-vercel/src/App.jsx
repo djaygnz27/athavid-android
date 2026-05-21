@@ -3083,7 +3083,9 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const isVisibleRef = { current: false };
     const tryPlay = () => {
-      // Always play muted first — browsers always allow muted autoplay
+      // Hide play button immediately — don't wait for promise
+      // This prevents the "tap me" illusion while video loads
+      if (playStore.get()) setShowUI(false);
       el.muted = true;
       const attemptPlay = () => {
         el.play().then(() => {
@@ -3100,8 +3102,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           if (el.readyState < 3) {
             el.addEventListener('canplay', attemptPlay, { once: true });
           } else {
-            // Truly blocked (e.g. no user gesture) — show play button
-            setShowUI(true);
+            // Truly blocked — no user gesture yet, show play button
+            if (!playStore.get()) setShowUI(true);
           }
         });
       };
@@ -3527,7 +3529,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )}
 
       {/* ── PLAY/PAUSE INDICATOR — videos only ── */}
-      {!playing && !photoUrls && (
+      {!playing && !photoUrls && (showUI || !playStore.get()) && (
         <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none", zIndex:60 }}>
           <div onClick={(e) => { e.stopPropagation(); doTogglePlay(); }} style={{ background:"rgba(11,12,26,0.7)", border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:"50%", width:72, height:72,
             display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"auto", cursor:"pointer", fontSize:30 }}>▶</div>
