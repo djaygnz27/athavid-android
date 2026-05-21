@@ -9264,7 +9264,7 @@ function AuthModal({ onClose, onSuccess }) {
     /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 28 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12, display: "flex", justifyContent: "center", alignItems: "center", gap: 10 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", alt: "Sachi", style: { width: 48, height: 48, borderRadius: 12, filter: "drop-shadow(0 0 10px rgba(245,200,66,0.6))" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v6.png", alt: "Sachi", style: { width: 48, height: 48, borderRadius: 12, filter: "drop-shadow(0 0 10px rgba(245,200,66,0.6))" } }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-start" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 900, fontSize: 26, letterSpacing: 2, color: "#F5C842", lineHeight: 1 }, children: "SACHi" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 400, fontSize: 11, color: "rgba(255,255,255,0.45)", letterSpacing: 3 }, children: "STREAM" })
@@ -13543,8 +13543,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 const words = text || "Hey happy Monday";
                 const fs = mini ? 9 : 34;
                 return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: mini ? 3 : 10, padding: mini ? "8px" : "24px", width: "100%", height: "100%" }, children: [
-                  !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 4 }, children: "🌸" }),
-                  mini && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12 }, children: "🌸" }),
+                  !mini && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v6.png", alt: "Sachi", style: { width: 36, height: 36, borderRadius: 8, marginBottom: 4 } }),
+                  mini && /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v6.png", alt: "Sachi", style: { width: 14, height: 14, borderRadius: 3 } }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: fs, fontWeight: 900, color: "#F5C842", fontFamily: "Georgia,serif", textAlign: "center", lineHeight: 1.3, wordBreak: "break-word" }, children: words })
                 ] });
               }
@@ -19011,7 +19011,7 @@ function App() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(ToastContainer, {}),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, paddingTop: "env(safe-area-inset-top,0px)", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px", pointerEvents: "auto" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v5.png", alt: "Sachi", style: { width: 30, height: 30, borderRadius: 8, filter: "drop-shadow(0 0 6px rgba(245,200,66,0.5))" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v6.png", alt: "Sachi", style: { width: 30, height: 30, borderRadius: 8, filter: "drop-shadow(0 0 6px rgba(245,200,66,0.5))" } }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 1 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12, fontWeight: 700, color: "#F5C842", lineHeight: 1, marginBottom: 2 }, children: "™" })
