@@ -7023,45 +7023,19 @@ const STARS = Array.from({ length: 55 }, (_, i) => ({
 function Landing({ onEnter }) {
   const [phase, setPhase] = reactExports.useState("idle");
   const [leaving, setLeaving] = reactExports.useState(false);
-  const leavingRef = React.useRef(false);
-  const preloadRef = React.useRef(null);
-  const handleEnter = React.useCallback(() => {
-    if (leavingRef.current) return;
-    leavingRef.current = true;
-    setLeaving(true);
-    setTimeout(() => onEnter(), 700);
-  }, [onEnter]);
-  reactExports.useEffect(() => {
-    const APP_ID2 = "69e79122bcc8fb5a04cfb834";
-    fetch(`https://sachi-04cfb834.base44.app/api/apps/${APP_ID2}/entities/SachiVideo?limit=10&sort=-created_date`, {
-      headers: { "x-api-key": "public" }
-    }).then((r2) => r2.json()).then((data) => {
-      const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
-      const first = items.find((v2) => !v2.is_archived && v2.video_url);
-      if (first == null ? void 0 : first.video_url) {
-        const el2 = document.createElement("video");
-        el2.src = first.video_url;
-        el2.preload = "auto";
-        el2.muted = true;
-        el2.playsInline = true;
-        el2.style.display = "none";
-        el2.load();
-        document.body.appendChild(el2);
-        preloadRef.current = el2;
-      }
-    }).catch(() => {
-    });
-    return () => {
-    };
-  }, []);
   reactExports.useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
-    const t2 = setTimeout(() => handleEnter(), 3e3);
+    const t2 = setTimeout(() => handleEnter(), 8e3);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [handleEnter]);
+  }, []);
+  const handleEnter = () => {
+    if (leaving) return;
+    setLeaving(true);
+    setTimeout(() => onEnter(), 700);
+  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: handleEnter, style: {
     position: "fixed",
     inset: 0,
@@ -7273,7 +7247,7 @@ function Landing({ onEnter }) {
         height: 1.5,
         background: "linear-gradient(90deg,transparent,rgba(245,200,66,0.6),transparent)"
       } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f3", style: {
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f3", style: {
         marginTop: 16,
         fontSize: 26,
         lineHeight: 1.6,
@@ -7281,11 +7255,7 @@ function Landing({ onEnter }) {
         maxWidth: 320,
         fontWeight: 600,
         textAlign: "center"
-      }, children: [
-        "Real moments. Real people.",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-        "No AI, just the truth."
-      ] }),
+      }, children: "Real moments. Real people. No filters." }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f4", style: {
         marginTop: 20,
         fontSize: 18,
@@ -8554,10 +8524,9 @@ function Terms() {
     ] })
   ] });
 }
-const APP_ID$2 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL$1 = "https://sachi-04cfb834.base44.app/api";
-const APP_BASE$2 = `/apps/${APP_ID$2}`;
-const COINS_FN = "https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/sachiCoins";
+const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
+const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
 const GIFTS = [
   { id: "sakura", name: "Sakura", emoji: "🌸", icon: "🌸", coins: 5, color: "#e91e8c", glow: "rgba(233,30,140,0.6)", rarity: "common", anim: "float" },
   { id: "crystal", name: "Crystal", emoji: "💎", icon: "💎", coins: 15, color: "#00bcd4", glow: "rgba(0,188,212,0.6)", rarity: "common", anim: "spin" },
@@ -8582,26 +8551,17 @@ const COIN_PACKS = [
   { id: "pack_10000", coins: 1e4, price: "$49.99", tag: "BEST VALUE", icon: "👑", price_id: "price_1TKVSmKB9bqKOOJ0fOjNzyQy" }
 ];
 async function apiReq$1(method, path, body) {
-  const token = localStorage.getItem("sachi_token");
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(BASE_URL$1 + path, {
     method,
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : void 0
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || data.error || `Error ${res.status}`);
-  return data;
+  return res.json();
 }
 async function getWallet(userId) {
   var _a;
-  try {
-    const d = await apiReq$1("GET", `${APP_BASE$2}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
-    return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
-  } catch {
-    return null;
-  }
+  const d = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
+  return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
 }
 async function sendGiftAPI(giftData) {
   try {
@@ -8614,11 +8574,11 @@ async function sendGiftAPI(giftData) {
   } catch {
     const wallet = await getWallet(giftData.sender_id);
     if (!wallet || wallet.coins < giftData.coin_cost) return { error: "Insufficient coins" };
-    await apiReq$1("PUT", `${APP_BASE$2}/entities/SachiCoinWallet/${wallet.id}`, {
+    await apiReq$1("PUT", `/apps/${APP_ID$2}/entities/SachiCoinWallet/${wallet.id}`, {
       coins: wallet.coins - giftData.coin_cost,
       total_spent_coins: (wallet.total_spent_coins || 0) + giftData.coin_cost
     });
-    const gift = await apiReq$1("POST", `${APP_BASE$2}/entities/SachiGift`, giftData);
+    const gift = await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiGift`, giftData);
     return { success: true, gift, coins_remaining: wallet.coins - giftData.coin_cost };
   }
 }
@@ -8968,11 +8928,7 @@ function GiftTray({ room, currentUser, wallet, onWalletUpdate, onClose, onGiftSe
 }
 async function handleBuyCoins(pack) {
   var _a;
-  let user = null;
-  try {
-    user = JSON.parse(localStorage.getItem("sachi_user") || "null");
-  } catch {
-  }
+  const user = JSON.parse(localStorage.getItem("sachi_user") || "null");
   if (!user) {
     alert("Sign in to buy coins");
     return;
@@ -9010,7 +8966,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       try {
         const w2 = await getWallet(currentUser.id);
         setWallet(w2);
-        const g = await apiReq$1("GET", `${APP_BASE$2}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
+        const g = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
         setGifts(Array.isArray(g) ? g : (g == null ? void 0 : g.items) || []);
       } catch {
       }
@@ -9035,7 +8991,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       setPayoutSent(true);
       setShowPayout(false);
     } catch {
-      await apiReq$1("POST", `${APP_BASE$2}/entities/SachiPayoutRequest`, {
+      await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiPayoutRequest`, {
         host_id: currentUser.id,
         host_username: currentUser.username || "host",
         host_email: currentUser.email,
@@ -20083,13 +20039,15 @@ class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(e) {
     return { error: e };
   }
+  componentDidCatch(error, errorInfo) {
+    this.setState({ errorInfo });
+  }
   render() {
-    var _a;
     if (this.state.error) {
       return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#0f0f1a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 16, padding: 32, maxWidth: 340, width: "100%", textAlign: "center", border: "1px solid rgba(255,107,107,0.3)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "😅" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontWeight: 800, fontSize: 18, marginBottom: 8 }, children: "Something went wrong" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: ((_a = this.state.error) == null ? void 0 : _a.message) || "Unknown error" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "Please reload and try again." }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {

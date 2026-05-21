@@ -4,20 +4,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
-const APP_ID = "69e79122bcc8fb5a04cfb834";
-<<<<<<< HEAD
-const BASE_URL = "https://sachi-04cfb834.base44.app/api";
-const APP_BASE = `/apps/${APP_ID}`;
-const COINS_FN = "https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/sachiCoins";
-=======
-
-// Lightweight toast — fires into App's ToastContainer via the shared bus
-const _toastBus = typeof window !== "undefined" ? (window._sachiBus = window._sachiBus || { _l:[], emit(m,t){this._l.forEach(f=>f({msg:m,type:t,id:Date.now()+Math.random()}))}, on(f){this._l.push(f);return()=>{this._l=this._l.filter(l=>l!==f)}} }) : {emit:()=>{},on:()=>()=>{}};
-const toast = { error:(m)=>_toastBus.emit(m,"error"), success:(m)=>_toastBus.emit(m,"success"), warn:(m)=>_toastBus.emit(m,"warn") };
-const BASE_URL = "https://sachi-04cfb834.base44.app/api";
-const APP_BASE = `/apps/${APP_ID}`;
-const COINS_FN = "https://sachi-04cfb834.base44.app/functions/sachiCoins";
->>>>>>> 4db8d4cf4835d15df46f9d8d5a6516eda0badc46
+const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
 
 // ── Sachi Gift catalog — totally unique, not TikTok ─────────────────────────
 export const GIFTS = [
@@ -48,23 +37,16 @@ const COIN_PACKS = [
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 async function apiReq(method, path, body) {
-  const token = localStorage.getItem("sachi_token");
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(BASE_URL + path, {
-    method, headers,
+    method, headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || data.error || `Error ${res.status}`);
-  return data;
+  return res.json();
 }
 
-export async function getWallet(userId) {
-  try {
-    const d = await apiReq("GET", `${APP_BASE}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
-    return Array.isArray(d) ? d[0] : d?.items?.[0];
-  } catch { return null; }
+async function getWallet(userId) {
+  const d = await apiReq("GET", `/apps/${APP_ID}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
+  return Array.isArray(d) ? d[0] : d?.items?.[0];
 }
 
 async function sendGiftAPI(giftData) {
@@ -78,11 +60,11 @@ async function sendGiftAPI(giftData) {
     // Fallback: direct entity write
     const wallet = await getWallet(giftData.sender_id);
     if (!wallet || wallet.coins < giftData.coin_cost) return { error: "Insufficient coins" };
-    await apiReq("PUT", `${APP_BASE}/entities/SachiCoinWallet/${wallet.id}`, {
+    await apiReq("PUT", `/apps/${APP_ID}/entities/SachiCoinWallet/${wallet.id}`, {
       coins: wallet.coins - giftData.coin_cost,
       total_spent_coins: (wallet.total_spent_coins || 0) + giftData.coin_cost,
     });
-    const gift = await apiReq("POST", `${APP_BASE}/entities/SachiGift`, giftData);
+    const gift = await apiReq("POST", `/apps/${APP_ID}/entities/SachiGift`, giftData);
     return { success: true, gift, coins_remaining: wallet.coins - giftData.coin_cost };
   }
 }
@@ -410,14 +392,9 @@ export function GiftTray({ room, currentUser, wallet, onWalletUpdate, onClose, o
 
 // Standalone buy coins handler — opens Stripe checkout
 async function handleBuyCoins(pack) {
-  let user = null;
-  try { user = JSON.parse(localStorage.getItem("sachi_user") || "null"); } catch {}
-<<<<<<< HEAD
+  const user = JSON.parse(localStorage.getItem("sachi_user") || "null");
   if (!user) { alert("Sign in to buy coins"); return; }
-=======
-  if (!user) { toast.warn("Sign in to buy Sachi Coins"); return; }
->>>>>>> 4db8d4cf4835d15df46f9d8d5a6516eda0badc46
-
+  
   try {
     const res = await fetch(COINS_FN, {
       method: "POST",
@@ -433,15 +410,10 @@ async function handleBuyCoins(pack) {
     });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
-<<<<<<< HEAD
     else alert("Could not start checkout. Try again.");
   } catch {
+    // Backend not deployed — fallback message
     alert("Coin purchases will be available shortly. Our payment system is being configured.");
-=======
-    else toast.error("Could not start checkout. Try again.");
-  } catch {
-    toast.info("Coin purchases coming soon! Payment system is being configured.");
->>>>>>> 4db8d4cf4835d15df46f9d8d5a6516eda0badc46
   }
 }
 
@@ -460,7 +432,7 @@ export function HostEarningsPanel({ currentUser, onClose }) {
       try {
         const w = await getWallet(currentUser.id);
         setWallet(w);
-        const g = await apiReq("GET", `${APP_BASE}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
+        const g = await apiReq("GET", `/apps/${APP_ID}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
         setGifts(Array.isArray(g) ? g : g?.items || []);
       } catch {}
       setLoading(false);
@@ -485,7 +457,7 @@ export function HostEarningsPanel({ currentUser, onClose }) {
       setShowPayout(false);
     } catch {
       // Direct entity write fallback
-      await apiReq("POST", `${APP_BASE}/entities/SachiPayoutRequest`, {
+      await apiReq("POST", `/apps/${APP_ID}/entities/SachiPayoutRequest`, {
         host_id: currentUser.id,
         host_username: currentUser.username || "host",
         host_email: currentUser.email,
@@ -642,4 +614,4 @@ export function CoinWalletWidget({ userId, onBuyCoins }) {
   );
 }
 
-export { RARITY_COLORS, COIN_PACKS };
+export { getWallet };
