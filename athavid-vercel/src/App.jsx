@@ -26,7 +26,7 @@ import FoundingCreatorPage from "./FoundingCreator.jsx";
 import MusicPicker from "./MusicPicker.jsx";
 import SachiAdminPanel from "./AdminPanel.jsx";
 
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 
 // Module-level mute store — avoids window globals, survives stale closures
 const muteStore = {
@@ -1482,7 +1482,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
       // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
-      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
+      let apiUrl = `https://sachi-04cfb834.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
       if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
       console.log("[Sachi Music] Fetching via proxy:", apiUrl);
       let tracks = [];
@@ -4603,7 +4603,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       await loadPodcasts();
       await loadMyShows();
       // Send welcome email to host
-      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+      fetch("https://sachi-04cfb834.base44.app/functions/podcastWelcome", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           host_email: currentUser?.email || "",
@@ -4784,7 +4784,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     if (endingLive) return;
                     setEndingLive(true);
                     try {
-                      await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
                       }).catch(()=>{});
@@ -4836,7 +4836,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     setGoingLive(true);
                     try {
                       // Use podcastGoLiveNotify which handles the DB update via service role
-                      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      const resp = await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
                       });
@@ -5044,7 +5044,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         setNewPodcast(pod);
         await loadPodcasts();
         await loadMyShows();
-        fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+        fetch("https://sachi-04cfb834.base44.app/functions/podcastWelcome", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({
             host_email: currentUser?.email || "",
@@ -5065,7 +5065,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       if (!newPodcast?.id) return;
       setGeneratingKey(true);
       try {
-        const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
+        const resp = await fetch("https://sachi-04cfb834.base44.app/functions/createLiveStream", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ podcast_id: newPodcast.id, podcast_title: newPodcast.title || registerForm.title, host_username: currentUser?.full_name || "" })
         });
@@ -5105,7 +5105,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           r.readAsDataURL(f);
         });
         const b64 = await toBase64(file);
-        const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+        const resp = await fetch("https://sachi-04cfb834.base44.app/functions/uploadAvatar", {
           method:"POST", headers:{"Content-Type":"application/json"},
           body: JSON.stringify({ image_base64: b64, mime_type: file.type || "image/jpeg", entity_id: null })
         });
@@ -6727,7 +6727,7 @@ function App() {
       // regardless of created_by value (fixes "anonymous" created_by issue)
       let rawAll = [];
       try {
-        const res = await fetch(`https://sachi-c7f0261c.base44.app/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
+        const res = await fetch(`https://sachi-04cfb834.base44.app/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
         if (res.ok) {
           const json = await res.json();
           rawAll = Array.isArray(json) ? json : (json?.items || json?.records || []);

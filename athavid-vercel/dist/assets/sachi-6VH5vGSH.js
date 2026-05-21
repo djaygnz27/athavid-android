@@ -8038,8 +8038,8 @@ function Landing({ onEnter }) {
     setTimeout(() => onEnter(), 700);
   }, [onEnter]);
   reactExports.useEffect(() => {
-    const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
-    fetch(`https://sachi-c7f0261c.base44.app/api/apps/${APP_ID2}/entities/SachiVideo?limit=10&sort=-created_date`, {
+    const APP_ID2 = "69e79122bcc8fb5a04cfb834";
+    fetch(`https://sachi-04cfb834.base44.app/api/apps/${APP_ID2}/entities/SachiVideo?limit=10&sort=-created_date`, {
       headers: { "x-api-key": "public" }
     }).then((r2) => r2.json()).then((data) => {
       const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
@@ -8751,7 +8751,7 @@ const COUNTRIES = [
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
 const BASE_URL$1 = "https://sachi-04cfb834.base44.app/api";
-const FUNCTIONS_URL = "https://sachi-c7f0261c.base44.app/functions";
+const FUNCTIONS_URL = "https://sachi-04cfb834.base44.app/functions";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
@@ -9768,7 +9768,7 @@ function FoundingCreatorPage({ onBack }) {
     content_description: ""
   });
   reactExports.useEffect(() => {
-    request$1("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/filter", {}).then((d) => {
+    request$1("POST", "/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator/filter", {}).then((d) => {
       if (Array.isArray(d)) setCount(d.length);
     }).catch(() => {
     });
@@ -9788,7 +9788,7 @@ function FoundingCreatorPage({ onBack }) {
     setError("");
     setLoading(true);
     try {
-      await request$1("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator", { ...form, status: "Pending" });
+      await request$1("POST", "/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator", { ...form, status: "Pending" });
       setStep(3);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -10148,9 +10148,9 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
   }, [searchQuery, tab]);
   reactExports.useEffect(() => {
     if (tab !== "original") return;
-    const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
+    const APP_ID2 = "69e79122bcc8fb5a04cfb834";
     const token = localStorage.getItem("sachi_token");
-    fetch(`https://sachi-c7f0261c.base44.app/api/apps/${APP_ID2}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
+    fetch(`https://sachi-04cfb834.base44.app/api/apps/${APP_ID2}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
       headers: { "Content-Type": "application/json", ...token ? { "Authorization": `Bearer ${token}` } : {} }
     }).then((r2) => r2.json()).then((d) => {
       const all = Array.isArray(d) ? d : d.records || d.data || [];
@@ -10334,8 +10334,8 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
     ] })
   ] }) });
 }
-const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
+const APP_ID$2 = "69e79122bcc8fb5a04cfb834";
+const BASE_URL = "https://sachi-04cfb834.base44.app/api";
 function getToken() {
   return localStorage.getItem("sachi_token");
 }
@@ -10935,7 +10935,7 @@ if (localStorage.getItem("sachi_build") !== SACHI_BUILD) {
     caches.keys().then((keys) => keys.forEach((k2) => caches.delete(k2)));
   }
 }
-const APP_ID$1 = "69b2ee18a8e6fb58c7f0261c";
+const APP_ID$1 = "69e79122bcc8fb5a04cfb834";
 const muteStore = {
   _muted: true,
   get() {
@@ -16753,7 +16753,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   if (endingLive) return;
                   setEndingLive(true);
                   try {
-                    await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                    await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ podcast_id: selectedPodcast.id, set_live: false, admin_email: currentUser == null ? void 0 : currentUser.email })
@@ -16824,7 +16824,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   if (goingLive) return;
                   setGoingLive(true);
                   try {
-                    const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                    const resp = await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "", set_live: true, admin_email: currentUser == null ? void 0 : currentUser.email })
@@ -17003,7 +17003,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         setNewPodcast(pod);
         await loadPodcasts();
         await loadMyShows();
-        fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+        fetch("https://sachi-04cfb834.base44.app/functions/podcastWelcome", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -17025,7 +17025,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       if (!(newPodcast == null ? void 0 : newPodcast.id)) return;
       setGeneratingKey(true);
       try {
-        const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
+        const resp = await fetch("https://sachi-04cfb834.base44.app/functions/createLiveStream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ podcast_id: newPodcast.id, podcast_title: newPodcast.title || registerForm.title, host_username: (currentUser == null ? void 0 : currentUser.full_name) || "" })
@@ -17060,7 +17060,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
           r2.readAsDataURL(f2);
         });
         const b64 = await toBase64(file);
-        const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+        const resp = await fetch("https://sachi-04cfb834.base44.app/functions/uploadAvatar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image_base64: b64, mime_type: file.type || "image/jpeg", entity_id: null })
@@ -18740,7 +18740,7 @@ function App() {
       const skip = (page - 1) * POOL_SIZE;
       let rawAll = [];
       try {
-        const res = await fetch(`https://sachi-c7f0261c.base44.app/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
+        const res = await fetch(`https://sachi-04cfb834.base44.app/functions/getPublicFeed?limit=${POOL_SIZE}&skip=${skip}`);
         if (res.ok) {
           const json = await res.json();
           rawAll = Array.isArray(json) ? json : (json == null ? void 0 : json.items) || (json == null ? void 0 : json.records) || [];
@@ -20149,10 +20149,10 @@ function App() {
     }, onClose: () => setShowAvatarPicker(false) })
   ] });
 }
-const API = "https://sachi-c7f0261c.base44.app/api";
-const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+const API = "https://sachi-04cfb834.base44.app/api";
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 const APP_BASE = `/apps/${APP_ID}`;
-const SACHI_FN = "https://sachi-c7f0261c.base44.app/functions";
+const SACHI_FN = "https://sachi-04cfb834.base44.app/functions";
 const COVER_COLORS = [
   { bg: "linear-gradient(135deg,#1a0a2e,#6c3cf7)", emoji: "🎙️" },
   { bg: "linear-gradient(135deg,#0d2137,#1565C0)", emoji: "🎧" },
@@ -20596,7 +20596,7 @@ function PodcastHost() {
             /* @__PURE__ */ jsxRuntimeExports.jsx(
               "a",
               {
-                href: "https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/files/mp/public/69b2ee18a8e6fb58c7f0261c/bbc3469b5_Sachi_OBS_Setup_Guide.pdf",
+                href: "https://base44.app/api/apps/69e79122bcc8fb5a04cfb834/files/mp/public/69e79122bcc8fb5a04cfb834/bbc3469b5_Sachi_OBS_Setup_Guide.pdf",
                 target: "_blank",
                 rel: "noopener noreferrer",
                 style: { display: "flex", alignItems: "center", gap: 6, background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 8, padding: "7px 14px", color: "#F5C842", fontSize: 12, fontWeight: 700, textDecoration: "none" },
@@ -20680,7 +20680,7 @@ function PodcastHost() {
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "a",
                 {
-                  href: "https://base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/files/mp/public/69b2ee18a8e6fb58c7f0261c/bbc3469b5_Sachi_OBS_Setup_Guide.pdf",
+                  href: "https://base44.app/api/apps/69e79122bcc8fb5a04cfb834/files/mp/public/69e79122bcc8fb5a04cfb834/bbc3469b5_Sachi_OBS_Setup_Guide.pdf",
                   target: "_blank",
                   rel: "noopener noreferrer",
                   style: { display: "flex", alignItems: "center", gap: 5, background: "rgba(245,200,66,0.12)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 8, padding: "5px 12px", color: "#F5C842", fontSize: 11, fontWeight: 600, textDecoration: "none", cursor: "pointer" },
