@@ -13920,7 +13920,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const soundRef = reactExports.useRef(null);
   const viewedRef = reactExports.useRef(false);
   const [playing, setPlaying] = reactExports.useState(false);
-  const [liked, setLiked] = reactExports.useState(false);
+  const [liked, setLiked] = reactExports.useState(() => {
+    try {
+      const cache = JSON.parse(localStorage.getItem("sachi_likes") || "{}");
+      return !!cache[video.id];
+    } catch {
+      return false;
+    }
+  });
   const [localCommentCount, setLocalCommentCount2] = reactExports.useState(video.comments_count || 0);
   const [localLikeCount, setLocalLikeCount] = reactExports.useState(video.likes_count || 0);
   const [localHypeCount, setLocalHypeCount] = reactExports.useState(video.hype_count || 0);
@@ -14215,6 +14222,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       const delta = newLiked ? 1 : -1;
       setLocalLikeCount((c) => Math.max(0, c + delta));
       onLike(video.id, delta);
+      try {
+        const cache = JSON.parse(localStorage.getItem("sachi_likes") || "{}");
+        if (newLiked) cache[video.id] = true;
+        else delete cache[video.id];
+        localStorage.setItem("sachi_likes", JSON.stringify(cache));
+      } catch {
+      }
       if (newLiked) {
         likes.add(
           video.id,
@@ -18614,6 +18628,36 @@ function App() {
   const [editProfileSaving, setEditProfileSaving] = reactExports.useState(false);
   reactExports.useEffect(() => {
     loadVideos();
+  }, []);
+  reactExports.useEffect(() => {
+    const syncCounts = async () => {
+      try {
+        const APP_ID2 = "69e79122bcc8fb5a04cfb834";
+        const BASE_URL2 = "https://sachi-04cfb834.base44.app/api";
+        const res = await fetch(`${BASE_URL2}/apps/${APP_ID2}/entities/SachiVideo?is_archived=false&is_approved=true&sort=-created_date&limit=200`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const fresh = Array.isArray(json) ? json : (json == null ? void 0 : json.items) || (json == null ? void 0 : json.records) || [];
+        if (!fresh.length) return;
+        const countMap = {};
+        fresh.forEach((v2) => {
+          countMap[v2.id] = {
+            likes_count: v2.likes_count || 0,
+            comments_count: v2.comments_count || 0,
+            hype_count: v2.hype_count || 0
+          };
+        });
+        setVideoList((prev) => prev.map((v2) => {
+          const c = countMap[v2.id];
+          if (!c) return v2;
+          if (c.likes_count === (v2.likes_count || 0) && c.comments_count === (v2.comments_count || 0) && c.hype_count === (v2.hype_count || 0)) return v2;
+          return { ...v2, ...c };
+        }));
+      } catch (e) {
+      }
+    };
+    const timer = setInterval(syncCounts, 9e4);
+    return () => clearInterval(timer);
   }, []);
   reactExports.useEffect(() => {
     const handleSachiShare = (e) => {
