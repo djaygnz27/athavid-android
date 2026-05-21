@@ -14019,12 +14019,35 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       if (e.isIntersecting) {
         const currentlyMuted = muteStore.get();
         el2.muted = video.sound_url ? true : currentlyMuted;
-        el2.play().catch(() => {
-        });
+        const playVideo = () => {
+          el2.play().catch(() => {
+            const onReady = () => {
+              el2.play().catch(() => {
+              });
+              el2.removeEventListener("canplay", onReady);
+            };
+            el2.addEventListener("canplay", onReady);
+          });
+        };
+        if (el2.readyState >= 3) {
+          playVideo();
+        } else {
+          const onCanPlay = () => {
+            playVideo();
+            el2.removeEventListener("canplay", onCanPlay);
+          };
+          el2.addEventListener("canplay", onCanPlay);
+        }
         setPlaying(true);
         if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {
-          });
+          const startSound = () => {
+            if (soundRef.current && !currentlyMuted) {
+              soundRef.current.play().catch(() => {
+              });
+            }
+            el2.removeEventListener("playing", startSound);
+          };
+          el2.addEventListener("playing", startSound);
         }
         setShowUI(true);
         hideUIAfterDelay(1500);
@@ -14085,7 +14108,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const el2 = videoRef.current;
     if (!el2) return;
     if (el2.paused) {
-      el2.play();
+      el2.play().then(() => {
+        if (soundRef.current && video.sound_url && !muted) {
+          soundRef.current.play().catch(() => {
+          });
+        }
+      }).catch(() => {
+      });
       setPlaying(true);
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       uiTimerRef.current = setTimeout(() => {
@@ -14094,6 +14123,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     } else {
       el2.pause();
       setPlaying(false);
+      if (soundRef.current && video.sound_url) soundRef.current.pause();
       if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
       setShowUI(true);
     }
