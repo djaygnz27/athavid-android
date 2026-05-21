@@ -1553,6 +1553,11 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const videoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
+      if (!video_url) {
+        toast.error("Upload failed — please check your connection and try again.");
+        setUploading(false); setProgress(0); setStep("");
+        return;
+      }
       await videos.create({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
