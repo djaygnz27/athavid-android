@@ -8795,32 +8795,42 @@ function loadGSI() {
 }
 async function signInWithGooglePopup(onSuccess) {
   const google = await loadGSI();
+  const handleCredential = async (response) => {
+    const payload = decodeJwt(response.credential);
+    if (!(payload == null ? void 0 : payload.email)) return;
+    localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+    const found = await lookupSachiUser(payload.email);
+    if (found) {
+      const sessionUser = buildSessionUser(found, payload);
+      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+      localStorage.removeItem("sachi_pending_google");
+      onSuccess({ sessionUser, needsProfile: false });
+    } else {
+      onSuccess({ payload, needsProfile: true });
+    }
+  };
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID$1,
-    callback: async (response) => {
-      const payload = decodeJwt(response.credential);
-      if (!(payload == null ? void 0 : payload.email)) return;
-      localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
-      const found = await lookupSachiUser(payload.email);
-      if (found) {
-        const sessionUser = buildSessionUser(found, payload);
-        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-        localStorage.removeItem("sachi_pending_google");
-        onSuccess({ sessionUser, needsProfile: false });
-      } else {
-        onSuccess({ payload, needsProfile: true });
-      }
-    },
+    callback: handleCredential,
     ux_mode: "popup",
     cancel_on_tap_outside: false
   });
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      const div = document.getElementById("sachi-google-btn-hidden");
-      if (div) google.accounts.id.renderButton(div, { theme: "outline", size: "large" });
-    }
-  });
+  const container = document.getElementById("sachi-google-btn-container");
+  if (container) {
+    container.innerHTML = "";
+    google.accounts.id.renderButton(container, {
+      theme: "outline",
+      size: "large",
+      width: container.offsetWidth || 320,
+      text: "continue_with",
+      shape: "rectangular"
+    });
+    setTimeout(() => {
+      const btn = container.querySelector("div[role=button]") || container.querySelector("iframe");
+      if (btn) btn.click();
+    }, 150);
+  }
 }
 function EmailOTPStep({ onSuccess, onBack }) {
   const [email, setEmail] = reactExports.useState("");
@@ -9206,10 +9216,7 @@ function AuthModal({ onClose, onSuccess }) {
   if (step === "finish-google" && googlePayload) {
     return modalShell(
       /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 24 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌸" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }, children: "Almost there!" })
-        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }, children: "Almost there!" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, onSuccess })
       ] })
     );
@@ -9217,7 +9224,7 @@ function AuthModal({ onClose, onSuccess }) {
   if (step === "email-otp") {
     return modalShell(
       /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 8 }, children: "🌸" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 } }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(EmailOTPStep, { onSuccess, onBack: () => setStep("signin") })
       ] })
     );
@@ -9225,8 +9232,11 @@ function AuthModal({ onClose, onSuccess }) {
   return modalShell(
     /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 28 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 8 }, children: "🌸" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 24, letterSpacing: -0.5, marginBottom: 4 }, children: "Join Sachi" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12, display: "flex", justifyContent: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 900, fontSize: 28, letterSpacing: 2, color: "#F5C842" }, children: "SACHi" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 400, fontSize: 14, color: "rgba(255,255,255,0.5)", alignSelf: "flex-end", marginLeft: 6, marginBottom: 4 }, children: "STREAM" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5, marginBottom: 4 }, children: "Join Sachi" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 14 }, children: "Where truth meets community" })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -9315,7 +9325,7 @@ function AuthModal({ onClose, onSuccess }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("a", { href: "/privacy", target: "_blank", style: { color: "#F5C842" }, children: "Privacy Policy" }),
         "."
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "sachi-google-btn-hidden", style: { display: "none" } })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { id: "sachi-google-btn-container", style: { width: "100%", minHeight: 44, marginTop: 4 } })
     ] })
   );
 }
@@ -11370,6 +11380,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         setList((prev) => [...prev, c]);
         setText("");
         await videos.update(video.id, { comments_count: newCount });
+        setLocalCommentCount(newCount);
         if (onCommentPosted) onCommentPosted(video.id, newCount);
         setTimeout(() => onClose(), 600);
       }
@@ -13880,6 +13891,40 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const viewedRef = reactExports.useRef(false);
   const [playing, setPlaying] = reactExports.useState(false);
   const [liked, setLiked] = reactExports.useState(false);
+  const [localCommentCount, setLocalCommentCount2] = reactExports.useState(video.comments_count || 0);
+  reactExports.useEffect(() => {
+    if (!currentUser) return;
+    likes.checkUserLiked ? null : null;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rec = await likes.checkUserLiked(video.id, currentUser.id);
+        if (!cancelled && rec) setLiked(true);
+      } catch (e) {
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [video.id, currentUser == null ? void 0 : currentUser.id]);
+  reactExports.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await comments.list(video.id);
+        const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+        if (!cancelled && items.length !== (video.comments_count || 0)) {
+          setLocalCommentCount2(items.length);
+          videos.update(video.id, { comments_count: items.length }).catch(() => {
+          });
+        }
+      } catch (e) {
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [video.id]);
   const [muted, _setMutedLocal] = reactExports.useState(() => muteStore.get());
   const setMuted = (val) => {
     const newVal = typeof val === "function" ? val(muteStore.get()) : val;
@@ -14810,7 +14855,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           justifyContent: "center",
           transition: "all 0.2s"
         }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(100,200,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(100,200,255,0.85)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(video.comments_count || 0) })
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(100,200,255,0.85)", fontSize: 11, fontWeight: 700, letterSpacing: 0.3 }, children: formatCount(localCommentCount) })
       ] }),
       (() => {
         const isHyped = video._hyped;
