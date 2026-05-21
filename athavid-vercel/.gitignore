@@ -1,2 +1,9 @@
 .vercel
 node_modules/
+
+# Secrets
+.agents/
+.env
+*.env
+.agents/
+.env
