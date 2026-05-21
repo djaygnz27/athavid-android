@@ -2905,6 +2905,7 @@ function HLSVideo({ src, isHLS, videoRef, poster, muted, onPlay, onPause, preloa
       {(zoomStyle) => (
         <video ref={videoRef} poster={poster} loop playsInline preload={preloadMode} muted={muted}
           onPlay={onPlay} onPause={onPause}
+          onCanPlay={() => { if (videoRef.current?.paused && !videoRef.current?._userPaused) { videoRef.current.play().catch(() => {}); } }}
           style={zoomStyle} />
       )}
     </MediaZoom>
@@ -3084,22 +3085,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const tryPlay = () => {
       // Always play muted first — browsers always allow muted autoplay
       el.muted = true;
-      el.play().then(() => {
-        setPlaying(true);
-        manuallyPausedRef.current = false;
-        // After play succeeds, unmute unless user has explicitly muted
-        const currentlyMuted = muteStore.get();
-        if (!currentlyMuted) {
-          el.muted = false; // unmute for all videos
-        }
-        if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {});
-        }
-        setShowUI(false);
-      }).catch(() => {
-        // Play blocked — show play button
-        setShowUI(true);
-      });
+      const attemptPlay = () => {
+        el.play().then(() => {
+          setPlaying(true);
+          manuallyPausedRef.current = false;
+          const currentlyMuted = muteStore.get();
+          if (!currentlyMuted) el.muted = false;
+          if (!currentlyMuted && soundRef.current && video.sound_url) {
+            soundRef.current.play().catch(() => {});
+          }
+          setShowUI(false);
+        }).catch(() => {
+          // HLS/media not ready yet — wait for canplay then retry once
+          if (el.readyState < 3) {
+            el.addEventListener('canplay', attemptPlay, { once: true });
+          } else {
+            // Truly blocked (e.g. no user gesture) — show play button
+            setShowUI(true);
+          }
+        });
+      };
+      attemptPlay();
     };
 
     const obs = new IntersectionObserver(([e]) => {
@@ -3109,7 +3115,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         if (playStore.get() && !manuallyPausedRef.current) {
           tryPlay();
         } else if (!playStore.get()) {
-          // First video ever — show play button
+          // First video ever — show play button, wait for user tap
           setShowUI(true);
           setUserTapped(false);
         }
@@ -3120,11 +3126,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         setPlaying(false);
         if (soundRef.current) { soundRef.current.pause(); soundRef.current.currentTime = 0; }
         if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        setShowUI(false);
+        // Do NOT call setShowUI(false) here — avoids ghost play-button flash on next entry
         setUserTapped(false);
-        manuallyPausedRef.current = false; // reset when scrolled away
+        manuallyPausedRef.current = false; // reset so next scroll-in auto-plays
       }
-    }, { threshold: 0.4 });
+    }, { threshold: 0.75 });
     obs.observe(el);
 
     // When user first plays ANY video, immediately play this card if visible
