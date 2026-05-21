@@ -3,8 +3,9 @@
   "version": "2.1.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "node scripts/validate-api.js && vite build",
+    "preview": "vite preview",
+    "validate": "node scripts/validate-api.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
