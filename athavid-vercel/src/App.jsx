@@ -1080,7 +1080,17 @@ function VideoEditor({ file, onDone, onSkip }) {
           onLoadedMetadata={onMeta} onTimeUpdate={onTimeUpdate}
           style={{ width:"100%", height:"100%", objectFit:"cover" }}
           autoPlay loop playsInline
+          muted={!!selectedTrack}
         />
+        {/* Play selected track audio when a sound is picked — mutes original video audio */}
+        {selectedTrack && (
+          <audio
+            key={selectedTrack?.sound_url || selectedTrack?.url}
+            src={selectedTrack?.sound_url || selectedTrack?.url}
+            autoPlay loop
+            style={{ display:"none" }}
+          />
+        )}
 
         {/* Text overlays on preview */}
         {textOverlays.map(ov => (
@@ -1300,6 +1310,12 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [matureReason, setMatureReason] = useState("other");
   const [maxDuration, setMaxDuration] = useState(60);
   const [selectedTrack, setSelectedTrack] = useState(null);
+  // Mute/unmute preview video when track is selected
+  React.useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = !!selectedTrack;
+    }
+  }, [selectedTrack]);
   const [showMusicPicker, setShowMusicPicker] = useState(false);
   const [musicGenreFilter, setMusicGenreFilter] = useState("All");
   const [previewTrack, setPreviewTrack] = useState(null);
