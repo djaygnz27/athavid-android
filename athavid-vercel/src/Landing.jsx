@@ -34,8 +34,8 @@ export default function Landing({ onEnter }) {
 
   // Start fetching & buffering the first video immediately while splash is showing
   useEffect(() => {
-    const APP_ID = "69b2ee18a8e6fb58c7f0261c";
-    fetch(`https://sachi-c7f0261c.base44.app/api/apps/${APP_ID}/entities/SachiVideo?limit=10&sort=-created_date`, {
+    const APP_ID = "69e79122bcc8fb5a04cfb834";
+    fetch(`https://sachi-04cfb834.base44.app/api/apps/${APP_ID}/entities/SachiVideo?limit=10&sort=-created_date`, {
       headers: { "x-api-key": "public" }
     })
       .then(r => r.json())
