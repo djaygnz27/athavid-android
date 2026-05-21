@@ -1,3 +1,4 @@
+// v2.3.1 — content_category silently injected, like_count/comment_count fixed
 const APP_ID = "69e79122bcc8fb5a04cfb834";
 const BASE_URL = "https://app.base44.com/api";
 
