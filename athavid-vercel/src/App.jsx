@@ -6987,7 +6987,7 @@ function App() {
 
           {/* Left: Sachi logo + wordmark */}
           <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-            <img src="/sachi-icon-v4.png" alt="Sachi" style={{ width:30, height:30, borderRadius:8, filter:"drop-shadow(0 0 6px rgba(245,200,66,0.5))" }} />
+            <img src="/sachi-icon-v5.png" alt="Sachi" style={{ width:30, height:30, borderRadius:8, filter:"drop-shadow(0 0 6px rgba(245,200,66,0.5))" }} />
             <div style={{ display:"flex", alignItems:"baseline", gap:1 }}>
               <span style={{ fontSize:24, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
               <span style={{ fontSize:12, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
