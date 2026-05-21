@@ -62,7 +62,9 @@ export const videos = {
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, data);
+    // content_category is required by entity schema — inject silently, users never see it
+    const { content_category, ...rest } = data;
+    return request("POST", `/apps/${APP_ID}/entities/SachiVideo`, { ...rest, content_category: "General" });
   },
   async update(id, data) {
     return request("PUT", `/apps/${APP_ID}/entities/SachiVideo/${id}`, data);
