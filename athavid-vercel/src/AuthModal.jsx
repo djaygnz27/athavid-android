@@ -97,32 +97,47 @@ function loadGSI() {
 // ─── Google popup sign-in ─────────────────────────────────────────────────────
 async function signInWithGooglePopup(onSuccess) {
   const google = await loadGSI();
+
+  const handleCredential = async (response) => {
+    const payload = decodeJwt(response.credential);
+    if (!payload?.email) return;
+    localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+    const found = await lookupSachiUser(payload.email);
+    if (found) {
+      const sessionUser = buildSessionUser(found, payload);
+      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+      localStorage.removeItem("sachi_pending_google");
+      onSuccess({ sessionUser, needsProfile: false });
+    } else {
+      onSuccess({ payload, needsProfile: true });
+    }
+  };
+
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
-    callback: async (response) => {
-      const payload = decodeJwt(response.credential);
-      if (!payload?.email) return;
-      localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
-      const found = await lookupSachiUser(payload.email);
-      if (found) {
-        const sessionUser = buildSessionUser(found, payload);
-        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-        localStorage.removeItem("sachi_pending_google");
-        onSuccess({ sessionUser, needsProfile: false });
-      } else {
-        onSuccess({ payload, needsProfile: true });
-      }
-    },
+    callback: handleCredential,
     ux_mode: "popup",
     cancel_on_tap_outside: false,
   });
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      const div = document.getElementById("sachi-google-btn-hidden");
-      if (div) google.accounts.id.renderButton(div, { theme:"outline", size:"large" });
-    }
-  });
+
+  // Always use renderButton — works in incognito, all browsers, no prompt() dependency
+  const container = document.getElementById("sachi-google-btn-container");
+  if (container) {
+    container.innerHTML = "";
+    google.accounts.id.renderButton(container, {
+      theme: "outline",
+      size: "large",
+      width: container.offsetWidth || 320,
+      text: "continue_with",
+      shape: "rectangular",
+    });
+    // Auto-click the rendered button
+    setTimeout(() => {
+      const btn = container.querySelector("div[role=button]") || container.querySelector("iframe");
+      if (btn) btn.click();
+    }, 150);
+  }
 }
 
 // ─── Email OTP Step ───────────────────────────────────────────────────────────
@@ -484,7 +499,6 @@ export default function AuthModal({ onClose, onSuccess }) {
     return modalShell(
       <>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:32, marginBottom:8 }}>🌸</div>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5 }}>Almost there!</div>
         </div>
         <FinishStep googlePayload={googlePayload} onSuccess={onSuccess} />
@@ -496,8 +510,7 @@ export default function AuthModal({ onClose, onSuccess }) {
     return modalShell(
       <>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:32, marginBottom:8 }}>🌸</div>
-        </div>
+          </div>
         <EmailOTPStep onSuccess={onSuccess} onBack={() => setStep("signin")} />
       </>
     );
@@ -507,8 +520,11 @@ export default function AuthModal({ onClose, onSuccess }) {
   return modalShell(
     <>
       <div style={{ textAlign:"center", marginBottom:28 }}>
-        <div style={{ fontSize:40, marginBottom:8 }}>🌸</div>
-        <div style={{ color:"#F5C842", fontWeight:800, fontSize:24, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
+        <div style={{ marginBottom:12, display:"flex", justifyContent:"center" }}>
+          <span style={{ fontFamily:"'Georgia', serif", fontWeight:900, fontSize:28, letterSpacing:2, color:"#F5C842" }}>SACHi</span>
+          <span style={{ fontFamily:"'Georgia', serif", fontWeight:400, fontSize:14, color:"rgba(255,255,255,0.5)", alignSelf:"flex-end", marginLeft:6, marginBottom:4 }}>STREAM</span>
+        </div>
+        <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
         <div style={{ color:"rgba(255,255,255,0.45)", fontSize:14 }}>Where truth meets community</div>
       </div>
 
@@ -569,7 +585,7 @@ export default function AuthModal({ onClose, onSuccess }) {
         &amp;{" "}
         <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
       </div>
-      <div id="sachi-google-btn-hidden" style={{ display:"none" }} />
+      <div id="sachi-google-btn-container" style={{ width:"100%", minHeight:44, marginTop:4 }} />
     </>
   );
 }
