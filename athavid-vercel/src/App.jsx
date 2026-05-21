@@ -467,6 +467,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const [posting, setPosting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [replyingTo, setReplyingTo] = useState(null); // { id, username }
+  const [liveCount, setLiveCount] = useState(video.comment_count || 0);
   const [expandedReplies, setExpandedReplies] = useState({});
   // Track which comments the current user has reacted to.
   // Shape: { [commentId]: { thumbsUp: bool, hearts: bool, thumbsDown: bool } }
@@ -7141,6 +7142,28 @@ function App() {
 
   useEffect(() => { loadVideos(); }, []);
 
+  // Soft-refresh engagement counts every 90s — keeps numbers fresh without reloading videos
+  useEffect(() => {
+    const refreshCounts = async () => {
+      try {
+        const res = await fetch(`https://app.base44.com/api/apps/${APP_ID}/entities/SachiVideo?limit=500&sort=-created_date`, {
+          headers: { "Content-Type": "application/json", "x-api-key": APP_ID }
+        });
+        const data = await res.json();
+        const fresh = Array.isArray(data) ? data : (data?.items || []);
+        if (!fresh.length) return;
+        const countMap = {};
+        fresh.forEach(v => { countMap[v.id] = { like_count: v.like_count, comment_count: v.comment_count, views_count: v.views_count, shares_count: v.shares_count }; });
+        setVideoList(prev => prev.map(v => {
+          const f = countMap[v.id];
+          if (!f) return v;
+          return { ...v, like_count: f.like_count ?? v.like_count, comment_count: f.comment_count ?? v.comment_count, views_count: f.views_count ?? v.views_count, shares_count: f.shares_count ?? v.shares_count };
+        }));
+      } catch(e) { /* silent — don't disrupt UX */ }
+    };
+    const iv = setInterval(refreshCounts, 90000);
+    return () => clearInterval(iv);
+  }, []);
 
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
@@ -7360,28 +7383,24 @@ function App() {
   }, [activeTab, currentUser]);
 
   const handleLike = React.useCallback((videoId, delta) => {
-    // Save scroll position before state update to prevent snap-to-top
+    // Optimistic update immediately for snappy UX
     const feedEl = feedContainerRef.current;
     const savedScroll = feedEl ? feedEl.scrollTop : 0;
-    // Single setVideoList call — update count AND fire side effects in one pass
-    setVideoList(vs => {
-      const updated = vs.map(v => {
-        if (v.id !== videoId) return v;
-        const newCount = Math.max(0, (v.like_count || 0) + delta);
-        // Side effects (DB + interests) inside the updater so we read fresh state
-        // NEVER pass comment_count — only update like_count to avoid clearing comments
-        videos.update(videoId, { like_count: newCount }).catch(() => {});
-        if (currentUser && v.hashtags?.length) {
-          interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
+    setVideoList(vs => vs.map(v => v.id !== videoId ? v : { ...v, like_count: Math.max(0, (v.like_count||0) + delta) }));
+    if (feedEl) requestAnimationFrame(() => { feedEl.scrollTop = savedScroll; });
+    // DB-verified update: fetch live count → apply delta → write back (prevents race drift)
+    (async () => {
+      try {
+        const lv = await request("GET", `/apps/${APP_ID}/entities/SachiVideo/${videoId}`);
+        const liveCount = Number(lv?.like_count || 0);
+        const verified = Math.max(0, liveCount + delta);
+        await videos.update(videoId, { like_count: verified }).catch(() => {});
+        setVideoList(vs => vs.map(v => v.id === videoId ? { ...v, like_count: verified } : v));
+        if (currentUser && lv?.hashtags?.length) {
+          interests.signal(currentUser.id, lv.hashtags, delta > 0 ? 3 : -1).catch(() => {});
         }
-        return { ...v, like_count: newCount };
-      });
-      return updated;
-    });
-    // Restore scroll position after React re-render
-    if (feedEl) {
-      requestAnimationFrame(() => { feedEl.scrollTop = savedScroll; });
-    }
+      } catch(e) { /* keep optimistic on error */ }
+    })();
   }, [currentUser, feedContainerRef]);
 
   // Auto-load more when sentinel scrolls into view
