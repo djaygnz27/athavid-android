@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Sachi — Your Stage</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="application-name" content="Sachi" />
+    <meta name="google-signin-client_id" content="200749117149-l9litb11sb8aanco05im228chukbf0o6.apps.googleusercontent.com" />
+    <meta name="description" content="Your stage. Share short videos with the world." />
+    <meta name="theme-color" content="#0B0C1A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sachi" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/sachi-logo-512.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/sachi-logo-512.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" href="/sachi-logo-512.png" />
+
+    <style>
+      body { margin: 0; background: #0B0C1A; }
+      #splash {
+        position: fixed;
+        inset: 0;
+        background: #0B0C1A;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        z-index: 99999;
+      }
+      #splash img {
+        width: 90px;
+        height: 90px;
+        border-radius: 20px;
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      #splash-text {
+        font-family: Georgia, serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: #F5C842;
+        letter-spacing: -0.5px;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(0.96); }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/sachi2-BmeKUcZN.js"></script>
+  </head>
+  <body>
+    <!-- Inline splash shown while JS loads -->
+    <div id="splash">
+      <img src="/sachi-neon-logo.jpg" alt="Sachi" style="width:200px;border-radius:16px;" />
+      <div id="splash-text">sachi</div>
+    </div>
+
+    <div id="root"></div>
+    <script>
+      // Remove the HTML splash the moment React renders its first content
+      // into #root. This avoids the visible "fade out HTML splash + fade in
+      // theme splash" double transition. The HTML splash stays visible for
+      // exactly as long as React takes to boot — no more, no less.
+      (function() {
+        var root = document.getElementById('root');
+        var splash = document.getElementById('splash');
+        if (!root || !splash) return;
+        var obs = new MutationObserver(function() {
+          if (root.children.length > 0) {
+            splash.remove();
+            obs.disconnect();
+          }
+        });
+        obs.observe(root, { childList: true });
+        // Safety fallback: if React fails to mount in 8 seconds for any reason,
+        // remove the splash anyway so the user doesn't stare at a frozen logo.
+        setTimeout(function() {
+          if (document.body.contains(splash)) splash.remove();
+          obs.disconnect();
+        }, 8000);
+      })();
+    </script>
+  </body>
+</html>
