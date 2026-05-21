@@ -2493,7 +2493,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
   const [playing, setPlaying] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(() => {
+    // Read from localStorage cache to avoid flash on mount
+    try {
+      const cache = JSON.parse(localStorage.getItem('sachi_likes') || '{}');
+      return !!cache[video.id];
+    } catch { return false; }
+  });
   const [localCommentCount, setLocalCommentCount] = useState(video.comments_count || 0);
   const [localLikeCount, setLocalLikeCount] = useState(video.likes_count || 0);
   const [localHypeCount, setLocalHypeCount] = useState(video.hype_count || 0);
@@ -2807,6 +2813,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       setLocalLikeCount(c => Math.max(0, c + delta));
       // Propagate to parent list for persistence
       onLike(video.id, delta);
+      // Persist liked state to localStorage cache
+      try {
+        const cache = JSON.parse(localStorage.getItem('sachi_likes') || '{}');
+        if (newLiked) cache[video.id] = true;
+        else delete cache[video.id];
+        localStorage.setItem('sachi_likes', JSON.stringify(cache));
+      } catch {}
       // Write/delete SachiLike record in background
       if (newLiked) {
         likes.add(
@@ -6590,6 +6603,45 @@ function App() {
   };
 
   useEffect(() => { loadVideos(); }, []);
+
+  // Background count sync — refreshes like/comment/hype counts every 90s
+  // so feed cards stay accurate without requiring a page reload
+  useEffect(() => {
+    const syncCounts = async () => {
+      try {
+        const APP_ID = "69e79122bcc8fb5a04cfb834";
+        const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+        const res = await fetch(`${BASE_URL}/apps/${APP_ID}/entities/SachiVideo?is_archived=false&is_approved=true&sort=-created_date&limit=200`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const fresh = Array.isArray(json) ? json : (json?.items || json?.records || []);
+        if (!fresh.length) return;
+        // Build a map of id → counts
+        const countMap = {};
+        fresh.forEach(v => {
+          countMap[v.id] = {
+            likes_count: v.likes_count || 0,
+            comments_count: v.comments_count || 0,
+            hype_count: v.hype_count || 0,
+          };
+        });
+        // Patch videoList with fresh counts — only update if changed to avoid re-renders
+        setVideoList(prev => prev.map(v => {
+          const c = countMap[v.id];
+          if (!c) return v;
+          if (
+            c.likes_count === (v.likes_count || 0) &&
+            c.comments_count === (v.comments_count || 0) &&
+            c.hype_count === (v.hype_count || 0)
+          ) return v;
+          return { ...v, ...c };
+        }));
+      } catch(e) { /* silent — never break the feed */ }
+    };
+    const timer = setInterval(syncCounts, 90000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
     const handleSachiShare = (e) => {
