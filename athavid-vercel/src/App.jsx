@@ -1897,26 +1897,46 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
           </div>
 
           {/* Category picker — REQUIRED */}
-          <div style={{ marginBottom:20 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-              <span style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Category</span>
-              <span style={{ background:"rgba(245,200,66,0.15)", color:"#F5C842", fontSize:10, fontWeight:800, borderRadius:6, padding:"2px 6px", letterSpacing:0.5 }}>REQUIRED</span>
+          <div style={{
+            marginBottom:20,
+            background: postCategory ? "rgba(245,200,66,0.06)" : "rgba(255,107,107,0.08)",
+            border: postCategory ? "1.5px solid rgba(245,200,66,0.3)" : "1.5px solid rgba(255,107,107,0.5)",
+            borderRadius:16, padding:"14px 16px",
+            transition:"all 0.3s"
+          }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:18 }}>🏷️</span>
+                <span style={{ color: postCategory ? "#fff" : "#FF6B6B", fontWeight:800, fontSize:15 }}>Category</span>
+              </div>
+              <span style={{
+                background: postCategory ? "rgba(245,200,66,0.2)" : "rgba(255,107,107,0.2)",
+                color: postCategory ? "#F5C842" : "#FF6B6B",
+                fontSize:10, fontWeight:800, borderRadius:6, padding:"3px 8px", letterSpacing:0.8
+              }}>
+                {postCategory ? "✓ SET" : "REQUIRED"}
+              </span>
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
               {["Comedy","Music","Food","Travel","Sports","Gaming","Education","News","Fashion","Fitness","Art","Tech","Pets","DIY","Other"].map(cat => (
                 <button key={cat} onClick={() => setPostCategory(cat)}
                   style={{
                     padding:"7px 16px", borderRadius:20, fontSize:13, fontWeight:600, cursor:"pointer",
-                    border: postCategory === cat ? "2px solid #F5C842" : "1px solid rgba(255,255,255,0.15)",
-                    background: postCategory === cat ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.05)",
-                    color: postCategory === cat ? "#F5C842" : "#aaa",
+                    border: postCategory === cat ? "2px solid #F5C842" : "1.5px solid rgba(255,107,107,0.4)",
+                    background: postCategory === cat ? "rgba(245,200,66,0.18)" : "rgba(255,107,107,0.07)",
+                    color: postCategory === cat ? "#F5C842" : "#FF6B6B",
                     transition:"all 0.15s"
                   }}>
                   {cat}
                 </button>
               ))}
             </div>
-            {!postCategory && <div style={{ color:"#FF6B6B", fontSize:11, marginTop:6 }}>Pick a category to continue</div>}
+            {!postCategory && (
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:10 }}>
+                <span style={{ color:"#FF6B6B", fontSize:12 }}>⚠️</span>
+                <span style={{ color:"#FF6B6B", fontSize:12, fontWeight:600 }}>You must pick a category before posting</span>
+              </div>
+            )}
           </div>
 
           {/* Divider */}
