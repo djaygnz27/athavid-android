@@ -300,7 +300,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
         const newCount = list.length + 1;
         setList(prev => [...prev, c]);
         setText("");
-        await videos.update(video.id, { comments_count: newCount });
+        await videos.update(video.id, { comments_count: newCount, comment_count: newCount });
         // notify video owner
         if (video.user_id && video.user_id !== currentUser?.id) {
           createNotif({
@@ -6467,7 +6467,9 @@ function App() {
       setFollowingIds(ids);
       if (ids.length === 0) { setFollowingVideos([]); return; }
       const allVids = await videos.list();
-      const vids = (allVids.items || allVids || []).filter(v => ids.includes(v.user_id));
+      const vids = (allVids.items || allVids || [])
+        .filter(v => ids.includes(v.user_id))
+        .map(v => ({ ...v, likes_count: v.likes_count ?? v.like_count ?? 0, comments_count: v.comments_count ?? v.comment_count ?? 0 }));
       setFollowingVideos(vids);
     } catch(e) { console.error(e); }
   };
@@ -6478,7 +6480,14 @@ function App() {
       const skip = (page - 1) * FEED_PAGE_SIZE;
       const data = await videos.list(FEED_PAGE_SIZE, skip);
       const rawAll = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const raw = rawAll.filter(v => !v.is_archived);
+      // Normalize singular field names (like_count, comment_count) to plural (likes_count, comments_count)
+      const normalized = rawAll.map(v => ({
+        ...v,
+        likes_count: v.likes_count ?? v.like_count ?? 0,
+        comments_count: v.comments_count ?? v.comment_count ?? 0,
+        hypes_count: v.hypes_count ?? v.hype_count ?? 0,
+      }));
+      const raw = normalized.filter(v => !v.is_archived);
       setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
       if (!raw.length && !append) { setVideoList([]); setLoading(false); return; }
       // Sort: newest first, with a mild boost for high-engagement videos
@@ -6598,7 +6607,7 @@ function App() {
         if (v.id !== videoId) return v;
         const newCount = Math.max(0, (v.likes_count || 0) + delta);
         // Side effects (DB + interests) inside the updater so we read fresh state
-        videos.update(videoId, { likes_count: newCount }).catch(() => {});
+        videos.update(videoId, { likes_count: newCount, like_count: newCount }).catch(() => {});
         if (currentUser && v.hashtags?.length) {
           interests.signal(currentUser.id, v.hashtags, delta > 0 ? 3 : -1).catch(() => {});
         }

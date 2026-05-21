@@ -5,9 +5,19 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
+<<<<<<< HEAD
 const BASE_URL = "https://sachi-04cfb834.base44.app/api";
 const APP_BASE = `/apps/${APP_ID}`;
 const COINS_FN = "https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/functions/sachiCoins";
+=======
+
+// Lightweight toast — fires into App's ToastContainer via the shared bus
+const _toastBus = typeof window !== "undefined" ? (window._sachiBus = window._sachiBus || { _l:[], emit(m,t){this._l.forEach(f=>f({msg:m,type:t,id:Date.now()+Math.random()}))}, on(f){this._l.push(f);return()=>{this._l=this._l.filter(l=>l!==f)}} }) : {emit:()=>{},on:()=>()=>{}};
+const toast = { error:(m)=>_toastBus.emit(m,"error"), success:(m)=>_toastBus.emit(m,"success"), warn:(m)=>_toastBus.emit(m,"warn") };
+const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+const APP_BASE = `/apps/${APP_ID}`;
+const COINS_FN = "https://sachi-04cfb834.base44.app/functions/sachiCoins";
+>>>>>>> 4db8d4cf4835d15df46f9d8d5a6516eda0badc46
 
 // ── Sachi Gift catalog — totally unique, not TikTok ─────────────────────────
 export const GIFTS = [
@@ -402,7 +412,11 @@ export function GiftTray({ room, currentUser, wallet, onWalletUpdate, onClose, o
 async function handleBuyCoins(pack) {
   let user = null;
   try { user = JSON.parse(localStorage.getItem("sachi_user") || "null"); } catch {}
+<<<<<<< HEAD
   if (!user) { alert("Sign in to buy coins"); return; }
+=======
+  if (!user) { toast.warn("Sign in to buy Sachi Coins"); return; }
+>>>>>>> 4db8d4cf4835d15df46f9d8d5a6516eda0badc46
 
   try {
     const res = await fetch(COINS_FN, {
@@ -419,9 +433,15 @@ async function handleBuyCoins(pack) {
     });
     const data = await res.json();
     if (data.url) window.location.href = data.url;
+<<<<<<< HEAD
     else alert("Could not start checkout. Try again.");
   } catch {
     alert("Coin purchases will be available shortly. Our payment system is being configured.");
+=======
+    else toast.error("Could not start checkout. Try again.");
+  } catch {
+    toast.info("Coin purchases coming soon! Payment system is being configured.");
+>>>>>>> 4db8d4cf4835d15df46f9d8d5a6516eda0badc46
   }
 }
 
