@@ -1,44 +1,33 @@
-// SACHi STREAM Service Worker — auto-update on new deploy
-const CACHE_VERSION = 'sachi-v3';
+// SACHi STREAM Service Worker — cache-first, NO forced reloads
+const CACHE_VERSION = 'sachi-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
-// Only cache static assets — NEVER cache index.html or navigation requests
 const CACHE_EXTENSIONS = ['.png', '.ico', '.jpg', '.jpeg', '.webp', '.svg', '.woff2', '.woff'];
 
 self.addEventListener('install', event => {
-  // Take over immediately — no waiting for old SW to die
-  self.skipWaiting();
+  // DO NOT skipWaiting — let the old SW finish serving the current session
   event.waitUntil(
     caches.open(STATIC_CACHE).then(cache =>
-      cache.addAll(['/icon-192.png', '/icon-512.png', '/favicon.ico'])
+      cache.addAll(['/icon-192.png', '/icon-512.png', '/favicon.ico']).catch(() => {})
     )
   );
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    // Delete all old caches on activation
     caches.keys().then(keys =>
       Promise.all(
         keys.filter(k => k !== STATIC_CACHE).map(k => caches.delete(k))
       )
-    ).then(() => {
-      // Claim all clients immediately and tell them to reload
-      return self.clients.claim().then(() => {
-        self.clients.matchAll({ type: 'window' }).then(clients => {
-          clients.forEach(client => {
-            client.postMessage({ type: 'SW_UPDATED' });
-          });
-        });
-      });
-    })
+    ).then(() => self.clients.claim())
+    // NO postMessage SW_UPDATED — never force-reload an active user session
   );
 });
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Always fetch HTML fresh from network — critical for deploy updates
+  // HTML — always network fresh (but DON'T reload if offline, serve cache)
   if (
     event.request.mode === 'navigate' ||
     event.request.headers.get('accept')?.includes('text/html') ||
@@ -51,22 +40,29 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // JS/CSS assets: network-first (Vite hashes filenames so these are always fresh)
+  // Vite-hashed JS/CSS assets — cache-first (filename changes on every deploy)
   if (url.pathname.includes('/assets/')) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(resp => {
+          const clone = resp.clone();
+          caches.open(STATIC_CACHE).then(c => c.put(event.request, clone));
+          return resp;
+        });
+      })
     );
     return;
   }
 
-  // Static icons/images: cache-first
-  const ext = url.pathname.split('.').pop();
-  if (CACHE_EXTENSIONS.includes('.' + ext)) {
+  // Static icons/images — cache-first
+  const ext = '.' + url.pathname.split('.').pop();
+  if (CACHE_EXTENSIONS.includes(ext)) {
     event.respondWith(
       caches.match(event.request).then(cached =>
         cached || fetch(event.request).then(resp => {
           const clone = resp.clone();
-          caches.open(STATIC_CACHE).then(cache => cache.put(event.request, clone));
+          caches.open(STATIC_CACHE).then(c => c.put(event.request, clone));
           return resp;
         })
       )
@@ -74,6 +70,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Everything else — network only
+  // Everything else (API calls etc) — network only, no caching
   event.respondWith(fetch(event.request));
 });
