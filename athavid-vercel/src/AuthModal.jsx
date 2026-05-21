@@ -19,23 +19,18 @@ const COUNTRIES = [
 export const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID = "69e79122bcc8fb5a04cfb834";
 const BASE_URL = "https://sachi-04cfb834.base44.app/api";
-const FUNCTIONS_URL = "https://sachi-04cfb834.base44.app/functions"; // OTP functions — Sachi app
+const FUNCTIONS_URL = "https://sachi-04cfb834.base44.app/functions";
 
 // ─── Helper: lookup existing Sachi profile by email ──────────────────────────
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers: { "Content-Type": "application/json" } }
     );
     const data = await res.json();
     const items = Array.isArray(data) ? data : (data?.items || []);
-    const found = items.find(u => u.email === email) || null;
-    // Restore DOB from DB to localStorage so age-gate works across devices/browsers
-    if (found?.dob) {
-      localStorage.setItem("sachi_dob", found.dob);
-    }
-    return found;
+    return items.find(u => u.email === email) || null;
   } catch {
     return null;
   }
@@ -100,54 +95,48 @@ function loadGSI() {
 }
 
 // ─── Google popup sign-in ─────────────────────────────────────────────────────
-// ─── Google redirect — works in ALL browsers including Incognito ──────────────
-function signInWithGoogleRedirect() {
-  const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: window.location.origin + "/",
-    response_type: "token id_token",
-    scope: "openid email profile",
-    nonce: Math.random().toString(36).slice(2),
-    prompt: "select_account",
-  });
-  window.location.href = "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString();
-}
-
 async function signInWithGooglePopup(onSuccess) {
-  try {
-    const google = await loadGSI();
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: async (response) => {
-        const payload = decodeJwt(response.credential);
-        if (!payload?.email) return;
-        localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
-        const found = await lookupSachiUser(payload.email);
-        if (found) {
-          const sessionUser = buildSessionUser(found, payload);
-          localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
-          localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-          localStorage.removeItem("sachi_pending_google");
-          onSuccess({ sessionUser, needsProfile: false });
-        } else {
-          onSuccess({ payload, needsProfile: true });
-        }
-      },
-      cancel_on_tap_outside: false,
+  const google = await loadGSI();
+
+  const handleCredential = async (response) => {
+    const payload = decodeJwt(response.credential);
+    if (!payload?.email) return;
+    localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+    const found = await lookupSachiUser(payload.email);
+    if (found) {
+      const sessionUser = buildSessionUser(found, payload);
+      localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+      localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+      localStorage.removeItem("sachi_pending_google");
+      onSuccess({ sessionUser, needsProfile: false });
+    } else {
+      onSuccess({ payload, needsProfile: true });
+    }
+  };
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredential,
+    ux_mode: "popup",
+    cancel_on_tap_outside: false,
+  });
+
+  // Always use renderButton — works in incognito, all browsers, no prompt() dependency
+  const container = document.getElementById("sachi-google-btn-container");
+  if (container) {
+    container.innerHTML = "";
+    google.accounts.id.renderButton(container, {
+      theme: "outline",
+      size: "large",
+      width: container.offsetWidth || 320,
+      text: "continue_with",
+      shape: "rectangular",
     });
-    google.accounts.id.prompt((notification) => {
-      // If One Tap is blocked for ANY reason → redirect (works in Incognito too)
-      if (
-        notification.isNotDisplayed() ||
-        notification.isSkippedMoment() ||
-        notification.isDismissedMoment()
-      ) {
-        signInWithGoogleRedirect();
-      }
-    });
-  } catch(e) {
-    // GSI failed entirely (network, blocked) → redirect fallback
-    signInWithGoogleRedirect();
+    // Auto-click the rendered button
+    setTimeout(() => {
+      const btn = container.querySelector("div[role=button]") || container.querySelector("iframe");
+      if (btn) btn.click();
+    }, 150);
   }
 }
 
@@ -342,7 +331,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
     setLoading(true); setError("");
     try {
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser`,
+        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -357,9 +346,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
             followers_count: 0,
             following_count: 0,
             videos_count: 0,
-            location_city: city || "",
-            location_country: country || "",
-            dob: dob,
+            location: (city && country) ? city + ", " + country : (city || country || ""),
           })
         }
       ).then(r => r.json());
@@ -512,7 +499,6 @@ export default function AuthModal({ onClose, onSuccess }) {
     return modalShell(
       <>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:32, marginBottom:8 }}>🌸</div>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5 }}>Almost there!</div>
         </div>
         <FinishStep googlePayload={googlePayload} onSuccess={onSuccess} />
@@ -524,8 +510,7 @@ export default function AuthModal({ onClose, onSuccess }) {
     return modalShell(
       <>
         <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:32, marginBottom:8 }}>🌸</div>
-        </div>
+          </div>
         <EmailOTPStep onSuccess={onSuccess} onBack={() => setStep("signin")} />
       </>
     );
@@ -535,8 +520,14 @@ export default function AuthModal({ onClose, onSuccess }) {
   return modalShell(
     <>
       <div style={{ textAlign:"center", marginBottom:28 }}>
-        <div style={{ fontSize:40, marginBottom:8 }}>🌸</div>
-        <div style={{ color:"#F5C842", fontWeight:800, fontSize:24, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
+        <div style={{ marginBottom:12, display:"flex", justifyContent:"center", alignItems:"center", gap:10 }}>
+          <img src="/sachi-icon-v6.png" alt="Sachi" style={{ width:48, height:48, borderRadius:12, filter:"drop-shadow(0 0 10px rgba(245,200,66,0.6))" }} />
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start" }}>
+            <span style={{ fontFamily:"'Georgia', serif", fontWeight:900, fontSize:26, letterSpacing:2, color:"#F5C842", lineHeight:1 }}>SACHi</span>
+            <span style={{ fontFamily:"'Georgia', serif", fontWeight:400, fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:3 }}>STREAM</span>
+          </div>
+        </div>
+        <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
         <div style={{ color:"rgba(255,255,255,0.45)", fontSize:14 }}>Where truth meets community</div>
       </div>
 
@@ -597,7 +588,7 @@ export default function AuthModal({ onClose, onSuccess }) {
         &amp;{" "}
         <a href="/privacy" target="_blank" style={{ color:"#F5C842" }}>Privacy Policy</a>.
       </div>
-      <div id="sachi-google-btn-hidden" style={{ display:"none" }} />
+      <div id="sachi-google-btn-container" style={{ width:"100%", minHeight:44, marginTop:4 }} />
     </>
   );
 }
