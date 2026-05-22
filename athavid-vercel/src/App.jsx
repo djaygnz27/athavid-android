@@ -2479,16 +2479,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const uiTimerRef = useRef(null);
 
   // Derived from video prop — must be declared before useEffect that references it
-  const photoUrls = (() => {
-    const looksLikeImage = /\.(jpg|jpeg|png|webp|gif|bmp|heic)(\?|$)/i.test(video.video_url || "");
-    const isPhotoPost = video.is_photo || !!video.photo_urls || looksLikeImage;
-    if (!isPhotoPost) return null;
-    if (video.photo_urls) {
-      if (Array.isArray(video.photo_urls)) return video.photo_urls;
-      try { return JSON.parse(video.photo_urls); } catch (e) { return video.video_url ? [video.video_url] : null; }
-    }
-    return video.video_url ? [video.video_url] : null;
-  })();
+  const photoUrls = video.is_photo
+    ? (video.photo_urls
+      ? (Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls))
+      : (video.video_url ? [video.video_url] : null))
+    : null;
 
   // Carousel navigation via tap zones only (no swipe — feed scroll intercepts)
 
