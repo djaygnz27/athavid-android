@@ -2586,6 +2586,42 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
   };
 
+  // ── Attach HLS for Cloudflare .m3u8 streams (Chrome needs hls.js; Safari is native) ──
+  React.useEffect(() => {
+    const el = videoRef.current;
+    const url = resolveMediaUrl(video.video_url);
+    if (!el || !url) return;
+    const isHls = url.endsWith(".m3u8") || url.includes("cloudflarestream.com") || url.includes("customer-i1ij9522l179kiqc");
+    if (!isHls) return; // plain mp4 etc. use the tag's src attribute
+    // Safari / iOS: native HLS
+    if (el.canPlayType("application/vnd.apple.mpegurl")) {
+      if (el.src !== url) el.src = url;
+      return;
+    }
+    // Everyone else: hls.js
+    const attach = () => {
+      if (!window.Hls || !window.Hls.isSupported()) return;
+      if (el._hls) { try { el._hls.destroy(); } catch(e){} el._hls = null; }
+      const hls = new window.Hls({ maxBufferLength: 30, startLevel: -1 });
+      hls.loadSource(url);
+      hls.attachMedia(el);
+      el._hls = hls;
+    };
+    if (window.Hls) { attach(); }
+    else {
+      const existing = document.getElementById("hlsjs-cdn");
+      if (existing) { existing.addEventListener("load", attach); }
+      else {
+        const sc = document.createElement("script");
+        sc.id = "hlsjs-cdn";
+        sc.src = "https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js";
+        sc.onload = attach;
+        document.head.appendChild(sc);
+      }
+    }
+    return () => { if (el && el._hls) { try { el._hls.destroy(); } catch(e){} el._hls = null; } };
+  }, [video.video_url]);
+
   const doTogglePlay = () => {
     const el = videoRef.current;
     if (!el) return;
@@ -2859,7 +2895,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         );
         return (
           <>
-            <video ref={videoRef} src={resolvedVideoUrl} poster={video.thumbnail_url && !video.thumbnail_url.match(/\.mp4|\.mov|\.webm/i) ? resolveMediaUrl(video.thumbnail_url) : undefined}
+            <video ref={videoRef} src={(resolvedVideoUrl && (resolvedVideoUrl.endsWith(".m3u8") || resolvedVideoUrl.includes("cloudflarestream.com") || resolvedVideoUrl.includes("customer-i1ij9522l179kiqc"))) ? undefined : resolvedVideoUrl} poster={video.thumbnail_url && !video.thumbnail_url.match(/\.mp4|\.mov|\.webm/i) ? resolveMediaUrl(video.thumbnail_url) : undefined}
               loop playsInline
               muted={muted || !!video.sound_url}
               onPlay={() => {
