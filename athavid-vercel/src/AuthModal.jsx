@@ -1,3 +1,14 @@
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ ⛔ LOCKED — AuthModal.jsx (AUTH / LOGIN)                          ║
+// ║ SEGREGATED SECTION — DO NOT MODIFY                               ║
+// ║ Owns: Google OAuth, email sign-in, sign-up, onboarding flow      ║
+// ║ Owns: referral attribution on signup                              ║
+// ║ DO NOT modify auth flow or logo without review                    ║
+// ║ Last verified: 2026-05-23                                         ║
+// ║ Test: tap Sign In → Google + email both work → user lands on feed ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+
 import React, { useState, useEffect } from "react";
 
 const COUNTRIES = [
@@ -18,15 +29,21 @@ const COUNTRIES = [
 
 export const GOOGLE_CLIENT_ID = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://sachi-04cfb834.base44.app/api";
-const FUNCTIONS_URL = "https://sachi-04cfb834.base44.app/functions";
+const BASE_URL = "https://app.base44.com/api";
+const FUNCTIONS_URL = "";  // local Vercel API routes
 
 // ─── Helper: lookup existing Sachi profile by email ──────────────────────────
 async function lookupSachiUser(email) {
   try {
+    // Try with session token first (bypasses RLS)
+    const existingSession = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
+    const sessionObj = existingSession ? JSON.parse(existingSession) : null;
+    const headers = { "Content-Type": "application/json" };
+    if (sessionObj?.token) headers["Authorization"] = `Bearer ${sessionObj.token}`;
+
     const res = await fetch(
       `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
-      { headers: { "Content-Type": "application/json" } }
+      { headers }
     );
     const data = await res.json();
     const items = Array.isArray(data) ? data : (data?.items || []);
@@ -68,6 +85,22 @@ export async function handleGoogleRedirectCallback() {
   const payload = decodeJwt(idToken);
   if (!payload?.email) return null;
   localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+
+  // Check existing localStorage session first — if email matches, trust it (avoids RLS issue)
+  try {
+    const existing = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
+    if (existing) {
+      const parsed = JSON.parse(existing);
+      if (parsed?.email === payload.email && parsed?.id) {
+        const sessionUser = { ...parsed, _google: true };
+        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+        localStorage.removeItem("sachi_pending_google");
+        return { sessionUser, needsProfile: false };
+      }
+    }
+  } catch {}
+
   const found = await lookupSachiUser(payload.email);
   if (found) {
     const sessionUser = buildSessionUser(found, payload);
@@ -175,7 +208,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
     if (!email.trim() || !email.includes("@")) return setError("Please enter a valid email address.");
     setLoading(true); setError("");
     try {
-      const res = await fetch(`${FUNCTIONS_URL}/sendOTP`, {
+      const res = await fetch("/api/sendOTP", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
@@ -194,7 +227,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
     if (code.length !== 6) return setError("Please enter the 6-digit code.");
     setLoading(true); setError("");
     try {
-      const res = await fetch(`${FUNCTIONS_URL}/verifyOTP`, {
+      const res = await fetch("/api/verifyOTP", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: verifiedEmail, code })
@@ -520,12 +553,8 @@ export default function AuthModal({ onClose, onSuccess }) {
   return modalShell(
     <>
       <div style={{ textAlign:"center", marginBottom:28 }}>
-        <div style={{ marginBottom:12, display:"flex", justifyContent:"center", alignItems:"center", gap:10 }}>
-          <img src="/sachi-icon-v6.png" alt="Sachi" style={{ width:48, height:48, borderRadius:12, filter:"drop-shadow(0 0 10px rgba(245,200,66,0.6))" }} />
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start" }}>
-            <span style={{ fontFamily:"'Georgia', serif", fontWeight:900, fontSize:26, letterSpacing:2, color:"#F5C842", lineHeight:1 }}>SACHi</span>
-            <span style={{ fontFamily:"'Georgia', serif", fontWeight:400, fontSize:11, color:"rgba(255,255,255,0.45)", letterSpacing:3 }}>STREAM</span>
-          </div>
+        <div style={{ marginBottom:12, display:"flex", justifyContent:"center" }}>
+          <img src="/sachi-crystal.png" alt="Sachi" style={{ width:110, height:110, objectFit:"contain", filter:"drop-shadow(0 0 20px rgba(245,200,66,0.5))" }} />
         </div>
         <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
         <div style={{ color:"rgba(255,255,255,0.45)", fontSize:14 }}>Where truth meets community</div>

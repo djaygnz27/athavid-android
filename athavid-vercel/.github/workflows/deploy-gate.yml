@@ -1,0 +1,60 @@
+name: Sachi Deploy Gate
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: athavid-vercel
+        run: npm ci
+
+      - name: CHECK 1 — Nav structure intact
+        working-directory: athavid-vercel
+        run: |
+          for label in "Home" "Explore" "Post" "Activity" "Me"; do
+            count=$(grep -c "\"$label\"" src/App.jsx || true)
+            if [ "$count" -lt 1 ]; then
+              echo "❌ BLOCKED: Nav label '$label' missing from App.jsx"
+              exit 1
+            fi
+            echo "✅ Nav label '$label' found"
+          done
+
+      - name: CHECK 2 — Raised Post button present
+        working-directory: athavid-vercel
+        run: |
+          if grep -q "marginTop.*-18px" src/App.jsx; then
+            echo "✅ Raised Post button present"
+          else
+            echo "❌ BLOCKED: Raised Post button missing — nav broken"
+            exit 1
+          fi
+
+      - name: CHECK 3 — Build succeeds
+        working-directory: athavid-vercel
+        run: |
+          npm run build
+          echo "✅ Build passed"
+
+      - name: CHECK 4 — No test/fake URLs in production
+        working-directory: athavid-vercel
+        run: |
+          if grep -q "test\.example\|https://test\.com" src/App.jsx; then
+            echo "❌ BLOCKED: Fake test URLs found in App.jsx"
+            exit 1
+          fi
+          echo "✅ No fake test URLs"
+
+      - name: ✅ All checks passed
+        run: echo "🚀 Deploy gate passed — Vercel will proceed"

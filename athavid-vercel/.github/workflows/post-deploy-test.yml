@@ -1,0 +1,85 @@
+name: Sachi Post-Deploy Smoke Test
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    # Only run after deploy-gate verify job — but since they're separate workflows
+    # we wait a fixed time for Vercel to finish deploying
+    steps:
+      - name: Wait for Vercel deploy (90s)
+        run: |
+          echo "⏳ Waiting 90s for Vercel to finish deploying..."
+          sleep 90
+
+      - name: CHECK 1 — Site returns HTTP 200
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://www.sachistream.com)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ SMOKE FAIL: Site returned $STATUS (expected 200)"
+            exit 1
+          fi
+          echo "✅ Site is up — HTTP 200"
+
+      - name: CHECK 2 — HTML contains Sachi (not a crash page)
+        run: |
+          BODY=$(curl -s https://www.sachistream.com)
+          if echo "$BODY" | grep -qi "sachi"; then
+            echo "✅ 'Sachi' found in HTML — page loaded correctly"
+          else
+            echo "❌ SMOKE FAIL: 'Sachi' not found in HTML — possible blank/crash page"
+            echo "--- First 500 chars of response ---"
+            echo "$BODY" | head -c 500
+            exit 1
+          fi
+
+      - name: CHECK 3 — No Application Error in HTML
+        run: |
+          BODY=$(curl -s https://www.sachistream.com)
+          if echo "$BODY" | grep -qi "Application error\|Internal Server Error\|500 -\|DEPLOYMENT_NOT_FOUND"; then
+            echo "❌ SMOKE FAIL: Error string found in HTML"
+            echo "$BODY" | grep -i "error" | head -5
+            exit 1
+          fi
+          echo "✅ No error strings in HTML"
+
+      - name: CHECK 4 — OG tag endpoint responding (/post route)
+        run: |
+          # Hit a known stable post ID — use a crawler UA to trigger OG path
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -A "WhatsApp/2.0" \
+            "https://www.sachistream.com/post/test-probe-404")
+          echo "OG endpoint status: $STATUS"
+          # 200 = fallback OG served, 302 = redirect to SPA — both are fine
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "302" ] || [ "$STATUS" = "301" ]; then
+            echo "✅ OG/post route responding ($STATUS)"
+          else
+            echo "❌ SMOKE FAIL: OG route returned $STATUS"
+            exit 1
+          fi
+
+      - name: CHECK 5 — API base endpoint reachable
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?limit=1")
+          echo "Base44 API status: $STATUS"
+          # 200 = data returned, 401 = auth required (still alive) — both OK
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ Base44 API reachable ($STATUS)"
+          else
+            echo "❌ SMOKE FAIL: Base44 API returned $STATUS — backend may be down"
+            exit 1
+          fi
+
+      - name: ✅ All smoke tests passed
+        run: |
+          echo ""
+          echo "🟢 ========================================"
+          echo "🟢  SACHI SMOKE TEST — ALL CHECKS PASSED"
+          echo "🟢  Site: https://www.sachistream.com"
+          echo "🟢  Commit: ${{ github.sha }}"
+          echo "🟢 ========================================"

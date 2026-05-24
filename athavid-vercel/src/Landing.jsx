@@ -1,3 +1,14 @@
+// ╔════════════════════════════════════════════════════════════════════╗
+// ║ ⛔ LOCKED — Landing.jsx (SPLASH PAGE)                             ║
+// ║ SEGREGATED SECTION — DO NOT MODIFY                               ║
+// ║ Owns: splash animation, logo + ring, petal effects, tap-to-enter  ║
+// ║ Owns: prefetch timing (6s min hold), progress bar, star field     ║
+// ║ DO NOT touch timing logic or animation keyframes without review   ║
+// ║ Last verified: 2026-05-23                                         ║
+// ║ Test: load sachistream.com → splash plays → tap → feed appears   ║
+// ╚════════════════════════════════════════════════════════════════════╝
+
+
 import React, { useState, useEffect, useRef } from "react";
 
 const PETALS = Array.from({ length: 22 }, (_, i) => ({
@@ -19,52 +30,35 @@ const STARS = Array.from({ length: 55 }, (_, i) => ({
   delay: Math.random() * 5,
 }));
 
-export default function Landing({ onEnter }) {
+export default function Landing({ onEnter, prefetchDone = false }) {
   const [phase, setPhase] = useState("idle");
   const [leaving, setLeaving] = useState(false);
-  const leavingRef = React.useRef(false);
-  const preloadRef = React.useRef(null);
-
-  const handleEnter = React.useCallback(() => {
-    if (leavingRef.current) return;
-    leavingRef.current = true;
-    setLeaving(true);
-    setTimeout(() => onEnter(), 700);
-  }, [onEnter]);
-
-  // Start fetching & buffering the first video immediately while splash is showing
-  useEffect(() => {
-    const APP_ID = "69e79122bcc8fb5a04cfb834";
-    fetch(`https://sachi-04cfb834.base44.app/api/apps/${APP_ID}/entities/SachiVideo?limit=10&sort=-created_date`, {
-      headers: { "x-api-key": "public" }
-    })
-      .then(r => r.json())
-      .then(data => {
-        const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
-        const first = items.find(v => !v.is_archived && v.video_url);
-        if (first?.video_url) {
-          const el = document.createElement("video");
-          el.src = first.video_url;
-          el.preload = "auto";
-          el.muted = true;
-          el.playsInline = true;
-          el.style.display = "none";
-          el.load();
-          document.body.appendChild(el);
-          preloadRef.current = el;
-        }
-      })
-      .catch(() => {});
-    return () => {
-      // Leave preloaded video in DOM — the VideoCard will reuse the cached bytes
-    };
-  }, []);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
-    const t2 = setTimeout(() => handleEnter(), 3000);
+    // ╔════════════════════════════════════════════════════════════════════╗
+  // ║ ⛔ LOCKED — SECTION: SPLASH TIMING                                ║
+  // ║ 6s minimum hold — do NOT reduce, animations need full time        ║
+  // ║ prefetchDone short-circuits only AFTER 4s minimum                 ║
+  // ╚════════════════════════════════════════════════════════════════════╝
+  // Auto-advance after 6s — gives all animations time to fully play
+    const t2 = setTimeout(() => handleEnter(), 6000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [handleEnter]);
+  }, []);
+
+  // When prefetch completes, wait at least 4s total before advancing
+  // so the splash always feels intentional, never rushed
+  useEffect(() => {
+    if (!prefetchDone) return;
+    const t = setTimeout(() => handleEnter(), 4000);
+    return () => clearTimeout(t);
+  }, [prefetchDone]);
+
+  const handleEnter = () => {
+    if (leaving) return;
+    setLeaving(true);
+    setTimeout(() => onEnter(), 400); // reduced from 700ms, still smooth
+  };
 
   return (
     <div onClick={handleEnter} style={{
@@ -101,6 +95,10 @@ export default function Landing({ onEnter }) {
         @keyframes nameIn {
           0%   { opacity:0; transform:translateY(30px) scaleX(0.85); letter-spacing:18px; }
           100% { opacity:1; transform:translateY(0)    scaleX(1);    letter-spacing:-2px; }
+        }
+        @keyframes readyPulse {
+          0%,100%{ box-shadow: 0 0 0 0 rgba(245,200,66,0); }
+          50%    { box-shadow: 0 0 0 12px rgba(245,200,66,0.25); }
         }
         @keyframes shimmer {
           0%   { background-position:-400% center; }
@@ -215,17 +213,22 @@ export default function Landing({ onEnter }) {
       {/* Content */}
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", zIndex:10, padding:"0 28px", textAlign:"center", width:"100%", maxWidth:400 }}>
 
+        {/* ╔════════════════════════════════════════════════════════════════════╗ */}
+        {/* ║ ⛔ LOCKED — SECTION: LOGO + RING                                  ║ */}
+        {/* ║ Ring is 160px, logo is 140px — 10px centered padding all sides    ║ */}
+        {/* ║ Do NOT change sizes or offsets without checking visual alignment   ║ */}
+        {/* ╚════════════════════════════════════════════════════════════════════╝ */}
         {/* Logo with pulse rings */}
-        <div style={{ position:"relative", marginBottom:26 }}>
-          <div className="ring-pulse" style={{ width:130, height:130, top:"-10px", left:"-10px" }} />
-          <div className="ring-pulse" style={{ width:130, height:130, top:"-10px", left:"-10px", animationDelay:"3.3s" }} />
+        <div style={{ position:"relative", width:160, height:160, display:"flex", alignItems:"center", justifyContent:"center", marginBottom:26 }}>
+          <div className="ring-pulse" style={{ width:160, height:160, top:0, left:0 }} />
+          <div className="ring-pulse" style={{ width:160, height:160, top:0, left:0, animationDelay:"3.3s" }} />
           <img
             className="logo-bloom"
-            src="/sachi-icon-v4.png"
+            src="/sachi-crystal.png"
             alt="Sachi"
             style={{
-              width:110, height:110, borderRadius:30,
-              display:"block",
+              width:140, height:140, objectFit:"contain", borderRadius:0,
+              display:"block", position:"relative", zIndex:1,
               animation:"logoBloom 1.2s cubic-bezier(0.34,1.56,0.64,1) 0.1s both, goldPulse 3.5s ease-in-out 1.5s infinite",
             }}
           />
@@ -269,7 +272,7 @@ export default function Landing({ onEnter }) {
           color:"rgba(220,180,255,0.7)", maxWidth:320, fontWeight:600,
           textAlign:"center",
         }}>
-          Real moments. Real people.<br/>No AI, just the truth.
+          Real moments. Real people. No filters.
         </div>
 
         {/* Founding creator sentence */}
@@ -306,12 +309,27 @@ export default function Landing({ onEnter }) {
 
       </div>
 
+      {/* Tap to enter hint */}
+      <div className="f5" style={{
+        position:"absolute", bottom:48, left:0, right:0,
+        textAlign:"center", pointerEvents:"none",
+      }}>
+        <div style={{
+          display:"inline-block",
+          fontSize:12, letterSpacing:3, textTransform:"uppercase",
+          color:"rgba(245,200,66,0.45)", fontWeight:600,
+          animation:"fadeSlideUp 0.7s ease 3.5s both",
+        }}>
+          tap anywhere to enter
+        </div>
+      </div>
+
       {/* Bottom progress bar */}
       <div className="f5" style={{ position:"absolute", bottom:0, left:0, right:0, height:3 }}>
         <div style={{
           height:"100%",
           background:"linear-gradient(90deg,#7b2ff7,#F5C842,#FFB020)",
-          animation:"shimmer 5.2s linear forwards",
+          animation:"shimmer 6s linear forwards",
           backgroundSize:"200% 100%",
         }} />
       </div>
