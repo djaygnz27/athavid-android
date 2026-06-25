@@ -211,7 +211,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         v.src = URL.createObjectURL(file);
       });
       if (dur > maxDuration) {
-        alert(`⚠️ Your video is ${Math.round(dur)}s long. The limit for this format is ${maxDuration === 600 ? "10 minutes" : maxDuration + " seconds"}. Please trim it and try again.`);
+        alert(`⚠️ Your video is ${Math.round(dur)}s long. The limit for this format is ${maxDuration === 600 ? "10 minutes" : maxDuration === 120 ? "2 minutes" : maxDuration + " seconds"}. Please trim it and try again.`);
         return;
       }
     } catch {}
@@ -788,6 +788,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             {[
               { label:"15s", val:15, icon:"⚡" },
               { label:"60s", val:60, icon:"🎬" },
+              { label:"2 min", val:120, icon:"📹" },
               { label:"10 min", val:600, icon:"🎥" },
             ].map(opt => (
               <button key={opt.val} onClick={() => setMaxDuration(opt.val)}
