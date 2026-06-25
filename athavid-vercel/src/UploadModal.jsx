@@ -877,7 +877,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
               e.currentTarget.style.borderColor = "rgba(255,107,107,0.4)";
               e.currentTarget.style.background = "transparent";
               const f = e.dataTransfer.files[0];
-              if (!f || !f.type.startsWith("video/")) return;
+              if (!f) return;
+              const isVideo = f.type.startsWith("video/") || f.type === "" || /\.(mp4|mov|webm|avi|mkv)$/i.test(f.name);
+              if (!isVideo) { alert("Please drop a video file (MP4, MOV, WebM)."); return; }
               if (f.size > 500 * 1024 * 1024) { alert("Video must be under 500MB."); return; }
               handleFileSelect(f);
             }}
