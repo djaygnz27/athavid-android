@@ -223,9 +223,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const uploadResult = await uploadFile(editedFile || file, (pct) => {
         setProgress(10 + Math.round(pct * 0.5)); // 10-60%
       });
-      // uploadFile returns {file_url (HLS url), thumbnail_url, stream_uid} for videos
+      // uploadFile returns {file_url (HLS url), thumbnail_url, stream_uid, media_url} for videos
       const video_url = uploadResult.file_url || uploadResult;
       const cfThumbnail = uploadResult.thumbnail_url || null;
+      const media_url = uploadResult.media_url || null; // direct MP4 — set if trigger-mp4 was fast enough
       setProgress(60);
       setStep("Generating thumbnail...");
       let thumbnail_url = cfThumbnail; // use Cloudflare's auto-thumbnail first
@@ -276,7 +277,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-        video_url, thumbnail_url,
+        video_url, thumbnail_url, media_url,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0, comments_count: 0, views_count: 0, shares_count: 0,

@@ -150,8 +150,31 @@ export async function uploadFile(file, onProgress) {
   if (isVideo) {
     // 2a. TUS upload directly to Cloudflare Stream
     await tusUpload(file, creds.upload_url, onProgress);
-    // Return the HLS playback URL — this becomes video_url in the DB
-    return { file_url: creds.playback_url, thumbnail_url: creds.thumbnail_url, stream_uid: creds.stream_uid };
+
+    // 2b. Trigger MP4 download generation immediately after upload
+    // This ensures media_url is always populated — avoids isHlsUrl mis-detection and blur issues
+    let media_url = null;
+    try {
+      const dlRes = await fetch("/api/trigger-mp4", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stream_uid: creds.stream_uid }),
+      });
+      if (dlRes.ok) {
+        const dlData = await dlRes.json();
+        media_url = dlData.media_url || null;
+      }
+    } catch (e) {
+      // Non-fatal — video_url (HLS) still works as fallback
+      console.warn("trigger-mp4 failed (non-fatal):", e.message);
+    }
+
+    return {
+      file_url: creds.playback_url,
+      thumbnail_url: creds.thumbnail_url,
+      stream_uid: creds.stream_uid,
+      media_url,  // direct MP4 URL — set immediately if CF is fast, else null (backfill handles it)
+    };
   } else {
     // 2b. PUT directly to R2 presigned URL
     await r2Upload(file, creds.upload_url, onProgress);
