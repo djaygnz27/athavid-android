@@ -147,10 +147,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       if (e.isIntersecting) {
         const currentlyMuted = window.__sachiMuted !== undefined ? window.__sachiMuted : false;
         el.muted = video.sound_url ? true : currentlyMuted;
-        // For HLS streams: if manifest not loaded yet, flag for deferred play
-        const isHlsStream = (el.src === "" || !el.src) && el._hls;
-        if (isHlsStream && el.readyState < 2) {
+        // For HLS streams: src is set by hls.js (not as el.src attribute)
+        // If el has no src yet, it's an HLS stream still loading — flag for deferred play
+        const hasNoSrc = (el.src === "" || !el.src || el.src === window.location.href);
+        if (hasNoSrc || (el._hls && el.readyState < 2)) {
           el._hlsPendingPlay = true;
+          // Also try play immediately in case manifest already parsed
+          el.play().catch(() => {});
         } else {
           el.play().catch(() => {});
         }
