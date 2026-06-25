@@ -1,5 +1,5 @@
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://app.base44.com/api";
+const BASE_URL = "https://sachi-04cfb834.base44.app/api";
 
 let sessionToken = null;
 
