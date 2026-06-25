@@ -3,7 +3,7 @@
 // DO NOT MODIFY unless fixing a video editor bug.
 // Last verified working: 2026-05-23
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 
 function VideoEditor({ file, onDone, onSkip }) {
   const videoRef = useRef(null);
