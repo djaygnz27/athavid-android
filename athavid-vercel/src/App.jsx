@@ -242,7 +242,7 @@ async function captureThumbnail(file) {
 
 // ── Comment Sheet ─────────────────────────────────────────────────────────────
 const createNotif = (data) => {
-  request("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification", { is_read: false, ...data }).catch(() => {});
+  request("POST", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification", { is_read: false, ...data }).catch(() => {});
 };
 
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
@@ -1347,7 +1347,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       } else {
         setStep("Posted! 🎉");
         // Notify followers
-        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
+        fetch("https://sachi-04cfb834.base44.app/functions/sendFollowNotification", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1466,7 +1466,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       } else {
         setStep("Posted! 🎉");
         // Notify followers
-        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
+        fetch("https://sachi-04cfb834.base44.app/functions/sendFollowNotification", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1501,7 +1501,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     try {
       const tag = GENRE_TAG_MAP[genre] || "";
       // Use Base44 backend as proxy to avoid mobile CORS/SSL issues
-      let apiUrl = `https://sachi-c7f0261c.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
+      let apiUrl = `https://sachi-04cfb834.base44.app/api/functions/getMusicTracks?genre=${encodeURIComponent(genre)}&limit=30`;
       if (search) apiUrl += `&search=${encodeURIComponent(search)}`;
       console.log("[Sachi Music] Fetching via proxy:", apiUrl);
       let tracks = [];
@@ -3506,7 +3506,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     try {
       // Use backend function — works for ALL login types (Google + email)
       const base64 = dataUrl; // already a data URL from crop
-      const res = await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+      const res = await fetch("https://sachi-04cfb834.base44.app/functions/uploadAvatar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image_base64: base64, mime_type: "image/jpeg" })
@@ -3707,12 +3707,12 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
+      request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
       // Live following count: how many people this profile follows
-      request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
+      request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = userRes?.items || userRes || [];
       const u = allUsers.find(x => x.id === userId || x.created_by === userId) || null;
@@ -3751,7 +3751,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
       }
       // Refresh live following count for the current user's Me tab too
       try {
-        const myFollowingRes = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingRes = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`);
         const myFollowingCount = (myFollowingRes?.items || myFollowingRes || []).length;
         setProfile(p => p ? { ...p } : p); // trigger re-render if needed
         // store for Me tab
@@ -4171,7 +4171,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadPodcasts = async () => {
     setLoadingPodcasts(true);
     try {
-      const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+      const APP_ID = "69e79122bcc8fb5a04cfb834";
       const data = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast?status=Active`);
       const list = Array.isArray(data) ? data : (data.records || data.items || []);
       setPodcasts(list);
@@ -4185,7 +4185,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   const loadMyShows = async () => {
     if (!currentUser) return;
     try {
-      const APP_ID = "69b2ee18a8e6fb58c7f0261c";
+      const APP_ID = "69e79122bcc8fb5a04cfb834";
       const data = await request("GET", `/apps/${APP_ID}/entities/SachiPodcast`);
       const all = Array.isArray(data) ? data : (data.records || data.items || []);
       const mine = all.filter(p =>
@@ -4209,7 +4209,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
     setRegistering(true);
     try {
       const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-      await request("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
+      await request("POST", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast`, {
         title: registerForm.title,
         host_name: registerForm.host_name,
         description: registerForm.description,
@@ -4229,7 +4229,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       await loadPodcasts();
       await loadMyShows();
       // Send welcome email to host
-      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
+      fetch("https://sachi-04cfb834.base44.app/functions/podcastWelcome", {
         method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
           host_email: currentUser?.email || "",
@@ -4388,7 +4388,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                           style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }} />
                         <button onClick={async () => {
                           try {
-                            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                            await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                             setSelectedPodcast(p => ({...p, live_stream_url: newStreamUrl}));
                             setEditingStream(false);
                             showToast("✅ Stream URL saved!", "success");
@@ -4412,11 +4412,11 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     if (endingLive) return;
                     setEndingLive(true);
                     try {
-                      await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, set_live:false, admin_email: currentUser?.email })
                       }).catch(()=>{});
-                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 }); } catch {}
+                      try { await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:false, listener_count:0 }); } catch {}
                       setSelectedPodcast(p => ({...p, is_live:false, listener_count:0}));
                       setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:false} : p));
                       showToast("✅ Live session ended successfully", "success");
@@ -4439,7 +4439,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                           style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:10, padding:"8px 12px", color:"#fff", fontSize:13, outline:"none" }} />
                         <button onClick={async () => {
                           try {
-                            await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                            await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
                             setSelectedPodcast(p => ({...p, live_stream_url: newStreamUrl}));
                             setEditingStream(false);
                             showToast("✅ Stream URL saved!", "success");
@@ -4493,7 +4493,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                           setLoadingStreamKey(true);
                           try {
                             // Route through Vercel serverless proxy to avoid CORS
-                            const cfRes = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
+                            const cfRes = await fetch("https://sachi-04cfb834.base44.app/functions/createLiveStream", {
                               method:"POST",
                               headers:{"Content-Type":"application/json"},
                               body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_username: selectedPodcast.host_username || currentUser?.username })
@@ -4518,12 +4518,12 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                     setGoingLive(true);
                     try {
                       // Use podcastGoLiveNotify which handles the DB update via service role
-                      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
+                      const resp = await fetch("https://sachi-04cfb834.base44.app/functions/podcastGoLiveNotify", {
                         method:"POST", headers:{"Content-Type":"application/json"},
                         body:JSON.stringify({ podcast_id:selectedPodcast.id, podcast_title:selectedPodcast.title, host_name:selectedPodcast.host_name, live_stream_url:selectedPodcast.live_stream_url||"", set_live:true, admin_email: currentUser?.email })
                       });
                       // Also try direct PATCH (works if user has token)
-                      try { await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true }); } catch {}
+                      try { await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { is_live:true }); } catch {}
                       setSelectedPodcast(p => ({...p, is_live:true}));
                       setPodcasts(ps => ps.map(p => p.id===selectedPodcast.id ? {...p, is_live:true} : p));
                       showToast("🔴 You are LIVE! Users are being notified.", "live");
@@ -4801,7 +4801,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   try {
                     const token = localStorage.getItem("token");
                     const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const res = await fetch(`https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
                     const json = await res.json();
                     const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
                     const filtered = items.filter(ep => ep.podcast_id === p.id);
@@ -4881,7 +4881,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   try {
                     const token = localStorage.getItem("token");
                     const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const res = await fetch(`https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
                     const json = await res.json();
                     const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
                     const filtered = items.filter(ep => ep.podcast_id === p.id);
@@ -4930,7 +4930,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
                   try {
                     const token = localStorage.getItem("token");
                     const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                    const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                    const res = await fetch(`https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
                     const json = await res.json();
                     const items = Array.isArray(json) ? json : (json?.records || json?.items || []);
                     const filtered = items.filter(ep => ep.podcast_id === p.id);
@@ -5035,11 +5035,11 @@ function NotificationsPanel({ currentUser, onClose, onNotifRead }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification?recipient_id=${currentUser.id}&limit=50&sort=-created_date`);
+        const res = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification?recipient_id=${currentUser.id}&limit=50&sort=-created_date`);
         const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
         setNotifs(items);
         items.filter(n => !n.is_read).forEach(n =>
-          request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification/${n.id}`, { is_read: true }).catch(() => {})
+          request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification/${n.id}`, { is_read: true }).catch(() => {})
         );
         if (onNotifRead) onNotifRead();
       } catch(e) {}
@@ -5410,7 +5410,7 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
+      const res = await request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?limit=500&sort=-created_date");
       setAllVideos(res.items || res || []);
     } catch(e) { console.error(e); }
     setLoading(false);
@@ -5420,7 +5420,7 @@ function AdminPanel({ currentUser }) {
     setAnalyticsLoading(true);
     setAnalyticsError(null);
     try {
-      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+      const resp = await fetch("https://sachi-04cfb834.base44.app/functions/getAdminStats", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
       });
       const data = await resp.json();
@@ -5451,7 +5451,7 @@ function AdminPanel({ currentUser }) {
   const loadFounders = async () => {
     setFoundersLoading(true);
     try {
-      const res = await request("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator?sort=-created_date&limit=100");
+      const res = await request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator?sort=-created_date&limit=100");
       setFounders(res.items || res || []);
     } catch(e) { console.error(e); }
     setFoundersLoading(false);
@@ -5461,7 +5461,7 @@ function AdminPanel({ currentUser }) {
 
   const updateFounderStatus = async (founder, status) => {
     try {
-      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
       setFounders(prev => prev.map(f => f.id === founder.id ? { ...f, status, notes: founderNote || f.notes } : f));
       setSelectedFounder(null);
       setFounderNote("");
@@ -5471,7 +5471,7 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
+      const data = await fetch("https://sachi-04cfb834.base44.app/functions/getAdminStats", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
       }).then(r => r.json());
       if (data.error) throw new Error(data.error);
@@ -5484,7 +5484,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newMature = !video.is_mature;
-      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, {
+      await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`, {
         is_mature: newMature,
         mature_reason: newMature ? (reason || "other") : null,
       });
@@ -5497,7 +5497,7 @@ function AdminPanel({ currentUser }) {
     if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
     setSaving(video.id);
     try {
-      await request("DELETE", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`);
+      await request("DELETE", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`);
       setAllVideos(prev => prev.filter(v => v.id !== video.id));
     } catch(e) { alert("Failed to delete: " + e.message); }
     setSaving(null);
@@ -5507,7 +5507,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newFlag = !video.is_ai_detected;
-      await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
       setAllVideos(prev => prev.map(v => v.id === video.id ? { ...v, is_ai_detected: newFlag } : v));
     } catch(e) { alert("Failed to update: " + e.message); }
     setSaving(null);
@@ -5904,7 +5904,7 @@ function AdminPanel({ currentUser }) {
                       </div>
                     </div>
                     <div style={{ display:"flex", gap:0, borderTop:"1px solid rgba(255,255,255,0.05)" }}>
-                      <button onClick={async () => { setSaving(video.id); await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true }); setAllVideos(p => p.map(v => v.id===video.id ? {...v, is_approved:true} : v)); setSaving(null); }}
+                      <button onClick={async () => { setSaving(video.id); await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`, { is_approved: true }); setAllVideos(p => p.map(v => v.id===video.id ? {...v, is_approved:true} : v)); setSaving(null); }}
                         disabled={saving===video.id}
                         style={{ flex:1, padding:"10px 0", border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                           borderRight:"1px solid rgba(255,255,255,0.05)",
@@ -6349,7 +6349,7 @@ function App() {
     const poll = async () => {
       messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {});
       try {
-        const res = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
+        const res = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
         const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
         setNotifCount(items.length);
       } catch(e) {}
@@ -6433,7 +6433,7 @@ function App() {
         // Try to load avatar from DB first (most up to date)
         try {
           // Use authenticated request (with Bearer token) to fetch user profile
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           // DB takes priority — always use latest CDN avatar_url
@@ -6580,8 +6580,8 @@ function App() {
       const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
-          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
           const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
           const unique = [...new Map(all.map(f => [f.id, f])).values()];
           setMeFollowersCount(unique.length);
@@ -6589,8 +6589,8 @@ function App() {
       })();
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
-          const r2 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
+          const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+          const r2 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
           const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
           const unique = [...new Map(all.map(f => [f.id, f])).values()];
           setMeFollowingCount(unique.length);
@@ -6835,7 +6835,7 @@ function App() {
                       setShowFollowersList(true);
                       setFollowListLoading(true);
                       try {
-                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
                         const all = r1?.items || r1 || [];
                         const unique = [...new Map(all.map(f=>[f.id,f])).values()];
                         setFollowersList(unique);
@@ -6850,7 +6850,7 @@ function App() {
                       setShowFollowingList(true);
                       setFollowListLoading(true);
                       try {
-                        const r1 = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
+                        const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
                         const all = r1?.items || r1 || [];
                         const unique = [...new Map(all.map(f=>[f.id,f])).values()];
                         setFollowingList(unique);
@@ -7251,7 +7251,7 @@ function App() {
                   if (!editProfileName.trim()) return;
                   setEditProfileSaving(true);
                   try {
-                    await request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                    await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/auth/me`, { full_name: editProfileName.trim() });
                     setCurrentUser(u => ({ ...u, full_name: editProfileName.trim() }));
                     setShowEditProfile(false);
                   } catch(e) { alert("Save failed: " + e.message); }
@@ -7282,13 +7282,13 @@ function App() {
 
         // Background sync to DB — works for ALL auth types (Google + email)
         try {
-          const usersData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           if (match) {
             if (url.startsWith("https://") || url.startsWith("http://")) {
               // Already a URL (DiceBear, CDN etc) — direct entity update
-              await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
+              await fetch("https://sachi-04cfb834.base44.app/functions/uploadAvatar", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ image_base64: url, mime_type: "image/jpeg", entity_id: match.id })
@@ -7299,14 +7299,14 @@ function App() {
 
         // Also try auth/me update (works for email users)
         try {
-          await request("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+          await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/auth/me`, { avatar_url: url });
         } catch(e) { console.warn("Auth avatar update failed (ok for Google users):", e); }
 
         // Update all existing videos so feed shows new avatar immediately
         try {
-          const vidsData = await request("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || currentUser.email?.split("@")[0])}&limit=200`);
+          const vidsData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || currentUser.email?.split("@")[0])}&limit=200`);
           const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
-          await Promise.all(vids.map(v => request("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
+          await Promise.all(vids.map(v => request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
           setVideoList(vs => vs.map(v =>
             (v.user_id === currentUser.id || v.created_by === currentUser.id || v.username === (currentUser.username || currentUser.email?.split("@")[0]))
               ? { ...v, avatar_url: url } : v
