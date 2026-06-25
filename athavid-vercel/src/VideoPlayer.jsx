@@ -32,7 +32,10 @@ export default function VideoPlayer({
   resolveMediaUrl,
   hideUIAfterDelay,
 }) {
-  const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+  // Prefer media_url (direct MP4) over video_url (HLS) — avoids ABR blur on start
+  const resolvedVideoUrl = video.media_url
+    ? video.media_url
+    : resolveMediaUrl(video.video_url);
   const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
   const isHlsUrl = (url) =>
     url && (
