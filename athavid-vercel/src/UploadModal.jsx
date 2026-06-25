@@ -870,19 +870,30 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         <>
         {!file ? (
           <div onClick={() => fileRef.current?.click()}
-            style={{ border:"2px dashed rgba(255,107,107,0.4)", borderRadius:16, padding:48, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(255,107,107,0.9)"; e.currentTarget.style.background = "rgba(255,107,107,0.08)"; }}
+            onDragLeave={e => { e.currentTarget.style.borderColor = "rgba(255,107,107,0.4)"; e.currentTarget.style.background = "transparent"; }}
+            onDrop={e => {
+              e.preventDefault();
+              e.currentTarget.style.borderColor = "rgba(255,107,107,0.4)";
+              e.currentTarget.style.background = "transparent";
+              const f = e.dataTransfer.files[0];
+              if (!f || !f.type.startsWith("video/")) return;
+              if (f.size > 500 * 1024 * 1024) { alert("Video must be under 500MB."); return; }
+              handleFileSelect(f);
+            }}
+            style={{ border:"2px dashed rgba(255,107,107,0.4)", borderRadius:16, padding:48, textAlign:"center", cursor:"pointer", marginBottom:16, transition:"border-color 0.2s, background 0.2s" }}>
             <div style={{ fontSize:48, marginBottom:10 }}>🎬</div>
-            <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:6 }}>Tap to select video</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:6 }}>Tap or drag video here</div>
             <div style={{ color:"#666", fontSize:13 }}>MP4, MOV, WebM · Max 500MB</div>
             <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e => {
               const f = e.target.files[0];
               if (!f) return;
-              if (f.size > 150 * 1024 * 1024) {
-                alert("Video must be under 150MB. Please trim or compress your video before uploading.");
+              if (f.size > 500 * 1024 * 1024) {
+                alert("Video must be under 500MB. Please trim or compress your video before uploading.");
                 e.target.value = "";
                 return;
               }
-              setFile(f);
+              handleFileSelect(f);
             }} />
           </div>
         ) : (
