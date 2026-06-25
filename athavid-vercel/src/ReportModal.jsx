@@ -83,6 +83,18 @@ spinStyle.textContent = `
     56%  { transform: scale(1); }
     100% { transform: scale(1); }
   }
+  @keyframes heartShake {
+    0%,100% { transform: rotate(0deg) scale(1); }
+    20%     { transform: rotate(-15deg) scale(1.2); }
+    40%     { transform: rotate(15deg) scale(1.2); }
+    60%     { transform: rotate(-10deg) scale(1.1); }
+    80%     { transform: rotate(10deg) scale(1.1); }
+  }
+  @keyframes floatHeart {
+    0%   { opacity:1; transform:translate(-50%,-50%) scale(0.5); }
+    40%  { opacity:1; transform:translate(-50%,-120%) scale(1.3); }
+    100% { opacity:0; transform:translate(-50%,-220%) scale(0.8); }
+  }
   @keyframes heartpop {
     0%   { transform: scale(1); }
     30%  { transform: scale(1.5); }

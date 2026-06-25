@@ -34,6 +34,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const videoRef = useRef(null);
   const soundRef = useRef(null);
   const viewedRef = useRef(false);
+  // ⛔ LOCKED — HEARTS SECTION START
+  const heartCooldownRef = useRef(false);
+  const doLikeRef = useRef(null);
+  const spawnHeartRef = useRef(null);
+  const cardRef = useRef(null);
+  const doubleTapRef = useRef(null);
+  const singleTapTimerRef = useRef(null);
+  // ⛔ LOCKED — HEARTS SECTION END (refs)
+  const [floatingHearts, setFloatingHearts] = useState([]);
   const [playing, setPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -332,6 +341,18 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     setLikeLoading(false);
   };
 
+  // ⛔ LOCKED — HEARTS SECTION START (spawnHeart)
+  const spawnHeart = (x, y) => {
+    if (heartCooldownRef.current) return false;
+    heartCooldownRef.current = true;
+    setTimeout(() => { heartCooldownRef.current = false; }, 800);
+    const id = Date.now();
+    setFloatingHearts(prev => [...prev, { id, x, y }]);
+    setTimeout(() => setFloatingHearts(prev => prev.filter(h => h.id !== id)), 900);
+    return true;
+  };
+  // ⛔ LOCKED — HEARTS SECTION END (spawnHeart)
+
   const openLikesPanel = async () => {
     setShowLikesPanel(true);
     setLikesListLoading(true);
@@ -410,10 +431,48 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     } catch(err) { alert("Failed to delete. Try again."); }
   };
 
+  // ⛔ LOCKED — HEARTS SECTION START (stable refs + touchend)
+  doLikeRef.current = doLike;
+  spawnHeartRef.current = spawnHeart;
+
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const onTouchEnd = (e) => {
+      const t = e.changedTouches[0];
+      if (!t) return;
+      // Ignore taps on buttons, inputs, links, no-gesture zones, photo carousel
+      if (e.target.closest('button, input, a, [data-no-gesture], [data-photo-carousel]')) return;
+      const rect = card.getBoundingClientRect();
+      const x = t.clientX - rect.left;
+      const y = t.clientY - rect.top;
+      const now = Date.now();
+      if (doubleTapRef.current && now - doubleTapRef.current < 350) {
+        // Double-tap detected
+        doubleTapRef.current = null;
+        if (singleTapTimerRef.current) { clearTimeout(singleTapTimerRef.current); singleTapTimerRef.current = null; }
+        const fired = spawnHeartRef.current(x, y);
+        if (fired && !likeLockedRef.current) doLikeRef.current();
+      } else {
+        doubleTapRef.current = now;
+        if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = setTimeout(() => {
+          singleTapTimerRef.current = null;
+          doubleTapRef.current = null;
+        }, 350);
+      }
+    };
+
+    card.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => card.removeEventListener('touchend', onTouchEnd);
+  }, [video.id]);
+  // ⛔ LOCKED — HEARTS SECTION END (touchend)
+
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
   return (
-    <div data-videoid={video.id} style={{ position:"relative", width:"100%", height:"calc(100dvh - 80px)", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start", scrollSnapStop:"always", overflow:"hidden" }}>
+    <div ref={cardRef} data-videoid={video.id} style={{ position:"relative", width:"100%", height:"calc(100dvh - 80px)", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start", scrollSnapStop:"always", overflow:"hidden" }}>
 
       {/* ── AGE GATE OVERLAY ── */}
       {showMatureBlock && (
@@ -830,6 +889,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           />
         );
       })()}
+    {/* ⛔ LOCKED — floating hearts */}
+      {floatingHearts.map(h => (
+        <div key={h.id} style={{
+          position:"absolute", left:h.x, top:h.y,
+          fontSize:52, pointerEvents:"none", zIndex:9999,
+          transform:"translate(-50%,-50%)",
+          animation:"floatHeart 0.9s ease-out forwards",
+        }}>💜</div>
+      ))}
     </div>
   );
 }
