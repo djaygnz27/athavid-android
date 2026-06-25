@@ -151,8 +151,11 @@ export async function uploadFile(file, onProgress) {
     // 2a. TUS upload directly to Cloudflare Stream
     await tusUpload(file, creds.upload_url, onProgress);
 
-    // 2b. Trigger MP4 download generation immediately after upload
-    // This ensures media_url is always populated — avoids isHlsUrl mis-detection and blur issues
+    // ⛔ LOCKED — MP4 trigger START
+    // DO NOT remove or bypass this block without explicit permission from Jay.
+    // This is what ensures every uploaded video gets a direct MP4 (media_url) in the DB.
+    // Without this: uploads are HLS-only → isHlsUrl misdetection → VideoPlayer sets src=undefined → frozen video.
+    // Root cause that broke June 24 videos. Fixed 2026-06-25.
     let media_url = null;
     try {
       const dlRes = await fetch("/api/trigger-mp4", {
@@ -175,6 +178,7 @@ export async function uploadFile(file, onProgress) {
       stream_uid: creds.stream_uid,
       media_url,  // direct MP4 URL — set immediately if CF is fast, else null (backfill handles it)
     };
+    // ⛔ LOCKED — MP4 trigger END
   } else {
     // 2b. PUT directly to R2 presigned URL
     await r2Upload(file, creds.upload_url, onProgress);

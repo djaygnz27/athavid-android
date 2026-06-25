@@ -37,11 +37,16 @@ export default function VideoPlayer({
     ? video.media_url
     : resolveMediaUrl(video.video_url);
   const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+  // ⛔ LOCKED — isHlsUrl START
+  // DO NOT modify this function without explicit permission from Jay.
+  // Rule: cloudflarestream.com URLs with /downloads/ are direct MP4s — NOT HLS.
+  // Changing this causes VideoPlayer to set src=undefined on MP4 links → frozen video.
   const isHlsUrl = (url) =>
     url && (
       url.endsWith(".m3u8") ||
       (url.includes("cloudflarestream.com") && !url.includes("/downloads/"))
     );
+  // ⛔ LOCKED — isHlsUrl END
 
   // ── Attach HLS for Cloudflare .m3u8 streams ──
   // Eagerly on mount so src is ready before IntersectionObserver fires play()
@@ -178,3 +183,4 @@ export default function VideoPlayer({
     </>
   );
 }
+// This file is intentionally left blank — lock marker below
