@@ -377,13 +377,26 @@ function App() {
         }
         return result;
       })();
+      // Bulk-fetch liked video IDs for the current user so VideoCard initialises correctly
+      const tagWithLiked = async (videos) => {
+        if (!user?.id) return videos;
+        try {
+          const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?user_id=${user.id}&limit=500`);
+          const likeRecords = Array.isArray(res) ? res : (res?.items || res?.records || []);
+          const likedSet = new Set(likeRecords.map(r => r.video_id));
+          return videos.map(v => likedSet.has(v.id) ? { ...v, _likedByMe: true } : v);
+        } catch { return videos; }
+      };
+
       if (append) {
+        const tagged = await tagWithLiked(ranked2);
         setVideoList(prev => {
           const existing = new Set(prev.map(v => v.id));
-          return [...prev, ...ranked2.filter(v => !existing.has(v.id))];
+          return [...prev, ...tagged.filter(v => !existing.has(v.id))];
         });
       } else {
-        setVideoList(ranked2);
+        const tagged = await tagWithLiked(ranked2);
+        setVideoList(tagged);
         if (onReady) onReady(); // signal prefetch complete
         requestAnimationFrame(() => {
           const el = feedContainerRef.current || window.__sachiEl;

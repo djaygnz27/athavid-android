@@ -44,7 +44,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   // ⛔ LOCKED — HEARTS SECTION END (refs)
   const [floatingHearts, setFloatingHearts] = useState([]);
   const [playing, setPlaying] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(() => video._likedByMe === true);
   const [likeLoading, setLikeLoading] = useState(false);
   const [showAlreadyLikedToast, setShowAlreadyLikedToast] = useState(false);
   const [likeRecordId, setLikeRecordId] = useState(null);
