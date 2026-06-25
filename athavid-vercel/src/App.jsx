@@ -4193,7 +4193,8 @@ function PodcastPage({ currentUser, onNeedAuth }) {
         p.host_username === (currentUser.full_name || currentUser.email?.split("@")[0]) ||
         p.created_by === currentUser.email ||
         currentUser.email === "jaygnz27@gmail.com" ||
-        currentUser.email === "lasanjaya@gmail.com"
+        currentUser.email === "lasanjaya@gmail.com" ||
+        currentUser.email === "henderson.keith2@gmail.com"
       );
       setMyShows(mine);
     } catch(e) { console.error("loadMyShows failed:", e); }
@@ -4318,6 +4319,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
       ((currentUser.email?.split("@")[0]) === selectedPodcast.host_username) ||
       currentUser.email === "jaygnz27@gmail.com" ||
       currentUser.email === "lasanjaya@gmail.com" ||
+      currentUser.email === "henderson.keith2@gmail.com" ||
       currentUser.id === selectedPodcast.created_by_id
     );
     const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
@@ -6313,7 +6315,7 @@ function App() {
     }
   }, []);
 
-  const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com";
+  const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com" || currentUser?.email === "henderson.keith2@gmail.com";
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
@@ -7028,7 +7030,7 @@ function App() {
           </button>
 
           {/* Admin (owner only) */}
-          {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com") && (
+          {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com" || currentUser?.email === "henderson.keith2@gmail.com") && (
             <button onClick={() => setActiveTab("admin")}
               style={{ flex:1, minWidth:52, padding:"8px 10px 6px", background: activeTab==="admin" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={activeTab==="admin" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
