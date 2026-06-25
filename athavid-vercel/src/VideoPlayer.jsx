@@ -40,8 +40,7 @@ export default function VideoPlayer({
   const isHlsUrl = (url) =>
     url && (
       url.endsWith(".m3u8") ||
-      url.includes("cloudflarestream.com") ||
-      url.includes("customer-i1ij9522l179kiqc")
+      (url.includes("cloudflarestream.com") && !url.includes("/downloads/"))
     );
 
   // ── Attach HLS for Cloudflare .m3u8 streams ──
