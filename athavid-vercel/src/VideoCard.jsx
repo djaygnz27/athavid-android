@@ -443,7 +443,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       const t = e.changedTouches[0];
       if (!t) return;
       // Ignore taps on buttons, inputs, links, no-gesture zones, photo carousel
-      if (e.target.closest('button, input, a, [data-no-gesture], [data-photo-carousel]')) return;
+      if (e.target.closest('input, a, [data-no-gesture], [data-photo-carousel]')) return;
       const rect = card.getBoundingClientRect();
       const x = t.clientX - rect.left;
       const y = t.clientY - rect.top;
