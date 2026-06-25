@@ -868,20 +868,24 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         ) : (
         <>
         {!file ? (
-          <div onClick={() => fileRef.current?.click()}
+          <div
+            onClick={() => fileRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+            onDragLeave={e => { e.preventDefault(); e.stopPropagation(); }}
+            onDrop={e => {
+              e.preventDefault();
+              e.stopPropagation();
+              const f = e.dataTransfer.files[0];
+              if (f) handleFileSelect(f);
+            }}
             style={{ border:"2px dashed rgba(255,107,107,0.4)", borderRadius:16, padding:48, textAlign:"center", cursor:"pointer", marginBottom:16 }}>
             <div style={{ fontSize:48, marginBottom:10 }}>🎬</div>
-            <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:6 }}>Tap to select video</div>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:16, marginBottom:6 }}>Tap or drag a video here</div>
             <div style={{ color:"#666", fontSize:13 }}>MP4, MOV, WebM · Max 500MB</div>
             <input ref={fileRef} type="file" accept="video/*" style={{ display:"none" }} onChange={e => {
               const f = e.target.files[0];
-              if (!f) return;
-              if (f.size > 150 * 1024 * 1024) {
-                alert("Video must be under 150MB. Please trim or compress your video before uploading.");
-                e.target.value = "";
-                return;
-              }
-              setFile(f);
+              if (f) handleFileSelect(f);
+              e.target.value = "";
             }} />
           </div>
         ) : (
