@@ -3047,7 +3047,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
         </button>
 
-        {/* Flag AI */}
+        {/* Flag AI — admin only */}
+        {(currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com" || currentUser?.email === "henderson.keith2@gmail.com") && (
         <button onClick={tap(async () => {
           if (!currentUser) { onNeedAuth(); return; }
           if (!window.confirm(video.is_ai_detected ? "Clear AI flag from this post?" : "Flag this post as AI-generated content?")) return;
@@ -3069,6 +3070,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           </div>
           <div style={{ color: video.is_ai_detected ? "#00ff78" : "rgba(255,255,255,0.5)", fontSize:9, fontWeight:700 }}>{video.is_ai_detected ? "AI" : "Flag"}</div>
         </button>
+        )}
 
         {/* Like */}
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
@@ -6973,8 +6975,8 @@ function App() {
       )}
 
       {/* Bottom Nav — Sachi original style: floating pill */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,8px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none", opacity: activeTab==="feed" && globalIsPlaying ? 0.25 : 1, transition:"opacity 0.4s ease" }}>
-        <div style={{ pointerEvents:"auto", margin:"0 16px 8px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, paddingBottom:"env(safe-area-inset-bottom,12px)", paddingTop:0, display:"flex", justifyContent:"center", pointerEvents:"none", opacity: activeTab==="feed" && globalIsPlaying ? 0.25 : 1, transition:"opacity 0.4s ease" }}>
+        <div style={{ pointerEvents:"auto", margin:"0 20px 10px", background:"rgba(14,14,28,0.96)", backdropFilter:"blur(30px)", borderRadius:40, border:"1px solid rgba(245,200,66,0.15)", display:"flex", alignItems:"center", padding:"6px 8px", gap:2, boxShadow:"0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }}>
 
           {/* Home */}
           <button onClick={goHome}
@@ -7057,9 +7059,15 @@ function App() {
           {/* Profile */}
           <button onClick={() => setActiveTab("profile")}
             style={{ flex:1, minWidth:52, padding:"8px 12px 6px", background: activeTab==="profile" ? "rgba(245,200,66,0.15)" : "none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.2s" }}>
-            <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
+            {currentUser && avatarUrl ? (
+              <div style={{ width:21, height:21, borderRadius:"50%", overflow:"hidden", border: activeTab==="profile" ? "2px solid #F5C842" : "2px solid rgba(74,74,106,0.8)", flexShrink:0 }}>
+                <img src={avatarUrl} style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e => { e.target.style.display="none"; }} />
+              </div>
+            ) : (
+              <svg width="21" height="21" viewBox="0 0 24 24" fill={activeTab==="profile" ? "#F5C842" : "none"} stroke={activeTab==="profile" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            )}
             <div style={{ fontSize:9, color: activeTab==="profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="profile" ? 700 : 400, letterSpacing:0.3 }}>Me</div>
           </button>
 
