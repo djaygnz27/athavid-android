@@ -116,8 +116,10 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setExplicitBlocked(false);
     if (checkForAiSignatures(f, caption)) { setAiBlocked(true); return; }
     if (checkForExplicitContent(f, caption)) { setExplicitBlocked(true); return; }
-    // Show editor for video AND image files
-    if (f.type.startsWith("video/") || f.type.startsWith("image/")) setShowEditor(true);
+    // Show editor for video AND image files (also empty type = drag-drop on some OS)
+    const looksLikeVideo = f.type.startsWith("video/") || f.type === "" || /\.(mp4|mov|webm|avi|mkv)$/i.test(f.name);
+    const looksLikeImage = f.type.startsWith("image/");
+    if (looksLikeVideo || looksLikeImage) setShowEditor(true);
   };
 
   const handlePhotoSelect = (e) => {
