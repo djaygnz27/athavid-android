@@ -51,25 +51,35 @@ export default function VideoPlayer({
     const url = resolvedVideoUrl;
     if (!el || !url || !isHlsUrl(url)) return;
 
+    const tryPlay = () => {
+      if (el._hlsPendingPlay) {
+        el._hlsPendingPlay = false;
+        el.play().catch(() => {});
+      }
+    };
+
     const attachHls = () => {
       if (!window.Hls || !window.Hls.isSupported()) return;
       if (el._hls) { try { el._hls.destroy(); } catch (e) {} el._hls = null; }
       const hls = new window.Hls({ maxBufferLength: 30, startLevel: -1, enableWorker: false });
       hls.loadSource(url);
       hls.attachMedia(el);
-      hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-        if (el._hlsPendingPlay) {
-          el.play().catch(() => {});
-          el._hlsPendingPlay = false;
-        }
-      });
+      hls.on(window.Hls.Events.MANIFEST_PARSED, tryPlay);
+      // If _hlsPendingPlay was already set before manifest parsed, fire immediately
+      if (el._hlsPendingPlay) hls.once(window.Hls.Events.LEVEL_LOADED, tryPlay);
       el._hls = hls;
     };
 
     // Safari / iOS — native HLS
     if (el.canPlayType("application/vnd.apple.mpegurl")) {
-      if (el.src !== url) el.src = url;
-      return;
+      if (el.src !== url) {
+        el.src = url;
+        el.load();
+      }
+      // Safari: after src set, play when ready
+      const onCanPlay = () => { tryPlay(); el.removeEventListener("canplay", onCanPlay); };
+      el.addEventListener("canplay", onCanPlay);
+      return () => el.removeEventListener("canplay", onCanPlay);
     }
 
     // Chrome / Android — load hls.js
