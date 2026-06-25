@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { GiftTray, GiftAnimationOverlay, HostEarningsPanel, CoinWalletWidget, getWallet, GIFTS } from "./SachiGifts.jsx";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+const BASE_URL = "https://app.base44.com/api";
 const APP_BASE = `/apps/${APP_ID}`;
 
 // Auth-aware fetch with proper error handling

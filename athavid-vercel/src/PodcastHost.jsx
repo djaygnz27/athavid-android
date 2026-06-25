@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const API = "https://sachi-04cfb834.base44.app/api";
+const API = "https://app.base44.com/api";
 const APP_ID = "69e79122bcc8fb5a04cfb834";
 const APP_BASE = `/apps/${APP_ID}`;
-const SACHI_FN = "https://sachi-04cfb834.base44.app/functions";
+const SACHI_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/functions";
 
 const COVER_COLORS = [
   { bg:"linear-gradient(135deg,#1a0a2e,#6c3cf7)", emoji:"🎙️" },
@@ -317,7 +317,7 @@ export default function PodcastHost() {
   if (loading) return (
     <div style={{...s.page, display:"flex", alignItems:"center", justifyContent:"center"}}>
       <div style={{ textAlign:"center" }}>
-        <img src="/sachi-icon-v4.png" style={{ width:60, height:60, borderRadius:16, marginBottom:16 }} />
+        <img src="/sachi-crystal.png" style={{ width:60, height:60, borderRadius:16, marginBottom:16 }} />
         <div style={{ color:"rgba(255,255,255,0.4)", fontSize:14 }}>Loading...</div>
       </div>
     </div>
@@ -327,7 +327,7 @@ export default function PodcastHost() {
   if (!user) return (
     <div style={{...s.page, display:"flex", alignItems:"center", justifyContent:"center"}}>
       <div style={{ textAlign:"center", padding:32, maxWidth:360 }}>
-        <img src="/sachi-icon-v4.png" style={{ width:72, height:72, borderRadius:20, marginBottom:20, boxShadow:"0 0 40px rgba(245,200,66,0.3)" }} />
+        <img src="/sachi-crystal.png" style={{ width:72, height:72, borderRadius:20, marginBottom:20, boxShadow:"0 0 40px rgba(245,200,66,0.3)" }} />
         <div style={{ fontSize:26, fontWeight:800, color:"#F5C842", marginBottom:8 }}>Podcast Host</div>
         <div style={{ color:"rgba(255,255,255,0.45)", fontSize:14, lineHeight:1.7, marginBottom:32 }}>
           Manage your Sachi podcast, go live, and add episodes — all from one place.
@@ -354,7 +354,7 @@ export default function PodcastHost() {
 
       {/* Header */}
       <div style={s.header}>
-        <img src="/sachi-icon-v4.png" style={s.logo} />
+        <img src="/sachi-crystal.png" style={s.logo} />
         <div style={{ flex:1 }}>
           <div style={s.title}>Sachi Podcast Host</div>
           <div style={s.subtitle}>Signed in as {user.email}</div>

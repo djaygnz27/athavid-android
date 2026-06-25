@@ -1,5 +1,5 @@
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://sachi-04cfb834.base44.app/api";
+const BASE_URL = "https://app.base44.com/api";
 
 let sessionToken = null;
 
@@ -58,7 +58,7 @@ export const auth = {
 };
 
 export const videos = {
-  async list(limit = 200, skip = 0) {
+  async list(limit = 30, skip = 0) { // ⚡ perf: default 30, paginated
     return request("GET", `/apps/${APP_ID}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
@@ -109,7 +109,8 @@ export const videos = {
 
 export const comments = {
   async list(videoId) {
-    return request("GET", `/apps/${APP_ID}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    const res = await request("GET", `/apps/${APP_ID}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=500`);
+    return Array.isArray(res) ? res : (res?.items || res?.records || res?.data || []);
   },
   async create(data) {
     return request("POST", `/apps/${APP_ID}/entities/SachiComment`, data);
@@ -122,21 +123,78 @@ export const comments = {
   },
 };
 
-export async function uploadFile(file) {
-  const token = getToken();
-  const form = new FormData();
-  form.append("file", file);
-  const headers = {};
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(
-    `https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/integration-endpoints/Core/UploadFile`,
-    { method: "POST", headers, body: form }
-  );
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch(_) { throw new Error(`Upload error ${res.status}: ${text.slice(0,100)}`); }
-  if (!res.ok || data.error) throw new Error(data.error || data.message || "Upload failed");
-  return data.file_url;
+// ── uploadFile: routes ALL uploads directly to Cloudflare (Stream or R2) ──
+// Videos  → Cloudflare Stream via TUS direct upload
+// Images  → Cloudflare R2 via presigned PUT URL
+// NO files touch Base44 storage or pass through our server
+export async function uploadFile(file, onProgress) {
+  const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(file.name);
+
+  // 1. Get upload credentials from our Vercel function
+  const credRes = await fetch("/api/get-upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type:     isVideo ? "video" : "image",
+      filename: file.name,
+      filesize: file.size,
+      filetype: file.type,
+    }),
+  });
+  if (!credRes.ok) {
+    const err = await credRes.json().catch(() => ({}));
+    throw new Error(err.error || `Upload credential error ${credRes.status}`);
+  }
+  const creds = await credRes.json();
+
+  if (isVideo) {
+    // 2a. TUS upload directly to Cloudflare Stream
+    await tusUpload(file, creds.upload_url, onProgress);
+    // Return the HLS playback URL — this becomes video_url in the DB
+    return { file_url: creds.playback_url, thumbnail_url: creds.thumbnail_url, stream_uid: creds.stream_uid };
+  } else {
+    // 2b. PUT directly to R2 presigned URL
+    await r2Upload(file, creds.upload_url, onProgress);
+    return { file_url: creds.public_url };
+  }
+}
+
+// TUS protocol upload (Cloudflare Stream)
+async function tusUpload(file, uploadUrl, onProgress) {
+  const CHUNK = 50 * 1024 * 1024; // 50MB chunks
+  let offset = 0;
+  while (offset < file.size) {
+    const chunk = file.slice(offset, offset + CHUNK);
+    const res = await fetch(uploadUrl, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/offset+octet-stream",
+        "Upload-Offset": String(offset),
+        "Tus-Resumable": "1.0.0",
+      },
+      body: chunk,
+    });
+    if (!res.ok) throw new Error(`TUS upload failed at offset ${offset}: ${res.status}`);
+    offset += chunk.size;
+    if (onProgress) onProgress(Math.round((offset / file.size) * 100));
+  }
+}
+
+// Direct PUT to R2 presigned URL
+async function r2Upload(file, uploadUrl, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+    xhr.onload  = () => xhr.status < 300 ? resolve() : reject(new Error(`R2 upload failed: ${xhr.status}`));
+    xhr.onerror = () => reject(new Error("R2 upload network error"));
+    xhr.send(file);
+  });
 }
 
 export const follows = {
@@ -322,5 +380,42 @@ export const messages = {
       const items = Array.isArray(res) ? res : (res?.items || res?.records || []);
       return items.filter(m => !m.is_read).length;
     } catch { return 0; }
+  }
+};
+
+export const notifications = {
+  async getForUser(user_id) {
+    try {
+      const res = await request("GET", `/apps/${APP_ID}/entities/SachiNotification?recipient_id=${user_id}&limit=100`);
+      return Array.isArray(res) ? res : (res?.items || res?.records || []);
+    } catch { return []; }
+  },
+  async markRead(id) {
+    return request("PUT", `/apps/${APP_ID}/entities/SachiNotification/${id}`, { is_read: true });
+  },
+  async markAllRead(user_id) {
+    try {
+      const items = await notifications.getForUser(user_id);
+      await Promise.all(items.filter(n => !n.is_read).map(n => notifications.markRead(n.id)));
+    } catch {}
+  },
+  async getUnreadCount(user_id) {
+    try {
+      const items = await notifications.getForUser(user_id);
+      return items.filter(n => !n.is_read).length;
+    } catch { return 0; }
+  },
+  async create(data) {
+    return request("POST", `/apps/${APP_ID}/entities/SachiNotification`, data);
+  }
+};
+
+export const AthaVidUser = {
+  async filter(params) {
+    const query = new URLSearchParams(params).toString();
+    return request("GET", `/entities/AthaVidUser?${query}`);
+  },
+  async getById(id) {
+    return request("GET", `/entities/AthaVidUser/${id}`);
   }
 };

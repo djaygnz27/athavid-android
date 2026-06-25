@@ -5,8 +5,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://sachi-c7f0261c.base44.app/api";
-const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
+const BASE_URL = "https://app.base44.com/api";
+const COINS_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiCoin";
 
 // ── Sachi Gift catalog — totally unique, not TikTok ─────────────────────────
 export const GIFTS = [
