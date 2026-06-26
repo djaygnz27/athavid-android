@@ -31,6 +31,7 @@ export default function VideoPlayer({
   setPlaying,
   resolveMediaUrl,
   hideUIAfterDelay,
+  userMuted,
 }) {
   // Prefer media_url (direct MP4) over video_url (HLS) — avoids ABR blur on start
   const resolvedVideoUrl = video.media_url
@@ -164,8 +165,8 @@ export default function VideoPlayer({
         <audio ref={soundRef} src={video.sound_url} loop preload="none" style={{ display: "none" }} />
       )}
 
-      {/* ── MUTE OVERLAY ── */}
-      {muted && (
+      {/* ── MUTE OVERLAY — only shown when autoplay was force-muted (not user-muted) ── */}
+      {muted && !userMuted && (
         <div
           onTouchStart={handleUnmute}
           onClick={handleUnmute}

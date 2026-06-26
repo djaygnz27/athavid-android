@@ -54,6 +54,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   // Global mute stored on window — readable by stale closures, no prop-drilling
   if (window.__sachiMuted === undefined) window.__sachiMuted = false;
   const [muted, _setMutedLocal] = useState(() => window.__sachiMuted ?? false);
+  const [userMuted, setUserMuted] = useState(false); // true only when user explicitly muted via button
   const setMuted = (val) => {
     const newVal = typeof val === 'function' ? val(window.__sachiMuted) : val;
     window.__sachiMuted = newVal;
@@ -230,6 +231,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     const nm = !muted;
     el.muted = video.sound_url ? true : nm;
     setMuted(nm);
+    setUserMuted(nm); // track that user explicitly set this
     // If video was already playing and we're unmuting, browser needs .play()
     // at this exact user-gesture moment to allow audio — but only resume if
     // it was already playing. If it was paused, do nothing extra.
@@ -509,6 +511,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           soundRef={soundRef}
           muted={muted}
           setMuted={setMuted}
+          userMuted={userMuted}
           sound_url={video.sound_url}
           sound_title={video.sound_title}
           showUI={showUI}
@@ -529,6 +532,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           soundRef={soundRef}
           muted={muted}
           setMuted={setMuted}
+          userMuted={userMuted}
           playing={playing}
           setPlaying={setPlaying}
           resolveMediaUrl={resolveMediaUrl}
