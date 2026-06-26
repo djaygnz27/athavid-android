@@ -29,6 +29,13 @@ function getUserAge() {
   } catch(e) { return null; }
 }
 
+const fmtTime = (s) => {
+  if (!s || isNaN(s)) return "0:00";
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, "0");
+  return `${m}:${sec}`;
+};
+
 function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
   const [showShareSheet, setShowShareSheet] = React.useState(false);
   const videoRef = useRef(null);
@@ -71,6 +78,25 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [photoSwiping, setPhotoSwiping] = useState(false); // hides UI chrome during swipe (set by PhotoCarousel)
   const photoCarouselRef = useRef(null);
   const [followRecord, setFollowRecord] = useState(null);
+  const [videoProgress, setVideoProgress] = useState(0);   // 0-1
+  const [videoDuration, setVideoDuration] = useState(0);
+
+  // ── Progress tracking — attach via useEffect to avoid prop-drilling into VideoPlayer ──
+  React.useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const onTimeUpdate = () => {
+      if (!el.duration) return;
+      setVideoProgress(el.currentTime / el.duration);
+    };
+    const onMeta = () => setVideoDuration(el.duration || 0);
+    el.addEventListener("timeupdate", onTimeUpdate, { passive: true });
+    el.addEventListener("loadedmetadata", onMeta, { passive: true });
+    return () => {
+      el.removeEventListener("timeupdate", onTimeUpdate);
+      el.removeEventListener("loadedmetadata", onMeta);
+    };
+  }, [video.id]);
   const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
@@ -369,26 +395,30 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const doFollow = async () => {
     if (!currentUser) { onNeedAuth(); return; }
     if (isOwnVideo) return;
+    // Always use a consistent targetUserId — prefer user_id, fall back to created_by
+    const targetUserId = video.user_id || video.created_by;
+    if (!targetUserId) return; // can't follow without a stable ID
     setFollowLoading(true);
     try {
       if (isFollowing) {
         // Need to find the record to delete it
         try {
           const res = await follows.getFollowing(currentUser.id);
-          const rec = (res.items || res || []).find(r => r.following_id === (video.user_id || video.created_by));
+          const items = res.items || res || [];
+          const rec = items.find(r => r.following_id === targetUserId);
           if (rec) await follows.unfollow(rec.id);
         } catch(e) {}
         setFollowRecord(null);
-        if (onFollowChange) onFollowChange(video.user_id || video.created_by, false);
+        if (onFollowChange) onFollowChange(targetUserId, false);
       } else {
         const rec = await follows.follow(
           currentUser.id,
           currentUser.username || currentUser.email?.split("@")[0],
-          video.user_id,
-          video.username
+          targetUserId,
+          video.username || video.display_name || ""
         );
         setFollowRecord(rec);
-        if (onFollowChange) onFollowChange(video.user_id || video.created_by, true);
+        if (onFollowChange) onFollowChange(targetUserId, true);
         // notify the person being followed
         if (video.user_id && video.user_id !== currentUser.id) {
           createNotif({
@@ -570,6 +600,66 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       )}
 
 
+
+      {/* ── SCRUB BAR — progress + rewind/forward, shown when UI is visible ── */}
+      {!photoUrls && (
+        <div
+          data-no-gesture="1"
+          style={{
+            position:"absolute", bottom:68, left:12, right:12, zIndex:600,
+            opacity: showUI ? 1 : 0,
+            transition:"opacity 0.25s ease",
+            pointerEvents: showUI ? "auto" : "none",
+          }}>
+          {/* Rewind / Replay / Forward row */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:28, marginBottom:8 }}>
+            {/* Rewind 10s */}
+            <button
+              data-no-gesture="1"
+              onClick={(e) => { e.stopPropagation(); const el = videoRef.current; if (el) el.currentTime = Math.max(0, el.currentTime - 10); }}
+              style={{ background:"rgba(0,0,0,0.45)", border:"none", borderRadius:"50%", width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", backdropFilter:"blur(8px)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="7" y="16" fontSize="7" fill="white" fontWeight="bold">10</text></svg>
+            </button>
+            {/* Replay from start */}
+            <button
+              data-no-gesture="1"
+              onClick={(e) => { e.stopPropagation(); const el = videoRef.current; if (!el) return; el.currentTime = 0; el.play().catch(()=>{}); setPlaying(true); hideUIAfterDelay(1500); }}
+              style={{ background:"rgba(0,0,0,0.45)", border:"none", borderRadius:"50%", width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", backdropFilter:"blur(8px)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+            </button>
+            {/* Forward 10s */}
+            <button
+              data-no-gesture="1"
+              onClick={(e) => { e.stopPropagation(); const el = videoRef.current; if (el) el.currentTime = Math.min(el.duration || 0, el.currentTime + 10); }}
+              style={{ background:"rgba(0,0,0,0.45)", border:"none", borderRadius:"50%", width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", backdropFilter:"blur(8px)" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="7" y="16" fontSize="7" fill="white" fontWeight="bold">10</text></svg>
+            </button>
+          </div>
+          {/* Progress bar — tap to seek */}
+          <div
+            data-no-gesture="1"
+            style={{ position:"relative", height:4, borderRadius:2, background:"rgba(255,255,255,0.25)", cursor:"pointer", overflow:"visible" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const el = videoRef.current;
+              if (!el || !el.duration) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+              el.currentTime = pct * el.duration;
+            }}>
+            <div style={{ height:"100%", borderRadius:2, background:"#F5C842", width: `${(videoProgress * 100).toFixed(1)}%`, transition:"width 0.25s linear" }} />
+            {/* Scrub thumb */}
+            <div style={{ position:"absolute", top:"50%", left:`${(videoProgress * 100).toFixed(1)}%`, transform:"translate(-50%,-50%)", width:12, height:12, borderRadius:"50%", background:"#fff", boxShadow:"0 0 4px rgba(0,0,0,0.5)" }} />
+          </div>
+          {/* Time labels */}
+          {videoDuration > 0 && (
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:4, fontSize:10, color:"rgba(255,255,255,0.6)", fontFamily:"monospace" }}>
+              <span>{fmtTime(videoRef.current?.currentTime || 0)}</span>
+              <span>{fmtTime(videoDuration)}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── BOTTOM LEFT: user info + caption ── */}
       <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:500, transition:"opacity 0.25s ease", opacity: photoSwiping ? 0 : (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (photoSwiping || !(showUI || !!photoUrls)) ? "none" : "auto", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>

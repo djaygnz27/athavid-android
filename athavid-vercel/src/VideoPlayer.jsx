@@ -157,6 +157,16 @@ export default function VideoPlayer({
           window.dispatchEvent(new CustomEvent("sachiVideoPause"));
           if (soundRef.current) soundRef.current.pause();
         }}
+        onEnded={(e) => {
+          // HLS streams don't always respect the loop attribute — force replay
+          const el = e.target;
+          el.currentTime = 0;
+          el.play().catch(() => {});
+          if (soundRef.current && video.sound_url) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(() => {});
+          }
+        }}
         style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }}
       />
 
