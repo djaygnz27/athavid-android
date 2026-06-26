@@ -1,8 +1,8 @@
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ ⛔ LOCKED — Landing.jsx (SPLASH PAGE)                             ║
 // ║ 3-variant rotating splash — cycles every 3 days automatically     ║
-// ║ Logos: Classic (sachi-logo-512), Neon (sachi-neon-logo),          ║
-// ║        Icon v6 (sachi-icon-v6)                                    ║
+// ║ Logos: All variants now use sachi-logo-new.png (the new S logo)   ║
+// ║        on a white/transparent bg — no dark box                    ║
 // ║ Effects: electric glow, scan line, particle burst, lightning flash ║
 // ║ Props: onEnter (fn), prefetchDone (bool)                          ║
 // ║ Last verified: 2026-06-25                                         ║
@@ -11,9 +11,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
 const SPLASH_LOGOS = [
-  { src: "/sachi-logo-512.png",  label: "Classic", glow: "#F5C842", ring: "#7c3aed" },
-  { src: "/sachi-neon-logo.jpg", label: "Neon",    glow: "#00f0ff", ring: "#0084ff" },
-  { src: "/sachi-icon-v6.png",   label: "Icon",    glow: "#ff6ecd", ring: "#c026d3" },
+  { src: "/sachi-logo-new.png", label: "Classic", glow: "#e8400c", ring: "#c0007a" },
+  { src: "/sachi-logo-new.png", label: "Warm",    glow: "#ff8c00", ring: "#d4006a" },
+  { src: "/sachi-logo-new.png", label: "Vivid",   glow: "#cc0080", ring: "#e84000" },
 ];
 
 function getSplashLogoIndex() {
@@ -264,18 +264,18 @@ export default function Landing({ onEnter, prefetchDone = false }) {
             width: 220, height: 220,
             borderRadius: 36,
             overflow: "hidden",
-            background: "#0d0824",
-            border: `1.5px solid ${currentLogo.ring}44`,
+            background: "transparent",
+            border: "none",
             opacity: logoVisible ? 1 : 0,
             boxShadow: glowPulse
-              ? `0 0 80px ${currentLogo.glow}, 0 0 160px ${currentLogo.ring}88, inset 0 0 40px ${currentLogo.glow}33`
-              : `0 0 40px ${currentLogo.glow}88, 0 0 80px ${currentLogo.ring}44, inset 0 0 16px ${currentLogo.glow}18`,
+              ? `0 0 80px ${currentLogo.glow}88, 0 0 160px ${currentLogo.ring}66`
+              : `0 0 40px ${currentLogo.glow}44, 0 0 80px ${currentLogo.ring}22`,
             transition: "opacity 0.35s ease, box-shadow 0.6s ease",
           }}>
             <img
               src={currentLogo.src}
               alt="Sachi"
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
               onError={e => { e.target.style.display = "none"; }}
             />
             {/* Scan line */}
@@ -333,16 +333,28 @@ export default function Landing({ onEnter, prefetchDone = false }) {
 
         {/* Wordmark */}
         <div style={{
-          marginTop: 26,
-          fontSize: 52,
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          color: "#ffffff",
-          fontFamily: "'Georgia', serif",
-          textShadow: `0 0 28px ${currentLogo.glow}99, 0 2px 4px #000c`,
+          marginTop: 20,
+          display: "flex",
+          alignItems: "baseline",
+          gap: 10,
           lineHeight: 1,
         }}>
-          sachi
+          <span style={{
+            fontSize: 46,
+            fontWeight: 800,
+            letterSpacing: "0.04em",
+            color: "#ffffff",
+            fontFamily: "'Georgia', serif",
+            textShadow: `0 0 28px ${currentLogo.glow}99, 0 2px 4px #000c`,
+          }}>Sachi</span>
+          <span style={{
+            fontSize: 28,
+            fontWeight: 400,
+            letterSpacing: "0.12em",
+            color: currentLogo.glow,
+            fontFamily: "system-ui, sans-serif",
+            textShadow: `0 0 18px ${currentLogo.glow}88`,
+          }}>Stream</span>
         </div>
 
         {/* Tagline */}
