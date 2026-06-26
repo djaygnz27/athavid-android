@@ -386,8 +386,17 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     setLikesListLoading(true);
     try {
       const res = await likes.getByVideo(video.id);
-      const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
-      setLikesList(items);
+      const raw = Array.isArray(res) ? res : (res?.records || res?.items || []);
+      // Deduplicate by user_id — keep only the most recent like per user
+      const seen = new Map();
+      for (const lk of raw) {
+        const uid = lk.user_id || lk.username;
+        if (!uid) continue;
+        if (!seen.has(uid) || (lk.created_date > seen.get(uid).created_date)) {
+          seen.set(uid, lk);
+        }
+      }
+      setLikesList([...seen.values()]);
     } catch(e) { setLikesList([]); }
     setLikesListLoading(false);
   };
