@@ -45,17 +45,21 @@
         transition: opacity 0.4s ease;
       }
       #splash img {
-        width: 90px;
-        height: 90px;
-        border-radius: 20px;
+        width: 110px;
+        height: 110px;
+        border-radius: 0;
+        background: transparent;
+        object-fit: contain;
+        filter: drop-shadow(0 0 18px rgba(232,64,12,0.7)) drop-shadow(0 0 36px rgba(192,0,122,0.4));
         animation: pulse 1.6s ease-in-out infinite;
       }
       #splash-text {
-        font-family: Georgia, serif;
         font-size: 36px;
         font-weight: 700;
-        color: #F5C842;
-        letter-spacing: -0.5px;
+        letter-spacing: 0.03em;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
       }
       @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
@@ -90,8 +94,8 @@
 
     <!-- Inline splash shown while JS loads -->
     <div id="splash">
-      <img src="/sachi-logo-v5.png" alt="Sachi" />
-      <div id="splash-text">sachi</div>
+      <img src="/sachi-logo-new.png" alt="Sachi" />
+      <div id="splash-text"><span style="color:#fff;font-family:Georgia,serif;font-weight:800;">Sachi</span>&nbsp;<span style="color:#e8400c;font-family:system-ui,sans-serif;font-weight:400;font-size:22px;letter-spacing:0.1em;">Stream</span></div>
     </div>
 
     <div id="root"></div>
