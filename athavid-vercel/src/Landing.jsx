@@ -258,19 +258,19 @@ export default function Landing({ onEnter, prefetchDone = false }) {
               strokeDasharray="3 22" opacity={0.3} />
           </svg>
 
-          {/* Logo box */}
+          {/* Logo box — transparent, no background */}
           <div style={{
             position: "relative",
             width: 220, height: 220,
-            borderRadius: 36,
-            overflow: "hidden",
+            borderRadius: 0,
+            overflow: "visible",
             background: "transparent",
             border: "none",
             opacity: logoVisible ? 1 : 0,
-            boxShadow: glowPulse
-              ? `0 0 80px ${currentLogo.glow}88, 0 0 160px ${currentLogo.ring}66`
-              : `0 0 40px ${currentLogo.glow}44, 0 0 80px ${currentLogo.ring}22`,
-            transition: "opacity 0.35s ease, box-shadow 0.6s ease",
+            filter: glowPulse
+              ? `drop-shadow(0 0 32px ${currentLogo.glow}) drop-shadow(0 0 60px ${currentLogo.ring}88)`
+              : `drop-shadow(0 0 18px ${currentLogo.glow}88) drop-shadow(0 0 36px ${currentLogo.ring}44)`,
+            transition: "opacity 0.35s ease, filter 0.6s ease",
           }}>
             <img
               src={currentLogo.src}
@@ -278,22 +278,7 @@ export default function Landing({ onEnter, prefetchDone = false }) {
               style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
               onError={e => { e.target.style.display = "none"; }}
             />
-            {/* Scan line */}
-            <div style={{
-              position: "absolute", left: 0, right: 0, height: 3,
-              background: `linear-gradient(90deg, transparent 0%, ${currentLogo.glow}cc 40%, ${currentLogo.glow} 50%, ${currentLogo.glow}cc 60%, transparent 100%)`,
-              boxShadow: `0 0 14px ${currentLogo.glow}, 0 0 30px ${currentLogo.glow}88`,
-              animation: "scanLine 2.4s ease-in-out infinite",
-              top: 0, zIndex: 4, pointerEvents: "none",
-            }} />
-            {/* Inner shimmer overlay */}
-            <div style={{
-              position: "absolute", inset: 0,
-              background: `linear-gradient(120deg, transparent 30%, ${currentLogo.glow}18 50%, transparent 70%)`,
-              backgroundSize: "200% 100%",
-              animation: "shimmerSlide 2.5s linear infinite",
-              zIndex: 3, pointerEvents: "none",
-            }} />
+            {/* No scan/shimmer — logo has transparent bg, overlays would look wrong */}
           </div>
 
           {/* Corner sparks */}
