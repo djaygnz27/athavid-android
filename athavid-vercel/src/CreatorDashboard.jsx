@@ -93,7 +93,25 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
         const myUsername = currentUser.username || currentUser.email?.split("@")[0];
         likerMap.delete(myUsername);
         likerMap.delete(currentUser.id);
-        setDrawerData([...likerMap.values()]);
+        const likers = [...likerMap.values()];
+
+        // Enrich likers with real avatar from SachiUser
+        const enriched = await Promise.all(
+          likers.map(async (liker) => {
+            if (liker.avatar_url) return liker; // already has avatar
+            try {
+              const uname = liker.username;
+              if (!uname) return liker;
+              const res = await request("GET", `/apps/${SACHI_APP_ID}/entities/SachiUser?username=${encodeURIComponent(uname)}&limit=1`);
+              const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
+              if (arr.length > 0 && arr[0].avatar_url) {
+                return { ...liker, avatar_url: arr[0].avatar_url };
+              }
+            } catch(e) {}
+            return liker;
+          })
+        );
+        setDrawerData(enriched);
       } else if (type === "followers") {
         const res = await follows.getFollowers(currentUser.id).catch(() => []);
         const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
