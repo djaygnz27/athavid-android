@@ -361,11 +361,19 @@ export const likes = {
   async remove(id) {
     return request("DELETE", `/apps/${APP_ID}/entities/SachiLike/${id}`);
   },
-  async checkUserLiked(video_id, user_id) {
+  async checkUserLiked(video_id, user_id, username) {
     try {
+      // Check by user_id first (fast path)
       const res = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
       const items = Array.isArray(res) ? res : (res?.items || res?.records || []);
-      return items.length > 0 ? items[0] : null;
+      if (items.length > 0) return items[0];
+      // Fallback: check by username — handles duplicate accounts (same person, different user_id)
+      if (username) {
+        const res2 = await request("GET", `/apps/${APP_ID}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(username)}&limit=5`);
+        const items2 = Array.isArray(res2) ? res2 : (res2?.items || res2?.records || []);
+        if (items2.length > 0) return items2[0];
+      }
+      return null;
     } catch { return null; }
   },
   async getByVideo(video_id) {

@@ -244,7 +244,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       setLiked(true);
     }
     // Always confirm with DB — updates likeRecordId needed for unlike
-    likes.checkUserLiked(video.id, currentUser.id).then(rec => {
+    likes.checkUserLiked(video.id, currentUser.id, currentUser.username || currentUser.email?.split("@")[0]).then(rec => {
       if (rec) { setLiked(true); setLikeRecordId(rec.id); }
       else if (video._likedByMe !== true) { setLiked(false); setLikeRecordId(null); }
     }).catch(() => {});
@@ -387,13 +387,13 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     try {
       const res = await likes.getByVideo(video.id);
       const raw = Array.isArray(res) ? res : (res?.records || res?.items || []);
-      // Deduplicate by user_id — keep only the most recent like per user
+      // Deduplicate by username first (handles duplicate accounts), then user_id fallback
       const seen = new Map();
       for (const lk of raw) {
-        const uid = lk.user_id || lk.username;
-        if (!uid) continue;
-        if (!seen.has(uid) || (lk.created_date > seen.get(uid).created_date)) {
-          seen.set(uid, lk);
+        const key = lk.username || lk.user_id; // username is the canonical dedup key
+        if (!key) continue;
+        if (!seen.has(key) || (lk.created_date > seen.get(key).created_date)) {
+          seen.set(key, lk);
         }
       }
       setLikesList([...seen.values()]);
