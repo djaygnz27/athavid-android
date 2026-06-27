@@ -229,6 +229,9 @@ function App() {
     if (!currentUser) { setUnreadCount(0); setNotifCount(0); return; }
     // Reset badge immediately on user change to clear any ghost-ID stale count
     setUnreadCount(0);
+    setNotifCount(0);
+    // Also bust any browser-cached counts from previous ghost sessions
+    try { localStorage.removeItem("sachi_unread_cache"); } catch(e) {}
     const poll = async () => {
       // Query unread by recipient_id (canonical ID) — DB has 0 messages so this should always return 0
       // If ghost ID was used before, this corrects the badge immediately
