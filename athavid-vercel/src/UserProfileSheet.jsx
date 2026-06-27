@@ -106,21 +106,17 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
 
   return (
     <>
-      <div style={{ position:"fixed", inset:0, zIndex:4000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-        {/* Backdrop */}
-        <div onClick={onClose} style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)" }} />
+      <div style={{ position:"fixed", inset:0, zIndex:4000, background:"#0f0f1a", display:"flex", flexDirection:"column", overflowY:"auto" }}>
+        {/* Full-screen profile page */}
+        <div style={{ position:"relative", width:"100%", flex:1, display:"flex", flexDirection:"column" }}>
 
-        {/* Sheet */}
-        <div style={{ position:"relative", background:"#0f0f1a", borderRadius:"24px 24px 0 0",
-          width:"100%", maxWidth:480, maxHeight:"88vh", display:"flex", flexDirection:"column",
-          zIndex:4001, overflow:"hidden" }}>
-
-          {/* Handle */}
-          <div style={{ width:40, height:4, background:"#333", borderRadius:99, margin:"14px auto 0", flexShrink:0 }} />
-
-          {/* Close */}
-          <button onClick={onClose} style={{ position:"absolute", top:12, right:16, background:"none", border:"none",
-            color:"#888", fontSize:22, cursor:"pointer", zIndex:1 }}>✕</button>
+          {/* Back button header */}
+          <div style={{ display:"flex", alignItems:"center", padding:"14px 16px 10px", position:"sticky", top:0, background:"#0f0f1a", zIndex:10, borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
+            <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#F5C842", fontSize:28, lineHeight:1, padding:"0 12px 0 0", display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:22 }}>←</span>
+              <span style={{ fontSize:14, fontWeight:700, color:"#F5C842" }}>Back</span>
+            </button>
+          </div>
 
           {loading ? (
             <div style={{ textAlign:"center", padding:60, color:"#555" }}>
