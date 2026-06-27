@@ -28,6 +28,7 @@ import UserProfileSheet from "./UserProfileSheet.jsx";
 import AdminPanel from "./AdminPanel.jsx";
 import ModNavButton from "./ModNavButton.jsx";
 import GoLiveModal from "./GoLiveModal.jsx";
+import CreatorDashboard from "./CreatorDashboard.jsx";
 import AvatarCropEditor from "./AvatarCropEditor.jsx";
 import AvatarPickerModal from "./AvatarPickerModal.jsx";
 import ProfileVideoPlayer from "./ProfileVideoPlayer.jsx";
@@ -199,7 +200,7 @@ function App() {
   const feedContainerRef = useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("feed");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
   const [inboxDMTarget, setInboxDMTarget] = useState(null);
@@ -508,10 +509,14 @@ function App() {
   };
 
   const goHome = () => {
-    setActiveTab("feed");
-    setFeedPage(1);
-    setFeedKey(k => k + 1);   // remounts feed container → guaranteed scroll reset
-    loadVideos(currentUser, false, 1);
+    // If already on feed, scroll to top. Otherwise go to dashboard.
+    if (activeTab === "feed") {
+      setFeedPage(1);
+      setFeedKey(k => k + 1);
+      loadVideos(currentUser, false, 1);
+    } else {
+      setActiveTab(currentUser ? "dashboard" : "feed");
+    }
   };
 
   useEffect(() => {
@@ -709,6 +714,27 @@ function App() {
 
         </div>
       </div>
+
+      {/* Dashboard */}
+      {activeTab === "dashboard" && currentUser && (
+        <CreatorDashboard
+          currentUser={currentUser}
+          unreadCount={unreadCount}
+          notifCount={notifCount}
+          onOpenInbox={() => setActiveTab("inbox")}
+          onOpenNotifications={() => setActiveTab("activity")}
+          onGoToFeed={(tab) => { setFeedTab(tab); setActiveTab("feed"); }}
+        />
+      )}
+      {activeTab === "dashboard" && !currentUser && (
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"80dvh", gap:16, padding:"0 32px" }}>
+          <div style={{ fontSize:48 }}>👋</div>
+          <div style={{ color:"#fff", fontWeight:800, fontSize:22 }}>Welcome to Sachi</div>
+          <div style={{ color:"rgba(255,255,255,0.5)", fontSize:14, textAlign:"center", maxWidth:260 }}>Sign in to see your dashboard, stats, and start watching</div>
+          <button onClick={() => setShowAuth(true)} style={{ marginTop:8, background:"linear-gradient(135deg,#F5C842,#FF8C00)", color:"#0B0C1A", fontWeight:800, fontSize:16, border:"none", borderRadius:14, padding:"14px 40px", cursor:"pointer" }}>Sign In</button>
+          <button onClick={() => setActiveTab("feed")} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", color:"rgba(255,255,255,0.6)", fontSize:14, borderRadius:12, padding:"10px 24px", cursor:"pointer" }}>Browse Without Signing In</button>
+        </div>
+      )}
 
       {/* Feed */}
       {activeTab === "feed" && (
@@ -1027,7 +1053,7 @@ function App() {
       {/* ║ Run verify-before-change.sh before touching this section          ║ */}
       {/* ╚════════════════════════════════════════════════════════════════════╝ */}
       {/* Bottom Nav — Orbital Arc: 5 icons + raised center Post button */}
-      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, pointerEvents:"none", opacity: activeTab==="feed" && globalIsPlaying ? 0.25 : 1, transition:"opacity 0.4s ease" }}>
+      <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:200, pointerEvents:"none", opacity: (activeTab==="feed" || activeTab==="dashboard") && globalIsPlaying ? 0.25 : 1, transition:"opacity 0.4s ease" }}>
         {/* Arc SVG background */}
         <svg viewBox="0 0 480 70" xmlns="http://www.w3.org/2000/svg" style={{ position:"absolute", bottom:0, left:0, width:"100%", height:70, display:"block" }} preserveAspectRatio="none">
           <defs>
@@ -1045,10 +1071,10 @@ function App() {
           {/* Home */}
           <button onClick={goHome}
             style={{ flex:1, padding:"4px 8px 6px", background:"none", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:3, WebkitTapHighlightColor:"transparent", borderRadius:32, transition:"background 0.15s", marginBottom:4 }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill={activeTab==="feed" ? "#F5C842" : "none"} stroke={activeTab==="feed" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill={activeTab==="feed" || activeTab==="dashboard" ? "#F5C842" : "none"} stroke={activeTab==="feed" || activeTab==="dashboard" ? "#F5C842" : "#4A4A6A"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <div style={{ fontSize:9, color: activeTab==="feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" ? 700 : 400, letterSpacing:0.3 }}>Home</div>
+            <div style={{ fontSize:9, color: activeTab==="feed" || activeTab==="dashboard" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab==="feed" || activeTab==="dashboard" ? 700 : 400, letterSpacing:0.3 }}>Home</div>
           </button>
 
           {/* Explore */}
@@ -1273,7 +1299,7 @@ function App() {
         </div>
       )}
       {showLiveHub && <SachiLiveHub currentUser={currentUser} onClose={() => setShowLiveHub(false)} onNeedAuth={() => { setShowLiveHub(false); setShowAuth(true); }} />}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("feed"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("dashboard"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => setShowEditProfile(false)}>
