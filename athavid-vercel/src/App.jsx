@@ -199,6 +199,7 @@ function App() {
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
+  const [prevTab, setPrevTab] = React.useState(null); // tracks where user came from, for back button
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [unreadCount, setUnreadCount] = useState(0);
@@ -667,14 +668,24 @@ function App() {
       <div style={{ position:"fixed", top:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, zIndex:300, display: activeTab === "dashboard" ? "none" : undefined, paddingTop:"env(safe-area-inset-top,0px)", background:"linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px 6px", pointerEvents:"auto" }}>
 
-          {/* Left: Sachi logo + wordmark */}
-          <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+          {/* Left: back button (when coming from dashboard) + logo */}
+          <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+            {activeTab === "feed" && prevTab === "dashboard" && (
+              <button
+                onClick={() => { setPrevTab(null); setActiveTab("dashboard"); }}
+                style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px 4px 0", WebkitTapHighlightColor:"transparent", display:"flex", alignItems:"center" }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F5C842" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"/>
+                </svg>
+              </button>
+            )}
             <img src="/sachi-logo-new.png" alt="Sachi" style={{ width:36, height:36, borderRadius:0, objectFit:"contain", filter:"drop-shadow(0 0 8px rgba(232,64,12,0.55))" }} />
             <div style={{ display:"flex", alignItems:"baseline", gap:1 }}>
               <span style={{ fontSize:24, fontWeight:900, letterSpacing:-0.5, background:"linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Sachi</span>
               <span style={{ fontSize:12, fontWeight:700, color:"#F5C842", lineHeight:1, marginBottom:2 }}>™</span>
             </div>
-          </div>
+          </div>{/* end left logo+back wrapper */}
 
           {/* Center: feed tabs — subtle pill style */}
           {activeTab === "feed" && (
@@ -723,7 +734,7 @@ function App() {
           notifCount={notifCount}
           onOpenInbox={() => setActiveTab("inbox")}
           onOpenNotifications={() => setActiveTab("activity")}
-          onGoToFeed={(tab) => { setFeedTab(tab); setActiveTab("feed"); }}
+          onGoToFeed={(tab) => { setFeedTab(tab); setPrevTab("dashboard"); setActiveTab("feed"); }}
         />
       )}
       {activeTab === "dashboard" && !currentUser && (
