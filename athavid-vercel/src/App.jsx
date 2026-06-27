@@ -766,6 +766,7 @@ function App() {
           onOpenInbox={() => { setPrevTab("dashboard"); setActiveTab("inbox"); }}
           onOpenNotifications={() => { setPrevTab("dashboard"); setActiveTab("activity"); }}
           onGoToFeed={(tab) => { setFeedTab(tab); setPrevTab("dashboard"); setActiveTab("feed"); }}
+          onOpenProfile={(userId, username) => setProfileSheet({ userId, username })}
         />
       )}
       {activeTab === "dashboard" && !currentUser && (

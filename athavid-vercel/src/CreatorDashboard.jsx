@@ -69,41 +69,31 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
         const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
         setDrawerData(arr.sort((a,b) => (b.likes_count||0)-(a.likes_count||0)));
       } else if (type === "likes") {
-        // Step 1: Get all SachiLike records for this user (by user_id + username)
-        const [res1, res2] = await Promise.all([
-          request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?user_id=${currentUser.id}&limit=200`).catch(() => []),
-          currentUser.username
-            ? request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?username=${encodeURIComponent(currentUser.username)}&limit=200`).catch(() => [])
-            : Promise.resolve([]),
-        ]);
-        const arr1 = Array.isArray(res1) ? res1 : (res1?.items || res1?.records || []);
-        const arr2 = Array.isArray(res2) ? res2 : (res2?.items || res2?.records || []);
-        // Deduplicate by video_id
-        const seen = new Map();
-        [...arr1, ...arr2].forEach(r => { if (r.video_id && !seen.has(r.video_id)) seen.set(r.video_id, r); });
-        const likeRecords = [...seen.values()];
-        // Step 2: Fetch actual video records in parallel (batches of 10)
-        const videoIds = likeRecords.map(r => r.video_id).filter(Boolean);
-        const videoMap = new Map();
+        // Load people who liked YOUR videos
+        // Step 1: Get your videos
+        const vRes = await videos.byUser(currentUser.id).catch(() => []);
+        const myVideos = Array.isArray(vRes) ? vRes : (vRes?.items || vRes?.records || []);
+        const myVideoIds = myVideos.map(v => v.id).filter(Boolean);
+        // Step 2: Fetch SachiLike records for each of your videos
+        const likerMap = new Map(); // keyed by liker username to deduplicate
         await Promise.all(
-          videoIds.map(vid =>
-            request("GET", `/apps/${SACHI_APP_ID}/entities/SachiVideo/${vid}`).then(v => {
-              if (v?.id) videoMap.set(v.id, v);
-            }).catch(() => {})
+          myVideoIds.map(vid =>
+            request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?video_id=${vid}&limit=200`)
+              .then(res => {
+                const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
+                arr.forEach(r => {
+                  const key = r.username || r.user_id;
+                  if (key && !likerMap.has(key)) likerMap.set(key, r);
+                });
+              })
+              .catch(() => {})
           )
         );
-        // Merge like records with full video data
-        const merged = likeRecords.map(r => {
-          const v = videoMap.get(r.video_id) || {};
-          return {
-            ...r,
-            thumbnail_url: v.thumbnail_url || v.cover_image || null,
-            likes_count: v.likes_count || v.like_count || 0,
-            title: v.title || v.caption || "",
-            _videoFound: !!v.id,
-          };
-        }).filter(r => r._videoFound || r.video_id); // keep all, show placeholder only if truly missing
-        setDrawerData(merged);
+        // Remove yourself from the list
+        const myUsername = currentUser.username || currentUser.email?.split("@")[0];
+        likerMap.delete(myUsername);
+        likerMap.delete(currentUser.id);
+        setDrawerData([...likerMap.values()]);
       } else if (type === "followers") {
         const res = await follows.getFollowers(currentUser.id).catch(() => []);
         const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
@@ -391,7 +381,7 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
               <span style={{ fontWeight: 800, fontSize: 16, color: "#fff" }}>
                 { drawer === "videos" ? "🎬 My Videos"
-                : drawer === "likes" ? "❤️ Videos I Liked"
+                : drawer === "likes" ? "❤️ People Who Liked You"
                 : drawer === "followers" ? "👥 Followers"
                 : "👣 Following" }
               </span>
@@ -404,24 +394,38 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
                 <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "40px 0", fontSize: 14 }}>Loading…</div>
               ) : drawerData.length === 0 ? (
                 <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "40px 0", fontSize: 14 }}>
-                  { drawer === "followers" ? "No followers yet" : drawer === "following" ? "Not following anyone yet" : drawer === "likes" ? "No liked videos yet" : "No videos yet" }
+                  { drawer === "followers" ? "No followers yet" : drawer === "following" ? "Not following anyone yet" : drawer === "likes" ? "No likes yet" : "No videos yet" }
                 </div>
-              ) : (drawer === "followers" || drawer === "following") ? (
+              ) : (drawer === "followers" || drawer === "following" || drawer === "likes") ? (
                 // People list
                 drawerData.map((r, i) => {
                   const name = drawer === "followers"
                     ? (r.follower_username || r.follower_id || "Unknown")
-                    : (r.following_username || r.following_id || "Unknown");
+                    : drawer === "following"
+                    ? (r.following_username || r.following_id || "Unknown")
+                    : (r.username || r.user_id || "Unknown");
+                  const userId = drawer === "followers"
+                    ? (r.follower_id || r.follower_username)
+                    : drawer === "following"
+                    ? (r.following_id || r.following_username)
+                    : (r.user_id || r.username);
                   const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1a1b2e&color=F5C842&size=64&bold=true&format=png`;
                   return (
-                    <div key={r.id || i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px" }}>
-                      <img src={r.follower_avatar || r.following_avatar || avatarFallback} alt={name}
+                    <div key={r.id || i}
+                      onClick={() => {
+                        setDrawer(null);
+                        if (onOpenProfile) onOpenProfile(userId, name);
+                      }}
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                      <img src={r.follower_avatar || r.following_avatar || r.avatar_url || avatarFallback} alt={name}
                         style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", background: "#0B0C1A" }}
                         onError={e => { e.target.src = avatarFallback; }}
                       />
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>@{name}</div>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>Tap to view profile</div>
                       </div>
+                      <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 18 }}>›</span>
                     </div>
                   );
                 })
