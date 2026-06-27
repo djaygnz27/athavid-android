@@ -32,7 +32,22 @@ const APP_ID = "69e79122bcc8fb5a04cfb834";
 const BASE_URL = "https://app.base44.com/api";
 const FUNCTIONS_URL = "";  // local Vercel API routes
 
-// ─── Helper: lookup existing Sachi profile by email ──────────────────────────
+// ⛔ LOCKED — LOOKUP SACHI USER START
+// DO NOT MODIFY WITHOUT EXPLICIT PERMISSION FROM JAY
+//
+// WHY THIS EXISTS:
+// Old version queried AthaVidUser only — that table is EMPTY in the Sachi Stream app
+// → returned null on every sign-in → ghost IDs created → likes/follows invisible
+//
+// WHAT IT DOES:
+// PRIMARY path: queries SachiUser (real Base44 auth table) — this has the canonical ID
+// FALLBACK: queries AthaVidUser for any legacy profile records that may exist
+// The order is critical — SachiUser MUST be queried first
+//
+// DO NOT:
+// - Swap back to querying AthaVidUser only
+// - Remove the SachiUser primary path
+// - Change the entity name "SachiUser" (it is the Base44 auth entity)
 async function lookupSachiUser(email) {
   try {
     const headers = { "Content-Type": "application/json" };
@@ -64,6 +79,7 @@ async function lookupSachiUser(email) {
     return null;
   }
 }
+// ⛔ LOCKED — LOOKUP SACHI USER END
 
 // ─── Helper: build session user object ───────────────────────────────────────
 function buildSessionUser(found, payload) {

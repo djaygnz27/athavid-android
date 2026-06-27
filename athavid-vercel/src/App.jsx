@@ -142,9 +142,26 @@ function App() {
     }
   }, []);
 
-  // ── ID normalizer: verify currentUser.id against canonical SachiUser on startup ──
-  // Prevents stale/ghost IDs from persisting across sessions and causing
-  // likes/follows to be written under the wrong user_id
+  // ⛔ LOCKED — USER ID NORMALIZER START
+  // DO NOT MODIFY WITHOUT EXPLICIT PERMISSION FROM JAY
+  //
+  // WHY THIS EXISTS:
+  // lookupSachiUser() used to query AthaVidUser (empty table) → returned null every time
+  // → App fell back to stale localStorage ghost ID (69b2ee18...) instead of real SachiUser ID
+  // → Likes/follows were written under ghost ID → invisible on next session → duplicates
+  // → 26 of 27 follows were stored under wrong ID, causing "follow" to never persist
+  //
+  // WHAT IT DOES:
+  // On every app load, verifies currentUser.id against the canonical SachiUser record
+  // If a stale/ghost ID is detected in localStorage → silently corrects it before any writes
+  // Writes corrected ID back to both sachi_user and sachi_google_user keys
+  // dep array = [currentUser?.email] — runs once per email change, not on every render
+  //
+  // DO NOT:
+  // - Remove this useEffect
+  // - Change the dep array to [currentUser] (causes infinite re-render loop)
+  // - Skip the canonical.id !== currentUser.id check (causes unnecessary setCurrentUser calls)
+  // - Change BASE_URL or APP_ID inline — use constants at top of file
   useEffect(() => {
     if (!currentUser?.email) return;
     const normalize = async () => {
@@ -175,6 +192,7 @@ function App() {
     };
     normalize();
   }, [currentUser?.email]);
+  // ⛔ LOCKED — USER ID NORMALIZER END
 
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com" || currentUser?.email === "shakeebjasim.mail@gmail.com" || currentUser?.email === "helloshakeeb.mail@gmail.com" || currentUser?.email === "hasini.thisaravi@gmail.com" || currentUser?.email === "henderson.keith2@gmail.com";
   const [videoList, setVideoList] = useState([]);

@@ -7645,6 +7645,24 @@ const follows = {
   async unfollow(recordId) {
     return request$1("DELETE", `/apps/${APP_ID$5}/entities/Follow/${recordId}`);
   },
+  // ⛔ LOCKED — GET FOLLOWING START
+  // DO NOT MODIFY WITHOUT EXPLICIT PERMISSION FROM JAY
+  //
+  // WHY THIS EXISTS:
+  // Old version queried Follow by follower_id ONLY
+  // → 26 of 27 Jay follows were stored under ghost ID (69b2ee18...) not real ID
+  // → getFollowing(realId) returned 1 result → every followed person showed as "not following"
+  //
+  // WHAT IT DOES:
+  // Queries Follow by BOTH follower_id AND follower_username in parallel
+  // Merges + deduplicates by following_id (Map keyed on following_id)
+  // Returns a plain array (NOT wrapped in {items:...})
+  // All call sites must handle Array.isArray(res) check
+  //
+  // DO NOT:
+  // - Revert to single-query version (breaks follow visibility for all legacy records)
+  // - Remove the username query leg
+  // - Wrap the return in {items: ...} — all parsers expect plain array
   async getFollowing(follower_id, follower_username) {
     const [res1, res2] = await Promise.all([
       request$1("GET", `/apps/${APP_ID$5}/entities/Follow?follower_id=${follower_id}&limit=500`).catch(() => []),
@@ -7658,6 +7676,7 @@ const follows = {
     }
     return [...seen.values()];
   },
+  // ⛔ LOCKED — GET FOLLOWING END
   async getFollowers(following_id) {
     return request$1("GET", `/apps/${APP_ID$5}/entities/Follow?following_id=${following_id}&limit=500`);
   }
