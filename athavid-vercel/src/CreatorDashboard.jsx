@@ -267,47 +267,11 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
         ))}
       </div>
 
-      {/* Top Posts — 3-col grid */}
+      {/* ⛔ LOCKED — TOP POSTS HOLD-TO-PREVIEW START */}
       {topPosts.length > 0 && (
-        <div style={{ padding: "0 16px 20px" }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-            🔥 <span>Your Top Posts</span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "#555", fontWeight: 400 }}>{topPosts.length} videos</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
-            {topPosts.map((v, i) => (
-              <div key={v.id} style={{
-                position: "relative",
-                aspectRatio: "9/13",
-                borderRadius: 7,
-                overflow: "hidden",
-                border: "2px solid #F5C842",
-                background: "#111",
-                boxShadow: "0 0 6px rgba(245,200,66,0.3)",
-              }}>
-                <img
-                  src={v.thumbnail_url || v.cover_image || `https://ui-avatars.com/api/?name=${i+1}&background=1a1b2e&color=F5C842&size=128`}
-                  alt=""
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-                {/* Gradient overlay */}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)" }} />
-                {/* Like count bottom */}
-                <div style={{ position: "absolute", bottom: 4, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 10, fontWeight: 800, color: "#fff" }}>
-                  <span style={{ fontSize: 9 }}>❤️</span>
-                  {fmtCount(v.likes_count || v.like_count || 0)}
-                </div>
-                {/* Rank badge top-left */}
-                {i < 3 && (
-                  <div style={{ position: "absolute", top: 3, left: 3, background: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : "#CD7F32", borderRadius: 99, width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 900, color: "#000" }}>
-                    {i + 1}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <TopPostsGrid topPosts={topPosts} fmtCount={fmtCount} />
       )}
+      {/* ⛔ LOCKED — TOP POSTS HOLD-TO-PREVIEW END */}
 
       {/* Divider */}
       <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "0 16px 24px" }} />
