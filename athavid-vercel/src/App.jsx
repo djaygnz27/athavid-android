@@ -193,6 +193,26 @@ function App() {
     };
     normalize();
   }, [currentUser?.email]);
+
+  // One-time cleanup: delete any self-follow records (follower = following)
+  React.useEffect(() => {
+    if (!currentUser) return;
+    const username = currentUser.username || currentUser.email?.split("@")[0];
+    if (!username) return;
+    (async () => {
+      try {
+        const res = await follows.getFollowing(currentUser.id, username);
+        const items = Array.isArray(res) ? res : (res?.items || []);
+        const selfFollows = items.filter(r =>
+          r.following_username === username || r.following_id === currentUser.id
+        );
+        for (const r of selfFollows) {
+          await follows.unfollow(r.id);
+          console.log("[sachi] Removed self-follow record:", r.id);
+        }
+      } catch(e) {}
+    })();
+  }, [currentUser?.id]);
   // ⛔ LOCKED — USER ID NORMALIZER END
 
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com" || currentUser?.email === "shakeebjasim.mail@gmail.com" || currentUser?.email === "helloshakeeb.mail@gmail.com" || currentUser?.email === "hasini.thisaravi@gmail.com" || currentUser?.email === "henderson.keith2@gmail.com";

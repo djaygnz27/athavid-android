@@ -226,6 +226,9 @@ async function r2Upload(file, uploadUrl, onProgress) {
 
 export const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
+    // Block self-follows at the API level
+    if (follower_id && follower_id === following_id) return null;
+    if (follower_username && follower_username === following_username) return null;
     return request("POST", `/apps/${APP_ID}/entities/Follow`, {
       follower_id, follower_username, following_id, following_username
     });
