@@ -8,6 +8,10 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
   const [topPosts, setTopPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [foundingCreator, setFoundingCreator] = useState(false);
+  // Stat drawer state
+  const [drawer, setDrawer] = useState(null); // "videos" | "likes" | "followers" | "following"
+  const [drawerData, setDrawerData] = useState([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -52,6 +56,44 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
       console.warn("[CreatorDashboard] loadStats error", e);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function openDrawer(type) {
+    setDrawer(type);
+    setDrawerData([]);
+    setDrawerLoading(true);
+    try {
+      if (type === "videos") {
+        const res = await videos.byUser(currentUser.id).catch(() => []);
+        const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
+        setDrawerData(arr.sort((a,b) => (b.likes_count||0)-(a.likes_count||0)));
+      } else if (type === "likes") {
+        // Videos the user has liked
+        const res = await request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?user_id=${currentUser.id}&limit=200`).catch(() => []);
+        const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
+        // Also try by username
+        const res2 = currentUser.username
+          ? await request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?username=${encodeURIComponent(currentUser.username)}&limit=200`).catch(() => [])
+          : [];
+        const arr2 = Array.isArray(res2) ? res2 : (res2?.items || res2?.records || []);
+        // Deduplicate by video_id
+        const seen = new Map();
+        [...arr, ...arr2].forEach(r => { if (r.video_id && !seen.has(r.video_id)) seen.set(r.video_id, r); });
+        setDrawerData([...seen.values()]);
+      } else if (type === "followers") {
+        const res = await follows.getFollowers(currentUser.id).catch(() => []);
+        const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
+        setDrawerData(arr);
+      } else if (type === "following") {
+        const res = await follows.getFollowing(currentUser.id, currentUser.username || currentUser.email?.split("@")[0]).catch(() => []);
+        const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
+        setDrawerData(arr);
+      }
+    } catch(e) {
+      console.warn("[CreatorDashboard] drawer load error", e);
+    } finally {
+      setDrawerLoading(false);
     }
   }
 
@@ -168,17 +210,21 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
       {/* Stats Row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "0 16px 20px" }}>
         {[
-          { label: "Videos", value: fmtCount(stats.videoCount) },
-          { label: "Likes", value: fmtCount(stats.totalLikes) },
-          { label: "Followers", value: fmtCount(stats.followers) },
-          { label: "Following", value: fmtCount(stats.following) },
+          { label: "Videos", value: fmtCount(stats.videoCount), type: "videos" },
+          { label: "Likes", value: fmtCount(stats.totalLikes), type: "likes" },
+          { label: "Followers", value: fmtCount(stats.followers), type: "followers" },
+          { label: "Following", value: fmtCount(stats.following), type: "following" },
         ].map(s => (
-          <div key={s.label} style={{
+          <div key={s.label} onClick={() => openDrawer(s.type)} style={{
             background: "#141528",
             border: "1px solid rgba(245,200,66,0.15)",
             borderRadius: 12,
             padding: "12px 6px",
             textAlign: "center",
+            cursor: "pointer",
+            WebkitTapHighlightColor: "transparent",
+            transition: "border-color 0.15s",
+            active: { borderColor: "rgba(245,200,66,0.5)" },
           }}>
             {loading ? (
               <div style={{ height: 24, background: "rgba(255,255,255,0.08)", borderRadius: 6, marginBottom: 4 }} />
@@ -298,6 +344,85 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
           </div>
         </button>
       </div>
+      {/* ── Stat Drawer ─────────────────────────────────────── */}
+      {drawer && (
+        <div
+          onClick={() => setDrawer(null)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 400,
+            display: "flex", alignItems: "flex-end",
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: 480, margin: "0 auto",
+              background: "#141528",
+              borderRadius: "20px 20px 0 0",
+              maxHeight: "72dvh",
+              display: "flex", flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            {/* Drawer header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+              <span style={{ fontWeight: 800, fontSize: 16, color: "#fff" }}>
+                { drawer === "videos" ? "🎬 My Videos"
+                : drawer === "likes" ? "❤️ Videos I Liked"
+                : drawer === "followers" ? "👥 Followers"
+                : "👣 Following" }
+              </span>
+              <button onClick={() => setDrawer(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", fontSize: 22, lineHeight: 1, padding: 0 }}>×</button>
+            </div>
+
+            {/* Drawer body */}
+            <div style={{ overflowY: "auto", flex: 1, padding: "8px 0 20px" }}>
+              {drawerLoading ? (
+                <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "40px 0", fontSize: 14 }}>Loading…</div>
+              ) : drawerData.length === 0 ? (
+                <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "40px 0", fontSize: 14 }}>
+                  { drawer === "followers" ? "No followers yet" : drawer === "following" ? "Not following anyone yet" : drawer === "likes" ? "No liked videos yet" : "No videos yet" }
+                </div>
+              ) : (drawer === "followers" || drawer === "following") ? (
+                // People list
+                drawerData.map((r, i) => {
+                  const name = drawer === "followers"
+                    ? (r.follower_username || r.follower_id || "Unknown")
+                    : (r.following_username || r.following_id || "Unknown");
+                  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1a1b2e&color=F5C842&size=64&bold=true&format=png`;
+                  return (
+                    <div key={r.id || i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px" }}>
+                      <img src={r.follower_avatar || r.following_avatar || avatarFallback} alt={name}
+                        style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", background: "#0B0C1A" }}
+                        onError={e => { e.target.src = avatarFallback; }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>@{name}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                // Video grid (videos + liked videos)
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, padding: "0 2px" }}>
+                  {drawerData.map((r, i) => {
+                    const thumb = r.thumbnail_url || r.cover_image || `https://ui-avatars.com/api/?name=${i+1}&background=1a1b2e&color=F5C842&size=128`;
+                    const likeCount = r.likes_count || r.like_count || 0;
+                    return (
+                      <div key={r.id || i} style={{ position: "relative", aspectRatio: "9/16", overflow: "hidden", background: "#0B0C1A" }}>
+                        <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <div style={{ position: "absolute", bottom: 4, left: 4, fontSize: 11, fontWeight: 700, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.8)", display: "flex", alignItems: "center", gap: 2 }}>
+                          <span>❤️</span> {likeCount}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
