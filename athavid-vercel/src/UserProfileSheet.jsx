@@ -8,7 +8,7 @@ import { resolveMediaUrl } from "./utils.jsx";
 import ProfileVideoPlayer from "./ProfileVideoPlayer.jsx";
 import AvatarPickerModal from "./AvatarPickerModal.jsx";
 
-function UserProfileSheet({ userId, username, currentUser, onClose }) {
+function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = "Back" }) {
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -114,7 +114,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
           <div style={{ display:"flex", alignItems:"center", padding:"14px 16px 10px", position:"sticky", top:0, background:"#0f0f1a", zIndex:10, borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
             <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:"#F5C842", fontSize:28, lineHeight:1, padding:"0 12px 0 0", display:"flex", alignItems:"center", gap:6 }}>
               <span style={{ fontSize:22 }}>←</span>
-              <span style={{ fontSize:14, fontWeight:700, color:"#F5C842" }}>Back</span>
+              <span style={{ fontSize:14, fontWeight:700, color:"#F5C842" }}>{backLabel}</span>
             </button>
           </div>
 

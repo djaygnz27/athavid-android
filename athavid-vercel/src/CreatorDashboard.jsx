@@ -413,8 +413,9 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
                   return (
                     <div key={r.id || i}
                       onClick={() => {
+                        const savedDrawer = drawer;
                         setDrawer(null);
-                        if (onOpenProfile) onOpenProfile(userId, name);
+                        if (onOpenProfile) onOpenProfile(userId, name, () => setDrawer(savedDrawer));
                       }}
                       style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                       <img src={r.follower_avatar || r.following_avatar || r.avatar_url || avatarFallback} alt={name}

@@ -766,7 +766,7 @@ function App() {
           onOpenInbox={() => { setPrevTab("dashboard"); setActiveTab("inbox"); }}
           onOpenNotifications={() => { setPrevTab("dashboard"); setActiveTab("activity"); }}
           onGoToFeed={(tab) => { setFeedTab(tab); setPrevTab("dashboard"); setActiveTab("feed"); }}
-          onOpenProfile={(userId, username) => setProfileSheet({ userId, username })}
+          onOpenProfile={(userId, username, onBack) => setProfileSheet({ userId, username, backLabel: "Back", onBack: onBack || null })}
         />
       )}
       {activeTab === "dashboard" && !currentUser && (
@@ -857,7 +857,7 @@ function App() {
                   onView={(videoId) => { handleView(videoId); }}
                   onNeedAuth={() => setShowAuth(true)}
                   onDelete={(id) => setVideoList(prev => prev.filter(v => v.id !== id))}
-                  onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname })}
+                  onProfileOpen={(uid, uname) => setProfileSheet({ userId: uid, username: uname, backLabel: "Feed", onBack: null })}
                   followedUserIds={followedUserIds}
                   onFollowChange={handleFollowChange}
                   onShareCount={(videoId, newCount) => setVideoList(prev => prev.map(v => v.id === videoId ? {...v, shares_count: newCount} : v))}
@@ -1075,7 +1075,7 @@ function App() {
             setActiveTab(dest);
             // If opened from a profile sheet, reopen it
             if (inboxDMTarget?.fromProfile && inboxDMTarget?.sourceProfile) {
-              setProfileSheet(inboxDMTarget.sourceProfile);
+              setProfileSheet({ ...inboxDMTarget.sourceProfile, backLabel: "Back", onBack: null });
             }
             setInboxDMTarget(null);
           }}
@@ -1226,7 +1226,12 @@ function App() {
           userId={profileSheet.userId}
           username={profileSheet.username}
           currentUser={currentUser}
-          onClose={() => setProfileSheet(null)} />
+          onClose={() => {
+              const cb = profileSheet?.onBack;
+              setProfileSheet(null);
+              if (cb) cb();
+            }}
+            backLabel={profileSheet?.backLabel || "Back"} />
       )}
       {/* ── Followers Sheet (top-level so nothing clips it) ── */}
       {showFollowersList && (
@@ -1246,7 +1251,7 @@ function App() {
             ) : followersList.map((f, i) => (
               <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px",
                 borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}
-                onClick={() => { setShowFollowersList(false); setProfileSheet({ userId: f.follower_id, username: f.follower_username }); }}>
+                onClick={() => { setShowFollowersList(false); setProfileSheet({ userId: f.follower_id, username: f.follower_username, backLabel: "Followers", onBack: () => setShowFollowersList(true) }); }}>
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.follower_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
                   style={{ width:48, height:48, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.4)" }} />
                 <div>
@@ -1277,7 +1282,7 @@ function App() {
             ) : followingList.map((f, i) => (
               <div key={f.id||i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 20px",
                 borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer" }}
-                onClick={() => { setShowFollowingList(false); setProfileSheet({ userId: f.following_id, username: f.following_username }); }}>
+                onClick={() => { setShowFollowingList(false); setProfileSheet({ userId: f.following_id, username: f.following_username, backLabel: "Following", onBack: () => setShowFollowingList(true) }); }}>
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(f.following_username||'U')}&background=random&color=fff&size=80&bold=true&format=png`}
                   style={{ width:48, height:48, borderRadius:"50%", border:"2px solid rgba(245,200,66,0.4)" }} />
                 <div>
