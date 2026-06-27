@@ -30,7 +30,7 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
 
       // Top 3 posts by likes
       const sorted = [...videoArr].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
-      setTopPosts(sorted.slice(0, 9));
+      setTopPosts(sorted.slice(0, 12));
 
       // Followers count
       const followersRes = await request("GET", `/apps/${SACHI_APP_ID}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => []);
@@ -256,15 +256,16 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
             🔥 <span>Your Top Posts</span>
             <span style={{ marginLeft: "auto", fontSize: 11, color: "#555", fontWeight: 400 }}>{topPosts.length} videos</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
             {topPosts.map((v, i) => (
               <div key={v.id} style={{
                 position: "relative",
-                aspectRatio: "9/14",
-                borderRadius: 8,
+                aspectRatio: "9/13",
+                borderRadius: 7,
                 overflow: "hidden",
-                border: "1px solid rgba(245,200,66,0.15)",
+                border: i === 0 ? "2px solid #FFD700" : i === 1 ? "2px solid #C0C0C0" : i === 2 ? "2px solid #CD7F32" : "1.5px solid rgba(245,200,66,0.35)",
                 background: "#111",
+                boxShadow: i < 3 ? "0 0 6px rgba(245,200,66,0.25)" : "none",
               }}>
                 <img
                   src={v.thumbnail_url || v.cover_image || `https://ui-avatars.com/api/?name=${i+1}&background=1a1b2e&color=F5C842&size=128`}
@@ -272,15 +273,15 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 {/* Gradient overlay */}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)" }} />
-                {/* Like count */}
-                <div style={{ position: "absolute", bottom: 5, left: 5, display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: "#fff" }}>
-                  <span style={{ fontSize: 10 }}>❤️</span>
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)" }} />
+                {/* Like count bottom */}
+                <div style={{ position: "absolute", bottom: 4, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 10, fontWeight: 800, color: "#fff" }}>
+                  <span style={{ fontSize: 9 }}>❤️</span>
                   {fmtCount(v.likes_count || v.like_count || 0)}
                 </div>
-                {/* Rank badge for top 3 */}
+                {/* Rank badge top-left */}
                 {i < 3 && (
-                  <div style={{ position: "absolute", top: 4, right: 4, background: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : "#CD7F32", borderRadius: 99, width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#000" }}>
+                  <div style={{ position: "absolute", top: 3, left: 3, background: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : "#CD7F32", borderRadius: 99, width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 900, color: "#000" }}>
                     {i + 1}
                   </div>
                 )}
