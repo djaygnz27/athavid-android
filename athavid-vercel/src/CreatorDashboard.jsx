@@ -79,19 +79,20 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "16px 20px 8px",
+        padding: "calc(env(safe-area-inset-top, 0px) + 14px) 20px 10px",
         position: "sticky",
         top: 0,
         background: "#0B0C1A",
         zIndex: 10,
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/sachi-logo-new.png" alt="Sachi" style={{ width: 28, height: 28, borderRadius: 6 }} />
-          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: 0.5 }}>
-            <span style={{ color: "#fff" }}>Sachi</span>
-            <span style={{ color: "#F5C842" }}>Stream</span>
-          </span>
+          <img src="/sachi-logo-new.png" alt="Sachi" style={{ width: 32, height: 32, borderRadius: 0, objectFit: "contain", filter: "drop-shadow(0 0 6px rgba(232,64,12,0.5))" }} />
+          <div style={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+            <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Sachi</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#F5C842", lineHeight: 1, marginBottom: 2 }}>™</span>
+          </div>
         </div>
         {/* Notification + Inbox icons */}
         <div style={{ display: "flex", gap: 16 }}>
