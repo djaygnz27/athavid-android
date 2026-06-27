@@ -139,7 +139,10 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
     <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:100, display:"flex", flexDirection:"column" }}>
       <div style={{ padding:"16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 16px)", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(14,14,28,0.98)", backdropFilter:"blur(20px)" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>✉️ Inbox</div>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <button onClick={onClose} style={{ background:"none", border:"none", color:"#F5C842", cursor:"pointer", fontSize:22, padding:0, lineHeight:1 }}>←</button>
+            <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>✉️ Inbox</div>
+          </div>
           <button onClick={() => { setShowNewDM(true); setUserSearch(""); setUserResults([]); }}
             style={{ background:"linear-gradient(135deg,#6c63ff,#a855f7)", border:"none", borderRadius:20, padding:"7px 14px", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
             ✏️ New

@@ -732,8 +732,8 @@ function App() {
           currentUser={currentUser}
           unreadCount={unreadCount}
           notifCount={notifCount}
-          onOpenInbox={() => setActiveTab("inbox")}
-          onOpenNotifications={() => setActiveTab("activity")}
+          onOpenInbox={() => { setPrevTab("dashboard"); setActiveTab("inbox"); }}
+          onOpenNotifications={() => { setPrevTab("dashboard"); setActiveTab("activity"); }}
           onGoToFeed={(tab) => { setFeedTab(tab); setPrevTab("dashboard"); setActiveTab("feed"); }}
         />
       )}
@@ -1037,7 +1037,7 @@ function App() {
       {activeTab === "inbox" && currentUser && (
         <InboxPanel
           currentUser={currentUser}
-          onClose={() => setActiveTab("feed")}
+          onClose={() => { const dest = prevTab || "feed"; setPrevTab(null); setActiveTab(dest); }}
           initialDMTarget={inboxDMTarget}
           onOpen={() => setInboxDMTarget(null)}
           fromProfile={inboxDMTarget?.fromProfile || false}
