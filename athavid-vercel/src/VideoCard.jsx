@@ -412,7 +412,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       if (isFollowing) {
         // Need to find the record to delete it
         try {
-          const res = await follows.getFollowing(currentUser.id);
+          const res = await follows.getFollowing(currentUser.id, currentUser.username || currentUser.email?.split("@")[0]);
           const items = res.items || res || [];
           const rec = items.find(r => r.following_id === targetUserId);
           if (rec) await follows.unfollow(rec.id);

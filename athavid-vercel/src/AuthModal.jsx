@@ -35,19 +35,31 @@ const FUNCTIONS_URL = "";  // local Vercel API routes
 // ─── Helper: lookup existing Sachi profile by email ──────────────────────────
 async function lookupSachiUser(email) {
   try {
-    // Try with session token first (bypasses RLS)
+    const headers = { "Content-Type": "application/json" };
+
+    // PRIMARY: query SachiUser (the real Base44 auth table) — this is the canonical source
+    try {
+      const res = await fetch(
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
+        { headers }
+      );
+      const data = await res.json();
+      const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
+      const found = items.find(u => u.email === email);
+      if (found) return found;
+    } catch {}
+
+    // FALLBACK: query AthaVidUser (profile table) for legacy records
     const existingSession = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
     const sessionObj = existingSession ? JSON.parse(existingSession) : null;
-    const headers = { "Content-Type": "application/json" };
     if (sessionObj?.token) headers["Authorization"] = `Bearer ${sessionObj.token}`;
-
-    const res = await fetch(
+    const res2 = await fetch(
       `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers }
     );
-    const data = await res.json();
-    const items = Array.isArray(data) ? data : (data?.items || []);
-    return items.find(u => u.email === email) || null;
+    const data2 = await res2.json();
+    const items2 = Array.isArray(data2) ? data2 : (data2?.items || data2?.records || []);
+    return items2.find(u => u.email === email) || null;
   } catch {
     return null;
   }
@@ -58,7 +70,9 @@ function buildSessionUser(found, payload) {
   return {
     id: found.id,
     email: found.email,
-    full_name: found.display_name || payload?.name || found.email,
+    // SachiUser uses full_name; AthaVidUser uses display_name — handle both
+    full_name: found.full_name || found.display_name || payload?.name || found.email,
+    display_name: found.display_name || found.full_name || payload?.name || "",
     avatar_url: found.avatar_url || payload?.picture || "",
     username: found.username || found.email.split("@")[0],
     _google: true,

@@ -7003,303 +7003,428 @@ var m = reactDomExports;
   client.createRoot = m.createRoot;
   client.hydrateRoot = m.hydrateRoot;
 }
-const PETALS = Array.from({ length: 22 }, (_, i) => ({
-  id: i,
-  left: `${3 + Math.random() * 94}%`,
-  delay: `${Math.random() * 8}s`,
-  duration: `${7 + Math.random() * 6}s`,
-  size: 6 + Math.random() * 10,
-  rotation: Math.random() * 360,
-  drift: (Math.random() - 0.5) * 40
-}));
-const STARS = Array.from({ length: 55 }, (_, i) => ({
+const SPLASH_LOGOS = [
+  { src: "/sachi-logo-new.png", label: "Classic", glow: "#e8400c", ring: "#c0007a" },
+  { src: "/sachi-logo-new.png", label: "Warm", glow: "#ff8c00", ring: "#d4006a" },
+  { src: "/sachi-logo-new.png", label: "Vivid", glow: "#cc0080", ring: "#e84000" }
+];
+function getSplashLogoIndex() {
+  const daysSinceEpoch = Math.floor(Date.now() / (1e3 * 60 * 60 * 24));
+  return Math.floor(daysSinceEpoch / 3) % SPLASH_LOGOS.length;
+}
+const STARS = Array.from({ length: 60 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
   y: Math.random() * 100,
-  size: 0.8 + Math.random() * 1.8,
-  dur: 1.8 + Math.random() * 3.5,
-  delay: Math.random() * 5
+  size: 0.8 + Math.random() * 2,
+  dur: 1.5 + Math.random() * 3,
+  delay: Math.random() * 6
 }));
-function Landing({ onEnter }) {
+const PETALS = Array.from({ length: 18 }, (_, i) => ({
+  id: i,
+  left: (3 + Math.random() * 94).toFixed(1) + "%",
+  delay: (Math.random() * 8).toFixed(2) + "s",
+  dur: (7 + Math.random() * 5).toFixed(2) + "s",
+  size: 5 + Math.random() * 9,
+  drift: ((Math.random() - 0.5) * 45).toFixed(0)
+}));
+function Landing({ onEnter, prefetchDone = false }) {
+  const startIdx = getSplashLogoIndex();
+  const [displayIdx, setDisplayIdx] = reactExports.useState(startIdx);
   const [phase, setPhase] = reactExports.useState("idle");
   const [leaving, setLeaving] = reactExports.useState(false);
+  const [logoVisible, setLogoVisible] = reactExports.useState(true);
+  const [glowPulse, setGlowPulse] = reactExports.useState(false);
+  const [burstParticles, setBurstParticles] = reactExports.useState([]);
+  const [lightningOn, setLightningOn] = reactExports.useState(false);
+  const leavingRef = reactExports.useRef(false);
+  const currentLogo = SPLASH_LOGOS[displayIdx];
+  const handleEnter = reactExports.useCallback(() => {
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    setLeaving(true);
+    setTimeout(() => onEnter(), 500);
+  }, [onEnter]);
   reactExports.useEffect(() => {
     const t1 = setTimeout(() => setPhase("in"), 60);
-    const t2 = setTimeout(() => handleEnter(), 8e3);
+    const t2 = setTimeout(() => handleEnter(), 7e3);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
   }, []);
-  const handleEnter = () => {
-    if (leaving) return;
-    setLeaving(true);
-    setTimeout(() => onEnter(), 700);
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: handleEnter, style: {
-    position: "fixed",
-    inset: 0,
-    zIndex: 9999,
-    background: "radial-gradient(ellipse at 50% 20%, #3b1f6e 0%, #1e0d45 35%, #120830 65%, #0a0518 100%)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    cursor: "pointer",
-    opacity: leaving ? 0 : 1,
-    transition: "opacity 0.7s cubic-bezier(0.4,0,0.2,1)"
-  }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
-        @keyframes petalFall {
-          0%   { transform: translateY(-40px) rotate(0deg) translateX(0); opacity:0; }
-          6%   { opacity:0.7; }
-          90%  { opacity:0.3; }
-          100% { transform: translateY(108vh) rotate(720deg) translateX(var(--drift)); opacity:0; }
-        }
-        @keyframes twinkle {
-          0%,100%{ opacity:0.08; transform:scale(0.8); }
-          50%    { opacity:0.7;  transform:scale(1.3); }
-        }
-        @keyframes logoBloom {
-          0%   { transform:scale(0.1) rotate(-30deg); opacity:0; filter:drop-shadow(0 0 0 #F5C842); }
-          50%  { transform:scale(1.2) rotate(5deg);  opacity:1; filter:drop-shadow(0 0 60px rgba(245,200,66,1)); }
-          70%  { transform:scale(0.93) rotate(-2deg); }
-          85%  { transform:scale(1.04); }
-          100% { transform:scale(1) rotate(0deg); opacity:1; filter:drop-shadow(0 0 28px rgba(245,200,66,0.6)); }
-        }
-        @keyframes goldPulse {
-          0%,100%{ filter:drop-shadow(0 0 20px rgba(245,200,66,0.35)); }
-          50%    { filter:drop-shadow(0 0 55px rgba(245,200,66,0.75)); }
-        }
-        @keyframes nameIn {
-          0%   { opacity:0; transform:translateY(30px) scaleX(0.85); letter-spacing:18px; }
-          100% { opacity:1; transform:translateY(0)    scaleX(1);    letter-spacing:-2px; }
-        }
-        @keyframes shimmer {
-          0%   { background-position:-400% center; }
-          100% { background-position:400% center; }
-        }
-        @keyframes fadeSlideUp {
-          0%   { opacity:0; transform:translateY(18px); }
-          100% { opacity:1; transform:translateY(0); }
-        }
-        @keyframes ringPulse {
-          0%   { transform:scale(0.7); opacity:0.6; }
-          100% { transform:scale(2.2); opacity:0; }
-        }
-        @keyframes dotBlink {
-          0%,100%{ opacity:0.2; transform:scale(0.75); }
-          50%    { opacity:1;   transform:scale(1.3); }
-        }
-        @keyframes purpleGlow {
-          0%,100%{ opacity:0.4; transform:scale(1); }
-          50%    { opacity:0.7; transform:scale(1.08); }
-        }
-        .logo-bloom {
-          animation: logoBloom 1.2s cubic-bezier(0.34,1.56,0.64,1) 0.1s both,
-                     goldPulse 3.5s ease-in-out 1.5s infinite;
-        }
-        .name-in    { animation: nameIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.7s both; }
-        .f1 { animation: fadeSlideUp 0.7s ease 1.15s both; }
-        .f2 { animation: fadeSlideUp 0.7s ease 1.45s both; }
-        .f3 { animation: fadeSlideUp 0.7s ease 1.75s both; }
-        .f4 { animation: fadeSlideUp 0.7s ease 2.05s both; }
-        .f5 { animation: fadeSlideUp 0.7s ease 2.35s both; }
-        .ring-pulse {
-          position:absolute; border-radius:50%;
-          border:1.5px solid rgba(245,200,66,0.35);
-          animation: ringPulse 2.2s ease-out 1.3s infinite;
-        }
-      ` }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      top: 20,
-      right: 20,
-      zIndex: 20
-    }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "button",
-      {
-        onClick: (e) => {
-          e.stopPropagation();
-          window.location.href = "/apply";
-        },
-        style: {
-          background: "linear-gradient(135deg,#F5C842 0%,#F5A623 100%)",
-          color: "#1a0f00",
-          border: "none",
-          borderRadius: 50,
-          padding: "10px 20px",
-          fontWeight: 800,
-          fontSize: 13,
-          cursor: "pointer",
-          letterSpacing: 0.3,
-          boxShadow: "0 4px 20px rgba(245,168,66,0.45)",
-          fontFamily: "inherit",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          whiteSpace: "nowrap"
-        },
-        children: "🌸 Apply — 36/50 Spots Left"
-      }
-    ) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      width: 500,
-      height: 500,
-      borderRadius: "50%",
-      background: "radial-gradient(circle, rgba(120,60,200,0.18) 0%, transparent 70%)",
-      top: "-80px",
-      left: "50%",
-      transform: "translateX(-50%)",
-      animation: "purpleGlow 5s ease-in-out infinite",
-      pointerEvents: "none"
-    } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      width: 350,
-      height: 350,
-      borderRadius: "50%",
-      background: "radial-gradient(circle, rgba(160,40,220,0.12) 0%, transparent 70%)",
-      bottom: "10%",
-      right: "5%",
-      animation: "purpleGlow 6s ease-in-out 1.5s infinite",
-      pointerEvents: "none"
-    } }),
-    STARS.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      borderRadius: "50%",
-      background: "#fff",
-      width: s.size,
-      height: s.size,
-      left: `${s.x}%`,
-      top: `${s.y}%`,
-      animation: `twinkle ${s.dur}s ease-in-out ${s.delay}s infinite`,
-      pointerEvents: "none"
-    } }, s.id)),
-    PETALS.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      top: -30,
-      left: p2.left,
+  reactExports.useEffect(() => {
+    if (!prefetchDone) return;
+    const t2 = setTimeout(() => handleEnter(), 4e3);
+    return () => clearTimeout(t2);
+  }, [prefetchDone]);
+  reactExports.useEffect(() => {
+    const iv = setInterval(() => {
+      setGlowPulse(true);
+      setTimeout(() => setGlowPulse(false), 700);
+    }, 2800);
+    return () => clearInterval(iv);
+  }, []);
+  reactExports.useEffect(() => {
+    let timeout;
+    const fire = () => {
+      setLightningOn(true);
+      setTimeout(() => setLightningOn(false), 160);
+      timeout = setTimeout(fire, 4e3 + Math.random() * 2500);
+    };
+    timeout = setTimeout(fire, 3e3 + Math.random() * 2e3);
+    return () => clearTimeout(timeout);
+  }, []);
+  reactExports.useEffect(() => {
+    const iv = setInterval(() => {
+      setLogoVisible(false);
+      setTimeout(() => {
+        const nextIdx = (displayIdx + 1) % SPLASH_LOGOS.length;
+        setDisplayIdx(nextIdx);
+        const pts = Array.from({ length: 16 }, (_, i) => {
+          const angle = i / 16 * 360;
+          const dist = 60 + Math.random() * 55;
+          return {
+            id: i,
+            tx: Math.cos(angle * Math.PI / 180) * dist,
+            ty: Math.sin(angle * Math.PI / 180) * dist
+          };
+        });
+        setBurstParticles(pts);
+        setLightningOn(true);
+        setTimeout(() => setLightningOn(false), 160);
+        setTimeout(() => setBurstParticles([]), 800);
+      }, 350);
+      setTimeout(() => setLogoVisible(true), 400);
+    }, 3e3);
+    return () => clearInterval(iv);
+  }, [displayIdx]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    lightningOn && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 1e4,
       pointerEvents: "none",
-      "--drift": `${p2.drift}px`,
-      animation: `petalFall ${p2.duration} ${p2.delay} ease-in infinite`
-    }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      width: p2.size,
-      height: p2.size,
-      background: "radial-gradient(circle at 35% 30%, #e0aaff, rgba(180,80,220,0.4))",
-      borderRadius: "50% 12% 50% 12%",
-      transform: `rotate(${p2.rotation}deg)`,
-      boxShadow: `0 0 ${p2.size / 2}px rgba(180,100,255,0.35)`
-    } }) }, p2.id)),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      width: 700,
-      height: 700,
-      borderRadius: "50%",
-      background: "radial-gradient(circle, rgba(245,200,66,0.05) 0%, transparent 65%)",
-      pointerEvents: "none"
+      background: `radial-gradient(ellipse at 50% 40%, ${currentLogo.glow}28 0%, transparent 65%)`,
+      animation: "sachiFlash 0.16s ease-out forwards"
     } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10, padding: "0 28px", textAlign: "center", width: "100%", maxWidth: 400 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", marginBottom: 26 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ring-pulse", style: { width: 130, height: 130, top: "-10px", left: "-10px" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "ring-pulse", style: { width: 130, height: 130, top: "-10px", left: "-10px", animationDelay: "3.3s" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "img",
-          {
-            className: "logo-bloom",
-            src: "/sachi-icon-v4.png",
-            alt: "Sachi",
-            style: {
-              width: 110,
-              height: 110,
-              borderRadius: 30,
-              display: "block",
-              animation: "logoBloom 1.2s cubic-bezier(0.34,1.56,0.64,1) 0.1s both, goldPulse 3.5s ease-in-out 1.5s infinite"
-            }
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        onClick: handleEnter,
+        style: {
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          background: "radial-gradient(ellipse at 50% 18%, #3b1f6e 0%, #1e0d45 35%, #120830 65%, #0a0518 100%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          cursor: "pointer",
+          opacity: leaving ? 0 : phase === "in" ? 1 : 0,
+          transition: "opacity 0.6s cubic-bezier(0.4,0,0.2,1)"
+        },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
+          @keyframes twinkle {
+            0%,100% { opacity:0.12; transform:scale(1); }
+            50%      { opacity:0.95; transform:scale(1.5); }
           }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "name-in", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        fontSize: 72,
-        fontWeight: 900,
-        lineHeight: 1,
-        background: "linear-gradient(135deg,#FFE070 0%,#F5C842 40%,#FFB020 70%,#FFE090 100%)",
-        backgroundSize: "400% auto",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        animation: "shimmer 4.5s linear 1.5s infinite",
-        fontFamily: "system-ui, -apple-system, sans-serif"
-      }, children: "sachi" }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f1", style: { fontSize: 9, color: "rgba(245,200,66,0.45)", letterSpacing: 5, fontWeight: 700, marginTop: 3, textTransform: "uppercase" }, children: "™" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f2", style: {
-        marginTop: 16,
-        fontSize: 24,
-        letterSpacing: 3.5,
-        textTransform: "uppercase",
-        fontWeight: 600,
-        color: "rgba(220,180,255,0.6)"
-      }, children: "Sachi means Truth" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f3", style: {
-        marginTop: 20,
-        width: 60,
-        height: 1.5,
-        background: "linear-gradient(90deg,transparent,rgba(245,200,66,0.6),transparent)"
-      } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f3", style: {
-        marginTop: 16,
-        fontSize: 26,
-        lineHeight: 1.6,
-        color: "rgba(220,180,255,0.7)",
-        maxWidth: 320,
-        fontWeight: 600,
-        textAlign: "center"
-      }, children: "Real moments. Real people. No filters." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f4", style: {
-        marginTop: 20,
-        fontSize: 18,
-        lineHeight: 1.8,
-        color: "#F5C842",
-        maxWidth: 340,
-        letterSpacing: 0.3,
-        fontWeight: 700,
-        textAlign: "center"
-      }, children: [
-        "We're looking for ",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "50 Founding Creators" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-        "to shape Sachi and help test",
-        /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-        "before we go LIVE."
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: {
-        marginTop: 14,
-        fontSize: 22,
-        lineHeight: 1.6,
-        color: "rgba(220,180,255,0.9)",
-        maxWidth: 300,
-        letterSpacing: 0.3,
-        fontWeight: 600,
-        textAlign: "center"
-      }, children: "Tap top right to apply!" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f4", style: { marginTop: 36, display: "flex", gap: 9, alignItems: "center" }, children: [0, 1, 2].map((i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        width: 7,
-        height: 7,
-        borderRadius: "50%",
-        background: `rgba(245,200,66,${0.6 - i * 0.1})`,
-        animation: `dotBlink 1.3s ease-in-out ${i * 0.28}s infinite`
-      } }, i)) })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "f5", style: { position: "absolute", bottom: 0, left: 0, right: 0, height: 3 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      height: "100%",
-      background: "linear-gradient(90deg,#7b2ff7,#F5C842,#FFB020)",
-      animation: "shimmer 5.2s linear forwards",
-      backgroundSize: "200% 100%"
-    } }) })
+          @keyframes petalFall {
+            0%   { transform:translateY(-30px) rotate(0deg) translateX(0); opacity:0; }
+            6%   { opacity:0.55; }
+            90%  { opacity:0.15; }
+            100% { transform:translateY(110vh) rotate(720deg) translateX(var(--pdrift)); opacity:0; }
+          }
+          @keyframes scanLine {
+            0%   { top:-4px; opacity:0; }
+            8%   { opacity:1; }
+            92%  { opacity:1; }
+            100% { top:102%; opacity:0; }
+          }
+          @keyframes sachiFlash {
+            0%   { opacity:1; }
+            100% { opacity:0; }
+          }
+          @keyframes ringCW {
+            0%   { transform:rotate(0deg); }
+            100% { transform:rotate(360deg); }
+          }
+          @keyframes ringCCW {
+            0%   { transform:rotate(0deg); }
+            100% { transform:rotate(-360deg); }
+          }
+          @keyframes glowIdlePulse {
+            0%,100% { opacity:0.7; }
+            50%     { opacity:1; }
+          }
+          @keyframes textBreath {
+            0%,100% { opacity:0.72; letter-spacing:0.22em; }
+            50%     { opacity:1;   letter-spacing:0.28em; }
+          }
+          @keyframes shimmerSlide {
+            0%   { background-position:-320px 0; }
+            100% { background-position:320px 0; }
+          }
+          @keyframes dotSlide {
+            0%  { transform:scaleX(1); }
+            50% { transform:scaleX(1.15); }
+            100%{ transform:scaleX(1); }
+          }
+          @keyframes particleFly {
+            0%   { transform:translate(-50%,-50%) scale(1.1); opacity:1; }
+            100% { transform:translate(calc(-50% + var(--ptx)), calc(-50% + var(--pty))) scale(0); opacity:0; }
+          }
+          @keyframes logoEntrance {
+            0%   { opacity:0; transform:scale(0.85) translateY(10px); filter:blur(6px); }
+            100% { opacity:1; transform:scale(1) translateY(0); filter:blur(0); }
+          }
+          @keyframes loadingBlink {
+            0%,100% { opacity:0.35; }
+            50%     { opacity:0.9; }
+          }
+        ` }),
+          STARS.map((s) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            position: "absolute",
+            left: s.x + "%",
+            top: s.y + "%",
+            width: s.size,
+            height: s.size,
+            borderRadius: "50%",
+            background: "#fff",
+            animation: `twinkle ${s.dur}s ease-in-out ${s.delay}s infinite`,
+            pointerEvents: "none"
+          } }, s.id)),
+          PETALS.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            position: "absolute",
+            left: p2.left,
+            top: "-10px",
+            width: p2.size,
+            height: p2.size,
+            borderRadius: "60% 0 60% 0",
+            background: `linear-gradient(135deg, ${currentLogo.glow}88, ${currentLogo.ring}55)`,
+            animation: `petalFall ${p2.dur} ${p2.delay} ease-in infinite`,
+            "--pdrift": p2.drift + "px",
+            pointerEvents: "none"
+          } }, p2.id)),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            position: "relative",
+            width: 280,
+            height: 280,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: "logoEntrance 0.75s cubic-bezier(0.34,1.56,0.64,1) forwards"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: 280, height: 280, style: {
+              position: "absolute",
+              inset: 0,
+              animation: "ringCW 10s linear infinite",
+              pointerEvents: "none"
+            }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "circle",
+              {
+                cx: 140,
+                cy: 140,
+                r: 132,
+                fill: "none",
+                stroke: currentLogo.ring,
+                strokeWidth: 1.5,
+                strokeDasharray: "7 16",
+                opacity: 0.45
+              }
+            ) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: 280, height: 280, style: {
+              position: "absolute",
+              inset: 0,
+              animation: "ringCCW 6s linear infinite",
+              pointerEvents: "none"
+            }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "circle",
+              {
+                cx: 140,
+                cy: 140,
+                r: 120,
+                fill: "none",
+                stroke: currentLogo.glow,
+                strokeWidth: 1,
+                strokeDasharray: "3 22",
+                opacity: 0.3
+              }
+            ) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              position: "relative",
+              width: 220,
+              height: 220,
+              borderRadius: 0,
+              overflow: "visible",
+              background: "transparent",
+              border: "none",
+              opacity: logoVisible ? 1 : 0,
+              filter: glowPulse ? `drop-shadow(0 0 32px ${currentLogo.glow}) drop-shadow(0 0 60px ${currentLogo.ring}88)` : `drop-shadow(0 0 18px ${currentLogo.glow}88) drop-shadow(0 0 36px ${currentLogo.ring}44)`,
+              transition: "opacity 0.35s ease, filter 0.6s ease"
+            }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: currentLogo.src,
+                alt: "Sachi",
+                style: { width: "100%", height: "100%", objectFit: "contain", display: "block" },
+                onError: (e) => {
+                  e.target.style.display = "none";
+                }
+              }
+            ) }),
+            [
+              { top: 28, left: 28 },
+              { top: 28, right: 28 },
+              { bottom: 28, left: 28 },
+              { bottom: 28, right: 28 }
+            ].map((pos, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              position: "absolute",
+              ...pos,
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: currentLogo.glow,
+              boxShadow: `0 0 10px ${currentLogo.glow}, 0 0 4px #fff`,
+              animation: `twinkle ${1.1 + i * 0.4}s ease-in-out ${i * 0.25}s infinite`,
+              pointerEvents: "none"
+            } }, i)),
+            burstParticles.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: currentLogo.glow,
+              boxShadow: `0 0 8px ${currentLogo.glow}`,
+              animation: "particleFly 0.75s ease-out forwards",
+              "--ptx": p2.tx + "px",
+              "--pty": p2.ty + "px",
+              pointerEvents: "none"
+            } }, p2.id))
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            marginTop: 20,
+            display: "flex",
+            alignItems: "baseline",
+            gap: 10,
+            lineHeight: 1
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+              fontSize: 46,
+              fontWeight: 800,
+              letterSpacing: "0.04em",
+              color: "#ffffff",
+              fontFamily: "'Georgia', serif",
+              textShadow: `0 0 28px ${currentLogo.glow}99, 0 2px 4px #000c`
+            }, children: "Sachi" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+              fontSize: 28,
+              fontWeight: 400,
+              letterSpacing: "0.12em",
+              color: currentLogo.glow,
+              fontFamily: "system-ui, sans-serif",
+              textShadow: `0 0 18px ${currentLogo.glow}88`
+            }, children: "Stream" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            marginTop: 6,
+            fontSize: 11,
+            letterSpacing: "0.22em",
+            color: currentLogo.glow,
+            textTransform: "uppercase",
+            animation: "textBreath 3s ease-in-out infinite",
+            fontFamily: "system-ui, sans-serif",
+            textShadow: `0 0 10px ${currentLogo.glow}88`
+          }, children: "SACHI MEANS TRUTH" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            width: 40,
+            height: 1,
+            background: `linear-gradient(90deg, transparent, ${currentLogo.glow}, transparent)`,
+            margin: "14px auto 0",
+            boxShadow: `0 0 8px ${currentLogo.glow}`
+          } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            marginTop: 16,
+            textAlign: "center",
+            color: "#c8bde8",
+            fontSize: 15,
+            lineHeight: 1.65,
+            maxWidth: 280,
+            fontFamily: "system-ui, sans-serif"
+          }, children: [
+            "Real moments. Real people.",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#ffffff", fontWeight: 600 }, children: "No filters." })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            marginTop: 18,
+            textAlign: "center",
+            color: currentLogo.glow,
+            fontSize: 13,
+            fontWeight: 600,
+            maxWidth: 270,
+            fontFamily: "system-ui, sans-serif",
+            textShadow: `0 0 12px ${currentLogo.glow}66`,
+            lineHeight: 1.6
+          }, children: [
+            "We're looking for 50 Founding Creators",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#9d8ec4", fontWeight: 400, fontSize: 12.5 }, children: "to shape Sachi and help test before we go LIVE." })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            marginTop: 14,
+            padding: "7px 20px",
+            borderRadius: 20,
+            border: `1px solid ${currentLogo.glow}55`,
+            background: `${currentLogo.glow}0f`,
+            color: currentLogo.glow,
+            fontSize: 11.5,
+            letterSpacing: "0.14em",
+            fontFamily: "system-ui, sans-serif",
+            boxShadow: `0 0 18px ${currentLogo.glow}22`,
+            animation: "glowIdlePulse 2.5s ease-in-out infinite"
+          }, children: "TAP ANYWHERE TO ENTER" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, marginTop: 22 }, children: SPLASH_LOGOS.map((l2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            width: i === displayIdx ? 22 : 7,
+            height: 7,
+            borderRadius: 4,
+            background: i === displayIdx ? currentLogo.glow : "#251d3a",
+            boxShadow: i === displayIdx ? `0 0 10px ${currentLogo.glow}` : "none",
+            transition: "all 0.35s ease"
+          } }, i)) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            marginTop: 26,
+            width: 160,
+            height: 3,
+            borderRadius: 2,
+            background: "#12082a",
+            overflow: "hidden"
+          }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            height: "100%",
+            borderRadius: 2,
+            background: `linear-gradient(90deg, transparent 0%, ${currentLogo.glow} 40%, #ffffffcc 50%, ${currentLogo.glow} 60%, transparent 100%)`,
+            backgroundSize: "320px 100%",
+            animation: "shimmerSlide 1.7s linear infinite"
+          } }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            marginTop: 10,
+            color: "#3d2d55",
+            fontSize: 11,
+            letterSpacing: "0.18em",
+            fontFamily: "system-ui, sans-serif",
+            animation: "loadingBlink 2.2s ease-in-out infinite"
+          }, children: "LOADING SACHI…" })
+        ]
+      }
+    )
   ] });
 }
-const APP_ID$4 = "69e79122bcc8fb5a04cfb834";
+const APP_ID$5 = "69e79122bcc8fb5a04cfb834";
 const BASE_URL$3 = "https://sachi-04cfb834.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
@@ -7334,34 +7459,34 @@ async function request$1(method, path, body) {
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/login`, { email, password });
+    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `/apps/${APP_ID$5}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request$1("POST", `/apps/${APP_ID$4}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/resend-otp`, { email });
+    return request$1("POST", `/apps/${APP_ID$5}/auth/resend-otp`, { email });
   },
   getUser() {
     const u2 = localStorage.getItem("sachi_user");
     return u2 ? JSON.parse(u2) : null;
   },
   async forgotPassword(email) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password-request`, { email });
+    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request$1("POST", `/apps/${APP_ID$4}/auth/reset-password`, {
+    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -7371,21 +7496,21 @@ const auth = {
   }
 };
 const videos = {
-  async list(limit = 200, skip = 0) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+  async list(limit = 30, skip = 0) {
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiVideo`, data);
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen = /* @__PURE__ */ new Set();
@@ -7397,8 +7522,8 @@ const videos = {
   },
   async byUser(userId) {
     const [res1, res2] = await Promise.all([
-      request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
-      request$1("GET", `/apps/${APP_ID$4}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => [])
+      request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
+      request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => [])
     ]);
     const items1 = Array.isArray(res1) ? res1 : (res1 == null ? void 0 : res1.items) || [];
     const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || [];
@@ -7411,46 +7536,106 @@ const videos = {
     return merged;
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=200`);
+    const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=500`);
+    return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || (res == null ? void 0 : res.data) || [];
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiComment`, data);
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`);
   }
 };
-async function uploadFile(file) {
-  const token = getToken();
-  const form = new FormData();
-  form.append("file", file);
-  const headers = {};
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(
-    `https://sachi-04cfb834.base44.app/api/apps/69e79122bcc8fb5a04cfb834/integration-endpoints/Core/UploadFile`,
-    { method: "POST", headers, body: form }
-  );
-  const text = await res.text();
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch (_) {
-    throw new Error(`Upload error ${res.status}: ${text.slice(0, 100)}`);
+async function uploadFile(file, onProgress) {
+  const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(file.name);
+  const credRes = await fetch("/api/get-upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: isVideo ? "video" : "image",
+      filename: file.name,
+      filesize: file.size,
+      filetype: file.type
+    })
+  });
+  if (!credRes.ok) {
+    const err = await credRes.json().catch(() => ({}));
+    throw new Error(err.error || `Upload credential error ${credRes.status}`);
   }
-  if (!res.ok || data.error) throw new Error(data.error || data.message || "Upload failed");
-  return data.file_url;
+  const creds = await credRes.json();
+  if (isVideo) {
+    await tusUpload(file, creds.upload_url, onProgress);
+    let media_url = null;
+    try {
+      const dlRes = await fetch("/api/trigger-mp4", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stream_uid: creds.stream_uid })
+      });
+      if (dlRes.ok) {
+        const dlData = await dlRes.json();
+        media_url = dlData.media_url || null;
+      }
+    } catch (e) {
+      console.warn("trigger-mp4 failed (non-fatal):", e.message);
+    }
+    return {
+      file_url: creds.playback_url,
+      thumbnail_url: creds.thumbnail_url,
+      stream_uid: creds.stream_uid,
+      media_url
+      // direct MP4 URL — set immediately if CF is fast, else null (backfill handles it)
+    };
+  } else {
+    await r2Upload(file, creds.upload_url, onProgress);
+    return { file_url: creds.public_url };
+  }
+}
+async function tusUpload(file, uploadUrl, onProgress) {
+  const CHUNK = 50 * 1024 * 1024;
+  let offset = 0;
+  while (offset < file.size) {
+    const chunk = file.slice(offset, offset + CHUNK);
+    const res = await fetch(uploadUrl, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/offset+octet-stream",
+        "Upload-Offset": String(offset),
+        "Tus-Resumable": "1.0.0"
+      },
+      body: chunk
+    });
+    if (!res.ok) throw new Error(`TUS upload failed at offset ${offset}: ${res.status}`);
+    offset += chunk.size;
+    if (onProgress) onProgress(Math.round(offset / file.size * 100));
+  }
+}
+async function r2Upload(file, uploadUrl, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100));
+      };
+    }
+    xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error(`R2 upload failed: ${xhr.status}`));
+    xhr.onerror = () => reject(new Error("R2 upload network error"));
+    xhr.send(file);
+  });
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/Follow`, {
+    return request$1("POST", `/apps/${APP_ID$5}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -7458,52 +7643,51 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/Follow/${recordId}`);
   },
-  async getFollowing(follower_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?follower_id=${follower_id}&limit=500`);
+  async getFollowing(follower_id, follower_username) {
+    const [res1, res2] = await Promise.all([
+      request$1("GET", `/apps/${APP_ID$5}/entities/Follow?follower_id=${follower_id}&limit=500`).catch(() => []),
+      follower_username ? request$1("GET", `/apps/${APP_ID$5}/entities/Follow?follower_username=${encodeURIComponent(follower_username)}&limit=500`).catch(() => []) : Promise.resolve([])
+    ]);
+    const arr1 = Array.isArray(res1) ? res1 : (res1 == null ? void 0 : res1.items) || (res1 == null ? void 0 : res1.records) || [];
+    const arr2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || (res2 == null ? void 0 : res2.records) || [];
+    const seen = /* @__PURE__ */ new Map();
+    for (const r2 of [...arr1, ...arr2]) {
+      if (r2.following_id && !seen.has(r2.following_id)) seen.set(r2.following_id, r2);
+    }
+    return [...seen.values()];
   },
   async getFollowers(following_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/Follow?following_id=${following_id}&limit=500`);
-  }
-};
-const reports = {
-  async create(data) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiReport`, data);
-  },
-  async list() {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiReport?sort=-created_date&limit=200`);
-  },
-  async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiReport/${id2}`, data);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request$1("GET", `/apps/${APP_ID$4}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -7519,13 +7703,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request$1("PUT", `/apps/${APP_ID$4}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `/apps/${APP_ID$5}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request$1("POST", `/apps/${APP_ID$4}/entities/UserInterest`, {
+        await request$1("POST", `/apps/${APP_ID$5}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -7573,7 +7757,7 @@ const interests = {
 };
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiLike`, {
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
@@ -7582,20 +7766,26 @@ const likes = {
     });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$4}/entities/SachiLike/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiLike/${id2}`);
   },
-  async checkUserLiked(video_id, user_id) {
+  async checkUserLiked(video_id, user_id, username) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
-      return items.length > 0 ? items[0] : null;
+      if (items.length > 0) return items[0];
+      if (username) {
+        const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(username)}&limit=5`);
+        const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || (res2 == null ? void 0 : res2.records) || [];
+        if (items2.length > 0) return items2[0];
+      }
+      return null;
     } catch {
       return null;
     }
   },
   async getByVideo(video_id) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiLike?video_id=${video_id}&limit=500`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&limit=500`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
     } catch {
       return [];
@@ -7604,7 +7794,7 @@ const likes = {
 };
 const messages = {
   async send({ sender_id, sender_username, sender_avatar, recipient_id, recipient_username, text, thread_id }) {
-    return request$1("POST", `/apps/${APP_ID$4}/entities/SachiMessage`, {
+    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiMessage`, {
       sender_id,
       sender_username,
       sender_avatar,
@@ -7617,7 +7807,7 @@ const messages = {
   },
   async getInbox(user_id) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?recipient_id=${user_id}&limit=500`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&limit=500`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
     } catch {
       return [];
@@ -7626,23 +7816,32 @@ const messages = {
   async getThread(user_id, other_id) {
     try {
       const thread_id = [user_id, other_id].sort().join("_");
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?thread_id=${thread_id}&limit=500`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?thread_id=${thread_id}&limit=500`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
     } catch {
       return [];
     }
   },
   async markRead(id2) {
-    return request$1("PUT", `/apps/${APP_ID$4}/entities/SachiMessage/${id2}`, { is_read: true });
+    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiMessage/${id2}`, { is_read: true });
   },
   async getUnreadCount(user_id) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$4}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=500`);
+      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=500`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
       return items.filter((m2) => !m2.is_read).length;
     } catch {
       return 0;
     }
+  }
+};
+const AthaVidUser$1 = {
+  async filter(params) {
+    const query = new URLSearchParams(params).toString();
+    return request$1("GET", `/entities/AthaVidUser?${query}`);
+  },
+  async getById(id2) {
+    return request$1("GET", `/entities/AthaVidUser/${id2}`);
   }
 };
 const COUNTRIES = [
@@ -7756,18 +7955,32 @@ const COUNTRIES = [
   "Zimbabwe"
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL$2 = "https://sachi-04cfb834.base44.app/api";
-const FUNCTIONS_URL = "https://sachi-04cfb834.base44.app/functions";
+const APP_ID$4 = "69e79122bcc8fb5a04cfb834";
+const BASE_URL$2 = "https://app.base44.com/api";
 async function lookupSachiUser(email) {
   try {
-    const res = await fetch(
-      `${BASE_URL$2}/apps/${APP_ID$3}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
-      { headers: { "Content-Type": "application/json" } }
+    const headers = { "Content-Type": "application/json" };
+    try {
+      const res = await fetch(
+        `${BASE_URL$2}/apps/${APP_ID$4}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
+        { headers }
+      );
+      const data = await res.json();
+      const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
+      const found = items.find((u2) => u2.email === email);
+      if (found) return found;
+    } catch {
+    }
+    const existingSession = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
+    const sessionObj = existingSession ? JSON.parse(existingSession) : null;
+    if (sessionObj == null ? void 0 : sessionObj.token) headers["Authorization"] = `Bearer ${sessionObj.token}`;
+    const res2 = await fetch(
+      `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      { headers }
     );
-    const data = await res.json();
-    const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || [];
-    return items.find((u2) => u2.email === email) || null;
+    const data2 = await res2.json();
+    const items2 = Array.isArray(data2) ? data2 : (data2 == null ? void 0 : data2.items) || (data2 == null ? void 0 : data2.records) || [];
+    return items2.find((u2) => u2.email === email) || null;
   } catch {
     return null;
   }
@@ -7776,7 +7989,9 @@ function buildSessionUser(found, payload) {
   return {
     id: found.id,
     email: found.email,
-    full_name: found.display_name || (payload == null ? void 0 : payload.name) || found.email,
+    // SachiUser uses full_name; AthaVidUser uses display_name — handle both
+    full_name: found.full_name || found.display_name || (payload == null ? void 0 : payload.name) || found.email,
+    display_name: found.display_name || found.full_name || (payload == null ? void 0 : payload.name) || "",
     avatar_url: found.avatar_url || (payload == null ? void 0 : payload.picture) || "",
     username: found.username || found.email.split("@")[0],
     _google: true,
@@ -7800,6 +8015,20 @@ async function handleGoogleRedirectCallback() {
   const payload = decodeJwt(idToken);
   if (!(payload == null ? void 0 : payload.email)) return null;
   localStorage.setItem("sachi_pending_google", JSON.stringify(payload));
+  try {
+    const existing = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
+    if (existing) {
+      const parsed = JSON.parse(existing);
+      if ((parsed == null ? void 0 : parsed.email) === payload.email && (parsed == null ? void 0 : parsed.id)) {
+        const sessionUser = { ...parsed, _google: true };
+        localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
+        localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+        localStorage.removeItem("sachi_pending_google");
+        return { sessionUser, needsProfile: false };
+      }
+    }
+  } catch {
+  }
   const found = await lookupSachiUser(payload.email);
   if (found) {
     const sessionUser = buildSessionUser(found, payload);
@@ -7916,7 +8145,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${FUNCTIONS_URL}/sendOTP`, {
+      const res = await fetch("/api/sendOTP", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
@@ -7937,7 +8166,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${FUNCTIONS_URL}/verifyOTP`, {
+      const res = await fetch("/api/verifyOTP", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: verifiedEmail, code })
@@ -8075,7 +8304,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL$2}/apps/${APP_ID$3}/entities/AthaVidUser`,
+        `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8270,13 +8499,7 @@ function AuthModal({ onClose, onSuccess }) {
   return modalShell(
     /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginBottom: 28 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12, display: "flex", justifyContent: "center", alignItems: "center", gap: 10 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v6.png", alt: "Sachi", style: { width: 48, height: 48, borderRadius: 12, filter: "drop-shadow(0 0 10px rgba(245,200,66,0.6))" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-start" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 900, fontSize: 26, letterSpacing: 2, color: "#F5C842", lineHeight: 1 }, children: "SACHi" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontFamily: "'Georgia', serif", fontWeight: 400, fontSize: 11, color: "rgba(255,255,255,0.45)", letterSpacing: 3 }, children: "STREAM" })
-          ] })
-        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 12, display: "flex", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-crystal.png", alt: "Sachi", style: { width: 110, height: 110, objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(245,200,66,0.5))" } }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5, marginBottom: 4 }, children: "Join Sachi" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 14 }, children: "Where truth meets community" })
       ] }),
@@ -8524,9 +8747,9 @@ function Terms() {
     ] })
   ] });
 }
-const APP_ID$2 = "69b2ee18a8e6fb58c7f0261c";
-const BASE_URL$1 = "https://sachi-c7f0261c.base44.app/api";
-const COINS_FN = "https://sachi-c7f0261c.base44.app/functions/sachiCoins";
+const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
+const BASE_URL$1 = "https://app.base44.com/api";
+const COINS_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiCoin";
 const GIFTS = [
   { id: "sakura", name: "Sakura", emoji: "🌸", icon: "🌸", coins: 5, color: "#e91e8c", glow: "rgba(233,30,140,0.6)", rarity: "common", anim: "float" },
   { id: "crystal", name: "Crystal", emoji: "💎", icon: "💎", coins: 15, color: "#00bcd4", glow: "rgba(0,188,212,0.6)", rarity: "common", anim: "spin" },
@@ -8560,7 +8783,7 @@ async function apiReq$1(method, path, body) {
 }
 async function getWallet(userId) {
   var _a;
-  const d = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
+  const d = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
   return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
 }
 async function sendGiftAPI(giftData) {
@@ -8574,11 +8797,11 @@ async function sendGiftAPI(giftData) {
   } catch {
     const wallet = await getWallet(giftData.sender_id);
     if (!wallet || wallet.coins < giftData.coin_cost) return { error: "Insufficient coins" };
-    await apiReq$1("PUT", `/apps/${APP_ID$2}/entities/SachiCoinWallet/${wallet.id}`, {
+    await apiReq$1("PUT", `/apps/${APP_ID$3}/entities/SachiCoinWallet/${wallet.id}`, {
       coins: wallet.coins - giftData.coin_cost,
       total_spent_coins: (wallet.total_spent_coins || 0) + giftData.coin_cost
     });
-    const gift = await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiGift`, giftData);
+    const gift = await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiGift`, giftData);
     return { success: true, gift, coins_remaining: wallet.coins - giftData.coin_cost };
   }
 }
@@ -8966,7 +9189,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       try {
         const w2 = await getWallet(currentUser.id);
         setWallet(w2);
-        const g = await apiReq$1("GET", `/apps/${APP_ID$2}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
+        const g = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
         setGifts(Array.isArray(g) ? g : (g == null ? void 0 : g.items) || []);
       } catch {
       }
@@ -8991,7 +9214,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       setPayoutSent(true);
       setShowPayout(false);
     } catch {
-      await apiReq$1("POST", `/apps/${APP_ID$2}/entities/SachiPayoutRequest`, {
+      await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiPayoutRequest`, {
         host_id: currentUser.id,
         host_username: currentUser.username || "host",
         host_email: currentUser.email,
@@ -9147,9 +9370,9 @@ function HostEarningsPanel({ currentUser, onClose }) {
     ] })
   ] });
 }
-const APP_ID$1 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://sachi-04cfb834.base44.app/api";
-const APP_BASE$1 = `/apps/${APP_ID$1}`;
+const APP_ID$2 = "69e79122bcc8fb5a04cfb834";
+const BASE_URL = "https://app.base44.com/api";
+const APP_BASE$1 = `/apps/${APP_ID$2}`;
 async function apiReq(method, path, body) {
   const token = localStorage.getItem("sachi_token");
   const headers = { "Content-Type": "application/json" };
@@ -10410,7 +10633,7 @@ function FoundingCreatorPage({ onBack }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: "10%", right: "-10%", width: "400px", height: "400px", background: "radial-gradient(circle,rgba(245,168,66,0.07) 0%,transparent 65%)", pointerEvents: "none", zIndex: 0 } }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { style: { position: "sticky", top: 0, zIndex: 100, background: "rgba(13,11,26,0.8)", backdropFilter: "blur(18px)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }, onClick: onBack, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", alt: "Sachi", style: { width: 34, height: 34, borderRadius: 10, filter: "drop-shadow(0 0 8px rgba(245,200,66,0.4))" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-crystal.png", alt: "Sachi", style: { width: 34, height: 34, borderRadius: 0, objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(245,200,66,0.4))" } }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 21, fontWeight: 900, background: "linear-gradient(135deg,#F5C842,#FFB020)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, color: "rgba(245,200,66,0.7)", fontWeight: 700 }, children: "™" })
       ] }),
@@ -10421,7 +10644,7 @@ function FoundingCreatorPage({ onBack }) {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "float-logo f1", style: { display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 30, position: "relative" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: "-18px", borderRadius: "50%", border: "1.5px solid rgba(245,200,66,0.18)", animation: "ringOut 3.5s ease-out 0.8s infinite" } }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: "-18px", borderRadius: "50%", border: "1.5px solid rgba(245,200,66,0.12)", animation: "ringOut 3.5s ease-out 2.1s infinite" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", alt: "Sachi", style: { width: 108, height: 108, borderRadius: 30, display: "block", filter: "drop-shadow(0 4px 24px rgba(245,200,66,0.45)) drop-shadow(0 0 60px rgba(120,60,200,0.3))" } })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-crystal.png", alt: "Sachi", style: { width: 108, height: 108, borderRadius: 0, objectFit: "contain", display: "block", filter: "drop-shadow(0 4px 24px rgba(245,200,66,0.45)) drop-shadow(0 0 60px rgba(120,60,200,0.3))" } })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "f2", style: { display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 99, padding: "6px 16px", marginBottom: 24 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12 }, children: "🌸" }),
@@ -10558,7 +10781,7 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
     if (tab !== "original") return;
     const APP_ID2 = "69e79122bcc8fb5a04cfb834";
     const token = localStorage.getItem("sachi_token");
-    fetch(`https://sachi-04cfb834.base44.app/api/apps/${APP_ID2}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
+    fetch(`https://app.base44.com/api/apps/${APP_ID2}/entities/SachiVideo?has_sound=true&limit=50&sort=-created_date`, {
       headers: { "Content-Type": "application/json", ...token ? { "Authorization": `Bearer ${token}` } : {} }
     }).then((r2) => r2.json()).then((d) => {
       const all = Array.isArray(d) ? d : d.records || d.data || [];
@@ -10742,16 +10965,6 @@ function MusicPicker({ onSelect, onClose, currentSound }) {
     ] })
   ] }) });
 }
-const APP_VERSION = "2.2.0";
-(function checkVersion() {
-  const stored = localStorage.getItem("sachi_app_version");
-  if (stored && stored !== APP_VERSION) {
-    localStorage.setItem("sachi_app_version", APP_VERSION);
-    window.location.reload(true);
-  } else {
-    localStorage.setItem("sachi_app_version", APP_VERSION);
-  }
-})();
 function formatDate(d) {
   if (!d) return "";
   const dt = new Date(d);
@@ -10768,13 +10981,13 @@ const resolveMediaUrl = (url, isVideo) => {
   const match = url.match(/\/files\/mp\/public\/([^/]+)\/(.+)$/);
   if (match) {
     const filename = match[2];
-    const isVideoFile = /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
+    const isVideoFile = isVideo || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(filename);
     const bucket = isVideoFile ? "videos" : "images";
     return `https://media.base44.com/${bucket}/public/${match[1]}/${match[2]}`;
   }
   return url;
 };
-async function getPostLocation() {
+async function getPostLocation$1() {
   const savedCode = localStorage.getItem("sachi_country_code");
   const savedRegion = localStorage.getItem("sachi_region");
   const savedCity = localStorage.getItem("sachi_city");
@@ -10980,101 +11193,8 @@ function countryFlag(code) {
     return "🌍";
   }
 }
-async function captureThumbnail(file) {
-  const tryCapture = (videoEl, canvas, seekTime) => new Promise((resolve) => {
-    const ctx = canvas.getContext("2d");
-    const done = () => {
-      try {
-        const vw = videoEl.videoWidth, vh2 = videoEl.videoHeight;
-        if (!vw || !vh2) return resolve(null);
-        const targetRatio = 500 / 888, srcRatio = vw / vh2;
-        let sx = 0, sy = 0, sw = vw, sh2 = vh2;
-        if (srcRatio > targetRatio) {
-          sw = vh2 * targetRatio;
-          sx = (vw - sw) / 2;
-        } else {
-          sh2 = vw / targetRatio;
-          sy = (vh2 - sh2) / 2;
-        }
-        ctx.clearRect(0, 0, 500, 888);
-        ctx.drawImage(videoEl, sx, sy, sw, sh2, 0, 0, 500, 888);
-        const d = ctx.getImageData(0, 0, 50, 50).data;
-        let sum = 0;
-        for (let i = 0; i < d.length; i += 4) sum += d[i] + d[i + 1] + d[i + 2];
-        if (sum < 1e3) return resolve(null);
-        resolve("ok");
-      } catch {
-        resolve(null);
-      }
-    };
-    videoEl.onseeked = done;
-    videoEl.onerror = () => resolve(null);
-    try {
-      videoEl.currentTime = seekTime;
-    } catch {
-      resolve(null);
-    }
-  });
-  return new Promise(async (resolve) => {
-    const objectUrl = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.muted = true;
-    video.playsInline = true;
-    video.crossOrigin = "anonymous";
-    const canvas = document.createElement("canvas");
-    canvas.width = 500;
-    canvas.height = 888;
-    const cleanup = () => {
-      try {
-        URL.revokeObjectURL(objectUrl);
-      } catch {
-      }
-    };
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve(null);
-    }, 8e3);
-    video.onloadedmetadata = async () => {
-      const dur = video.duration || 0;
-      const seekPoints = [
-        Math.min(0.5, dur * 0.1),
-        Math.min(2, dur * 0.25),
-        Math.min(5, dur * 0.5)
-      ];
-      let captured = false;
-      for (const t2 of seekPoints) {
-        const result = await tryCapture(video, canvas, t2);
-        if (result === "ok") {
-          captured = true;
-          break;
-        }
-      }
-      clearTimeout(timeout);
-      cleanup();
-      if (!captured) return resolve(null);
-      canvas.toBlob(async (blob) => {
-        if (!blob) return resolve(null);
-        const thumbFile = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
-        try {
-          const url = await uploadFile(thumbFile);
-          resolve(url);
-        } catch {
-          resolve(null);
-        }
-      }, "image/jpeg", 0.85);
-    };
-    video.onerror = () => {
-      clearTimeout(timeout);
-      cleanup();
-      resolve(null);
-    };
-    video.src = objectUrl;
-    video.load();
-  });
-}
 const createNotif = (data) => {
-  request$1("POST", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification", { is_read: false, ...data }).catch(() => {
+  request$1("POST", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification", { is_read: false, ...data }).catch(() => {
   });
 };
 function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth }) {
@@ -11091,7 +11211,10 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
   const headerRef = reactExports.useRef(null);
   reactExports.useEffect(() => {
     if (!video) return;
-    comments.list(video.id).then((r2) => setList(Array.isArray(r2) ? r2 : [])).catch(() => setList([])).finally(() => setLoading(false));
+    comments.list(video.id).then((r2) => {
+      const arr = Array.isArray(r2) ? r2 : (r2 == null ? void 0 : r2.items) || (r2 == null ? void 0 : r2.records) || (r2 == null ? void 0 : r2.data) || [];
+      setList(arr);
+    }).catch(() => setList([])).finally(() => setLoading(false));
   }, [video == null ? void 0 : video.id]);
   reactExports.useEffect(() => {
     var _a;
@@ -11114,7 +11237,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     setText("");
   };
   const post = async () => {
-    var _a, _b;
+    var _a, _b, _c;
     if (!currentUser) {
       onNeedAuth();
       return;
@@ -11132,15 +11255,26 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       } else {
         const c = await comments.create({
           video_id: video.id,
+          user_id: currentUser.id,
+          content: text.trim(),
+          comment_text: text.trim(),
           username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-          comment_text: text.trim(),
           likes_count: 0
         });
-        const newCount = list.length + 1;
         setList((prev) => [...prev, c]);
         setText("");
-        await videos.update(video.id, { comments_count: newCount, comment_count: newCount });
+        try {
+          const freshList = await comments.list(video.id);
+          const verifiedCount = Array.isArray(freshList) ? freshList.length : list.length + 1;
+          await videos.update(video.id, { comments_count: verifiedCount, comment_count: verifiedCount });
+          if (onCommentPosted) onCommentPosted(video.id, verifiedCount);
+        } catch (e) {
+          const optimisticCount = list.length + 1;
+          await videos.update(video.id, { comments_count: optimisticCount, comment_count: optimisticCount }).catch(() => {
+          });
+          if (onCommentPosted) onCommentPosted(video.id, optimisticCount);
+        }
         if (video.user_id && video.user_id !== (currentUser == null ? void 0 : currentUser.id)) {
           createNotif({
             recipient_id: video.user_id,
@@ -11152,9 +11286,25 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
             video_thumbnail: video.thumbnail_url || "",
             text: `commented: "${text.trim().substring(0, 50)}"`
           });
+          const ownerEmail = video.owner_email || video.created_by || null;
+          if (ownerEmail && ownerEmail.includes("@")) {
+            fetch("/api/sendEngagementEmail", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type: "comment",
+                actor_username: currentUser.username || ((_c = currentUser.email) == null ? void 0 : _c.split("@")[0]) || "user",
+                video_id: video.id,
+                video_caption: video.caption || video.description || "",
+                video_thumbnail: video.thumbnail_url || "",
+                owner_id: video.user_id,
+                owner_email: ownerEmail,
+                comment_text: text.trim().substring(0, 200)
+              })
+            }).catch(() => {
+            });
+          }
         }
-        if (onCommentPosted) onCommentPosted(video.id, newCount);
-        setTimeout(() => onClose(), 600);
       }
     } catch (e) {
       alert("Error: " + e.message);
@@ -11210,7 +11360,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     var _a, _b;
     const [pickerOpen, setPickerOpen] = React.useState(false);
     const [editing, setEditing] = React.useState(false);
-    const [editText, setEditText] = React.useState(c.comment_text);
+    const [editText, setEditText] = React.useState(c.comment_text || c.content);
     const [saving, setSaving] = React.useState(false);
     const currentUsername = currentUser ? currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user" : null;
     const isOwner = currentUsername && c.username === currentUsername;
@@ -11218,8 +11368,8 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       if (!editText.trim()) return;
       setSaving(true);
       try {
-        await comments.update(c.id, { comment_text: editText.trim() });
-        setList((prev) => prev.map((x2) => x2.id === c.id ? { ...x2, comment_text: editText.trim() } : x2));
+        await comments.update(c.id, { comment_text: editText.trim(), content: editText.trim() });
+        setList((prev) => prev.map((x2) => x2.id === c.id ? { ...x2, comment_text: editText.trim(), content: editText.trim() } : x2));
         setEditing(false);
       } catch (e) {
         alert("Could not save edit.");
@@ -11268,7 +11418,7 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
             )
           ] })
         ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ccc", fontSize: isReply ? 13 : 14 }, children: c.comment_text }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ccc", fontSize: isReply ? 13 : 14 }, children: c.comment_text || c.content }),
           isOwner && !isReply && /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
@@ -11450,395 +11600,1764 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
     )
   ] });
 }
-function GoLiveModal({ currentUser, onClose, onUploaded }) {
-  const [phase, setPhase] = reactExports.useState("preview");
-  const [elapsed, setElapsed] = reactExports.useState(0);
-  const [caption, setCaption] = reactExports.useState("");
-  const [error, setError] = reactExports.useState("");
-  const [reviewUrl, setReviewUrl] = reactExports.useState("");
-  const [chunks, setChunks] = reactExports.useState([]);
-  const videoRef = reactExports.useRef(null);
-  const streamRef = reactExports.useRef(null);
-  const recorderRef = reactExports.useRef(null);
-  const timerRef = reactExports.useRef(null);
-  const chunksRef = reactExports.useRef([]);
+function PhotoCarousel({
+  photoUrls,
+  resolveMediaUrl: resolveMediaUrl2,
+  soundRef,
+  muted,
+  setMuted,
+  sound_url,
+  sound_title,
+  showUI,
+  setShowUI,
+  setShowFullCaption,
+  onSwiping,
+  onArrowNav
+}) {
+  const [photoIdx, setPhotoIdx] = reactExports.useState(0);
+  const [swiping, setSwiping] = reactExports.useState(false);
+  const [arrowsVisible, setArrowsVisible] = reactExports.useState(true);
+  const swipeTouchRef = reactExports.useRef(null);
+  const containerRef = reactExports.useRef(null);
+  const arrowTimerRef = reactExports.useRef(null);
+  const photoUrlsRef = reactExports.useRef(photoUrls);
+  const photoIdxRef = reactExports.useRef(photoIdx);
+  const showUIRef = reactExports.useRef(showUI);
   reactExports.useEffect(() => {
-    startCamera();
-    return () => stopCamera();
+    photoUrlsRef.current = photoUrls;
+  }, [photoUrls]);
+  reactExports.useEffect(() => {
+    photoIdxRef.current = photoIdx;
+  }, [photoIdx]);
+  reactExports.useEffect(() => {
+    showUIRef.current = showUI;
+  }, [showUI]);
+  reactExports.useCallback((idx) => {
+    setPhotoIdx(Math.max(0, Math.min(idx, photoUrls.length - 1)));
+  }, [photoUrls.length]);
+  const hideArrowsFor5s = reactExports.useCallback(() => {
+    setArrowsVisible(false);
+    if (arrowTimerRef.current) clearTimeout(arrowTimerRef.current);
+    arrowTimerRef.current = setTimeout(() => setArrowsVisible(true), 5e3);
   }, []);
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch (e) {
-      setError("Camera access denied. Please allow camera and microphone permissions.");
-    }
-  };
-  const stopCamera = () => {
-    if (streamRef.current) streamRef.current.getTracks().forEach((t2) => t2.stop());
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
-  const startLive = () => {
-    if (!streamRef.current) return;
-    chunksRef.current = [];
-    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : MediaRecorder.isTypeSupported("video/webm") ? "video/webm" : "video/mp4";
-    const recorder = new MediaRecorder(streamRef.current, { mimeType });
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
+  reactExports.useEffect(() => () => {
+    if (arrowTimerRef.current) clearTimeout(arrowTimerRef.current);
+  }, []);
+  const handleArrow = reactExports.useCallback((dir, e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const cur = photoIdxRef.current;
+    const max = photoUrlsRef.current.length - 1;
+    setPhotoIdx(dir === "left" ? Math.max(cur - 1, 0) : Math.min(cur + 1, max));
+    hideArrowsFor5s();
+    onArrowNav && onArrowNav();
+  }, [hideArrowsFor5s, onArrowNav]);
+  reactExports.useEffect(() => {
+    const el2 = containerRef.current;
+    if (!el2) return;
+    const onStart = (e) => {
+      swipeTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
-    recorder.start(500);
-    recorderRef.current = recorder;
-    setPhase("live");
-    setElapsed(0);
-    timerRef.current = setInterval(() => setElapsed((p2) => p2 + 1), 1e3);
-  };
-  const stopLive = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (recorderRef.current && recorderRef.current.state !== "inactive") {
-      recorderRef.current.onstop = () => {
-        var _a;
-        const mimeType = ((_a = chunksRef.current[0]) == null ? void 0 : _a.type) || "video/webm";
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        setReviewUrl(url);
-        setPhase("review");
-      };
-      recorderRef.current.stop();
-    } else {
-      setPhase("uploading");
-      setTimeout(() => uploadLive(), 800);
-    }
-  };
-  const uploadLive = async () => {
-    var _a, _b;
-    try {
-      const mimeType = ((_a = chunksRef.current[0]) == null ? void 0 : _a.type) || "video/webm";
-      const ext = mimeType.includes("mp4") ? "mp4" : "webm";
-      const blob = new Blob(chunksRef.current, { type: mimeType });
-      const file = new File([blob], `live_${Date.now()}.${ext}`, { type: mimeType });
-      const file_url = await uploadFile(file);
-      let thumbUrl = "";
-      try {
-        const thumbBlob = await captureThumbnail(file);
-        const thumbFile = new File([thumbBlob], "thumb.jpg", { type: "image/jpeg" });
-        thumbUrl = await uploadFile(thumbFile);
-      } catch (_) {
+    const onMove = (e) => {
+      if (!swipeTouchRef.current || photoUrlsRef.current.length <= 1) return;
+      const dx = Math.abs(e.touches[0].clientX - swipeTouchRef.current.x);
+      const dy = Math.abs(e.touches[0].clientY - swipeTouchRef.current.y);
+      if (dy > dx * 0.8) return;
+      if (dx > 8) {
+        e.preventDefault();
+        e.stopPropagation();
+        setSwiping(true);
+        onSwiping && onSwiping(true);
       }
-      const liveGeo = await getPostLocation();
-      await videos.create({
-        user_id: currentUser.id,
-        username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
-        display_name: currentUser.display_name || currentUser.full_name || currentUser.username || "",
-        avatar_url: currentUser.avatar_url || "",
-        video_url: file_url,
-        thumbnail_url: thumbUrl,
-        caption: caption || "🔴 Live recording",
-        hashtags: ["live"],
-        likes_count: 0,
-        comments_count: 0,
-        views_count: 0,
-        shares_count: 0,
-        is_approved: true,
-        is_archived: false,
-        is_ai_detected: false,
-        duration_seconds: elapsed,
-        ...liveGeo
-      });
-      setPhase("done");
-      setTimeout(() => {
-        onUploaded();
-        onClose();
-      }, 2e3);
-    } catch (e) {
-      setError("Upload failed: " + e.message);
-      setPhase("preview");
+    };
+    const onEnd = (e) => {
+      setSwiping(false);
+      onSwiping && onSwiping(false);
+      if (!swipeTouchRef.current) return;
+      const dx = e.changedTouches[0].clientX - swipeTouchRef.current.x;
+      const dy = e.changedTouches[0].clientY - swipeTouchRef.current.y;
+      swipeTouchRef.current = null;
+      if (photoUrlsRef.current.length > 1 && Math.abs(dx) >= 35 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        e.stopPropagation();
+        const cur = photoIdxRef.current;
+        const max = photoUrlsRef.current.length - 1;
+        setPhotoIdx(dx < 0 ? Math.min(cur + 1, max) : Math.max(cur - 1, 0));
+        hideArrowsFor5s();
+        onArrowNav && onArrowNav();
+        return;
+      }
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+        setShowUI((v2) => !v2);
+        if (!showUIRef.current) setShowFullCaption(true);
+      }
+    };
+    el2.addEventListener("touchstart", onStart, { passive: true });
+    el2.addEventListener("touchmove", onMove, { passive: false });
+    el2.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      el2.removeEventListener("touchstart", onStart);
+      el2.removeEventListener("touchmove", onMove);
+      el2.removeEventListener("touchend", onEnd);
+    };
+  }, [hideArrowsFor5s, onSwiping, setShowUI, setShowFullCaption]);
+  const canGoPrev = photoIdx > 0;
+  const canGoNext = photoIdx < photoUrls.length - 1;
+  const isMulti = photoUrls.length > 1;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "div",
+    {
+      ref: containerRef,
+      style: {
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        overflow: "hidden",
+        background: "#000",
+        display: "flex",
+        flexDirection: "column",
+        touchAction: isMulti ? "none" : "pan-y"
+      },
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: resolveMediaUrl2(photoUrls[photoIdx]),
+              alt: "",
+              onError: (e) => {
+                if (!e.target.dataset.retried) {
+                  e.target.dataset.retried = "1";
+                  e.target.src = e.target.src.split("?")[0] + "?t=" + Date.now();
+                } else {
+                  e.target.style.opacity = "0.15";
+                }
+              },
+              onLoad: (e) => {
+                e.target.style.opacity = "1";
+                e.target.style.filter = "none";
+                delete e.target.dataset.retried;
+              },
+              style: {
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center top",
+                display: "block",
+                userSelect: "none",
+                WebkitUserSelect: "none",
+                pointerEvents: "none",
+                opacity: 1,
+                transition: "opacity 0.3s"
+              }
+            }
+          ),
+          isMulti && canGoPrev && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onTouchStart: (e) => handleArrow("left", e),
+              onClick: (e) => handleArrow("left", e),
+              style: {
+                position: "absolute",
+                left: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 100,
+                background: "rgba(0,0,0,0.45)",
+                border: "1.5px solid rgba(245,200,66,0.6)",
+                borderRadius: "50%",
+                width: 38,
+                height: 38,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                opacity: arrowsVisible ? 1 : 0,
+                transition: "opacity 1.2s ease",
+                pointerEvents: arrowsVisible ? "auto" : "none",
+                WebkitTapHighlightColor: "transparent"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "svg",
+                {
+                  width: "18",
+                  height: "18",
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  stroke: "#F5C842",
+                  strokeWidth: "2.5",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "15 18 9 12 15 6" })
+                }
+              )
+            }
+          ),
+          isMulti && canGoNext && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onTouchStart: (e) => handleArrow("right", e),
+              onClick: (e) => handleArrow("right", e),
+              style: {
+                position: "absolute",
+                right: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 100,
+                background: "rgba(0,0,0,0.45)",
+                border: "1.5px solid rgba(245,200,66,0.6)",
+                borderRadius: "50%",
+                width: 38,
+                height: 38,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                opacity: arrowsVisible ? 1 : 0,
+                transition: "opacity 1.2s ease",
+                pointerEvents: arrowsVisible ? "auto" : "none",
+                WebkitTapHighlightColor: "transparent"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "svg",
+                {
+                  width: "18",
+                  height: "18",
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  stroke: "#F5C842",
+                  strokeWidth: "2.5",
+                  strokeLinecap: "round",
+                  strokeLinejoin: "round",
+                  children: /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "9 18 15 12 9 6" })
+                }
+              )
+            }
+          ),
+          isMulti && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            position: "absolute",
+            bottom: 14,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(0,0,0,0.55)",
+            borderRadius: 20,
+            padding: "3px 10px",
+            fontSize: 12,
+            fontWeight: 700,
+            color: "rgba(255,255,255,0.85)",
+            zIndex: 50,
+            pointerEvents: "none",
+            letterSpacing: 0.5,
+            backdropFilter: "blur(4px)",
+            opacity: swiping ? 0 : 1,
+            transition: "opacity 0.2s ease"
+          }, children: [
+            photoIdx + 1,
+            " / ",
+            photoUrls.length
+          ] })
+        ] }),
+        sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "audio",
+          {
+            ref: soundRef,
+            src: sound_url,
+            loop: true,
+            preload: "auto",
+            style: { display: "none" },
+            onCanPlay: () => {
+              if (!muted && soundRef.current) soundRef.current.play().catch(() => {
+              });
+            }
+          }
+        ) })
+      ]
     }
+  );
+}
+function VideoPlayer({
+  video,
+  videoRef,
+  soundRef,
+  muted,
+  setMuted,
+  playing,
+  setPlaying,
+  resolveMediaUrl: resolveMediaUrl2,
+  hideUIAfterDelay,
+  userMuted
+}) {
+  const resolvedVideoUrl = video.media_url ? video.media_url : resolveMediaUrl2(video.video_url);
+  const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+  const isHlsUrl = (url) => url && (url.endsWith(".m3u8") || url.includes("cloudflarestream.com") && !url.includes("/downloads/"));
+  reactExports.useEffect(() => {
+    const el2 = videoRef.current;
+    const url = resolvedVideoUrl;
+    if (!el2 || !url || !isHlsUrl(url)) return;
+    const tryPlay = () => {
+      if (el2._hlsPendingPlay) {
+        el2._hlsPendingPlay = false;
+        el2.play().catch(() => {
+        });
+      }
+    };
+    const attachHls = () => {
+      if (!window.Hls || !window.Hls.isSupported()) return;
+      if (el2._hls) {
+        try {
+          el2._hls.destroy();
+        } catch (e) {
+        }
+        el2._hls = null;
+      }
+      const hls = new window.Hls({ maxBufferLength: 30, startLevel: -1, enableWorker: false });
+      hls.loadSource(url);
+      hls.attachMedia(el2);
+      hls.on(window.Hls.Events.MANIFEST_PARSED, tryPlay);
+      if (el2._hlsPendingPlay) hls.once(window.Hls.Events.LEVEL_LOADED, tryPlay);
+      el2._hls = hls;
+    };
+    if (el2.canPlayType("application/vnd.apple.mpegurl")) {
+      if (el2.src !== url) {
+        el2.src = url;
+        el2.load();
+      }
+      const onCanPlay = () => {
+        tryPlay();
+        el2.removeEventListener("canplay", onCanPlay);
+      };
+      el2.addEventListener("canplay", onCanPlay);
+      return () => el2.removeEventListener("canplay", onCanPlay);
+    }
+    if (window.Hls && window.Hls.isSupported()) {
+      attachHls();
+    } else {
+      const existing = document.getElementById("hlsjs-cdn");
+      if (existing) {
+        existing.addEventListener("load", attachHls, { once: true });
+      } else {
+        const sc2 = document.createElement("script");
+        sc2.id = "hlsjs-cdn";
+        sc2.src = "https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js";
+        sc2.onload = attachHls;
+        document.head.appendChild(sc2);
+      }
+    }
+    return () => {
+      if (el2 && el2._hls) {
+        try {
+          el2._hls.destroy();
+        } catch (e) {
+        }
+        el2._hls = null;
+      }
+    };
+  }, [video.video_url]);
+  const handleUnmute = (e) => {
+    e.stopPropagation();
+    const el2 = videoRef.current;
+    if (!el2) return;
+    el2.muted = false;
+    setMuted(false);
+    el2.play().catch(() => {
+    });
+    setPlaying(true);
+    hideUIAfterDelay(1500);
+    if (soundRef.current && video.sound_url) soundRef.current.play().catch(() => {
+    });
   };
-  const formatElapsed = (s) => {
-    const m2 = Math.floor(s / 60).toString().padStart(2, "0");
-    const sec = (s % 60).toString().padStart(2, "0");
-    return `${m2}:${sec}`;
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#000", zIndex: 9e3, display: "flex", flexDirection: "column" }, children: [
+  if (isImg) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "img",
+      {
+        src: resolvedVideoUrl,
+        style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" }
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       "video",
       {
         ref: videoRef,
-        autoPlay: true,
-        muted: true,
+        src: isHlsUrl(resolvedVideoUrl) ? void 0 : resolvedVideoUrl,
+        poster: video.thumbnail_url && !video.thumbnail_url.match(/\.mp4|\.mov|\.webm/i) ? resolveMediaUrl2(video.thumbnail_url) : void 0,
+        loop: true,
         playsInline: true,
-        style: {
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          transform: "scaleX(-1)"
-          /* mirror front cam */
-        }
+        preload: "auto",
+        muted: muted || !!video.sound_url,
+        onPlay: () => {
+          setPlaying(true);
+          hideUIAfterDelay(1500);
+          window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
+          if (soundRef.current && video.sound_url && !muted) {
+            soundRef.current.play().catch(() => {
+            });
+          }
+        },
+        onPause: () => {
+          setPlaying(false);
+          window.dispatchEvent(new CustomEvent("sachiVideoPause"));
+          if (soundRef.current) soundRef.current.pause();
+        },
+        onEnded: (e) => {
+          const el2 = e.target;
+          el2.currentTime = 0;
+          el2.play().catch(() => {
+          });
+          if (soundRef.current && video.sound_url) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(() => {
+            });
+          }
+        },
+        style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 120,
-      background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
-      pointerEvents: "none"
-    } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 200,
-      background: "linear-gradient(to top, rgba(0,0,0,0.85), transparent)",
-      pointerEvents: "none"
-    } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "button",
+    video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx("audio", { ref: soundRef, src: video.sound_url, loop: true, preload: "none", style: { display: "none" } }),
+    muted && !userMuted && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
       {
-        onClick: () => {
-          stopCamera();
-          onClose();
-        },
+        onTouchStart: handleUnmute,
+        onClick: handleUnmute,
         style: {
           position: "absolute",
-          top: 16,
-          left: 16,
-          zIndex: 100,
-          background: "rgba(0,0,0,0.5)",
-          border: "none",
-          borderRadius: "50%",
-          width: 44,
-          height: 44,
+          bottom: 80,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 200,
+          background: "rgba(0,0,0,0.7)",
+          border: "1px solid rgba(255,255,255,0.2)",
+          borderRadius: 20,
+          padding: "6px 16px",
           color: "#fff",
-          fontSize: 22,
-          cursor: "pointer",
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: 1,
           display: "flex",
           alignItems: "center",
-          justifyContent: "center"
+          gap: 6,
+          cursor: "pointer",
+          whiteSpace: "nowrap"
         },
-        children: "✕"
+        children: "🔇 Tap to unmute"
       }
-    ),
-    phase === "live" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-      position: "absolute",
-      top: 16,
-      left: "50%",
-      transform: "translateX(-50%)",
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      zIndex: 100
-    }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        background: "#e53935",
-        borderRadius: 6,
-        padding: "3px 10px",
-        color: "#fff",
-        fontWeight: 800,
-        fontSize: 13,
-        letterSpacing: 1,
-        boxShadow: "0 0 12px rgba(229,57,53,0.8)",
-        animation: "livePulse 1.2s ease infinite"
-      }, children: "🔴 LIVE" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        background: "rgba(0,0,0,0.6)",
-        borderRadius: 6,
-        padding: "3px 10px",
-        color: "#fff",
-        fontWeight: 700,
-        fontSize: 13,
-        backdropFilter: "blur(4px)"
-      }, children: formatElapsed(elapsed) })
-    ] }),
-    (phase === "preview" || phase === "live") && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 160, left: 16, right: 16, zIndex: 100 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "input",
-      {
-        value: caption,
-        onChange: (e) => setCaption(e.target.value),
-        placeholder: "Add a caption for your live...",
-        style: {
-          width: "100%",
-          background: "rgba(0,0,0,0.55)",
-          border: "1px solid rgba(255,255,255,0.2)",
-          borderRadius: 12,
-          padding: "10px 14px",
-          color: "#fff",
-          fontSize: 14,
-          backdropFilter: "blur(8px)",
-          outline: "none",
-          boxSizing: "border-box"
+    )
+  ] });
+}
+function ShareSheet({ url, title, caption, onClose, onShared }) {
+  const [copied, setCopied] = reactExports.useState(false);
+  const [shared, setShared] = reactExports.useState(false);
+  reactExports.useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const text = encodeURIComponent(`${caption ? caption + " — " : ""}Watch on Sachi Stream`);
+  const encodedUrl = encodeURIComponent(url);
+  const platforms = [
+    {
+      name: "WhatsApp",
+      emoji: "💬",
+      color: "#25D366",
+      bg: "rgba(37,211,102,0.12)",
+      border: "rgba(37,211,102,0.25)",
+      action: () => {
+        window.open(`https://wa.me/?text=${text}%20${encodedUrl}`, "_blank");
+        done();
+      }
+    },
+    {
+      name: "Messenger",
+      emoji: "📘",
+      color: "#0084FF",
+      bg: "rgba(0,132,255,0.12)",
+      border: "rgba(0,132,255,0.25)",
+      action: () => {
+        window.open(`fb-messenger://share?link=${encodedUrl}`, "_blank");
+        setTimeout(() => window.open(`https://www.facebook.com/dialog/send?link=${encodedUrl}&app_id=291494419107518&redirect_uri=${encodedUrl}`, "_blank"), 500);
+        done();
+      }
+    },
+    {
+      name: "iMessage / SMS",
+      emoji: "📱",
+      color: "#30D158",
+      bg: "rgba(48,209,88,0.12)",
+      border: "rgba(48,209,88,0.25)",
+      action: () => {
+        window.location.href = `sms:?&body=${text}%20${encodedUrl}`;
+        done();
+      }
+    },
+    {
+      name: "X (Twitter)",
+      emoji: "🐦",
+      color: "#fff",
+      bg: "rgba(255,255,255,0.06)",
+      border: "rgba(255,255,255,0.15)",
+      action: () => {
+        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodedUrl}`, "_blank");
+        done();
+      }
+    },
+    {
+      name: "Instagram Story",
+      emoji: "📸",
+      color: "#E1306C",
+      bg: "rgba(225,48,108,0.12)",
+      border: "rgba(225,48,108,0.25)",
+      action: () => {
+        var _a;
+        (_a = navigator.clipboard) == null ? void 0 : _a.writeText(url).then(() => {
+          alert("Link copied! Open Instagram, create a Story, and paste the link as a sticker.");
+        });
+        done();
+      }
+    }
+  ];
+  function done() {
+    setShared(true);
+    onShared && onShared();
+  }
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+      onShared && onShared();
+    } catch {
+      const el2 = document.createElement("textarea");
+      el2.value = url;
+      document.body.appendChild(el2);
+      el2.select();
+      document.execCommand("copy");
+      document.body.removeChild(el2);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+      onShared && onShared();
+    }
+  }
+  async function handleNativeShare() {
+    if (!navigator.share) return false;
+    try {
+      await navigator.share({ title: "Sachi Stream", text: caption || "Watch this on Sachi Stream", url });
+      done();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      onClick: (e) => {
+        if (e.target === e.currentTarget) onClose();
+      },
+      style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "flex-end", justifyContent: "center", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" },
+      children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 480, background: "#141428", borderRadius: "24px 24px 0 0", padding: "0 0 40px", animation: "slideUp 0.28s cubic-bezier(0.34,1.2,0.64,1)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `@keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }` }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: "center", padding: "12px 0 0" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.15)" } }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "12px 20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Share this video" }),
+            caption && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 2, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: caption })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", width: 28, height: 28, borderRadius: "50%", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }, children: "✕" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, padding: "0 16px 20px", overflowX: "auto", scrollbarWidth: "none" }, children: platforms.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: p2.action,
+            style: { flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 10px", background: p2.bg, border: `1px solid ${p2.border}`, borderRadius: 16, cursor: "pointer", minWidth: 68 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24 }, children: p2.emoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: p2.color, fontSize: 10, fontWeight: 700, textAlign: "center", lineHeight: 1.2 }, children: p2.name })
+            ]
+          },
+          p2.name
+        )) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", margin: "0 16px 16px" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px", display: "flex", gap: 8, alignItems: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "10px 12px", color: "rgba(255,255,255,0.4)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: url }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleCopy, style: { padding: "10px 16px", background: copied ? "rgba(80,200,80,0.15)" : "rgba(255,255,255,0.08)", border: `1px solid ${copied ? "rgba(80,200,80,0.3)" : "rgba(255,255,255,0.12)"}`, borderRadius: 12, color: copied ? "#5cc85c" : "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }, children: copied ? "✅ Copied" : "Copy" })
+        ] }),
+        typeof navigator !== "undefined" && navigator.share && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleNativeShare, style: { display: "block", width: "calc(100% - 32px)", margin: "12px 16px 0", padding: "14px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 800, fontSize: 15, cursor: "pointer" }, children: "Share via…" })
+      ] })
+    }
+  );
+}
+function ReportModal({ video, currentUser, onClose }) {
+  const [selected, setSelected] = reactExports.useState(null);
+  const [submitted, setSubmitted] = reactExports.useState(false);
+  const submit = async () => {
+    if (!selected) return;
+    setSubmitted(true);
+    try {
+      await reports.create({
+        video_id: video.id,
+        reporter_id: (currentUser == null ? void 0 : currentUser.id) || "guest",
+        reporter_username: (currentUser == null ? void 0 : currentUser.username) || (currentUser == null ? void 0 : currentUser.email) || "guest",
+        video_caption: video.caption || "",
+        video_username: video.username || video.display_name || "",
+        reason: selected,
+        status: "pending"
+      });
+    } catch (e) {
+      console.error("Report failed:", e);
+    }
+    setTimeout(() => onClose(), 1800);
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "20px 20px 40px", zIndex: 3001 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#444", borderRadius: 99, margin: "0 auto 16px" } }),
+      submitted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "24px 0" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "✅" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 18, marginBottom: 6 }, children: "Report Submitted" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 14 }, children: "Thanks for keeping Sachi safe. We'll review this video." })
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "🚩 Report Video" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer" }, children: "✕" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 16 }, children: "Why are you reporting this video?" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }, children: REPORT_REASONS.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => setSelected(r2.id),
+            style: { display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 12, cursor: "pointer", background: selected === r2.id ? "rgba(255,107,107,0.15)" : "rgba(255,255,255,0.04)", border: `1px solid ${selected === r2.id ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.08)"}`, transition: "all 0.15s" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, flexShrink: 0 }, children: r2.icon }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selected === r2.id ? "#ff6b6b" : "#fff", fontWeight: 600, fontSize: 14 }, children: r2.label }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 12, marginTop: 2 }, children: r2.desc })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginLeft: "auto", width: 18, height: 18, borderRadius: "50%", border: `2px solid ${selected === r2.id ? "#ff6b6b" : "#444"}`, background: selected === r2.id ? "#ff6b6b" : "transparent", flexShrink: 0 } })
+            ]
+          },
+          r2.id
+        )) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: submit,
+            disabled: !selected,
+            style: { width: "100%", padding: 14, background: selected ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 700, fontSize: 15, cursor: selected ? "pointer" : "not-allowed", opacity: selected ? 1 : 0.5 },
+            children: "Submit Report"
+          }
+        )
+      ] })
+    ] })
+  ] });
+}
+const spinStyle = document.createElement("style");
+spinStyle.textContent = `
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+  @keyframes heartbeat {
+    0%   { transform: scale(1); }
+    14%  { transform: scale(1.35); }
+    28%  { transform: scale(1); }
+    42%  { transform: scale(1.25); }
+    56%  { transform: scale(1); }
+    100% { transform: scale(1); }
+  }
+  @keyframes heartShake {
+    0%,100% { transform: rotate(0deg) scale(1); }
+    20%     { transform: rotate(-15deg) scale(1.2); }
+    40%     { transform: rotate(15deg) scale(1.2); }
+    60%     { transform: rotate(-10deg) scale(1.1); }
+    80%     { transform: rotate(10deg) scale(1.1); }
+  }
+  @keyframes floatHeart {
+    0%   { opacity:1; transform:translate(-50%,-50%) scale(0.5); }
+    40%  { opacity:1; transform:translate(-50%,-120%) scale(1.3); }
+    100% { opacity:0; transform:translate(-50%,-220%) scale(0.8); }
+  }
+  @keyframes heartpop {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.5); }
+    60%  { transform: scale(0.9); }
+    80%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+`;
+if (!document.getElementById("spin-style")) {
+  spinStyle.id = "spin-style";
+  document.head.appendChild(spinStyle);
+}
+function getUserAge() {
+  try {
+    const dob = localStorage.getItem("sachi_dob");
+    if (!dob) return null;
+    const birth = new Date(dob);
+    const now = /* @__PURE__ */ new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const m2 = now.getMonth() - birth.getMonth();
+    if (m2 < 0 || m2 === 0 && now.getDate() < birth.getDate()) age--;
+    return age;
+  } catch (e) {
+    return null;
+  }
+}
+const fmtTime = (s) => {
+  if (!s || isNaN(s)) return "0:00";
+  const m2 = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, "0");
+  return `${m2}:${sec}`;
+};
+function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
+  var _a, _b, _c;
+  const [showShareSheet, setShowShareSheet] = React.useState(false);
+  const videoRef = reactExports.useRef(null);
+  const soundRef = reactExports.useRef(null);
+  const viewedRef = reactExports.useRef(false);
+  const heartCooldownRef = reactExports.useRef(false);
+  const doLikeRef = reactExports.useRef(null);
+  const spawnHeartRef = reactExports.useRef(null);
+  const cardRef = reactExports.useRef(null);
+  const doubleTapRef = reactExports.useRef(null);
+  const singleTapTimerRef = reactExports.useRef(null);
+  const [floatingHearts, setFloatingHearts] = reactExports.useState([]);
+  const [playing, setPlaying] = reactExports.useState(false);
+  const [liked, setLiked] = reactExports.useState(() => video._likedByMe === true);
+  const [likeLoading, setLikeLoading] = reactExports.useState(false);
+  const [showAlreadyLikedToast, setShowAlreadyLikedToast] = reactExports.useState(false);
+  const [likeRecordId, setLikeRecordId] = reactExports.useState(null);
+  const [showLikesPanel, setShowLikesPanel] = reactExports.useState(false);
+  const [likesList, setLikesList] = reactExports.useState([]);
+  const [likesListLoading, setLikesListLoading] = reactExports.useState(false);
+  if (window.__sachiMuted === void 0) window.__sachiMuted = false;
+  const [muted, _setMutedLocal] = reactExports.useState(() => window.__sachiMuted ?? false);
+  const [userMuted, setUserMuted] = reactExports.useState(false);
+  const setMuted = (val) => {
+    const newVal = typeof val === "function" ? val(window.__sachiMuted) : val;
+    window.__sachiMuted = newVal;
+    _setMutedLocal(newVal);
+    window.dispatchEvent(new CustomEvent("sachi-mute-change", { detail: newVal }));
+  };
+  reactExports.useEffect(() => {
+    const handler = (e) => {
+      _setMutedLocal(e.detail);
+    };
+    window.addEventListener("sachi-mute-change", handler);
+    return () => window.removeEventListener("sachi-mute-change", handler);
+  }, []);
+  const [photoSwiping, setPhotoSwiping] = reactExports.useState(false);
+  reactExports.useRef(null);
+  const [followRecord, setFollowRecord] = reactExports.useState(null);
+  const [videoProgress, setVideoProgress] = reactExports.useState(0);
+  const [videoDuration, setVideoDuration] = reactExports.useState(0);
+  React.useEffect(() => {
+    const el2 = videoRef.current;
+    if (!el2) return;
+    const onTimeUpdate = () => {
+      if (!el2.duration) return;
+      setVideoProgress(el2.currentTime / el2.duration);
+    };
+    const onMeta = () => setVideoDuration(el2.duration || 0);
+    el2.addEventListener("timeupdate", onTimeUpdate, { passive: true });
+    el2.addEventListener("loadedmetadata", onMeta, { passive: true });
+    return () => {
+      el2.removeEventListener("timeupdate", onTimeUpdate);
+      el2.removeEventListener("loadedmetadata", onMeta);
+    };
+  }, [video.id]);
+  const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
+  const [followLoading, setFollowLoading] = reactExports.useState(false);
+  const [reportTarget, setReportTarget] = reactExports.useState(null);
+  const [showUI, setShowUI] = reactExports.useState(false);
+  const [userTapped, setUserTapped] = reactExports.useState(false);
+  const uiTimerRef = reactExports.useRef(null);
+  const photoUrls = ((_a = (() => {
+    const isVideoUrl = (u2) => /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i.test(u2 || "");
+    const isImageUrl = (u2) => /\.(jpg|jpeg|png|webp|gif|bmp|heic)(\?|$)/i.test(u2 || "");
+    const vurl = video.video_url || "";
+    if (isVideoUrl(vurl)) return null;
+    let parsedPhotos = null;
+    if (video.photo_urls) {
+      let arr = video.photo_urls;
+      if (typeof arr === "string") {
+        try {
+          arr = JSON.parse(arr);
+        } catch (e) {
+          arr = [];
         }
       }
-    ) }),
-    error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%,-50%)",
-      background: "rgba(200,0,0,0.85)",
-      borderRadius: 12,
-      padding: "16px 24px",
-      color: "#fff",
-      fontSize: 14,
-      zIndex: 200,
-      textAlign: "center",
-      maxWidth: 280
-    }, children: error }),
-    phase === "review" && reviewUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      if (Array.isArray(arr)) {
+        parsedPhotos = arr.filter((u2) => u2 && typeof u2 === "string" && u2.trim() && !isVideoUrl(u2));
+        if (parsedPhotos.length === 0) parsedPhotos = null;
+      }
+    }
+    const looksLikeImage = isImageUrl(vurl);
+    const isPhotoPost = video.is_photo || parsedPhotos || looksLikeImage;
+    if (!isPhotoPost) return null;
+    if (parsedPhotos) return parsedPhotos;
+    return vurl ? [vurl] : null;
+  })()) == null ? void 0 : _a.filter((u2) => u2 && typeof u2 === "string" && u2.trim().length > 0)) || null;
+  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || currentUser.username && currentUser.username === video.username);
+  const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
+  const userAge = getUserAge();
+  const isUnder18 = userAge !== null && userAge < 18;
+  const showMatureBlock = video.is_mature && isUnder18 && !ageGateUnlocked;
+  const hideUIAfterDelay = (delay = 2e3) => {
+    if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+    uiTimerRef.current = setTimeout(() => {
+      setShowUI(false);
+      setUserTapped(false);
+    }, delay);
+  };
+  reactExports.useEffect(() => {
+    return () => {
+      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+    };
+  }, []);
+  reactExports.useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = video.sound_url ? true : muted;
+    if (soundRef.current) {
+      if (muted) {
+        soundRef.current.pause();
+      } else if (playing && video.sound_url) {
+        soundRef.current.play().catch(() => {
+        });
+      }
+    }
+  }, [muted]);
+  reactExports.useEffect(() => {
+    const el2 = videoRef.current;
+    if (!el2) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        const currentlyMuted = window.__sachiMuted !== void 0 ? window.__sachiMuted : false;
+        el2.muted = video.sound_url ? true : currentlyMuted;
+        const hasNoSrc = el2.src === "" || !el2.src || el2.src === window.location.href;
+        if (hasNoSrc || el2._hls && el2.readyState < 2) {
+          el2._hlsPendingPlay = true;
+          el2.play().catch(() => {
+          });
+        } else {
+          el2.play().catch(() => {
+          });
+        }
+        setPlaying(true);
+        if (!currentlyMuted && soundRef.current && video.sound_url) {
+          soundRef.current.play().catch(() => {
+          });
+        }
+        setShowUI(true);
+        hideUIAfterDelay(1500);
+        if (!viewedRef.current) {
+          viewedRef.current = true;
+          onView && onView(video.id);
+        }
+      } else {
+        el2.pause();
+        setPlaying(false);
+        if (soundRef.current) soundRef.current.pause();
+        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+        setShowUI(false);
+        setUserTapped(false);
+      }
+    }, { threshold: 0.6 });
+    obs.observe(el2);
+    return () => obs.disconnect();
+  }, []);
+  React.useEffect(() => {
+    if (!photoUrls) return;
+    const outer = document.querySelector(`[data-videoid="${video.id}"]`);
+    if (!outer) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        setShowUI(true);
+        hideUIAfterDelay(3e3);
+        if (!viewedRef.current) {
+          viewedRef.current = true;
+          onView && onView(video.id);
+        }
+      } else {
+        setShowUI(false);
+      }
+    }, { threshold: 0.6 });
+    obs.observe(outer);
+    return () => obs.disconnect();
+  }, [video.id, !!photoUrls]);
+  reactExports.useEffect(() => {
+    var _a2;
+    if (!currentUser) return;
+    if (video._likedByMe === true && !liked) {
+      setLiked(true);
+    }
+    likes.checkUserLiked(video.id, currentUser.id, currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0])).then((rec) => {
+      if (rec) {
+        setLiked(true);
+        setLikeRecordId(rec.id);
+      } else if (video._likedByMe !== true) {
+        setLiked(false);
+        setLikeRecordId(null);
+      }
+    }).catch(() => {
+    });
+  }, [video.id, currentUser == null ? void 0 : currentUser.id]);
+  const doMute = () => {
+    const el2 = videoRef.current;
+    if (!el2) return;
+    const wasPlaying = !el2.paused;
+    const nm = !muted;
+    el2.muted = video.sound_url ? true : nm;
+    setMuted(nm);
+    setUserMuted(nm);
+    if (!nm && wasPlaying) {
+      el2.play().catch(() => {
+      });
+      setPlaying(true);
+      hideUIAfterDelay(1500);
+    }
+  };
+  const doTogglePlay = () => {
+    const el2 = videoRef.current;
+    if (!el2) return;
+    if (el2.paused) {
+      el2.play();
+      setPlaying(true);
+      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+      uiTimerRef.current = setTimeout(() => {
+        setShowUI(false);
+      }, 400);
+    } else {
+      el2.pause();
+      setPlaying(false);
+      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+      setShowUI(true);
+    }
+  };
+  const likeLockedRef = React.useRef(false);
+  const doLike = async () => {
+    var _a2, _b2;
+    if (!currentUser) {
+      onNeedAuth();
+      return;
+    }
+    if (liked && !likeLockedRef.current) {
+      setShowAlreadyLikedToast(true);
+      setTimeout(() => setShowAlreadyLikedToast(false), 2500);
+      return;
+    }
+    if (likeLockedRef.current || likeLoading) return;
+    likeLockedRef.current = true;
+    setLikeLoading(true);
+    setTimeout(() => {
+      likeLockedRef.current = false;
+    }, 1e3);
+    try {
+      if (liked) {
+        if (likeRecordId) await likes.remove(likeRecordId, video.id, currentUser.id);
+        setLiked(false);
+        setLikeRecordId(null);
+        onLike(video.id, -1);
+      } else {
+        const rec = await likes.add(
+          video.id,
+          currentUser.id,
+          currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "user",
+          currentUser.display_name || currentUser.full_name || currentUser.username || "User",
+          currentUser.avatar_url || currentUser.picture || ""
+        );
+        setLiked(true);
+        setLikeRecordId(rec.id);
+        onLike(video.id, 1);
+        if (video.user_id && video.user_id !== currentUser.id) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || ((_b2 = currentUser.email) == null ? void 0 : _b2.split("@")[0]) || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "like",
+            video_id: video.id,
+            video_thumbnail: video.thumbnail_url || "",
+            text: "liked your video"
+          });
+          (async () => {
+            var _a3, _b3;
+            try {
+              const ownerRecords = await AthaVidUser$1.filter({ id: video.user_id });
+              const ownerArr = Array.isArray(ownerRecords) ? ownerRecords : (ownerRecords == null ? void 0 : ownerRecords.records) || (ownerRecords == null ? void 0 : ownerRecords.items) || [];
+              const ownerEmail = ((_a3 = ownerArr[0]) == null ? void 0 : _a3.email) || null;
+              if (ownerEmail && ownerEmail.includes("@")) {
+                fetch("/api/sendEngagementEmail", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    type: "like",
+                    actor_username: currentUser.username || ((_b3 = currentUser.email) == null ? void 0 : _b3.split("@")[0]) || "user",
+                    video_id: video.id,
+                    video_caption: video.caption || video.description || "",
+                    video_thumbnail: video.thumbnail_url || "",
+                    owner_id: video.user_id,
+                    owner_email: ownerEmail
+                  })
+                }).catch(() => {
+                });
+              }
+            } catch (e) {
+            }
+          })();
+        }
+      }
+    } catch (e) {
+      console.error("like error", e);
+    }
+    setLikeLoading(false);
+  };
+  const spawnHeart = (x2, y2) => {
+    if (heartCooldownRef.current) return false;
+    heartCooldownRef.current = true;
+    setTimeout(() => {
+      heartCooldownRef.current = false;
+    }, 800);
+    const id2 = Date.now();
+    setFloatingHearts((prev) => [...prev, { id: id2, x: x2, y: y2 }]);
+    setTimeout(() => setFloatingHearts((prev) => prev.filter((h) => h.id !== id2)), 900);
+    return true;
+  };
+  const openLikesPanel = async () => {
+    setShowLikesPanel(true);
+    setLikesListLoading(true);
+    try {
+      const res = await likes.getByVideo(video.id);
+      const raw = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+      const seen = /* @__PURE__ */ new Map();
+      for (const lk2 of raw) {
+        const key = lk2.username || lk2.user_id;
+        if (!key) continue;
+        if (!seen.has(key) || lk2.created_date > seen.get(key).created_date) {
+          seen.set(key, lk2);
+        }
+      }
+      setLikesList([...seen.values()]);
+    } catch (e) {
+      setLikesList([]);
+    }
+    setLikesListLoading(false);
+  };
+  const doFollow = async () => {
+    var _a2, _b2, _c2;
+    if (!currentUser) {
+      onNeedAuth();
+      return;
+    }
+    if (isOwnVideo) return;
+    const targetUserId = video.user_id || video.created_by;
+    if (!targetUserId) return;
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        try {
+          const res = await follows.getFollowing(currentUser.id, currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]));
+          const items = res.items || res || [];
+          const rec = items.find((r2) => r2.following_id === targetUserId);
+          if (rec) await follows.unfollow(rec.id);
+        } catch (e) {
+        }
+        setFollowRecord(null);
+        if (onFollowChange) onFollowChange(targetUserId, false);
+      } else {
+        const rec = await follows.follow(
+          currentUser.id,
+          currentUser.username || ((_b2 = currentUser.email) == null ? void 0 : _b2.split("@")[0]),
+          targetUserId,
+          video.username || video.display_name || ""
+        );
+        setFollowRecord(rec);
+        if (onFollowChange) onFollowChange(targetUserId, true);
+        if (video.user_id && video.user_id !== currentUser.id) {
+          createNotif({
+            recipient_id: video.user_id,
+            sender_id: currentUser.id,
+            sender_username: currentUser.username || ((_c2 = currentUser.email) == null ? void 0 : _c2.split("@")[0]) || "user",
+            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
+            type: "follow",
+            text: "started following you"
+          });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setFollowLoading(false);
+  };
+  const [showDeleteConfirm, setShowDeleteConfirm] = reactExports.useState(false);
+  const [showFullCaption, setShowFullCaption] = reactExports.useState(false);
+  const doDelete = async () => {
+    if (!currentUser || !isOwnVideo) return;
+    setShowDeleteConfirm(true);
+  };
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
+    try {
+      const res = await fetch("/api/delete-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: video.id,
+          user_id: currentUser == null ? void 0 : currentUser.id,
+          username: currentUser == null ? void 0 : currentUser.username
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      onDelete && onDelete(video.id);
+    } catch (err) {
+      alert("Failed to delete. Try again.");
+    }
+  };
+  doLikeRef.current = doLike;
+  spawnHeartRef.current = spawnHeart;
+  reactExports.useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const onTouchEnd = (e) => {
+      const t2 = e.changedTouches[0];
+      if (!t2) return;
+      if (e.target.closest("input, a, [data-no-gesture], [data-photo-carousel]")) return;
+      const rect = card.getBoundingClientRect();
+      const x2 = t2.clientX - rect.left;
+      const y2 = t2.clientY - rect.top;
+      const now = Date.now();
+      if (doubleTapRef.current && now - doubleTapRef.current < 350) {
+        doubleTapRef.current = null;
+        if (singleTapTimerRef.current) {
+          clearTimeout(singleTapTimerRef.current);
+          singleTapTimerRef.current = null;
+        }
+        const fired = spawnHeartRef.current(x2, y2);
+        if (fired && !likeLockedRef.current) doLikeRef.current();
+      } else {
+        doubleTapRef.current = now;
+        if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = setTimeout(() => {
+          singleTapTimerRef.current = null;
+          doubleTapRef.current = null;
+        }, 350);
+      }
+    };
+    card.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => card.removeEventListener("touchend", onTouchEnd);
+  }, [video.id]);
+  const tap = (fn) => (e) => {
+    e.stopPropagation();
+    fn();
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: cardRef, "data-videoid": video.id, style: { position: "relative", width: "100%", height: "calc(100dvh - 80px)", background: "#0B0C1A", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", overflow: "hidden" }, children: [
+    showMatureBlock && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       position: "absolute",
       inset: 0,
-      background: "#000",
-      zIndex: 150,
+      zIndex: 200,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      gap: 0
+      background: "rgba(11,12,26,0.92)",
+      backdropFilter: "blur(20px)",
+      gap: 16,
+      padding: 32
     }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "video",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 52 }, children: "🔞" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, textAlign: "center" }, children: "Mature Content" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 14, textAlign: "center", lineHeight: 1.6 }, children: "This video contains content that may not be suitable for viewers under 18." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#666", fontSize: 12, textAlign: "center" }, children: [
+        "Content type: ",
+        video.mature_reason ? video.mature_reason.replace(/_/g, " ") : "mature"
+      ] }),
+      userAge === null && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 13, textAlign: "center" }, children: "Sign in or verify your age to view this content." }),
+      userAge !== null && userAge >= 18 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
         {
-          src: reviewUrl,
-          controls: true,
-          autoPlay: true,
-          playsInline: true,
-          style: { width: "100%", height: "70%", objectFit: "contain", background: "#000" }
+          onClick: () => setAgeGateUnlocked(true),
+          style: {
+            padding: "12px 28px",
+            background: "linear-gradient(135deg,#ff6b6b,#ff8e53)",
+            border: "none",
+            borderRadius: 14,
+            color: "#fff",
+            fontWeight: 800,
+            fontSize: 15,
+            cursor: "pointer"
+          },
+          children: "I'm 18+ — View Anyway"
+        }
+      )
+    ] }),
+    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      PhotoCarousel,
+      {
+        photoUrls,
+        resolveMediaUrl,
+        soundRef,
+        muted,
+        setMuted,
+        userMuted,
+        sound_url: video.sound_url,
+        sound_title: video.sound_title,
+        showUI,
+        setShowUI,
+        setShowFullCaption,
+        onSwiping: setPhotoSwiping,
+        onArrowNav: () => {
+          setShowUI(false);
+          if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
+          uiTimerRef.current = setTimeout(() => setShowUI(true), 5e3);
+        }
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+      VideoPlayer,
+      {
+        video,
+        videoRef,
+        soundRef,
+        muted,
+        setMuted,
+        userMuted,
+        playing,
+        setPlaying,
+        resolveMediaUrl,
+        hideUIAfterDelay
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.75) 0%, rgba(11,12,26,0.2) 40%, transparent 70%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
+    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        onClick: tap(() => {
+          const resolvedVideoUrl = resolveMediaUrl(video.video_url);
+          const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
+          if (isImg || !video.video_url) {
+            setShowUI((v2) => !v2);
+            if (!showUI) setShowFullCaption(true);
+          } else {
+            doTogglePlay();
+          }
+        }),
+        style: { position: "absolute", top: 60, left: 0, right: 0, bottom: 80, zIndex: 50, cursor: "pointer" }
+      }
+    ),
+    !playing && !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: tap(doTogglePlay), style: {
+      background: "rgba(11,12,26,0.7)",
+      border: "1.5px solid rgba(245,200,66,0.4)",
+      borderRadius: "50%",
+      width: 64,
+      height: 64,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      pointerEvents: "auto",
+      cursor: "pointer",
+      fontSize: 26
+    }, children: "▶" }) }),
+    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        "data-no-gesture": "1",
+        style: {
+          position: "absolute",
+          bottom: 68,
+          left: 12,
+          right: 12,
+          zIndex: 600,
+          opacity: showUI ? 1 : 0,
+          transition: "opacity 0.25s ease",
+          pointerEvents: showUI ? "auto" : "none"
+        },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 28, marginBottom: 8 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                "data-no-gesture": "1",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  const el2 = videoRef.current;
+                  if (el2) el2.currentTime = Math.max(0, el2.currentTime - 10);
+                },
+                style: { background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(8px)" },
+                children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "white", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("text", { x: "7", y: "16", fontSize: "7", fill: "white", fontWeight: "bold", children: "10" })
+                ] })
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                "data-no-gesture": "1",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  const el2 = videoRef.current;
+                  if (!el2) return;
+                  el2.currentTime = 0;
+                  el2.play().catch(() => {
+                  });
+                  setPlaying(true);
+                  hideUIAfterDelay(1500);
+                },
+                style: { background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(8px)" },
+                children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "white", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" }) })
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                "data-no-gesture": "1",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  const el2 = videoRef.current;
+                  if (el2) el2.currentTime = Math.min(el2.duration || 0, el2.currentTime + 10);
+                },
+                style: { background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(8px)" },
+                children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "white", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("text", { x: "7", y: "16", fontSize: "7", fill: "white", fontWeight: "bold", children: "10" })
+                ] })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              "data-no-gesture": "1",
+              style: { position: "relative", height: 4, borderRadius: 2, background: "rgba(255,255,255,0.25)", cursor: "pointer", overflow: "visible" },
+              onClick: (e) => {
+                e.stopPropagation();
+                const el2 = videoRef.current;
+                if (!el2 || !el2.duration) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                el2.currentTime = pct * el2.duration;
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "100%", borderRadius: 2, background: "#F5C842", width: `${(videoProgress * 100).toFixed(1)}%`, transition: "width 0.25s linear" } }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: "50%", left: `${(videoProgress * 100).toFixed(1)}%`, transform: "translate(-50%,-50%)", width: 12, height: 12, borderRadius: "50%", background: "#fff", boxShadow: "0 0 4px rgba(0,0,0,0.5)" } })
+              ]
+            }
+          ),
+          videoDuration > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: fmtTime(((_b = videoRef.current) == null ? void 0 : _b.currentTime) || 0) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: fmtTime(videoDuration) })
+          ] })
+        ]
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 96, left: 16, right: 72, zIndex: 500, transition: "opacity 0.25s ease", opacity: photoSwiping ? 0 : showUI || !!photoUrls ? 1 : 0, pointerEvents: photoSwiping || !(showUI || !!photoUrls) ? "none" : "auto", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          style: { display: "flex", flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" },
+          onClick: tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name)),
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }, children: video.display_name || video.username }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: [
+              "@",
+              video.username
+            ] })
+          ]
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 8 }, children: "Review your live recording" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 16, marginTop: 16 }, children: [
+      video.sound_title && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6, overflow: "hidden" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 14, flexShrink: 0, animation: playing ? "spin 3s linear infinite" : "none", display: "inline-block" }, children: "🎵" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflow: "hidden", flex: 1 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          color: "rgba(255,255,255,0.85)",
+          fontSize: 12,
+          fontWeight: 600,
+          whiteSpace: "nowrap",
+          animation: playing ? "marquee 8s linear infinite" : "none",
+          display: "inline-block"
+        }, children: [
+          video.sound_title,
+          video.sound_artist ? ` · ${video.sound_artist}` : ""
+        ] }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap", alignItems: "center" }, children: [
+        !video.is_ai_detected ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "rgba(107,255,154,0.15)", color: "#6BFFB8", padding: "2px 9px", borderRadius: 20, fontWeight: 700, border: "1px solid rgba(107,255,154,0.3)" }, children: "✓ Real" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "rgba(255,149,0,0.15)", color: "#FF9500", padding: "2px 9px", borderRadius: 20, fontWeight: 700, border: "1px solid rgba(255,149,0,0.3)" }, children: "🤖 AI Generated" }),
+        video.created_date && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          background: "rgba(0,0,0,0.45)",
+          borderRadius: 20,
+          padding: "3px 10px",
+          width: "fit-content"
+        }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12 }, children: "📅" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600 }, children: [
+            formatDate(video.created_date),
+            video.post_country && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: 6, opacity: 0.9 }, children: [
+              countryFlag(video.post_country),
+              (() => {
+                const city = video.post_city || null;
+                const stateAbbr = video.post_region ? getStateAbbr(video.post_region, video.post_country) : null;
+                if (city && stateAbbr) return ` ${city}, ${stateAbbr}`;
+                if (city) return ` ${city}`;
+                if (stateAbbr) return ` ${stateAbbr}`;
+                return ` ${video.post_country}`;
+              })()
+            ] })
+          ] })
+        ] })
+      ] }),
+      video.caption && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 14, lineHeight: 1.5 }, children: [
+        showFullCaption || (video.caption || "").length <= 80 ? video.caption : (video.caption || "").slice(0, 80) + "…",
+        (video.caption || "").length > 80 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "span",
+          {
+            onClick: tap(() => setShowFullCaption((v2) => !v2)),
+            style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginLeft: 6, cursor: "pointer", fontWeight: 600 },
+            children: showFullCaption ? "see less" : "see more"
+          }
+        )
+      ] }),
+      ((_c = video.hashtags) == null ? void 0 : _c.length) > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 13, marginTop: 4 }, children: video.hashtags.slice(0, 4).map((t2) => `#${t2.replace(/^#/, "")}`).join(" ") })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 72, left: 14, display: "flex", flexDirection: "row", alignItems: "center", gap: 10, zIndex: 999 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "div",
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name);
+          },
+          style: { width: 22, height: 22, borderRadius: "50%", overflow: "hidden", border: "1.5px solid rgba(245,200,66,0.7)", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.5)" },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`,
+              style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }
+            }
+          )
+        }
+      ),
+      !isOwnVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            doFollow();
+          },
+          disabled: followLoading,
+          style: {
+            height: 28,
+            borderRadius: 20,
+            border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
+            background: isFollowing ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(8px)",
+            color: isFollowing ? "#F5C842" : "#fff",
+            fontWeight: 700,
+            fontSize: 12,
+            letterSpacing: 0.3,
+            padding: "0 12px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            boxShadow: isFollowing ? "0 0 10px rgba(245,200,66,0.3)" : "none",
+            transition: "all 0.25s",
+            WebkitTapHighlightColor: "transparent",
+            touchAction: "manipulation"
+          },
+          children: followLoading ? "·" : isFollowing ? "✓ Following" : "+ Follow"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 12, bottom: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 500, transition: "opacity 0.25s ease", opacity: photoSwiping ? 0 : showUI || !!photoUrls ? 1 : 0, pointerEvents: photoSwiping || !(showUI || !!photoUrls) ? "none" : "auto", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: tap(doMute),
+          style: {
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            WebkitTapHighlightColor: "transparent",
+            touchAction: "manipulation"
+          },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: muted ? "1px solid rgba(245,200,66,0.35)" : "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }, children: muted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "#F5C842", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "23", y1: "9", x2: "17", y2: "15" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "17", y1: "9", x2: "23", y2: "15" })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" })
+          ] }) })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }, children: [
+        showAlreadyLikedToast && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          position: "absolute",
+          bottom: 140,
+          right: -10,
+          background: "linear-gradient(135deg,rgba(30,10,30,0.97),rgba(20,5,20,0.97))",
+          border: "1px solid rgba(255,107,107,0.6)",
+          borderRadius: 18,
+          padding: "10px 16px",
+          fontSize: 13,
+          color: "#FF6B6B",
+          fontWeight: 700,
+          zIndex: 9999,
+          whiteSpace: "nowrap",
+          boxShadow: "0 6px 24px rgba(255,60,60,0.3), 0 2px 8px rgba(0,0,0,0.6)",
+          animation: "bruhPop 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards",
+          letterSpacing: 0.2
+        }, children: "💀 bruh, you already liked this" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => {
-              URL.revokeObjectURL(reviewUrl);
-              setReviewUrl("");
-              chunksRef.current = [];
-              onClose();
-            },
+            onClick: tap(doLike),
+            disabled: likeLoading,
             style: {
-              padding: "12px 28px",
-              borderRadius: 12,
-              background: "rgba(255,255,255,0.1)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              color: "#fff",
-              fontSize: 14,
-              cursor: "pointer"
+              background: "none",
+              border: "none",
+              cursor: likeLoading ? "default" : "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation",
+              opacity: likeLoading ? 0.6 : 1
             },
-            children: "🗑️ Discard"
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(12px)",
+              border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              animation: showAlreadyLikedToast ? "heartShake 0.4s ease" : liked ? "heartpop 0.4s ease forwards" : "none",
+              transformOrigin: "center",
+              transition: "background 0.2s, border 0.2s"
+            }, children: likeLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10 }, children: "⏳" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: "#FF6B6B", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) })
           }
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: () => {
-              setPhase("uploading");
-              setTimeout(() => uploadLive(), 300);
-            },
-            style: {
-              padding: "12px 28px",
-              borderRadius: 12,
-              background: "linear-gradient(135deg,#F5C842,#FF9500)",
-              border: "none",
-              color: "#0B0C1A",
-              fontWeight: 800,
-              fontSize: 14,
-              cursor: "pointer"
-            },
-            children: "📤 Post Live"
+            onClick: tap(openLikesPanel),
+            style: { background: "none", border: "none", cursor: "pointer", padding: 0, WebkitTapHighlightColor: "transparent" },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600, textDecoration: "underline", textDecorationColor: "rgba(255,255,255,0.3)" }, children: formatCount(video.likes_count || 0) })
           }
         )
-      ] })
-    ] }),
-    phase === "uploading" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-      position: "absolute",
-      inset: 0,
-      background: "rgba(0,0,0,0.75)",
-      zIndex: 150,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 16
-    }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48 }, children: "📤" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 18, fontWeight: 700 }, children: "Uploading your live..." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13 }, children: "This may take a moment" })
-    ] }),
-    phase === "done" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-      position: "absolute",
-      inset: 0,
-      background: "rgba(0,0,0,0.85)",
-      zIndex: 150,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 16
-    }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 56 }, children: "✅" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 20, fontWeight: 800 }, children: "Posted to feed!" })
-    ] }),
-    phase === "preview" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 60, left: "50%", transform: "translateX(-50%)", zIndex: 100 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
-          onClick: startLive,
+          onClick: tap(() => onCommentOpen(video)),
           style: {
-            width: 80,
-            height: 80,
-            borderRadius: "50%",
-            background: "#e53935",
-            border: "5px solid rgba(255,255,255,0.3)",
+            background: "none",
+            border: "none",
             cursor: "pointer",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 0 24px rgba(229,57,53,0.7)",
-            fontSize: 28
+            gap: 3,
+            WebkitTapHighlightColor: "transparent",
+            touchAction: "manipulation"
           },
-          children: "🔴"
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.comments_count) })
+          ]
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tap to Go Live" })
-    ] }),
-    phase === "live" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 60, left: "50%", transform: "translateX(-50%)", zIndex: 100 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
         {
-          onClick: stopLive,
+          onClick: tap(() => setShowShareSheet(true)),
           style: {
-            width: 80,
-            height: 80,
-            borderRadius: "50%",
-            background: "#222",
-            border: "5px solid #e53935",
+            background: "none",
+            border: "none",
             cursor: "pointer",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 0 24px rgba(229,57,53,0.5)",
-            fontSize: 28
+            gap: 3,
+            WebkitTapHighlightColor: "transparent",
+            touchAction: "manipulation"
           },
-          children: "⏹️"
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "5", r: "3" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "6", cy: "12", r: "3" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "19", r: "3" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8.59", y1: "13.51", x2: "15.42", y2: "17.49" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "15.41", y1: "6.51", x2: "8.59", y2: "10.49" })
+            ] }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.shares_count || 0) })
+          ]
         }
       ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tap to Stop & Post" })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
-        @keyframes livePulse {
-          0%, 100% { opacity:1; box-shadow: 0 0 12px rgba(229,57,53,0.8); }
-          50% { opacity:0.7; box-shadow: 0 0 24px rgba(229,57,53,1); }
+      currentUser && (() => {
+        var _a2;
+        const isBookmarked = (_a2 = onBookmark == null ? void 0 : onBookmark.isBookmarked) == null ? void 0 : _a2.call(onBookmark, video.id);
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: tap(async () => {
+              if (!currentUser) {
+                onNeedAuth && onNeedAuth();
+                return;
+              }
+              (onBookmark == null ? void 0 : onBookmark.handle) && onBookmark.handle(video.id, !isBookmarked);
+            }),
+            style: {
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              WebkitTapHighlightColor: "transparent",
+              touchAction: "manipulation"
+            },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: isBookmarked ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: `1px solid ${isBookmarked ? "rgba(245,200,66,0.5)" : "rgba(255,255,255,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: isBookmarked ? "#F5C842" : "none", stroke: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" }) }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: "Save" })
+            ]
+          }
+        );
+      })(),
+      isOwnVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: tap(doDelete),
+          style: {
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            WebkitTapHighlightColor: "transparent",
+            touchAction: "manipulation"
+          },
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: "rgba(255,60,60,0.12)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,60,60,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "#ff5555", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "3 6 5 6 21 6" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10 11v6" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M14 11v6" })
+          ] }) })
         }
-      ` })
+      )
+    ] }),
+    reportTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(ReportModal, { video: reportTarget, currentUser, onClose: () => setReportTarget(null) }),
+    showLikesPanel && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center" },
+        onClick: () => setShowLikesPanel(false),
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), style: { width: "100%", maxWidth: 480, background: "#13142A", borderRadius: "24px 24px 0 0", padding: "0 0 40px", maxHeight: "70vh", display: "flex", flexDirection: "column" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: "❤️" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: likesListLoading ? "Likes" : `${likesList.length} ${likesList.length === 1 ? "Like" : "Likes"}` })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowLikesPanel(false), style: { background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 22, lineHeight: 1, padding: "2px 6px" }, children: "✕" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1 }, children: likesListLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40, fontSize: 14 }, children: "Loading…" }) : likesList.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🤍" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No likes yet — be the first!" })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column" }, children: likesList.map((lk2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: lk2.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(lk2.display_name || lk2.username || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
+                style: { width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: lk2.display_name || lk2.username || "User" }),
+              lk2.username && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12 }, children: [
+                "@",
+                lk2.username
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#FF6B6B", fontSize: 16 }, children: "❤️" })
+          ] }, lk2.id || i)) }) })
+        ] })
+      }
+    ),
+    showDeleteConfirm && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center" },
+        onClick: () => setShowDeleteConfirm(false),
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), style: { width: "100%", maxWidth: 480, background: "#1a1a2e", borderRadius: "24px 24px 0 0", padding: "28px 24px 48px", display: "flex", flexDirection: "column", gap: 16 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🗑️" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 18, fontWeight: 700 }, children: "Delete Video?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 6 }, children: "This can't be undone." })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: confirmDelete,
+              style: { width: "100%", padding: "14px", background: "#ff3b30", border: "none", borderRadius: 14, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer" },
+              children: "Yes, Delete"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => setShowDeleteConfirm(false),
+              style: { width: "100%", padding: "14px", background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 14, color: "#fff", fontSize: 16, fontWeight: 600, cursor: "pointer" },
+              children: "Cancel"
+            }
+          )
+        ] })
+      }
+    ),
+    showShareSheet && (() => {
+      const shareUrl = `${window.location.origin}/post/${video.id}`;
+      const storedCode = localStorage.getItem("sachi_invite_code");
+      const fullShareUrl = storedCode ? `${shareUrl}?ref=${storedCode}` : shareUrl;
+      return /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ShareSheet,
+        {
+          url: fullShareUrl,
+          title: "Sachi Stream",
+          caption: video.caption || video.description || "",
+          onClose: () => setShowShareSheet(false),
+          onShared: async () => {
+            setShowShareSheet(false);
+            try {
+              const newCount = (video.shares_count || 0) + 1;
+              onShareCount && onShareCount(video.id, newCount);
+              await videos.update(video.id, { shares_count: newCount });
+            } catch (e) {
+            }
+          }
+        }
+      );
+    })(),
+    floatingHearts.map((h) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      left: h.x,
+      top: h.y,
+      fontSize: 52,
+      pointerEvents: "none",
+      zIndex: 9999,
+      transform: "translate(-50%,-50%)",
+      animation: "floatHeart 0.9s ease-out forwards"
+    }, children: "💜" }, h.id))
   ] });
 }
 function VideoEditor({ file, onDone, onSkip }) {
@@ -11870,7 +13389,7 @@ function VideoEditor({ file, onDone, onSkip }) {
     var _a;
     return setCurrentTime(((_a = videoRef.current) == null ? void 0 : _a.currentTime) || 0);
   };
-  const fmtTime = (s) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
+  const fmtTime2 = (s) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
   const togglePlay = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
@@ -12090,14 +13609,14 @@ function VideoEditor({ file, onDone, onSkip }) {
     activeMode === "trim" && duration > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 140, left: 0, right: 0, zIndex: 15, background: "rgba(15,15,26,0.95)", borderRadius: "20px 20px 0 0", padding: "20px 20px 10px", backdropFilter: "blur(16px)" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 14, textAlign: "center" }, children: [
         "✂️ Trim — ",
-        fmtTime(trimStart),
+        fmtTime2(trimStart),
         " to ",
-        fmtTime(trimEnd)
+        fmtTime2(trimEnd)
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 12 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 4 }, children: [
           "Start: ",
-          fmtTime(trimStart)
+          fmtTime2(trimStart)
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "input",
@@ -12119,7 +13638,7 @@ function VideoEditor({ file, onDone, onSkip }) {
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 4 }, children: [
           "End: ",
-          fmtTime(trimEnd)
+          fmtTime2(trimEnd)
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "input",
@@ -12255,6 +13774,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const [showEditor, setShowEditor] = reactExports.useState(false);
   const [uploadTab, setUploadTab] = reactExports.useState("video");
   const [photos, setPhotos] = reactExports.useState([]);
+  const [dragPhotoIdx, setDragPhotoIdx] = reactExports.useState(null);
   const photoRef = reactExports.useRef();
   const [caption, setCaption] = reactExports.useState("");
   const [isMature, setIsMature] = reactExports.useState(false);
@@ -12441,6 +13961,24 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     return aiKeywords.some((kw) => combined.includes(kw));
   };
   const [explicitBlocked, setExplicitBlocked] = reactExports.useState(false);
+  const handleFileSelect = (f2) => {
+    if (!f2) return;
+    setFile(f2);
+    setEditedFile(null);
+    setAiBlocked(false);
+    setExplicitBlocked(false);
+    if (checkForAiSignatures(f2, caption)) {
+      setAiBlocked(true);
+      return;
+    }
+    if (checkForExplicitContent(f2, caption)) {
+      setExplicitBlocked(true);
+      return;
+    }
+    const looksLikeVideo = f2.type.startsWith("video/") || f2.type === "" || /\.(mp4|mov|webm|avi|mkv)$/i.test(f2.name);
+    const looksLikeImage = f2.type.startsWith("image/");
+    if (looksLikeVideo || looksLikeImage) setShowEditor(true);
+  };
   const handlePhotoSelect = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -12453,19 +13991,26 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   const uploadPhotos = async () => {
     var _a;
     if (!photos.length) return;
+    if (typeof uploadFile !== "function") {
+      alert("Upload failed: uploadFile is not available. Please refresh the page and try again.");
+      console.error("CRITICAL: uploadFile is not defined — check api.js import in UploadModal.jsx");
+      return;
+    }
     setUploading(true);
     setProgress(10);
     try {
       setStep("Uploading photos...");
       const urls = [];
       for (let i = 0; i < photos.length; i++) {
-        const url = await uploadFile(photos[i]);
-        urls.push(url);
+        const result = await uploadFile(photos[i], (pct) => {
+          setProgress(10 + Math.round((i + pct / 100) / photos.length * 70));
+        });
+        urls.push(result.file_url || result);
         setProgress(10 + Math.round((i + 1) / photos.length * 70));
       }
       setProgress(85);
       setStep("Saving to feed...");
-      const photoGeo = await getPostLocation();
+      const photoGeo = await getPostLocation$1();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       const tags = (caption.match(/#\w+/g) || []).map((t2) => t2.toLowerCase());
       await videos.create({
@@ -12501,19 +14046,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }, 2500);
       } else {
         setStep("Posted! 🎉");
-        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            poster_id: currentUser.id,
-            poster_username: username,
-            poster_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-            video_caption: (postTitle ? postTitle + " " : "") + caption.trim()
-          })
-        }).catch(() => {
-        });
         setTimeout(() => {
-          onUploaded();
+          onUploaded(createdPost);
           onClose();
         }, 1e3);
       }
@@ -12551,7 +14085,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         v2.src = URL.createObjectURL(file);
       });
       if (dur > maxDuration) {
-        alert(`⚠️ Your video is ${Math.round(dur)}s long. The limit for this format is ${maxDuration === 600 ? "10 minutes" : maxDuration + " seconds"}. Please trim it and try again.`);
+        alert(`⚠️ Your video is ${Math.round(dur)}s long. The limit for this format is ${maxDuration === 600 ? "10 minutes" : maxDuration === 120 ? "2 minutes" : maxDuration + " seconds"}. Please trim it and try again.`);
         return;
       }
     } catch {
@@ -12559,11 +14093,16 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     setUploading(true);
     setProgress(10);
     try {
-      setStep("Uploading video...");
-      const video_url = await uploadFile(editedFile || file);
+      setStep("Uploading video to Cloudflare...");
+      const uploadResult = await uploadFile(editedFile || file, (pct) => {
+        setProgress(10 + Math.round(pct * 0.5));
+      });
+      const video_url = uploadResult.file_url || uploadResult;
+      const cfThumbnail = uploadResult.thumbnail_url || null;
+      const media_url = uploadResult.media_url || null;
       setProgress(60);
       setStep("Generating thumbnail...");
-      let thumbnail_url = null;
+      let thumbnail_url = cfThumbnail;
       try {
         thumbnail_url = await Promise.race([captureThumbnail(file), new Promise((r2) => setTimeout(() => r2(null), 5e3))]);
       } catch {
@@ -12610,7 +14149,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                   if (!blob || blob.size < 1e3) return resolve(null);
                   const tf2 = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
                   try {
-                    resolve(await uploadFile(tf2));
+                    const r2 = await uploadFile(tf2);
+                    resolve(r2.file_url || r2);
                   } catch {
                     resolve(null);
                   }
@@ -12633,16 +14173,17 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       if (!thumbnail_url) thumbnail_url = null;
       setProgress(80);
       setStep("Saving to feed...");
-      const videoGeo = await getPostLocation();
+      const videoGeo = await getPostLocation$1();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       const tags = (caption.match(/#\w+/g) || []).map((t2) => t2.toLowerCase());
-      await videos.create({
+      const createdPost2 = await videos.create({
         user_id: currentUser.id,
         username,
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
         video_url,
         thumbnail_url,
+        media_url,
         caption: (postTitle ? postTitle + "\n" : "") + caption.trim(),
         hashtags: tags,
         likes_count: 0,
@@ -12670,19 +14211,8 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }, 2500);
       } else {
         setStep("Posted! 🎉");
-        fetch("https://sachi-c7f0261c.base44.app/functions/sendFollowNotification", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            poster_id: currentUser.id,
-            poster_username: username,
-            poster_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-            video_caption: (postTitle ? postTitle + " " : "") + caption.trim()
-          })
-        }).catch(() => {
-        });
         setTimeout(() => {
-          onUploaded();
+          onUploaded(createdPost2);
           onClose();
         }, 1e3);
       }
@@ -12734,6 +14264,11 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
   };
   const uploadTextPost = async () => {
     var _a;
+    if (typeof uploadFile !== "function") {
+      alert("Upload failed: uploadFile is not available. Please refresh the page and try again.");
+      console.error("CRITICAL: uploadFile is not defined — check api.js import in UploadModal.jsx");
+      return;
+    }
     if (!textPostContent.trim()) {
       alert("Please write something first!");
       return;
@@ -12826,10 +14361,11 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const blob = await new Promise((r2) => canvas.toBlob(r2, "image/jpeg", 0.92));
       const imgFile = new File([blob], `textpost_${Date.now()}.jpg`, { type: "image/jpeg" });
       setStep("Uploading...");
-      const img_url = await uploadFile(imgFile);
+      const imgResult = await uploadFile(imgFile, (pct) => setProgress(10 + Math.round(pct * 0.7)));
+      const img_url = imgResult.file_url || imgResult;
       setProgress(75);
       setStep("Posting...");
-      const textGeo = await getPostLocation();
+      const textGeo = await getPostLocation$1();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       await videos.create({
         user_id: currentUser.id,
@@ -13175,6 +14711,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8 }, children: [
               { label: "15s", val: 15, icon: "⚡" },
               { label: "60s", val: 60, icon: "🎬" },
+              { label: "2 min", val: 120, icon: "📹" },
               { label: "10 min", val: 600, icon: "🎥" }
             ].map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "button",
@@ -13204,61 +14741,94 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
             )) })
           ] }),
           uploadTab === "photo" ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
-            photos.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }, children: [
-              photos.map((p2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", border: "2px solid rgba(255,107,107,0.3)" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: URL.createObjectURL(p2), style: { width: "100%", height: "100%", objectFit: "cover" } }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
+            photos.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 11, textAlign: "center", marginBottom: 6, fontWeight: 600, letterSpacing: 0.3 }, children: "☰ Drag photos to reorder · First photo is the cover" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 12 }, children: [
+                photos.map((p2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
                   {
-                    onClick: () => removePhoto(i),
+                    draggable: true,
+                    onDragStart: () => setDragPhotoIdx(i),
+                    onDragOver: (e) => e.preventDefault(),
+                    onDrop: () => {
+                      if (dragPhotoIdx === null || dragPhotoIdx === i) return;
+                      const newPhotos = [...photos];
+                      const [moved] = newPhotos.splice(dragPhotoIdx, 1);
+                      newPhotos.splice(i, 0, moved);
+                      setPhotos(newPhotos);
+                      setDragPhotoIdx(null);
+                    },
+                    onDragEnd: () => setDragPhotoIdx(null),
                     style: {
-                      position: "absolute",
-                      top: 4,
-                      right: 4,
-                      background: "rgba(0,0,0,0.7)",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 22,
-                      height: 22,
-                      color: "#fff",
-                      fontSize: 13,
-                      cursor: "pointer",
+                      position: "relative",
+                      aspectRatio: "1",
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      border: dragPhotoIdx === i ? "2px solid #F5C842" : i === 0 ? "2px solid rgba(255,107,107,0.8)" : "2px solid rgba(255,107,107,0.3)",
+                      cursor: "grab",
+                      opacity: dragPhotoIdx === i ? 0.5 : 1,
+                      transition: "opacity 0.15s, border 0.15s"
+                    },
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: URL.createObjectURL(p2), style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" } }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "button",
+                        {
+                          onClick: () => removePhoto(i),
+                          style: {
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            background: "rgba(0,0,0,0.7)",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: 22,
+                            height: 22,
+                            color: "#fff",
+                            fontSize: 13,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            lineHeight: 1,
+                            zIndex: 2
+                          },
+                          children: "✕"
+                        }
+                      ),
+                      i === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 4, left: 4, background: "rgba(255,107,107,0.85)", borderRadius: 6, padding: "1px 6px", fontSize: 10, color: "#fff", fontWeight: 700, zIndex: 2 }, children: "Cover" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 4, left: 4, background: "rgba(0,0,0,0.55)", borderRadius: 6, padding: "1px 5px", fontSize: 10, color: "#aaa", fontWeight: 600, zIndex: 2 }, children: i + 1 })
+                    ]
+                  },
+                  i
+                )),
+                photos.length < 6 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    onClick: () => {
+                      var _a;
+                      return (_a = photoRef.current) == null ? void 0 : _a.click();
+                    },
+                    style: {
+                      aspectRatio: "1",
+                      borderRadius: 10,
+                      border: "2px dashed rgba(255,255,255,0.2)",
                       display: "flex",
+                      flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
-                      lineHeight: 1
+                      cursor: "pointer",
+                      color: "#888",
+                      fontSize: 12,
+                      gap: 4
                     },
-                    children: "✕"
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24 }, children: "＋" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Add more" })
+                    ]
                   }
-                ),
-                i === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 4, left: 4, background: "rgba(255,107,107,0.85)", borderRadius: 6, padding: "1px 6px", fontSize: 10, color: "#fff", fontWeight: 700 }, children: "Cover" })
-              ] }, i)),
-              photos.length < 6 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  onClick: () => {
-                    var _a;
-                    return (_a = photoRef.current) == null ? void 0 : _a.click();
-                  },
-                  style: {
-                    aspectRatio: "1",
-                    borderRadius: 10,
-                    border: "2px dashed rgba(255,255,255,0.2)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    color: "#888",
-                    fontSize: 12,
-                    gap: 4
-                  },
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24 }, children: "＋" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Add more" })
-                  ]
-                }
-              )
+                )
+              ] })
             ] }),
             photos.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
               "div",
@@ -13287,20 +14857,46 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
                 var _a;
                 return (_a = fileRef.current) == null ? void 0 : _a.click();
               },
-              style: { border: "2px dashed rgba(255,107,107,0.4)", borderRadius: 16, padding: 48, textAlign: "center", cursor: "pointer", marginBottom: 16 },
+              onDragOver: (e) => {
+                e.preventDefault();
+                e.currentTarget.style.borderColor = "rgba(255,107,107,0.9)";
+                e.currentTarget.style.background = "rgba(255,107,107,0.08)";
+              },
+              onDragLeave: (e) => {
+                e.currentTarget.style.borderColor = "rgba(255,107,107,0.4)";
+                e.currentTarget.style.background = "transparent";
+              },
+              onDrop: (e) => {
+                e.preventDefault();
+                e.currentTarget.style.borderColor = "rgba(255,107,107,0.4)";
+                e.currentTarget.style.background = "transparent";
+                const f2 = e.dataTransfer.files[0];
+                if (!f2) return;
+                const isVideo = f2.type.startsWith("video/") || f2.type === "" || /\.(mp4|mov|webm|avi|mkv)$/i.test(f2.name);
+                if (!isVideo) {
+                  alert("Please drop a video file (MP4, MOV, WebM).");
+                  return;
+                }
+                if (f2.size > 500 * 1024 * 1024) {
+                  alert("Video must be under 500MB.");
+                  return;
+                }
+                handleFileSelect(f2);
+              },
+              style: { border: "2px dashed rgba(255,107,107,0.4)", borderRadius: 16, padding: 48, textAlign: "center", cursor: "pointer", marginBottom: 16, transition: "border-color 0.2s, background 0.2s" },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 10 }, children: "🎬" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 6 }, children: "Tap to select video" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 6 }, children: "Tap or drag video here" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 13 }, children: "MP4, MOV, WebM · Max 500MB" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: fileRef, type: "file", accept: "video/*", style: { display: "none" }, onChange: (e) => {
                   const f2 = e.target.files[0];
                   if (!f2) return;
-                  if (f2.size > 150 * 1024 * 1024) {
-                    alert("Video must be under 150MB. Please trim or compress your video before uploading.");
+                  if (f2.size > 500 * 1024 * 1024) {
+                    alert("Video must be under 500MB. Please trim or compress your video before uploading.");
                     e.target.value = "";
                     return;
                   }
-                  setFile(f2);
+                  handleFileSelect(f2);
                 } })
               ]
             }
@@ -13742,1423 +15338,6 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("audio", { ref: previewAudioRef, onEnded: () => setPreviewTrack(null), style: { display: "none" } })
   ] });
 }
-function getUserAge() {
-  const dob = localStorage.getItem("sachi_dob");
-  if (!dob) return null;
-  const birthDate = new Date(dob);
-  const today = /* @__PURE__ */ new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m2 = today.getMonth() - birthDate.getMonth();
-  if (m2 < 0 || m2 === 0 && today.getDate() < birthDate.getDate()) age--;
-  return age;
-}
-function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAuth, onDelete, onProfileOpen, followedUserIds, onFollowChange, onShareCount, onBookmark, blockedIds }) {
-  var _a;
-  const videoRef = reactExports.useRef(null);
-  const soundRef = reactExports.useRef(null);
-  const viewedRef = reactExports.useRef(false);
-  const [playing, setPlaying] = reactExports.useState(false);
-  const [liked, setLiked] = reactExports.useState(false);
-  const [likeLoading, setLikeLoading] = reactExports.useState(false);
-  const [likeRecordId, setLikeRecordId] = reactExports.useState(null);
-  const [showLikesPanel, setShowLikesPanel] = reactExports.useState(false);
-  const [likesList, setLikesList] = reactExports.useState([]);
-  const [likesListLoading, setLikesListLoading] = reactExports.useState(false);
-  if (window.__sachiMuted === void 0) window.__sachiMuted = true;
-  const [muted, _setMutedLocal] = reactExports.useState(() => window.__sachiMuted);
-  const setMuted = (val) => {
-    const newVal = typeof val === "function" ? val(window.__sachiMuted) : val;
-    window.__sachiMuted = newVal;
-    _setMutedLocal(newVal);
-    window.dispatchEvent(new CustomEvent("sachi-mute-change", { detail: newVal }));
-  };
-  reactExports.useEffect(() => {
-    const handler = (e) => {
-      _setMutedLocal(e.detail);
-    };
-    window.addEventListener("sachi-mute-change", handler);
-    return () => window.removeEventListener("sachi-mute-change", handler);
-  }, []);
-  const [photoIdx, setPhotoIdx] = reactExports.useState(0);
-  reactExports.useRef(null);
-  const [followRecord, setFollowRecord] = reactExports.useState(null);
-  const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
-  const [followLoading, setFollowLoading] = reactExports.useState(false);
-  const [reportTarget, setReportTarget] = reactExports.useState(null);
-  const [showUI, setShowUI] = reactExports.useState(false);
-  const [userTapped, setUserTapped] = reactExports.useState(false);
-  const uiTimerRef = reactExports.useRef(null);
-  const photoUrls = video.is_photo ? video.photo_urls ? Array.isArray(video.photo_urls) ? video.photo_urls : JSON.parse(video.photo_urls) : video.video_url ? [video.video_url] : null : null;
-  const isOwnVideo = currentUser && (currentUser.id === video.user_id || currentUser.email === video.created_by || currentUser.username && currentUser.username === video.username);
-  const [ageGateUnlocked, setAgeGateUnlocked] = reactExports.useState(false);
-  const userAge = getUserAge();
-  const isUnder18 = userAge !== null && userAge < 18;
-  const showMatureBlock = video.is_mature && isUnder18 && !ageGateUnlocked;
-  const hideUIAfterDelay = (delay = 2e3) => {
-    if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-    uiTimerRef.current = setTimeout(() => {
-      setShowUI(false);
-      setUserTapped(false);
-    }, delay);
-  };
-  reactExports.useEffect(() => {
-    return () => {
-      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-    };
-  }, []);
-  reactExports.useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = video.sound_url ? true : muted;
-    if (soundRef.current) {
-      if (muted) {
-        soundRef.current.pause();
-      } else if (playing && video.sound_url) {
-        soundRef.current.play().catch(() => {
-        });
-      }
-    }
-  }, [muted]);
-  reactExports.useEffect(() => {
-    const el2 = videoRef.current;
-    if (!el2) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        const currentlyMuted = window.__sachiMuted !== void 0 ? window.__sachiMuted : true;
-        el2.muted = video.sound_url ? true : currentlyMuted;
-        el2.play().catch(() => {
-        });
-        setPlaying(true);
-        if (!currentlyMuted && soundRef.current && video.sound_url) {
-          soundRef.current.play().catch(() => {
-          });
-        }
-        setShowUI(true);
-        hideUIAfterDelay(1500);
-        if (!viewedRef.current) {
-          viewedRef.current = true;
-          onView && onView(video.id);
-        }
-      } else {
-        el2.pause();
-        setPlaying(false);
-        if (soundRef.current) soundRef.current.pause();
-        if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-        setShowUI(false);
-        setUserTapped(false);
-      }
-    }, { threshold: 0.6 });
-    obs.observe(el2);
-    return () => obs.disconnect();
-  }, []);
-  reactExports.useEffect(() => {
-    if (!currentUser) return;
-    likes.checkUserLiked(video.id, currentUser.id).then((rec) => {
-      if (rec) {
-        setLiked(true);
-        setLikeRecordId(rec.id);
-      }
-    }).catch(() => {
-    });
-  }, [video.id, currentUser == null ? void 0 : currentUser.id]);
-  const doMute = () => {
-    const el2 = videoRef.current;
-    if (!el2) return;
-    const wasPlaying = !el2.paused;
-    const nm = !muted;
-    el2.muted = video.sound_url ? true : nm;
-    setMuted(nm);
-    if (!nm && wasPlaying) {
-      el2.play().catch(() => {
-      });
-      setPlaying(true);
-      hideUIAfterDelay(1500);
-    }
-  };
-  const doTogglePlay = () => {
-    const el2 = videoRef.current;
-    if (!el2) return;
-    if (el2.paused) {
-      el2.play();
-      setPlaying(true);
-      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-      uiTimerRef.current = setTimeout(() => {
-        setShowUI(false);
-      }, 400);
-    } else {
-      el2.pause();
-      setPlaying(false);
-      if (uiTimerRef.current) clearTimeout(uiTimerRef.current);
-      setShowUI(true);
-    }
-  };
-  const likeLockedRef = React.useRef(false);
-  const doLike = async () => {
-    var _a2, _b;
-    if (!currentUser) {
-      onNeedAuth();
-      return;
-    }
-    if (likeLockedRef.current || likeLoading) return;
-    likeLockedRef.current = true;
-    setLikeLoading(true);
-    setTimeout(() => {
-      likeLockedRef.current = false;
-    }, 1e3);
-    try {
-      if (liked) {
-        if (likeRecordId) await likes.remove(likeRecordId, video.id, currentUser.id);
-        setLiked(false);
-        setLikeRecordId(null);
-        onLike(video.id, -1);
-      } else {
-        const rec = await likes.add(
-          video.id,
-          currentUser.id,
-          currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "user",
-          currentUser.display_name || currentUser.full_name || currentUser.username || "User",
-          currentUser.avatar_url || currentUser.picture || ""
-        );
-        setLiked(true);
-        setLikeRecordId(rec.id);
-        onLike(video.id, 1);
-        if (video.user_id && video.user_id !== currentUser.id) {
-          createNotif({
-            recipient_id: video.user_id,
-            sender_id: currentUser.id,
-            sender_username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
-            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
-            type: "like",
-            video_id: video.id,
-            video_thumbnail: video.thumbnail_url || "",
-            text: "liked your video"
-          });
-        }
-      }
-    } catch (e) {
-      console.error("like error", e);
-    }
-    setLikeLoading(false);
-  };
-  const openLikesPanel = async () => {
-    setShowLikesPanel(true);
-    setLikesListLoading(true);
-    try {
-      const res = await likes.getByVideo(video.id);
-      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
-      setLikesList(items);
-    } catch (e) {
-      setLikesList([]);
-    }
-    setLikesListLoading(false);
-  };
-  const doFollow = async () => {
-    var _a2, _b;
-    if (!currentUser) {
-      onNeedAuth();
-      return;
-    }
-    if (isOwnVideo) return;
-    setFollowLoading(true);
-    try {
-      if (isFollowing) {
-        try {
-          const res = await follows.getFollowing(currentUser.id);
-          const rec = (res.items || res || []).find((r2) => r2.following_id === (video.user_id || video.created_by));
-          if (rec) await follows.unfollow(rec.id);
-        } catch (e) {
-        }
-        setFollowRecord(null);
-        if (onFollowChange) onFollowChange(video.user_id || video.created_by, false);
-      } else {
-        const rec = await follows.follow(
-          currentUser.id,
-          currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]),
-          video.user_id,
-          video.username
-        );
-        setFollowRecord(rec);
-        if (onFollowChange) onFollowChange(video.user_id || video.created_by, true);
-        if (video.user_id && video.user_id !== currentUser.id) {
-          createNotif({
-            recipient_id: video.user_id,
-            sender_id: currentUser.id,
-            sender_username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
-            sender_avatar: currentUser.avatar_url || currentUser.picture || "",
-            type: "follow",
-            text: "started following you"
-          });
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
-    setFollowLoading(false);
-  };
-  const [showDeleteConfirm, setShowDeleteConfirm] = reactExports.useState(false);
-  const [showFullCaption, setShowFullCaption] = reactExports.useState(false);
-  const doDelete = async () => {
-    if (!currentUser || !isOwnVideo) return;
-    setShowDeleteConfirm(true);
-  };
-  const confirmDelete = async () => {
-    setShowDeleteConfirm(false);
-    try {
-      await videos.delete(video.id);
-      onDelete && onDelete(video.id);
-    } catch (err) {
-      alert("Failed to delete. Try again.");
-    }
-  };
-  const tap = (fn) => (e) => {
-    e.stopPropagation();
-    fn();
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: "100%", height: "100svh", background: "#0B0C1A", flexShrink: 0, scrollSnapAlign: "start" }, children: [
-    showMatureBlock && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-      position: "absolute",
-      inset: 0,
-      zIndex: 200,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "rgba(11,12,26,0.92)",
-      backdropFilter: "blur(20px)",
-      gap: 16,
-      padding: 32
-    }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 52 }, children: "🔞" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 20, textAlign: "center" }, children: "Mature Content" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 14, textAlign: "center", lineHeight: 1.6 }, children: "This video contains content that may not be suitable for viewers under 18." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#666", fontSize: 12, textAlign: "center" }, children: [
-        "Content type: ",
-        video.mature_reason ? video.mature_reason.replace(/_/g, " ") : "mature"
-      ] }),
-      userAge === null && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 13, textAlign: "center" }, children: "Sign in or verify your age to view this content." }),
-      userAge !== null && userAge >= 18 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => setAgeGateUnlocked(true),
-          style: {
-            padding: "12px 28px",
-            background: "linear-gradient(135deg,#ff6b6b,#ff8e53)",
-            border: "none",
-            borderRadius: 14,
-            color: "#fff",
-            fontWeight: 800,
-            fontSize: 15,
-            cursor: "pointer"
-          },
-          children: "I'm 18+ — View Anyway"
-        }
-      )
-    ] }),
-    photoUrls ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", height: "100%", position: "relative", overflow: "hidden", background: "#000", display: "flex", flexDirection: "column", touchAction: "pan-y" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden", pointerEvents: "none" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "img",
-          {
-            src: resolveMediaUrl(photoUrls[photoIdx]),
-            style: { width: "100%", height: "100%", objectFit: "contain", display: "block", userSelect: "none", WebkitUserSelect: "none", pointerEvents: "none" }
-          }
-        ),
-        photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-          position: "absolute",
-          top: 12,
-          left: 12,
-          background: "rgba(0,0,0,0.7)",
-          borderRadius: 20,
-          padding: "4px 12px",
-          fontSize: 13,
-          fontWeight: 700,
-          color: "#fff",
-          zIndex: 50,
-          pointerEvents: "none",
-          letterSpacing: 0.5
-        }, children: [
-          photoIdx + 1,
-          " / ",
-          photoUrls.length
-        ] })
-      ] }),
-      photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-        position: "absolute",
-        bottom: 70,
-        left: "50%",
-        transform: "translateX(-50%)",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        zIndex: 400,
-        background: "rgba(0,0,0,0.6)",
-        borderRadius: 40,
-        padding: "10px 20px",
-        backdropFilter: "blur(4px)"
-      }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onTouchEnd: (e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              setPhotoIdx((p2) => Math.max(p2 - 1, 0));
-            },
-            onClick: (e) => {
-              e.stopPropagation();
-              setPhotoIdx((p2) => Math.max(p2 - 1, 0));
-            },
-            disabled: photoIdx === 0,
-            style: {
-              background: photoIdx === 0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
-              border: "none",
-              borderRadius: "50%",
-              width: 44,
-              height: 44,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 28,
-              fontWeight: 900,
-              lineHeight: 1,
-              color: photoIdx === 0 ? "rgba(255,255,255,0.25)" : "#fff",
-              cursor: photoIdx === 0 ? "default" : "pointer",
-              WebkitTapHighlightColor: "transparent",
-              touchAction: "manipulation",
-              transition: "all 0.2s"
-            },
-            children: "‹"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: i === photoIdx ? 28 : 10,
-          height: 10,
-          borderRadius: 99,
-          background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.5)",
-          transition: "all 0.25s ease",
-          boxShadow: i === photoIdx ? "0 0 10px rgba(245,200,66,0.9)" : "none"
-        } }, i)) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onTouchEnd: (e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls.length - 1));
-            },
-            onClick: (e) => {
-              e.stopPropagation();
-              setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls.length - 1));
-            },
-            disabled: photoIdx === photoUrls.length - 1,
-            style: {
-              background: photoIdx === photoUrls.length - 1 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)",
-              border: "none",
-              borderRadius: "50%",
-              width: 44,
-              height: 44,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 28,
-              fontWeight: 900,
-              lineHeight: 1,
-              color: photoIdx === photoUrls.length - 1 ? "rgba(255,255,255,0.25)" : "#fff",
-              cursor: photoIdx === photoUrls.length - 1 ? "default" : "pointer",
-              WebkitTapHighlightColor: "transparent",
-              touchAction: "manipulation",
-              transition: "all 0.2s"
-            },
-            children: "›"
-          }
-        )
-      ] }),
-      video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "audio",
-          {
-            ref: soundRef,
-            src: video.sound_url,
-            loop: true,
-            preload: "auto",
-            style: { display: "none" },
-            onCanPlay: () => {
-              if (!muted && soundRef.current) soundRef.current.play().catch(() => {
-              });
-            }
-          }
-        ),
-        muted ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            onTouchStart: (e) => {
-              e.stopPropagation();
-              setMuted(false);
-              if (soundRef.current) {
-                soundRef.current.play().catch(() => {
-                });
-              }
-            },
-            onClick: (e) => {
-              e.stopPropagation();
-              setMuted(false);
-              if (soundRef.current) {
-                soundRef.current.play().catch(() => {
-                });
-              }
-            },
-            style: {
-              position: "absolute",
-              bottom: 80,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 200,
-              background: "rgba(0,0,0,0.7)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              borderRadius: 20,
-              padding: "6px 16px",
-              color: "#fff",
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              cursor: "pointer",
-              whiteSpace: "nowrap"
-            },
-            children: "🔇 Tap to hear music"
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onTouchStart: (e) => {
-              e.stopPropagation();
-              setMuted(true);
-              if (soundRef.current) {
-                soundRef.current.pause();
-              }
-            },
-            onClick: (e) => {
-              e.stopPropagation();
-              setMuted(true);
-              if (soundRef.current) {
-                soundRef.current.pause();
-              }
-            },
-            style: {
-              position: "absolute",
-              bottom: 80,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 200,
-              background: "rgba(245,200,66,0.2)",
-              border: "1px solid rgba(245,200,66,0.5)",
-              borderRadius: 20,
-              padding: "6px 16px",
-              color: "#F5C842",
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              cursor: "pointer",
-              whiteSpace: "nowrap"
-            },
-            children: [
-              "🎵 ",
-              video.sound_title || "Playing music"
-            ]
-          }
-        )
-      ] })
-    ] }) : (() => {
-      const resolvedVideoUrl = resolveMediaUrl(video.video_url);
-      const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
-      if (isImg) return /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "img",
-        {
-          src: resolvedVideoUrl,
-          style: { width: "100%", height: "100%", objectFit: "contain", background: "#000", display: "block" }
-        }
-      );
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "video",
-          {
-            ref: videoRef,
-            src: resolvedVideoUrl,
-            poster: video.thumbnail_url && !video.thumbnail_url.match(/\.mp4|\.mov|\.webm/i) ? resolveMediaUrl(video.thumbnail_url) : void 0,
-            loop: true,
-            playsInline: true,
-            muted: muted || !!video.sound_url,
-            onPlay: () => {
-              setPlaying(true);
-              hideUIAfterDelay(1500);
-              window.dispatchEvent(new CustomEvent("sachiVideoPlay"));
-              if (soundRef.current && video.sound_url && !muted) {
-                soundRef.current.play().catch(() => {
-                });
-              }
-            },
-            onPause: () => {
-              setPlaying(false);
-              window.dispatchEvent(new CustomEvent("sachiVideoPause"));
-              if (soundRef.current) soundRef.current.pause();
-            },
-            style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
-          }
-        ),
-        video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "audio",
-          {
-            ref: soundRef,
-            src: video.sound_url,
-            loop: true,
-            preload: "none",
-            style: { display: "none" }
-          }
-        ),
-        muted && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "div",
-          {
-            onTouchStart: (e) => {
-              e.stopPropagation();
-              const el2 = videoRef.current;
-              if (el2) {
-                el2.muted = false;
-                setMuted(false);
-                el2.play().catch(() => {
-                });
-                setPlaying(true);
-                hideUIAfterDelay(1500);
-                if (soundRef.current && video.sound_url) {
-                  soundRef.current.play().catch(() => {
-                  });
-                }
-              }
-            },
-            onClick: (e) => {
-              e.stopPropagation();
-              const el2 = videoRef.current;
-              if (el2) {
-                el2.muted = false;
-                setMuted(false);
-                el2.play().catch(() => {
-                });
-                setPlaying(true);
-                hideUIAfterDelay(1500);
-                if (soundRef.current && video.sound_url) {
-                  soundRef.current.play().catch(() => {
-                  });
-                }
-              }
-            },
-            style: {
-              position: "absolute",
-              bottom: 80,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 200,
-              background: "rgba(0,0,0,0.7)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              borderRadius: 20,
-              padding: "6px 16px",
-              color: "#fff",
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              cursor: "pointer",
-              whiteSpace: "nowrap"
-            },
-            children: "🔇 Tap to unmute"
-          }
-        )
-      ] });
-    })(),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(11,12,26,0.95) 0%, rgba(11,12,26,0.3) 50%, transparent 80%)", pointerEvents: "none", zIndex: 10, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, visibility: showUI || !!photoUrls ? "visible" : "hidden" } }),
-    !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        onClick: tap(() => {
-          const resolvedVideoUrl = resolveMediaUrl(video.video_url);
-          const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(resolvedVideoUrl || "");
-          if (isImg || !video.video_url) {
-            setShowUI((v2) => !v2);
-            if (!showUI) setShowFullCaption(true);
-          } else {
-            doTogglePlay();
-          }
-        }),
-        style: { position: "absolute", top: 60, left: 0, right: 0, bottom: 80, zIndex: 50, cursor: "pointer" }
-      }
-    ),
-    !playing && !photoUrls && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: tap(doTogglePlay), style: {
-      background: "rgba(11,12,26,0.7)",
-      border: "1.5px solid rgba(245,200,66,0.4)",
-      borderRadius: "50%",
-      width: 64,
-      height: 64,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      pointerEvents: "auto",
-      cursor: "pointer",
-      fontSize: 26
-    }, children: "▶" }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 148, left: 16, right: 16, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "div",
-        {
-          style: { display: "flex", flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" },
-          onClick: tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name)),
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }, children: video.display_name || video.username }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: [
-              "@",
-              video.username
-            ] })
-          ]
-        }
-      ),
-      video.sound_title && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6, overflow: "hidden" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 14, flexShrink: 0, animation: playing ? "spin 3s linear infinite" : "none", display: "inline-block" }, children: "🎵" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflow: "hidden", flex: 1 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-          color: "rgba(255,255,255,0.85)",
-          fontSize: 12,
-          fontWeight: 600,
-          whiteSpace: "nowrap",
-          animation: playing ? "marquee 8s linear infinite" : "none",
-          display: "inline-block"
-        }, children: [
-          video.sound_title,
-          video.sound_artist ? ` · ${video.sound_artist}` : ""
-        ] }) })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }, children: !video.is_ai_detected ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "rgba(107,255,154,0.15)", color: "#6BFFB8", padding: "2px 9px", borderRadius: 20, fontWeight: 700, border: "1px solid rgba(107,255,154,0.3)" }, children: "✓ Real" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "rgba(255,149,0,0.15)", color: "#FF9500", padding: "2px 9px", borderRadius: 20, fontWeight: 700, border: "1px solid rgba(255,149,0,0.3)" }, children: "🤖 AI Generated" }) }),
-      video.caption && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 14, lineHeight: 1.5 }, children: [
-        showFullCaption || (video.caption || "").length <= 80 ? video.caption : (video.caption || "").slice(0, 80) + "…",
-        (video.caption || "").length > 80 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "span",
-          {
-            onClick: tap(() => setShowFullCaption((v2) => !v2)),
-            style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginLeft: 6, cursor: "pointer", fontWeight: 600 },
-            children: showFullCaption ? "see less" : "see more"
-          }
-        )
-      ] }),
-      ((_a = video.hashtags) == null ? void 0 : _a.length) > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 13, marginTop: 4 }, children: video.hashtags.slice(0, 4).map((t2) => `#${t2.replace(/^#/, "")}`).join(" ") }),
-      video.created_date && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        marginTop: 8,
-        background: "rgba(0,0,0,0.45)",
-        borderRadius: 20,
-        padding: "3px 10px",
-        width: "fit-content"
-      }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12 }, children: "📅" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: 600 }, children: [
-          formatDate(video.created_date),
-          video.post_country && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: 6, opacity: 0.9 }, children: [
-            countryFlag(video.post_country),
-            (() => {
-              const city = video.post_city || null;
-              const stateAbbr = video.post_region ? getStateAbbr(video.post_region, video.post_country) : null;
-              if (city && stateAbbr) return ` ${city}, ${stateAbbr}`;
-              if (city) return ` ${city}`;
-              if (stateAbbr) return ` ${stateAbbr}`;
-              return ` ${video.post_country}`;
-            })()
-          ] })
-        ] })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 72, left: 14, display: "flex", flexDirection: "row", alignItems: "center", gap: 10, zIndex: 999 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "div",
-        {
-          onClick: (e) => {
-            e.stopPropagation();
-            onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name);
-          },
-          style: { width: 22, height: 22, borderRadius: "50%", overflow: "hidden", border: "1.5px solid rgba(245,200,66,0.7)", cursor: "pointer", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,0.5)" },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "img",
-            {
-              src: video.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(video.username)}&background=random&color=fff&size=128&bold=true&format=png`,
-              style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }
-            }
-          )
-        }
-      ),
-      !isOwnVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: (e) => {
-            e.stopPropagation();
-            doFollow();
-          },
-          disabled: followLoading,
-          style: {
-            height: 28,
-            borderRadius: 20,
-            border: isFollowing ? "1.5px solid #F5C842" : "1.5px solid rgba(255,255,255,0.5)",
-            background: isFollowing ? "rgba(245,200,66,0.15)" : "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(8px)",
-            color: isFollowing ? "#F5C842" : "#fff",
-            fontWeight: 700,
-            fontSize: 12,
-            letterSpacing: 0.3,
-            padding: "0 12px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 4,
-            boxShadow: isFollowing ? "0 0 10px rgba(245,200,66,0.3)" : "none",
-            transition: "all 0.25s",
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: followLoading ? "·" : isFollowing ? "✓ Following" : "+ Follow"
-        }
-      )
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", right: 12, bottom: 120, display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 500, transition: "opacity 0.4s ease", opacity: showUI || !!photoUrls ? 1 : 0, pointerEvents: showUI || !!photoUrls ? "auto" : "none", visibility: showUI || !!photoUrls ? "visible" : "hidden" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: tap(doMute),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: muted ? "rgba(245,200,66,0.12)" : "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: muted ? "1px solid rgba(245,200,66,0.35)" : "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }, children: muted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "#F5C842", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "23", y1: "9", x2: "17", y2: "15" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "17", y1: "9", x2: "23", y2: "15" })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" })
-          ] }) })
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(async () => {
-            if (!currentUser) {
-              onNeedAuth();
-              return;
-            }
-            if (!window.confirm(video.is_ai_detected ? "Clear AI flag from this post?" : "Flag this post as AI-generated content?")) return;
-            try {
-              const newFlag = !video.is_ai_detected;
-              await videos.update(video.id, { is_ai_detected: newFlag });
-              onLike(video.id, 0);
-            } catch (e) {
-            }
-          }),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-              width: 28,
-              height: 28,
-              borderRadius: 8,
-              background: video.is_ai_detected ? "rgba(0,255,120,0.12)" : "rgba(255,255,255,0.08)",
-              backdropFilter: "blur(12px)",
-              border: video.is_ai_detected ? "2px solid rgba(0,255,120,0.9)" : "1px solid rgba(255,255,255,0.1)",
-              boxShadow: video.is_ai_detected ? "0 0 10px 3px rgba(0,255,120,0.5), 0 0 20px 6px rgba(0,255,120,0.2)" : "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.3s"
-            }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 13 }, children: video.is_ai_detected ? "🤖" : "🚩" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: video.is_ai_detected ? "#00ff78" : "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700 }, children: video.is_ai_detected ? "AI" : "Flag" })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: tap(doLike),
-            disabled: likeLoading,
-            style: {
-              background: "none",
-              border: "none",
-              cursor: likeLoading ? "default" : "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 3,
-              WebkitTapHighlightColor: "transparent",
-              touchAction: "manipulation",
-              opacity: likeLoading ? 0.6 : 1
-            },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-              width: 28,
-              height: 28,
-              borderRadius: 8,
-              background: liked ? "rgba(255,107,107,0.25)" : "rgba(255,255,255,0.08)",
-              backdropFilter: "blur(12px)",
-              border: liked ? "1px solid rgba(255,107,107,0.5)" : "1px solid rgba(255,255,255,0.1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              animation: liked ? "heartpop 0.4s ease forwards" : "none",
-              transformOrigin: "center",
-              transition: "background 0.2s, border 0.2s"
-            }, children: likeLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10 }, children: "⏳" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: liked ? "#FF6B6B" : "none", stroke: "#FF6B6B", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" }) }) })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: tap(openLikesPanel),
-            style: { background: "none", border: "none", cursor: "pointer", padding: 0, WebkitTapHighlightColor: "transparent" },
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600, textDecoration: "underline", textDecorationColor: "rgba(255,255,255,0.3)" }, children: formatCount(video.likes_count || 0) })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(() => onCommentOpen(video)),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.comments_count) })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: tap(async () => {
-            var _a2;
-            const shareUrl = `${window.location.origin}?v=${video.id}`;
-            if (navigator.share) {
-              navigator.share({ title: video.caption || "Check this out on Sachi", url: shareUrl });
-            } else {
-              (_a2 = navigator.clipboard) == null ? void 0 : _a2.writeText(shareUrl);
-              alert("Link copied!");
-            }
-            try {
-              const newCount = (video.shares_count || 0) + 1;
-              onShareCount && onShareCount(video.id, newCount);
-              await videos.update(video.id, { shares_count: newCount });
-            } catch (e) {
-            }
-          }),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "5", r: "3" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "6", cy: "12", r: "3" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "18", cy: "19", r: "3" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8.59", y1: "13.51", x2: "15.42", y2: "17.49" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "15.41", y1: "6.51", x2: "8.59", y2: "10.49" })
-            ] }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: formatCount(video.shares_count || 0) })
-          ]
-        }
-      ),
-      currentUser && (() => {
-        var _a2;
-        const isBookmarked = (_a2 = onBookmark == null ? void 0 : onBookmark.isBookmarked) == null ? void 0 : _a2.call(onBookmark, video.id);
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "button",
-          {
-            onClick: tap(async () => {
-              if (!currentUser) {
-                onNeedAuth && onNeedAuth();
-                return;
-              }
-              (onBookmark == null ? void 0 : onBookmark.handle) && onBookmark.handle(video.id, !isBookmarked);
-            }),
-            style: {
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 3,
-              WebkitTapHighlightColor: "transparent",
-              touchAction: "manipulation"
-            },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: isBookmarked ? "rgba(245,200,66,0.15)" : "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", border: `1px solid ${isBookmarked ? "rgba(245,200,66,0.5)" : "rgba(255,255,255,0.1)"}`, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: isBookmarked ? "#F5C842" : "none", stroke: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.9)", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" }) }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isBookmarked ? "#F5C842" : "rgba(255,255,255,0.8)", fontSize: 9, fontWeight: 600 }, children: "Save" })
-            ]
-          }
-        );
-      })(),
-      isOwnVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: tap(doDelete),
-          style: {
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            WebkitTapHighlightColor: "transparent",
-            touchAction: "manipulation"
-          },
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: 8, background: "rgba(255,60,60,0.12)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,60,60,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "#ff5555", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "3 6 5 6 21 6" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M10 11v6" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M14 11v6" })
-          ] }) })
-        }
-      )
-    ] }),
-    reportTarget && /* @__PURE__ */ jsxRuntimeExports.jsx(ReportModal, { video: reportTarget, currentUser, onClose: () => setReportTarget(null) }),
-    showLikesPanel && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center" },
-        onClick: () => setShowLikesPanel(false),
-        children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), style: { width: "100%", maxWidth: 480, background: "#13142A", borderRadius: "24px 24px 0 0", padding: "0 0 40px", maxHeight: "70vh", display: "flex", flexDirection: "column" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: "❤️" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: likesListLoading ? "Likes" : `${likesList.length} ${likesList.length === 1 ? "Like" : "Likes"}` })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowLikesPanel(false), style: { background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 22, lineHeight: 1, padding: "2px 6px" }, children: "✕" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1 }, children: likesListLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40, fontSize: 14 }, children: "Loading…" }) : likesList.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🤍" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No likes yet — be the first!" })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column" }, children: likesList.map((lk2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "img",
-              {
-                src: lk2.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(lk2.display_name || lk2.username || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
-                style: { width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: lk2.display_name || lk2.username || "User" }),
-              lk2.username && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12 }, children: [
-                "@",
-                lk2.username
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#FF6B6B", fontSize: 16 }, children: "❤️" })
-          ] }, lk2.id || i)) }) })
-        ] })
-      }
-    ),
-    showDeleteConfirm && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center" },
-        onClick: () => setShowDeleteConfirm(false),
-        children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), style: { width: "100%", maxWidth: 480, background: "#1a1a2e", borderRadius: "24px 24px 0 0", padding: "28px 24px 48px", display: "flex", flexDirection: "column", gap: 16 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🗑️" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 18, fontWeight: 700 }, children: "Delete Video?" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 6 }, children: "This can't be undone." })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: confirmDelete,
-              style: { width: "100%", padding: "14px", background: "#ff3b30", border: "none", borderRadius: 14, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer" },
-              children: "Yes, Delete"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => setShowDeleteConfirm(false),
-              style: { width: "100%", padding: "14px", background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 14, color: "#fff", fontSize: 16, fontWeight: 600, cursor: "pointer" },
-              children: "Cancel"
-            }
-          )
-        ] })
-      }
-    )
-  ] });
-}
-const REPORT_REASONS = [
-  { id: "ai", icon: "🤖", label: "AI-Generated Video", desc: "This video was made by AI, not a real person" },
-  { id: "sexual", icon: "🔞", label: "Sexual / Explicit Content", desc: "Contains nudity or sexual content" },
-  { id: "fake", icon: "🎭", label: "Fake / Misleading", desc: "This video is fake or spreading misinformation" },
-  { id: "spam", icon: "📢", label: "Spam", desc: "Repetitive, irrelevant, or promotional spam" },
-  { id: "violence", icon: "⚠️", label: "Violence / Harmful Content", desc: "Contains graphic violence or harmful acts" },
-  { id: "other", icon: "💬", label: "Other", desc: "Something else not listed above" }
-];
-function ReportModal({ video, currentUser, onClose }) {
-  const [selected, setSelected] = reactExports.useState(null);
-  const [submitted, setSubmitted] = reactExports.useState(false);
-  const submit = async () => {
-    if (!selected) return;
-    setSubmitted(true);
-    try {
-      await reports.create({
-        video_id: video.id,
-        reporter_id: (currentUser == null ? void 0 : currentUser.id) || "guest",
-        reporter_username: (currentUser == null ? void 0 : currentUser.username) || (currentUser == null ? void 0 : currentUser.email) || "guest",
-        video_caption: video.caption || "",
-        video_username: video.username || video.display_name || "",
-        reason: selected,
-        status: "pending"
-      });
-    } catch (e) {
-      console.error("Report failed:", e);
-    }
-    setTimeout(() => onClose(), 1800);
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)" } }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "20px 20px 40px", zIndex: 3001 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#444", borderRadius: 99, margin: "0 auto 16px" } }),
-      submitted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "24px 0" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "✅" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 18, marginBottom: 6 }, children: "Report Submitted" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 14 }, children: "Thanks for keeping Sachi safe. We'll review this video." })
-      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "🚩 Report Video" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer" }, children: "✕" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 16 }, children: "Why are you reporting this video?" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }, children: REPORT_REASONS.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onClick: () => setSelected(r2.id),
-            style: { display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", borderRadius: 12, cursor: "pointer", background: selected === r2.id ? "rgba(255,107,107,0.15)" : "rgba(255,255,255,0.04)", border: `1px solid ${selected === r2.id ? "rgba(255,107,107,0.5)" : "rgba(255,255,255,0.08)"}`, transition: "all 0.15s" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, flexShrink: 0 }, children: r2.icon }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selected === r2.id ? "#ff6b6b" : "#fff", fontWeight: 600, fontSize: 14 }, children: r2.label }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 12, marginTop: 2 }, children: r2.desc })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginLeft: "auto", width: 18, height: 18, borderRadius: "50%", border: `2px solid ${selected === r2.id ? "#ff6b6b" : "#444"}`, background: selected === r2.id ? "#ff6b6b" : "transparent", flexShrink: 0 } })
-            ]
-          },
-          r2.id
-        )) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: submit,
-            disabled: !selected,
-            style: { width: "100%", padding: 14, background: selected ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#fff", fontWeight: 700, fontSize: 15, cursor: selected ? "pointer" : "not-allowed", opacity: selected ? 1 : 0.5 },
-            children: "Submit Report"
-          }
-        )
-      ] })
-    ] })
-  ] });
-}
-const spinStyle = document.createElement("style");
-spinStyle.textContent = `
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-  @keyframes heartbeat {
-    0%   { transform: scale(1); }
-    14%  { transform: scale(1.35); }
-    28%  { transform: scale(1); }
-    42%  { transform: scale(1.25); }
-    56%  { transform: scale(1); }
-    100% { transform: scale(1); }
-  }
-  @keyframes heartpop {
-    0%   { transform: scale(1); }
-    30%  { transform: scale(1.5); }
-    60%  { transform: scale(0.9); }
-    80%  { transform: scale(1.15); }
-    100% { transform: scale(1); }
-  }
-`;
-if (!document.getElementById("spin-style")) {
-  spinStyle.id = "spin-style";
-  document.head.appendChild(spinStyle);
-}
-const AVATAR_STYLES = [
-  { label: "Cartoon", style: "avataaars", seeds: ["Felix", "Aneka", "Mia", "Zara", "Leo", "Nova", "Kira", "Blaze", "Pixel", "Storm", "Echo", "Sage", "Raya", "Kofi", "Priya", "Omar", "Mei", "Ava", "Jake", "Luna", "Diego", "Aisha", "Nate", "Yuki"] },
-  { label: "Portraits", style: "lorelei", seeds: ["Alex", "Sam", "Jordan", "Taylor", "Morgan", "Casey", "Jamie", "Riley", "Quinn", "Avery", "Blake", "Cameron", "Dana", "Ellis", "Fynn", "Gwen", "Harley", "Indie", "Jules", "Kai"] },
-  { label: "Fun", style: "bottts", seeds: ["R2D2", "BB8", "Wall-E", "Robo", "Zap", "Bolt", "Chip", "Digi", "Glitch", "Mega", "Nano", "Pixel", "Spark", "Vibe", "Wave", "Flux", "Glow", "Nova", "Atom", "Echo"] },
-  { label: "Minimal", style: "thumbs", seeds: ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi", "Rho", "Sigma", "Tau", "Upsilon"] }
-];
-function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
-  const canvasRef = reactExports.useRef();
-  const [scale, setScale] = reactExports.useState(1);
-  const [offset, setOffset] = reactExports.useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = reactExports.useState(false);
-  const dragStart = reactExports.useRef(null);
-  const imgRef = reactExports.useRef(new window.Image());
-  const SIZE = 300;
-  reactExports.useEffect(() => {
-    const img = imgRef.current;
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const fit = Math.max(SIZE / img.width, SIZE / img.height);
-      setScale(fit);
-      setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
-      draw(fit, { x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
-    };
-    img.src = imageUrl;
-  }, [imageUrl]);
-  const draw = (s = scale, o = offset) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, SIZE, SIZE);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, SIZE, SIZE);
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(imgRef.current, o.x, o.y, imgRef.current.width * s, imgRef.current.height * s);
-    ctx.restore();
-  };
-  reactExports.useEffect(() => {
-    draw();
-  }, [scale, offset]);
-  const onMouseDown = (e) => {
-    setDragging(true);
-    dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
-  };
-  const onMouseMove = (e) => {
-    if (!dragging) return;
-    const newOffset = { x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y };
-    setOffset(newOffset);
-  };
-  const onMouseUp = () => setDragging(false);
-  const onTouchStart = (e) => {
-    e.preventDefault();
-    setDragging(true);
-    dragStart.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
-  };
-  const onTouchMove = (e) => {
-    e.preventDefault();
-    if (!dragging) return;
-    setOffset({ x: e.touches[0].clientX - dragStart.current.x, y: e.touches[0].clientY - dragStart.current.y });
-  };
-  const onTouchEnd = () => setDragging(false);
-  const handleSave = () => {
-    const canvas = canvasRef.current;
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    onSave(dataUrl);
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 18, marginBottom: 8 }, children: "✂️ Crop your avatar" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 20 }, children: "Drag to reposition • Zoom with slider" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { borderRadius: "50%", overflow: "hidden", border: "3px solid #F5C842", boxShadow: "0 0 30px rgba(245,200,66,0.3)", marginBottom: 20, cursor: dragging ? "grabbing" : "grab" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "canvas",
-      {
-        ref: canvasRef,
-        width: SIZE,
-        height: SIZE,
-        onMouseDown,
-        onMouseMove,
-        onMouseUp,
-        onMouseLeave: onMouseUp,
-        onTouchStart,
-        onTouchMove,
-        onTouchEnd,
-        style: { display: "block", touchAction: "none" }
-      }
-    ) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 280, marginBottom: 24 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 12 }, children: "🔍 Zoom" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-          const img = imgRef.current;
-          const fit = Math.min(SIZE / img.width, SIZE / img.height);
-          setScale(fit);
-          setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
-        }, style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.4)", borderRadius: 8, padding: "3px 10px", color: "#F5C842", fontSize: 11, fontWeight: 700, cursor: "pointer" }, children: "Fit whole image" })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "input",
-        {
-          type: "range",
-          min: 0.05,
-          max: 4,
-          step: 0.01,
-          value: scale,
-          onChange: (e) => setScale(parseFloat(e.target.value)),
-          style: { width: "100%", accentColor: "#F5C842" }
-        }
-      )
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, width: "100%", maxWidth: 280 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onCancel, style: { flex: 1, padding: "13px 0", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#aaa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Cancel" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleSave, style: { flex: 2, padding: "13px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 900, fontSize: 15, cursor: "pointer" }, children: "✓ Use this photo" })
-    ] })
-  ] });
-}
-function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
-  const [uploading, setUploading] = reactExports.useState(false);
-  const [activeStyle, setActiveStyle] = reactExports.useState(0);
-  const [cropImageUrl, setCropImageUrl] = reactExports.useState(null);
-  const fileRef = reactExports.useRef();
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setCropImageUrl(url);
-  };
-  const handleCropSave = async (dataUrl) => {
-    setCropImageUrl(null);
-    setUploading(true);
-    try {
-      const base64 = dataUrl;
-      const res = await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_base64: base64, mime_type: "image/jpeg" })
-      });
-      const data = await res.json();
-      if (data.file_url) {
-        onSelect(data.file_url);
-        return;
-      }
-      throw new Error(data.error || "Upload failed");
-    } catch (e) {
-      console.warn("Avatar upload failed:", e);
-      alert("Could not save avatar. Please try again.");
-    } finally {
-      setUploading(false);
-    }
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    cropImageUrl && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      AvatarCropEditor,
-      {
-        imageUrl: cropImageUrl,
-        onSave: handleCropSave,
-        onCancel: () => setCropImageUrl(null)
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 2e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)" } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "20px 20px 36px", zIndex: 2001 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#444", borderRadius: 99, margin: "0 auto 16px" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "🎨 Choose your avatar" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer" }, children: "✕" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 14 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: fileRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: handleFileUpload }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => {
-                var _a;
-                return (_a = fileRef.current) == null ? void 0 : _a.click();
-              },
-              disabled: uploading,
-              style: { width: "100%", padding: "13px", background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(255,149,0,0.1))", border: "2px dashed rgba(245,200,66,0.5)", borderRadius: 14, color: "#F5C842", fontWeight: 800, fontSize: 15, cursor: "pointer" },
-              children: uploading ? "⏳ Uploading..." : "📷 Upload & crop your photo"
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: 12, overflowX: "auto", scrollbarWidth: "none" }, children: AVATAR_STYLES.map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setActiveStyle(i),
-            style: {
-              flexShrink: 0,
-              padding: "6px 14px",
-              borderRadius: 20,
-              border: "none",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-              background: activeStyle === i ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
-              color: activeStyle === i ? "#fff" : "#aaa"
-            },
-            children: s.label
-          },
-          i
-        )) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxHeight: 260, overflowY: "auto", paddingBottom: 4 }, children: AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
-          const style = AVATAR_STYLES[activeStyle].style;
-          const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
-          return /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => onSelect(url),
-              style: {
-                background: currentAvatar === url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
-                border: currentAvatar === url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
-                borderRadius: 16,
-                width: 64,
-                height: 64,
-                margin: "0 auto",
-                padding: 4,
-                cursor: "pointer",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "border 0.2s, transform 0.15s, box-shadow 0.2s",
-                boxShadow: currentAvatar === url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
-                transform: currentAvatar === url ? "scale(1.12)" : "scale(1)"
-              },
-              children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", pointerEvents: "none", display: "block", borderRadius: 10, background: "rgba(255,255,255,0.05)" }, loading: "lazy" })
-            },
-            i
-          );
-        }) })
-      ] })
-    ] })
-  ] });
-}
 function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username }) {
   const [idx, setIdx] = React.useState(startIndex || 0);
   const [muted, setMuted] = React.useState(false);
@@ -15356,6 +15535,231 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
     }
   );
 }
+function AvatarCropEditor({ imageUrl, onSave, onCancel }) {
+  const canvasRef = reactExports.useRef();
+  const [scale, setScale] = reactExports.useState(1);
+  const [offset, setOffset] = reactExports.useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = reactExports.useState(false);
+  const dragStart = reactExports.useRef(null);
+  const imgRef = reactExports.useRef(new window.Image());
+  const SIZE = 300;
+  useEffect(() => {
+    const img = imgRef.current;
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const fit = Math.max(SIZE / img.width, SIZE / img.height);
+      setScale(fit);
+      setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+      draw(fit, { x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+  const draw = (s = scale, o = offset) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(imgRef.current, o.x, o.y, imgRef.current.width * s, imgRef.current.height * s);
+    ctx.restore();
+  };
+  useEffect(() => {
+    draw();
+  }, [scale, offset]);
+  const onMouseDown = (e) => {
+    setDragging(true);
+    dragStart.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
+  };
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    const newOffset = { x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y };
+    setOffset(newOffset);
+  };
+  const onMouseUp = () => setDragging(false);
+  const onTouchStart = (e) => {
+    e.preventDefault();
+    setDragging(true);
+    dragStart.current = { x: e.touches[0].clientX - offset.x, y: e.touches[0].clientY - offset.y };
+  };
+  const onTouchMove = (e) => {
+    e.preventDefault();
+    if (!dragging) return;
+    setOffset({ x: e.touches[0].clientX - dragStart.current.x, y: e.touches[0].clientY - dragStart.current.y });
+  };
+  const onTouchEnd = () => setDragging(false);
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    onSave(dataUrl);
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 3e3, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 900, fontSize: 18, marginBottom: 8 }, children: "✂️ Crop your avatar" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 20 }, children: "Drag to reposition • Zoom with slider" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { borderRadius: "50%", overflow: "hidden", border: "3px solid #F5C842", boxShadow: "0 0 30px rgba(245,200,66,0.3)", marginBottom: 20, cursor: dragging ? "grabbing" : "grab" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "canvas",
+      {
+        ref: canvasRef,
+        width: SIZE,
+        height: SIZE,
+        onMouseDown,
+        onMouseMove,
+        onMouseUp,
+        onMouseLeave: onMouseUp,
+        onTouchStart,
+        onTouchMove,
+        onTouchEnd,
+        style: { display: "block", touchAction: "none" }
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 280, marginBottom: 24 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 12 }, children: "🔍 Zoom" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+          const img = imgRef.current;
+          const fit = Math.min(SIZE / img.width, SIZE / img.height);
+          setScale(fit);
+          setOffset({ x: (SIZE - img.width * fit) / 2, y: (SIZE - img.height * fit) / 2 });
+        }, style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.4)", borderRadius: 8, padding: "3px 10px", color: "#F5C842", fontSize: 11, fontWeight: 700, cursor: "pointer" }, children: "Fit whole image" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          type: "range",
+          min: 0.05,
+          max: 4,
+          step: 0.01,
+          value: scale,
+          onChange: (e) => setScale(parseFloat(e.target.value)),
+          style: { width: "100%", accentColor: "#F5C842" }
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, width: "100%", maxWidth: 280 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onCancel, style: { flex: 1, padding: "13px 0", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 14, color: "#aaa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Cancel" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleSave, style: { flex: 2, padding: "13px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 14, color: "#0B0C1A", fontWeight: 900, fontSize: 15, cursor: "pointer" }, children: "✓ Use this photo" })
+    ] })
+  ] });
+}
+function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
+  const [uploading, setUploading] = reactExports.useState(false);
+  const [activeStyle, setActiveStyle] = reactExports.useState(0);
+  const [cropImageUrl, setCropImageUrl] = reactExports.useState(null);
+  const fileRef = useRef();
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setCropImageUrl(url);
+  };
+  const handleCropSave = async (dataUrl) => {
+    setCropImageUrl(null);
+    setUploading(true);
+    try {
+      const blob = await fetch(dataUrl).then((r2) => r2.blob());
+      const file = new File([blob], `avatar_${Date.now()}.jpg`, { type: "image/jpeg" });
+      const result = await uploadFile(file);
+      const fileUrl = (result == null ? void 0 : result.file_url) || result;
+      if (fileUrl) {
+        onSelect(fileUrl);
+        return;
+      }
+      throw new Error("Upload failed — no file_url returned");
+    } catch (e) {
+      console.warn("Avatar upload failed:", e);
+      alert("Could not save avatar. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    cropImageUrl && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      AvatarCropEditor,
+      {
+        imageUrl: cropImageUrl,
+        onSave: handleCropSave,
+        onCancel: () => setCropImageUrl(null)
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 2e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", background: "#1a1a2e", borderRadius: "24px 24px 0 0", width: "100%", maxWidth: 480, padding: "20px 20px 36px", zIndex: 2001 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#444", borderRadius: 99, margin: "0 auto 16px" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "🎨 Choose your avatar" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: "50%", width: 30, height: 30, color: "#fff", cursor: "pointer" }, children: "✕" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("input", { ref: fileRef, type: "file", accept: "image/*", style: { display: "none" }, onChange: handleFileUpload }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                var _a;
+                return (_a = fileRef.current) == null ? void 0 : _a.click();
+              },
+              disabled: uploading,
+              style: { width: "100%", padding: "13px", background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(255,149,0,0.1))", border: "2px dashed rgba(245,200,66,0.5)", borderRadius: 14, color: "#F5C842", fontWeight: 800, fontSize: 15, cursor: "pointer" },
+              children: uploading ? "⏳ Uploading..." : "📷 Upload & crop your photo"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: 12, overflowX: "auto", scrollbarWidth: "none" }, children: AVATAR_STYLES.map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setActiveStyle(i),
+            style: {
+              flexShrink: 0,
+              padding: "6px 14px",
+              borderRadius: 20,
+              border: "none",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+              background: activeStyle === i ? "linear-gradient(135deg,#ff6b6b,#ff8e53)" : "rgba(255,255,255,0.07)",
+              color: activeStyle === i ? "#fff" : "#aaa"
+            },
+            children: s.label
+          },
+          i
+        )) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxHeight: 260, overflowY: "auto", paddingBottom: 4 }, children: AVATAR_STYLES[activeStyle].seeds.map((seed, i) => {
+          const style = AVATAR_STYLES[activeStyle].style;
+          const url = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0B0C1A,1a1a2e,2d2d44`;
+          return /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => onSelect(url),
+              style: {
+                background: currentAvatar === url ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.06)",
+                border: currentAvatar === url ? "3px solid #F5C842" : "3px solid rgba(255,255,255,0.08)",
+                borderRadius: 16,
+                width: 64,
+                height: 64,
+                margin: "0 auto",
+                padding: 4,
+                cursor: "pointer",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "border 0.2s, transform 0.15s, box-shadow 0.2s",
+                boxShadow: currentAvatar === url ? "0 0 12px rgba(245,200,66,0.4)" : "none",
+                transform: currentAvatar === url ? "scale(1.12)" : "scale(1)"
+              },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: url, style: { width: "100%", height: "100%", pointerEvents: "none", display: "block", borderRadius: 10, background: "rgba(255,255,255,0.05)" }, loading: "lazy" })
+            },
+            i
+          );
+        }) })
+      ] })
+    ] })
+  ] });
+}
 function UserProfileSheet({ userId, username, currentUser, onClose }) {
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
@@ -15363,16 +15767,44 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   const [followRecord, setFollowRecord] = React.useState(null);
   const [followLoading, setFollowLoading] = React.useState(false);
   const [playerIndex, setPlayerIndex] = React.useState(null);
+  const [profileTab, setProfileTab] = React.useState("posts");
+  const [savedVideos, setSavedVideos] = React.useState([]);
+  const [savedLoading, setSavedLoading] = React.useState(false);
   const isOwnProfile = currentUser && currentUser.id === userId;
+  const loadSaved = React.useCallback(async () => {
+    if (!currentUser || !isOwnProfile) return;
+    setSavedLoading(true);
+    try {
+      const res = await bookmarks.getByUser(currentUser.id);
+      const recs = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+      const videoIds = recs.map((r2) => r2.video_id).filter(Boolean);
+      if (videoIds.length === 0) {
+        setSavedVideos([]);
+        setSavedLoading(false);
+        return;
+      }
+      const fetched = await Promise.all(
+        videoIds.map(
+          (id2) => request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${id2}`).catch(() => null)
+        )
+      );
+      setSavedVideos(fetched.filter(Boolean));
+    } catch (e) {
+    }
+    setSavedLoading(false);
+  }, [currentUser, isOwnProfile]);
+  React.useEffect(() => {
+    if (profileTab === "saved") loadSaved();
+  }, [profileTab]);
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser?limit=200`).catch(() => null),
+      request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
       // Live follower count: how many people follow this profile
-      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
       // Live following count: how many people this profile follows
-      request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
+      request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
     ]).then(([userRes, vids, followersRes, followingRes]) => {
       const allUsers = (userRes == null ? void 0 : userRes.items) || userRes || [];
       const u2 = allUsers.find((x2) => x2.id === userId || x2.created_by === userId) || null;
@@ -15411,7 +15843,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         setProfile((p2) => p2 ? { ...p2, followers_count: (p2.followers_count || 0) + 1 } : p2);
       }
       try {
-        const myFollowingRes = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingRes = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`);
         const myFollowingCount = ((myFollowingRes == null ? void 0 : myFollowingRes.items) || myFollowingRes || []).length;
         setProfile((p2) => p2 ? { ...p2 } : p2);
         localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
@@ -15535,7 +15967,70 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
               )
             ] })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1, padding: 2 }, children: userVideos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
+          isOwnProfile && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 2 }, children: [{ id: "posts", label: "Posts", icon: "🎬" }, { id: "saved", label: "Saved", icon: "🔖" }].map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              onClick: () => setProfileTab(t2.id),
+              style: {
+                flex: 1,
+                background: "none",
+                border: "none",
+                borderBottom: profileTab === t2.id ? "2px solid #F5C842" : "2px solid transparent",
+                color: profileTab === t2.id ? "#F5C842" : "rgba(255,255,255,0.4)",
+                fontWeight: profileTab === t2.id ? 700 : 400,
+                fontSize: 13,
+                padding: "10px 0",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 5
+              },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2.icon }),
+                " ",
+                t2.label
+              ]
+            },
+            t2.id
+          )) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1, padding: 2 }, children: profileTab === "saved" ? savedLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: "Loading saved…" }) : savedVideos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🔖" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No saved posts yet" })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }, children: savedVideos.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: () => {
+                setPlayerIndex(i);
+              },
+              style: { position: "relative", aspectRatio: "1/1", background: "#111", overflow: "hidden", cursor: "pointer" },
+              children: [
+                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "video",
+                  {
+                    src: resolveMediaUrl(v2.video_url),
+                    style: { width: "100%", height: "100%", objectFit: "cover" },
+                    muted: true,
+                    playsInline: true,
+                    preload: "metadata",
+                    onLoadedMetadata: (e) => {
+                      try {
+                        e.target.currentTime = 1;
+                      } catch {
+                      }
+                    }
+                  }
+                ),
+                !v2.is_photo && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, opacity: 0.8 }, children: "▶" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" } }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 4, left: 4, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", gap: 6 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                  "❤️ ",
+                  v2.likes_count || 0
+                ] }) })
+              ]
+            },
+            v2.id
+          )) }) : userVideos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🎬" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No videos yet" })
           ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }, children: userVideos.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -15579,1592 +16074,16 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         ] })
       ] })
     ] }),
-    playerIndex !== null && userVideos.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+    playerIndex !== null && /* @__PURE__ */ jsxRuntimeExports.jsx(
       ProfileVideoPlayer,
       {
-        videos: userVideos,
+        videos: profileTab === "saved" ? savedVideos : userVideos,
         startIndex: playerIndex,
         profile,
         username,
         onClose: () => setPlayerIndex(null)
       }
     )
-  ] });
-}
-function VideoManageGrid({ videos: vids, onRefresh }) {
-  const [menuVideo, setMenuVideo] = React.useState(null);
-  const [editVideo, setEditVideo] = React.useState(null);
-  const [editCaption, setEditCaption] = React.useState("");
-  const [saving, setSaving] = React.useState(false);
-  const [confirmDelete, setConfirmDelete] = React.useState(null);
-  const handleDelete = async () => {
-    try {
-      setSaving(true);
-      await videos.delete(confirmDelete.id);
-      setConfirmDelete(null);
-      onRefresh();
-    } catch (e) {
-      alert("Delete failed: " + e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-  const handleSaveEdit = async () => {
-    try {
-      setSaving(true);
-      await videos.update(editVideo.id, { caption: editCaption });
-      setEditVideo(null);
-      onRefresh();
-    } catch (e) {
-      alert("Save failed: " + e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-  if (!vids || vids.length === 0) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { gridColumn: "1/-1", textAlign: "center", padding: 40, color: "#555" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 8 }, children: "📹" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No videos yet" })
-  ] });
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }, children: vids.map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "div",
-      {
-        style: { position: "relative", aspectRatio: "9/16", background: "#111", overflow: "hidden", cursor: "pointer" },
-        onClick: () => setMenuVideo(v2),
-        children: [
-          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), onError: (e) => {
-            e.target.style.display = "none";
-          }, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            position: "absolute",
-            top: 6,
-            right: 6,
-            background: "rgba(0,0,0,0.6)",
-            borderRadius: "50%",
-            width: 24,
-            height: 24,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 14,
-            color: "#fff",
-            lineHeight: 1
-          }, children: "⋮" }),
-          v2.views_count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-            position: "absolute",
-            bottom: 4,
-            left: 4,
-            background: "rgba(0,0,0,0.6)",
-            borderRadius: 8,
-            padding: "2px 6px",
-            fontSize: 10,
-            color: "#fff"
-          }, children: [
-            "👁 ",
-            v2.views_count
-          ] })
-        ]
-      },
-      v2.id
-    )) }),
-    menuVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        style: { position: "fixed", inset: 0, zIndex: 8e3, display: "flex", flexDirection: "column", justifyContent: "flex-end" },
-        onClick: () => setMenuVideo(null),
-        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            style: { background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: 20, maxWidth: 480, width: "100%", margin: "0 auto" },
-            onClick: (e) => e.stopPropagation(),
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, marginBottom: 20, alignItems: "center" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 54, height: 72, background: "#111", borderRadius: 8, overflow: "hidden", flexShrink: 0 }, children: menuVideo.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: menuVideo.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }, children: "🎬" }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: menuVideo.caption || "(no caption)" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginTop: 4 }, children: [
-                    "👁 ",
-                    menuVideo.views_count || 0,
-                    "  ❤️ ",
-                    menuVideo.likes_count || 0,
-                    "  💬 ",
-                    menuVideo.comments_count || 0
-                  ] })
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  onClick: () => {
-                    setEditCaption(menuVideo.caption || "");
-                    setEditVideo(menuVideo);
-                    setMenuVideo(null);
-                  },
-                  style: {
-                    width: "100%",
-                    padding: "14px 0",
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 12,
-                    color: "#fff",
-                    fontSize: 15,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    marginBottom: 10,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10
-                  },
-                  children: "✏️ Edit Caption"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  onClick: () => {
-                    setConfirmDelete(menuVideo);
-                    setMenuVideo(null);
-                  },
-                  style: {
-                    width: "100%",
-                    padding: "14px 0",
-                    background: "rgba(229,57,53,0.15)",
-                    border: "1px solid rgba(229,57,53,0.4)",
-                    borderRadius: 12,
-                    color: "#ff6b6b",
-                    fontSize: 15,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    marginBottom: 10,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10
-                  },
-                  children: "🗑️ Delete Video"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  onClick: () => setMenuVideo(null),
-                  style: { width: "100%", padding: "12px 0", background: "none", border: "none", color: "#888", fontSize: 14, cursor: "pointer" },
-                  children: "Cancel"
-                }
-              )
-            ]
-          }
-        )
-      }
-    ),
-    editVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "div",
-      {
-        style: { position: "fixed", inset: 0, zIndex: 8e3, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 },
-        onClick: () => setEditVideo(null),
-        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            style: { background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 420 },
-            onClick: (e) => e.stopPropagation(),
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 16 }, children: "✏️ Edit Caption" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "textarea",
-                {
-                  value: editCaption,
-                  onChange: (e) => setEditCaption(e.target.value),
-                  placeholder: "Write a caption...",
-                  rows: 4,
-                  style: {
-                    width: "100%",
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    borderRadius: 12,
-                    color: "#fff",
-                    padding: 12,
-                    fontSize: 14,
-                    resize: "none",
-                    outline: "none",
-                    fontFamily: "inherit",
-                    boxSizing: "border-box"
-                  }
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, marginTop: 14 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    onClick: () => setEditVideo(null),
-                    style: {
-                      flex: 1,
-                      padding: "12px 0",
-                      background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 12,
-                      color: "#aaa",
-                      fontSize: 14,
-                      cursor: "pointer"
-                    },
-                    children: "Cancel"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    onClick: handleSaveEdit,
-                    disabled: saving,
-                    style: {
-                      flex: 2,
-                      padding: "12px 0",
-                      background: "linear-gradient(135deg,#F5C842,#FF9500)",
-                      border: "none",
-                      borderRadius: 12,
-                      color: "#fff",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: saving ? "not-allowed" : "pointer",
-                      opacity: saving ? 0.7 : 1
-                    },
-                    children: saving ? "Saving..." : "Save Changes"
-                  }
-                )
-              ] })
-            ]
-          }
-        )
-      }
-    ),
-    confirmDelete && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380, textAlign: "center" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🗑️" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 8 }, children: "Delete this video?" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "This can't be undone. The video will be permanently removed." }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setConfirmDelete(null),
-            style: {
-              flex: 1,
-              padding: "12px 0",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12,
-              color: "#aaa",
-              fontSize: 14,
-              cursor: "pointer"
-            },
-            children: "Keep it"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: handleDelete,
-            disabled: saving,
-            style: {
-              flex: 1,
-              padding: "12px 0",
-              background: "rgba(229,57,53,0.9)",
-              border: "none",
-              borderRadius: 12,
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: saving ? "not-allowed" : "pointer"
-            },
-            children: saving ? "Deleting..." : "Yes, Delete"
-          }
-        )
-      ] })
-    ] }) })
-  ] });
-}
-function Toast({ msg, type = "success" }) {
-  if (!msg) return null;
-  const bg2 = type === "error" ? "linear-gradient(135deg,#c62828,#b71c1c)" : type === "live" ? "linear-gradient(135deg,#e53935,#b71c1c)" : "linear-gradient(135deg,#2e7d32,#1b5e20)";
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)", zIndex: 9999, background: bg2, color: "#fff", fontWeight: 700, fontSize: 14, padding: "12px 24px", borderRadius: 30, boxShadow: "0 6px 28px rgba(0,0,0,0.5)", whiteSpace: "nowrap", pointerEvents: "none" }, children: msg });
-}
-function RecentEpisodes({ episodes = [], loading = false, onEpisodeClick }) {
-  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 13, padding: "12px 0" }, children: "Loading..." })
-  ] });
-  if (!episodes || !episodes.length) return null;
-  const fmtDuration = (sec) => {
-    if (!sec) return "";
-    const h = Math.floor(sec / 3600);
-    const m2 = Math.floor(sec % 3600 / 60);
-    if (h > 0) return `${h}h ${m2}m`;
-    return `${m2}m`;
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: episodes.map((ep, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => onEpisodeClick && onEpisodeClick(ep), style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 14, cursor: "pointer", transition: "background 0.2s" }, onMouseEnter: (e) => e.currentTarget.style.background = "rgba(108,60,247,0.15)", onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.04)", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#6c3cf7,#4527a0)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 800, color: "#fff", fontSize: 14 }, children: ep.episode_number || i + 1 }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, lineHeight: 1.4, marginBottom: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: ep.title }),
-        ep.description && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", marginBottom: 6 }, children: ep.description }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
-          ep.duration_seconds > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: [
-            "⏱ ",
-            fmtDuration(ep.duration_seconds)
-          ] }),
-          ep.listener_count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: [
-            "🎧 ",
-            ep.listener_count
-          ] })
-        ] })
-      ] })
-    ] }, ep.id || i)) })
-  ] });
-}
-const PODCAST_COVER_COLORS = [
-  { bg: "linear-gradient(135deg,#6c3cf7,#4527a0)", emoji: "🎙️" },
-  { bg: "linear-gradient(135deg,#e53935,#b71c1c)", emoji: "🔥" },
-  { bg: "linear-gradient(135deg,#0288d1,#01579b)", emoji: "🌊" },
-  { bg: "linear-gradient(135deg,#2e7d32,#1b5e20)", emoji: "🌿" },
-  { bg: "linear-gradient(135deg,#f57c00,#e65100)", emoji: "⚡" },
-  { bg: "linear-gradient(135deg,#ad1457,#880e4f)", emoji: "💫" },
-  { bg: "linear-gradient(135deg,#00838f,#006064)", emoji: "🎵" },
-  { bg: "linear-gradient(135deg,#4e342e,#3e2723)", emoji: "☕" }
-];
-function PodcastPage({ currentUser, onNeedAuth }) {
-  var _a;
-  const CATEGORIES2 = ["All", "News & Politics", "Business", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Education"];
-  const [podcasts, setPodcasts] = reactExports.useState([]);
-  const [myShows, setMyShows] = reactExports.useState([]);
-  const [loadingPodcasts, setLoadingPodcasts] = reactExports.useState(true);
-  const [selectedCat, setSelectedCat] = reactExports.useState("All");
-  const [selectedPodcast, setSelectedPodcast] = reactExports.useState(null);
-  const [podcastEpisodes, setPodcastEpisodes] = reactExports.useState([]);
-  const [episodesLoading, setEpisodesLoading] = reactExports.useState(false);
-  const [showRegister, setShowRegister] = reactExports.useState(false);
-  const [registerForm, setRegisterForm] = reactExports.useState({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
-  const [registering, setRegistering] = reactExports.useState(false);
-  const [registerDone, setRegisterDone] = reactExports.useState(false);
-  const [toast, setToast] = reactExports.useState(null);
-  const [goingLive, setGoingLive] = reactExports.useState(false);
-  const [loadingStreamKey, setLoadingStreamKey] = reactExports.useState(false);
-  const [showStreamKey, setShowStreamKey] = reactExports.useState(false);
-  const [streamCreds, setStreamCreds] = reactExports.useState(null);
-  const [endingLive, setEndingLive] = reactExports.useState(false);
-  const [editingStream, setEditingStream] = reactExports.useState(false);
-  const [selectedEpisode, setSelectedEpisode] = reactExports.useState(null);
-  const [newStreamUrl, setNewStreamUrl] = reactExports.useState("");
-  const [liveNewsChannel, setLiveNewsChannel] = reactExports.useState(null);
-  const LIVE_NEWS_CHANNELS = [
-    { id: "ctv", name: "CTV News", emoji: "🍁", desc: "Canada's #1 news network", color: "linear-gradient(135deg,#c62828,#b71c1c)", url: "https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1" },
-    { id: "dn", name: "Democracy Now", emoji: "✊", desc: "Independent global news", color: "linear-gradient(135deg,#4a148c,#1a237e)", url: "https://www.youtube.com/embed/live_stream?channel=UC3KEoMzNz8eYnwBC34RaKCQ&autoplay=1" },
-    { id: "bbc", name: "BBC News", emoji: "🇬🇧", desc: "Global news from London", color: "linear-gradient(135deg,#b71c1c,#880e4f)", url: "https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA&autoplay=1" },
-    { id: "aljaz", name: "Al Jazeera", emoji: "🌍", desc: "Breaking news worldwide", color: "linear-gradient(135deg,#1b5e20,#004d40)", url: "https://www.youtube.com/embed/live_stream?channel=UCNye-wNBqNL5ZzHSJj3l8Bg&autoplay=1" },
-    { id: "sky", name: "Sky News", emoji: "🌐", desc: "Live from the UK", color: "linear-gradient(135deg,#0277bd,#01579b)", url: "https://www.youtube.com/embed/live_stream?channel=UCiU6U_f2KO7P6LFID9eQ4bA&autoplay=1" },
-    { id: "dw", name: "DW News", emoji: "🇩🇪", desc: "International news in English", color: "linear-gradient(135deg,#37474f,#263238)", url: "https://www.youtube.com/embed/live_stream?channel=UCknLrEdhRCp1aegoMqRaCZg&autoplay=1" },
-    { id: "france", name: "France 24", emoji: "🇫🇷", desc: "Global news in English", color: "linear-gradient(135deg,#1565c0,#e53935)", url: "https://www.youtube.com/embed/live_stream?channel=UCQfwfsi5VrQ8yKZ-UWmAoBw&autoplay=1" }
-  ];
-  const showToast = (msg, type = "success", ms = 3e3) => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), ms);
-  };
-  reactExports.useEffect(() => {
-    loadPodcasts();
-  }, []);
-  reactExports.useEffect(() => {
-    if (currentUser) loadMyShows();
-  }, [currentUser]);
-  const loadPodcasts = async () => {
-    setLoadingPodcasts(true);
-    try {
-      const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
-      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast?status=Active`);
-      const list = Array.isArray(data) ? data : data.records || data.items || [];
-      setPodcasts(list);
-    } catch (e) {
-      console.error("loadPodcasts failed:", e);
-    } finally {
-      setLoadingPodcasts(false);
-    }
-  };
-  const loadMyShows = async () => {
-    if (!currentUser) return;
-    try {
-      const APP_ID2 = "69b2ee18a8e6fb58c7f0261c";
-      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast`);
-      const all = Array.isArray(data) ? data : data.records || data.items || [];
-      const mine = all.filter(
-        (p2) => {
-          var _a2;
-          return p2.host_user_id === currentUser.id || p2.host_username === (currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0])) || p2.created_by === currentUser.email || currentUser.email === "jaygnz27@gmail.com" || currentUser.email === "lasanjaya@gmail.com";
-        }
-      );
-      setMyShows(mine);
-    } catch (e) {
-      console.error("loadMyShows failed:", e);
-    }
-  };
-  const filtered = selectedCat === "All" ? podcasts : podcasts.filter((p2) => p2.category === selectedCat);
-  const livePodcasts = filtered.filter((p2) => p2.is_live);
-  const regularPodcasts = filtered.filter((p2) => !p2.is_live);
-  const handleRegister = async () => {
-    var _a2;
-    if (!registerForm.title || !registerForm.host_name) return;
-    setRegistering(true);
-    try {
-      const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-      await request$1("POST", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast`, {
-        title: registerForm.title,
-        host_name: registerForm.host_name,
-        description: registerForm.description,
-        category: registerForm.category,
-        live_stream_url: registerForm.live_stream_url || "",
-        cover_color: cover.bg,
-        cover_emoji: cover.emoji,
-        status: "Active",
-        is_live: false,
-        listener_count: 0,
-        episode_count: 0,
-        follower_count: 0,
-        host_user_id: (currentUser == null ? void 0 : currentUser.id) || "",
-        host_username: (currentUser == null ? void 0 : currentUser.full_name) || ((_a2 = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a2.split("@")[0]) || ""
-      });
-      setRegisterDone(true);
-      await loadPodcasts();
-      await loadMyShows();
-      fetch("https://sachi-c7f0261c.base44.app/functions/podcastWelcome", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          host_email: (currentUser == null ? void 0 : currentUser.email) || "",
-          host_name: registerForm.host_name,
-          podcast_title: registerForm.title,
-          category: registerForm.category
-        })
-      }).catch(() => {
-      });
-      setRegisterForm({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
-    } catch (e) {
-      console.error(e);
-      showToast("Something went wrong. Please try again.", "error");
-    }
-    setRegistering(false);
-  };
-  if (selectedEpisode) {
-    const epUrl = selectedEpisode.live_stream_url || selectedEpisode.audio_url || selectedEpisode.video_url || "";
-    const getEpEmbed = (url) => {
-      if (!url) return null;
-      if (url.includes("youtube.com/watch")) return url.replace("watch?v=", "embed/").split("&")[0] + "?autoplay=1";
-      if (url.includes("youtu.be/")) return "https://www.youtube.com/embed/" + url.split("youtu.be/")[1].split("?")[0] + "?autoplay=1";
-      if (url.includes("rumble.com/embed")) return url.includes("?") ? url : url + "?pub=4";
-      if (url.includes("rumble.com")) {
-        const rmMatch = url.match(/rumble\.com\/(v[\w]+)-/);
-        if (rmMatch) return `https://rumble.com/embed/${rmMatch[1]}/?pub=4`;
-        return url;
-      }
-      if (url.includes("spotify.com/show/") || url.includes("spotify.com/episode/")) {
-        const id2 = url.split("/").pop().split("?")[0];
-        return url.includes("/episode/") ? `https://open.spotify.com/embed/episode/${id2}` : `https://open.spotify.com/embed/show/${id2}`;
-      }
-      return url;
-    };
-    const embedUrl = getEpEmbed(epUrl);
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 200, display: "flex", flexDirection: "column" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setSelectedEpisode(null), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 18 }, children: "←" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: selectedEpisode.title }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12 }, children: [
-            "Episode ",
-            selectedEpisode.episode_number
-          ] })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
-        embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed") || embedUrl.includes("rumble.com/embed")) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "iframe",
-          {
-            src: embedUrl,
-            style: { width: "100%", maxWidth: 700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight: 500, borderRadius: 16, border: "none" },
-            allow: "autoplay; encrypted-media; fullscreen",
-            allowFullScreen: true
-          }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 500, background: "rgba(255,255,255,0.05)", borderRadius: 20, padding: 32, textAlign: "center" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64, marginBottom: 16 }, children: "🎙️" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }, children: selectedEpisode.title }),
-          selectedEpisode.description && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 24, lineHeight: 1.6 }, children: selectedEpisode.description }),
-          epUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "a",
-            {
-              href: epUrl,
-              target: "_blank",
-              rel: "noopener noreferrer",
-              style: { display: "inline-block", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", color: "#fff", padding: "14px 28px", borderRadius: 50, fontWeight: 700, fontSize: 15, textDecoration: "none" },
-              children: "🎧 Listen Now"
-            }
-          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 14 }, children: "No stream URL available yet" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 24, width: "100%", maxWidth: 500 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.7 }, children: selectedEpisode.description }) })
-      ] })
-    ] });
-  }
-  if (selectedPodcast) {
-    const isHost = currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === selectedPodcast.created_by || currentUser.full_name && currentUser.full_name === selectedPodcast.host_username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) === selectedPodcast.host_username || currentUser.email === "jaygnz27@gmail.com" || currentUser.email === "lasanjaya@gmail.com" || currentUser.id === selectedPodcast.created_by_id);
-    const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
-    const coverEmoji = selectedPodcast.cover_emoji || "🎙️";
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
-      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", height: 240, background: coverBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setSelectedPodcast(null),
-            style: { position: "absolute", top: 16, left: 16, background: "rgba(0,0,0,0.3)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
-            children: "←"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 60, marginBottom: 10 }, children: coverEmoji }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20, textAlign: "center", padding: "0 60px", textShadow: "0 2px 8px rgba(0,0,0,0.5)" }, children: selectedPodcast.title }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: 4 }, children: [
-          "by ",
-          selectedPodcast.host_name
-        ] }),
-        selectedPodcast.is_live && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 16, right: 16, background: "#e53935", borderRadius: 20, padding: "5px 12px", display: "flex", alignItems: "center", gap: 6, animation: "pulse 1.5s infinite" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 7, height: 7, borderRadius: "50%", background: "#fff" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 12 }, children: "LIVE" })
-        ] }),
-        selectedPodcast.status === "Pending" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 16, right: 16, background: "rgba(245,200,66,0.9)", borderRadius: 20, padding: "5px 12px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#000", fontWeight: 800, fontSize: 11 }, children: "⏳ PENDING REVIEW" }) })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px 20px 100px" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 0, marginBottom: 20, background: "rgba(255,255,255,0.04)", borderRadius: 16, overflow: "hidden" }, children: [
-          { val: selectedPodcast.follower_count || 0, label: "Followers" },
-          { val: selectedPodcast.episode_count || 0, label: "Episodes" },
-          { val: selectedPodcast.is_live ? selectedPodcast.listener_count || 0 : "—", label: "Listening", red: selectedPodcast.is_live }
-        ].map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, textAlign: "center", padding: "14px 0", borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.06)" : "none" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: s.red ? "#e53935" : "#fff", fontWeight: 800, fontSize: 18 }, children: s.val }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2 }, children: s.label })
-        ] }, i)) }),
-        selectedPodcast.description ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 16, marginBottom: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 1.6 }, children: selectedPodcast.description }) }) : null,
-        isHost && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ Host Controls" }),
-          selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(229,57,53,0.08)", border: "1px solid rgba(229,57,53,0.3)", borderRadius: 14, padding: 14, marginBottom: 12, textAlign: "center" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#e53935", fontWeight: 700, fontSize: 13 }, children: "🔴 You are currently LIVE" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 4 }, children: [
-                selectedPodcast.listener_count || 0,
-                " listeners tuned in"
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 6 }, children: "🔗 Stream URL" }),
-              editingStream ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "input",
-                  {
-                    value: newStreamUrl,
-                    onChange: (e) => setNewStreamUrl(e.target.value),
-                    placeholder: "https://youtube.com/watch?v=...",
-                    style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none" }
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
-                  try {
-                    await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
-                    setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
-                    setEditingStream(false);
-                    showToast("✅ Stream URL saved!", "success");
-                  } catch (e) {
-                    showToast("Failed to save URL", "error");
-                  }
-                }, style: { background: "#6c3cf7", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }, children: "Save" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingStream(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontSize: 13, cursor: "pointer" }, children: "✕" })
-              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }, children: selectedPodcast.live_stream_url || "No stream URL set yet" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    onClick: () => {
-                      setNewStreamUrl(selectedPodcast.live_stream_url || "");
-                      setEditingStream(true);
-                    },
-                    style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 8, padding: "5px 12px", color: "#a78bfa", fontSize: 12, cursor: "pointer", fontWeight: 600, flexShrink: 0 },
-                    children: selectedPodcast.live_stream_url ? "Edit" : "Add URL"
-                  }
-                )
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                onClick: async () => {
-                  if (endingLive) return;
-                  setEndingLive(true);
-                  try {
-                    await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ podcast_id: selectedPodcast.id, set_live: false, admin_email: currentUser == null ? void 0 : currentUser.email })
-                    }).catch(() => {
-                    });
-                    try {
-                      await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
-                    } catch {
-                    }
-                    setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
-                    setPodcasts((ps) => ps.map((p2) => p2.id === selectedPodcast.id ? { ...p2, is_live: false } : p2));
-                    showToast("✅ Live session ended successfully", "success");
-                  } catch (e) {
-                    showToast("Failed to end session. Try again.", "error");
-                  }
-                  setEndingLive(false);
-                },
-                style: { width: "100%", padding: "15px 0", background: endingLive ? "rgba(229,57,53,0.3)" : "rgba(229,57,53,0.12)", border: "2px solid #e53935", borderRadius: 16, color: "#e53935", fontWeight: 800, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 },
-                children: endingLive ? "Ending..." : "⏹️ End Live Session"
-              }
-            )
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 6 }, children: [
-                "🔗 Stream URL ",
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.25)" }, children: "(YouTube Live, Twitch, etc.)" })
-              ] }),
-              editingStream ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "input",
-                  {
-                    value: newStreamUrl,
-                    onChange: (e) => setNewStreamUrl(e.target.value),
-                    placeholder: "https://youtube.com/live/...",
-                    style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none" }
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
-                  try {
-                    await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
-                    setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
-                    setEditingStream(false);
-                    showToast("✅ Stream URL saved!", "success");
-                  } catch (e) {
-                    showToast("Failed to save URL", "error");
-                  }
-                }, style: { background: "#6c3cf7", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }, children: "Save" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingStream(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontSize: 13, cursor: "pointer" }, children: "✕" })
-              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }, children: selectedPodcast.live_stream_url || "No stream URL set yet" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    onClick: () => {
-                      setNewStreamUrl(selectedPodcast.live_stream_url || "");
-                      setEditingStream(true);
-                    },
-                    style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 8, padding: "5px 12px", color: "#a78bfa", fontSize: 12, cursor: "pointer", fontWeight: 600, flexShrink: 0 },
-                    children: selectedPodcast.live_stream_url ? "Edit" : "Add URL"
-                  }
-                )
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.06)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 12, fontWeight: 700, marginBottom: 8 }, children: "🎙️ Native Sachi Live (OBS / Streamlabs)" }),
-              selectedPodcast.stream_key ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 6 }, children: "Paste these into OBS → Settings → Stream:" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: 10, marginBottom: 6 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginBottom: 2 }, children: "RTMP Server" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a78bfa", fontSize: 12, wordBreak: "break-all", userSelect: "all" }, children: "rtmps://live.cloudflare.com:443/live/" })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: 10, marginBottom: 8 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginBottom: 2 }, children: "Stream Key" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 12, wordBreak: "break-all", userSelect: "all", flex: 1 }, children: showStreamKey ? selectedPodcast.stream_key : "••••••••••••••••••••••••" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "button",
-                      {
-                        onClick: () => setShowStreamKey((s) => !s),
-                        style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 6, padding: "4px 8px", color: "#fff", fontSize: 11, cursor: "pointer" },
-                        children: showStreamKey ? "Hide" : "Show"
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "button",
-                      {
-                        onClick: () => {
-                          navigator.clipboard.writeText(selectedPodcast.stream_key);
-                          showToast("✅ Stream key copied!", "success");
-                        },
-                        style: { background: "rgba(108,60,247,0.3)", border: "none", borderRadius: 6, padding: "4px 8px", color: "#a78bfa", fontSize: 11, cursor: "pointer" },
-                        children: "Copy"
-                      }
-                    )
-                  ] })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 10 }, children: "Your stream saves automatically as an episode after going live 🎬" })
-              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 10 }, children: "Get your personal RTMP stream key to broadcast live directly on Sachi using OBS or Streamlabs." }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
-                  if (loadingStreamKey) return;
-                  setLoadingStreamKey(true);
-                  try {
-                    const cfRes = await fetch("https://sachi-c7f0261c.base44.app/functions/createLiveStream", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_username: selectedPodcast.host_username || (currentUser == null ? void 0 : currentUser.username) })
-                    });
-                    const cfData = await cfRes.json();
-                    if (cfData.success) {
-                      setSelectedPodcast((p2) => ({ ...p2, stream_key: cfData.stream_key, cf_input_id: cfData.cf_input_id, live_stream_url: cfData.playback_url, rtmp_url: cfData.rtmp_url }));
-                      showToast("🎙️ Stream key generated!", "success");
-                    } else {
-                      showToast("Failed: " + (cfData.error || "Unknown error"), "error");
-                    }
-                  } catch (e) {
-                    showToast("Error creating stream", "error");
-                  }
-                  setLoadingStreamKey(false);
-                }, style: { width: "100%", padding: "11px 0", background: loadingStreamKey ? "rgba(245,200,66,0.2)" : "rgba(245,200,66,0.15)", border: "1px solid #F5C842", borderRadius: 12, color: "#F5C842", fontWeight: 700, fontSize: 14, cursor: "pointer" }, children: loadingStreamKey ? "⏳ Generating..." : "⚡ Generate My Stream Key" })
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                onClick: async () => {
-                  if (goingLive) return;
-                  setGoingLive(true);
-                  try {
-                    const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/podcastGoLiveNotify", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "", set_live: true, admin_email: currentUser == null ? void 0 : currentUser.email })
-                    });
-                    try {
-                      await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
-                    } catch {
-                    }
-                    setSelectedPodcast((p2) => ({ ...p2, is_live: true }));
-                    setPodcasts((ps) => ps.map((p2) => p2.id === selectedPodcast.id ? { ...p2, is_live: true } : p2));
-                    showToast("🔴 You are LIVE! Users are being notified.", "live");
-                  } catch (e) {
-                    showToast("Could not go live. Try again.", "error");
-                  }
-                  setGoingLive(false);
-                },
-                style: { width: "100%", padding: "16px 0", background: goingLive ? "rgba(229,57,53,0.4)" : "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "0 4px 24px rgba(229,57,53,0.35)" },
-                children: goingLive ? "Going Live..." : "🔴 Go Live Now"
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tapping Go Live notifies ALL Sachi users instantly via email" })
-          ] })
-        ] }),
-        !isHost && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
-          const streamUrl = selectedPodcast.live_stream_url;
-          const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
-          const getEmbedUrl = (url) => {
-            if (!url) return null;
-            if (url.includes("rumble.com/c/")) {
-              const ch2 = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
-              return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch2}`;
-            }
-            const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
-            if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
-            if (url.includes("rumble.com/embed/")) return url;
-            if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
-            const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
-            if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
-            const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-            if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
-            const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
-            if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-            return url;
-          };
-          const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
-          const [showPlayer, setShowPlayer] = React.useState(false);
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935", fontWeight: 800, fontSize: 13, letterSpacing: 1 }, children: "LIVE NOW" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: [
-                "· ",
-                selectedPodcast.listener_count || 0,
-                " watching"
-              ] })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                onClick: () => setShowPlayer(true),
-                style: { display: "flex", width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12, boxShadow: "0 4px 20px rgba(229,57,53,0.35)" },
-                children: isCloudflare ? "📡 Watch Live on Sachi" : "🎧 Watch Live Now"
-              }
-            ),
-            showPlayer && (isCloudflare ? /* @__PURE__ */ jsxRuntimeExports.jsx(HlsLivePlayer, { src: streamUrl, title: selectedPodcast.title, onClose: () => setShowPlayer(false) }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "#000", zIndex: 9999, display: "flex", flexDirection: "column" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "rgba(0,0,0,0.85)", flexShrink: 0 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: selectedPodcast.title })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowPlayer(false), style: { background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "50%", width: 34, height: 34, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }, children: "✕" })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("iframe", { src: embedUrl, style: { flex: 1, width: "100%", border: "none" }, allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen", allowFullScreen: true, title: selectedPodcast.title }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px 16px", background: "rgba(0,0,0,0.85)", textAlign: "center", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: "Streaming via Sachi · sachistream.com" }) })
-            ] }))
-          ] });
-        })() : !selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => showToast("🔔 You will be notified when " + selectedPodcast.title + " goes live!", "success"),
-            style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 },
-            children: "🔔 Follow & Get Notified"
-          }
-        ) : null }),
-        !isHost && !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
-          const streamUrl = selectedPodcast.live_stream_url;
-          const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
-          const getEmbedUrl = (url) => {
-            if (!url) return null;
-            if (url.includes("rumble.com/c/")) {
-              const ch2 = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
-              return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch2}`;
-            }
-            const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
-            if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
-            if (url.includes("rumble.com/embed/")) return url;
-            if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
-            const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
-            if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
-            const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-            if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
-            const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
-            if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
-            return url;
-          };
-          const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
-          const [showGuestPlayer, setShowGuestPlayer] = React.useState(false);
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935", fontWeight: 800, fontSize: 13, letterSpacing: 1 }, children: "LIVE NOW" })
-            ] }),
-            isCloudflare ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  onClick: () => setShowGuestPlayer(true),
-                  style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12, boxShadow: "0 4px 20px rgba(229,57,53,0.35)" },
-                  children: "📡 Watch Live on Sachi"
-                }
-              ),
-              showGuestPlayer && /* @__PURE__ */ jsxRuntimeExports.jsx(HlsLivePlayer, { src: streamUrl, title: selectedPodcast.title, onClose: () => setShowGuestPlayer(false) })
-            ] }) : embedUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: 14, overflow: "hidden", background: "#000", boxShadow: "0 4px 24px rgba(229,57,53,0.25)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("iframe", { src: embedUrl, style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }, allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true, title: selectedPodcast.title }) }) : null,
-            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", marginTop: 12, padding: "13px 0", background: "rgba(108,60,247,0.15)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 14, color: "#a78bfa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Sign in to Follow this Podcast" })
-          ] });
-        })() : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 16 }, children: "Sign in to Follow" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(RecentEpisodes, { episodes: podcastEpisodes, loading: episodesLoading, onEpisodeClick: setSelectedEpisode }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
-      ] })
-    ] });
-  }
-  if (showRegister) {
-    const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
-      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px", paddingTop: "calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom: 60 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowRegister(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 20, cursor: "pointer", flexShrink: 0 }, children: "←" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "🎙️ Register Your Podcast" })
-        ] }),
-        registerDone ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "40px 20px" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 72, marginBottom: 16 }, children: "🎉" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 24, marginBottom: 10 }, children: "You are on the list!" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 15, marginBottom: 8, lineHeight: 1.6 }, children: [
-            "Your show is ",
-            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#81c784" }, children: "live on Sachi right now." }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-            "No waiting. No approval needed."
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(46,125,50,0.1)", border: "1px solid rgba(46,125,50,0.3)", borderRadius: 14, padding: 16, margin: "20px 0 28px", textAlign: "left" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#81c784", fontWeight: 700, fontSize: 13, marginBottom: 8 }, children: "⚡ You are all set — here's how to go live:" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.7 }, children: [
-              "1. Go to ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Podcasts tab" }),
-              ' and find your show under "My Shows"',
-              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-              "2. Tap your show to open it",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-              "3. (Optional) Add your stream link — YouTube Live, Twitch, etc.",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-              "4. Tap ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#e53935" }, children: "🔴 Go Live Now" }),
-              " — all Sachi users get notified instantly"
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => {
-                setRegisterDone(false);
-                setShowRegister(false);
-              },
-              style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "14px 36px", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer" },
-              children: "Back to Podcasts"
-            }
-          )
-        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 18 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 10, fontWeight: 600 }, children: "Choose Your Show Cover" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" }, children: PODCAST_COVER_COLORS.map((c, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                onClick: () => setRegisterForm((p2) => ({ ...p2, coverIdx: i })),
-                style: { width: 52, height: 52, borderRadius: 14, background: c.bg, border: registerForm.coverIdx === i ? "3px solid #F5C842" : "3px solid transparent", cursor: "pointer", fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center" },
-                children: c.emoji
-              },
-              i
-            )) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 12, width: "100%", height: 70, borderRadius: 16, background: selectedCover.bg, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 32 }, children: selectedCover.emoji }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 15, opacity: registerForm.title ? 1 : 0.4 }, children: registerForm.title || "Your Show Name" })
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
-              "Podcast Title ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935" }, children: "*" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                value: registerForm.title,
-                onChange: (e) => setRegisterForm((p2) => ({ ...p2, title: e.target.value })),
-                placeholder: "e.g. The Daily Grind",
-                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
-              "Your Name ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935" }, children: "*" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                value: registerForm.host_name,
-                onChange: (e) => setRegisterForm((p2) => ({ ...p2, host_name: e.target.value })),
-                placeholder: "Full name or stage name",
-                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "What is your podcast about?" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "textarea",
-              {
-                value: registerForm.description,
-                onChange: (e) => setRegisterForm((p2) => ({ ...p2, description: e.target.value })),
-                placeholder: "Tell listeners what to expect — topics, guests, vibe...",
-                rows: 3,
-                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", resize: "none", boxSizing: "border-box" }
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "Category" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "select",
-              {
-                value: registerForm.category,
-                onChange: (e) => setRegisterForm((p2) => ({ ...p2, category: e.target.value })),
-                style: { width: "100%", background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none" },
-                children: ["Business", "News & Politics", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Society & Culture", "Education", "Other"].map(
-                  (c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#111" }, children: c }, c)
-                )
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
-              "Stream URL ",
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.25)", fontWeight: 400 }, children: "(optional — add later too)" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                value: registerForm.live_stream_url,
-                onChange: (e) => setRegisterForm((p2) => ({ ...p2, live_stream_url: e.target.value })),
-                placeholder: "https://youtube.com/live/... or Twitch link",
-                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.25)", fontSize: 12, marginTop: 5 }, children: "Where listeners will tune in when you go live. You can update this anytime." })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: handleRegister,
-              disabled: registering || !registerForm.title || !registerForm.host_name,
-              style: { width: "100%", padding: "16px 0", background: !registerForm.title || !registerForm.host_name ? "rgba(108,60,247,0.3)" : registering ? "rgba(108,60,247,0.5)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: !registerForm.title || !registerForm.host_name ? "not-allowed" : "pointer", marginTop: 4 },
-              children: registering ? "⏳ Submitting..." : "Submit My Podcast →"
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center" }, children: "Reviewed and approved within 24 hours" })
-        ] })
-      ] })
-    ] });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px", background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius: 20, padding: "24px 20px", position: "relative", overflow: "hidden" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -20, right: -20, fontSize: 100, opacity: 0.07 }, children: "🎙️" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a78bfa", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 }, children: "Sachi Podcasts" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, lineHeight: 1.3, marginBottom: 8 }, children: [
-          "Listen Live.",
-          /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
-          "Discover New Shows."
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }, children: "Tune into live sessions or browse on-demand — all in one place." }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => {
-              if (!currentUser) {
-                onNeedAuth();
-                return;
-              }
-              setShowRegister(true);
-            },
-            style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 12, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" },
-            children: "🎙️ Register Your Podcast"
-          }
-        )
-      ] }),
-      currentUser && myShows.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ My Shows" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: myShows.map((p2) => {
-          const coverBg = p2.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
-          const coverEmoji = p2.cover_emoji || "🎙️";
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              onClick: async () => {
-                setSelectedPodcast(p2);
-                setEpisodesLoading(true);
-                setPodcastEpisodes([]);
-                try {
-                  const token = localStorage.getItem("token");
-                  const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                  const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                  const json = await res.json();
-                  const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-                  const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-                  const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-                  setPodcastEpisodes(sorted);
-                } catch (e) {
-                  setPodcastEpisodes([]);
-                } finally {
-                  setEpisodesLoading(false);
-                }
-              },
-              style: { background: "rgba(245,200,66,0.05)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 16, padding: 14, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 52, height: 52, borderRadius: 12, background: coverBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: coverEmoji }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }, children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
-                    p2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#e53935", borderRadius: 20, padding: "2px 8px", color: "#fff", fontWeight: 700, fontSize: 10, flexShrink: 0 }, children: "LIVE" })
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 4 }, children: [
-                    "by ",
-                    p2.host_name
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: p2.is_live ? "rgba(229,57,53,0.2)" : "rgba(46,125,50,0.2)", borderRadius: 20, padding: "2px 10px", color: p2.is_live ? "#ef9a9a" : "#81c784", fontSize: 11, fontWeight: 700 }, children: p2.is_live ? "🔴 Live Now" : "✅ Active" })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
-              ]
-            },
-            p2.id
-          );
-        }) })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 4px" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live News" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12 }, children: "• tap to watch" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 12, paddingBottom: 16, scrollbarWidth: "none" }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onClick: () => setLiveNewsChannel(ch2),
-            style: { flexShrink: 0, width: 140, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 80, background: ch2.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }, children: ch2.emoji }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "none", borderRadius: "0 0 16px 16px", padding: "8px 10px" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#e53935", flexShrink: 0 } }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: ch2.name })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, lineHeight: 1.3 }, children: ch2.desc })
-              ] })
-            ]
-          },
-          ch2.id
-        )) })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES2.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => setSelectedCat(cat),
-          style: { flexShrink: 0, padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: selectedCat === cat ? "#6c3cf7" : "rgba(255,255,255,0.07)", color: selectedCat === cat ? "#fff" : "rgba(255,255,255,0.5)", WebkitTapHighlightColor: "transparent" },
-          children: cat
-        },
-        cat
-      )) }),
-      livePodcasts.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 24 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 8 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live Now" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, padding: "0 16px", overflowX: "auto", scrollbarWidth: "none" }, children: livePodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onClick: async () => {
-              setSelectedPodcast(p2);
-              setEpisodesLoading(true);
-              setPodcastEpisodes([]);
-              try {
-                const token = localStorage.getItem("token");
-                const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                const json = await res.json();
-                const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-                const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-                const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-                setPodcastEpisodes(sorted);
-              } catch (e) {
-                setPodcastEpisodes([]);
-              } finally {
-                setEpisodesLoading(false);
-              }
-            },
-            style: { flexShrink: 0, width: 200, background: "rgba(229,57,53,0.08)", border: "1.5px solid rgba(229,57,53,0.3)", borderRadius: 16, padding: 16, cursor: "pointer" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#e53935", display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 20, padding: "3px 10px", marginBottom: 10 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 6, height: 6, borderRadius: "50%", background: "#fff" } }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 11 }, children: "LIVE" })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28, marginBottom: 8 }, children: "🎙️" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 4 }, children: p2.title }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 8 }, children: p2.host_name }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#e53935", fontSize: 12, fontWeight: 600 }, children: [
-                "🎧 ",
-                p2.listener_count || 0,
-                " listening"
-              ] })
-            ]
-          },
-          p2.id
-        )) })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase" }, children: selectedCat === "All" ? "All Shows" : selectedCat }),
-        loadingPodcasts && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(245,200,66,0.5)", fontSize: 14 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12, animation: "spin 1.5s linear infinite", display: "inline-block" }, children: "⟳" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading podcasts..." })
-        ] }),
-        !loadingPodcasts && regularPodcasts.length === 0 && livePodcasts.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)", fontSize: 14 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🎙️" }),
-          "No podcasts in this category yet."
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: regularPodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onClick: async () => {
-              setSelectedPodcast(p2);
-              setEpisodesLoading(true);
-              setPodcastEpisodes([]);
-              try {
-                const token = localStorage.getItem("token");
-                const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
-                const res = await fetch(`https://sachi-c7f0261c.base44.app/api/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
-                const json = await res.json();
-                const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
-                const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
-                const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
-                setPodcastEpisodes(sorted);
-              } catch (e) {
-                setPodcastEpisodes([]);
-              } finally {
-                setEpisodesLoading(false);
-              }
-            },
-            style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 16, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 64, borderRadius: 12, background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }, children: "🎙️" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 12, marginBottom: 6 }, children: p2.host_name }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", borderRadius: 20, padding: "2px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 600 }, children: p2.category }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.25)", fontSize: 11 }, children: [
-                    p2.follower_count || 0,
-                    " followers"
-                  ] })
-                ] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
-            ]
-          },
-          p2.id
-        )) })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "32px 16px 0", background: "rgba(108,60,247,0.08)", border: "1px solid rgba(108,60,247,0.2)", borderRadius: 20, padding: 24, textAlign: "center" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "🚀" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18, marginBottom: 8 }, children: "Have a podcast?" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 16, lineHeight: 1.5 }, children: "Join Sachi and reach new listeners through our For You feed every day." }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => {
-              if (!currentUser) {
-                onNeedAuth();
-                return;
-              }
-              setShowRegister(true);
-            },
-            style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "13px 28px", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" },
-            children: "Get Started Free →"
-          }
-        )
-      ] })
-    ] }),
-    liveNewsChannel && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "#000", display: "flex", flexDirection: "column" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "16px 20px",
-        background: "rgba(0,0,0,0.9)",
-        borderBottom: "1px solid rgba(255,255,255,0.1)",
-        zIndex: 1e4
-      }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => setLiveNewsChannel(null),
-            style: { background: "none", border: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1, padding: 4 },
-            children: "✕"
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: [
-            liveNewsChannel.emoji,
-            " ",
-            liveNewsChannel.name
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { background: "#e53935", color: "#fff", fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", letterSpacing: 1 }, children: "LIVE" })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40 } })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, position: "relative" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "iframe",
-        {
-          src: liveNewsChannel.url,
-          allow: "autoplay; encrypted-media; fullscreen; picture-in-picture",
-          allowFullScreen: true,
-          style: { position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" },
-          title: liveNewsChannel.name + " Live"
-        }
-      ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        background: "rgba(0,0,0,0.9)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-        padding: "10px 16px",
-        overflowX: "auto",
-        display: "flex",
-        gap: 10,
-        scrollbarWidth: "none"
-      }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => setLiveNewsChannel(ch2),
-          style: {
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "8px 14px",
-            borderRadius: 20,
-            border: "none",
-            cursor: "pointer",
-            background: ch2.id === liveNewsChannel.id ? "rgba(229,57,53,0.3)" : "rgba(255,255,255,0.07)",
-            outline: ch2.id === liveNewsChannel.id ? "1.5px solid #e53935" : "none"
-          },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 16 }, children: ch2.emoji }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 600, fontSize: 12, whiteSpace: "nowrap" }, children: ch2.name })
-          ]
-        },
-        ch2.id
-      )) })
-    ] })
-  ] });
-}
-function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile }) {
-  const [threads, setThreads] = reactExports.useState([]);
-  const [loading, setLoading] = reactExports.useState(true);
-  const [activeThread, setActiveThread] = reactExports.useState(null);
-  const [threadMsgs, setThreadMsgs] = reactExports.useState([]);
-  const [newMsg, setNewMsg] = reactExports.useState("");
-  const [sending, setSending] = reactExports.useState(false);
-  const [showNewDM, setShowNewDM] = reactExports.useState(false);
-  const [userSearch, setUserSearch] = reactExports.useState("");
-  const [userResults, setUserResults] = reactExports.useState([]);
-  const [searchingUsers, setSearchingUsers] = reactExports.useState(false);
-  const bottomRef = reactExports.useRef(null);
-  reactExports.useEffect(() => {
-    if (initialDMTarget && initialDMTarget.userId) {
-      openThread(initialDMTarget.userId, initialDMTarget.username, initialDMTarget.avatar);
-      if (onOpen) onOpen();
-    }
-  }, []);
-  const loadInbox = async () => {
-    try {
-      const res = await messages.getInbox(currentUser.id);
-      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
-      const map = {};
-      items.forEach((m2) => {
-        if (!map[m2.thread_id] || new Date(m2.created_date) > new Date(map[m2.thread_id].created_date)) {
-          map[m2.thread_id] = m2;
-        }
-      });
-      setThreads(Object.values(map).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
-    } catch (e) {
-    }
-    setLoading(false);
-  };
-  reactExports.useEffect(() => {
-    loadInbox();
-  }, [currentUser.id]);
-  reactExports.useEffect(() => {
-    if (!userSearch.trim()) {
-      setUserResults([]);
-      return;
-    }
-    const t2 = setTimeout(async () => {
-      setSearchingUsers(true);
-      try {
-        const res = await AthaVidUser.filter({ username__icontains: userSearch.trim() });
-        const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || [];
-        setUserResults(items.filter((u2) => u2.id !== currentUser.id).slice(0, 8));
-      } catch (e) {
-        setUserResults([]);
-      }
-      setSearchingUsers(false);
-    }, 300);
-    return () => clearTimeout(t2);
-  }, [userSearch]);
-  const openThread = async (senderId, senderUsername, senderAvatar) => {
-    setActiveThread({ userId: senderId, username: senderUsername, avatar: senderAvatar });
-    const res = await messages.getThread(currentUser.id, senderId);
-    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
-    const sorted = items.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
-    setThreadMsgs(sorted);
-    items.filter((m2) => m2.recipient_id === currentUser.id && !m2.is_read).forEach((m2) => messages.markRead(m2.id));
-    setTimeout(() => {
-      var _a;
-      return (_a = bottomRef.current) == null ? void 0 : _a.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  };
-  const sendMsg = async () => {
-    if (!newMsg.trim() || !activeThread) return;
-    setSending(true);
-    const thread_id = [currentUser.id, activeThread.userId].sort().join("_");
-    try {
-      const sent = await messages.send({
-        sender_id: currentUser.id,
-        sender_username: currentUser.username,
-        sender_avatar: currentUser.avatar_url || "",
-        recipient_id: activeThread.userId,
-        recipient_username: activeThread.username,
-        text: newMsg.trim(),
-        is_read: false,
-        thread_id
-      });
-      setThreadMsgs((prev) => [...prev, sent]);
-      setNewMsg("");
-      setTimeout(() => {
-        var _a;
-        return (_a = bottomRef.current) == null ? void 0 : _a.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    } catch (e) {
-      alert("Failed to send");
-    }
-    setSending(false);
-  };
-  const fmtTime = (d) => {
-    const dt = new Date(d);
-    const now = /* @__PURE__ */ new Date();
-    const diff = now - dt;
-    if (diff < 6e4) return "just now";
-    if (diff < 36e5) return Math.floor(diff / 6e4) + "m ago";
-    if (diff < 864e5) return Math.floor(diff / 36e5) + "h ago";
-    return dt.toLocaleDateString();
-  };
-  if (activeThread) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 500, display: "flex", flexDirection: "column" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 14px)", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 12, background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-        if (fromProfile) {
-          onClose();
-        } else {
-          setActiveThread(null);
-          setThreadMsgs([]);
-          loadInbox();
-        }
-      }, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 20, padding: 0 }, children: "←" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + activeThread.username, style: { width: 36, height: 36, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.4)" } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700 }, children: [
-        "@",
-        activeThread.username
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 10 }, children: [
-      threadMsgs.map((m2, i) => {
-        const isMine = m2.sender_id === currentUser.id;
-        return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: isMine ? "flex-end" : "flex-start" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { maxWidth: "72%", background: isMine ? "linear-gradient(135deg,#6c63ff,#ff6b6b)" : "rgba(255,255,255,0.08)", borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px", padding: "10px 14px" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 14 }, children: m2.text }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginTop: 4, textAlign: isMine ? "right" : "left" }, children: fmtTime(m2.created_date) })
-        ] }) }, m2.id || i);
-      }),
-      threadMsgs.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", marginTop: 60 }, children: "Start the conversation 👋" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: bottomRef })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "10px 16px 32px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 8, alignItems: "center", background: "rgba(14,14,28,0.98)" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "input",
-        {
-          value: newMsg,
-          onChange: (e) => setNewMsg(e.target.value),
-          onKeyDown: (e) => e.key === "Enter" && sendMsg(),
-          placeholder: "Message...",
-          autoFocus: true,
-          style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: "10px 16px", color: "#fff", fontSize: 14, outline: "none" }
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: sendMsg,
-          disabled: sending || !newMsg.trim(),
-          style: { background: "linear-gradient(135deg,#6c63ff,#ff6b6b)", border: "none", borderRadius: "50%", width: 40, height: 40, color: "#fff", cursor: "pointer", fontSize: 18 },
-          children: "➤"
-        }
-      )
-    ] })
-  ] });
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 100, display: "flex", flexDirection: "column" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "✉️ Inbox" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => {
-            setShowNewDM(true);
-            setUserSearch("");
-            setUserResults([]);
-          },
-          style: { background: "linear-gradient(135deg,#6c63ff,#a855f7)", border: "none", borderRadius: 20, padding: "7px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
-          children: "✏️ New"
-        }
-      )
-    ] }) }),
-    showNewDM && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, background: "#0B0C1A", zIndex: 200, display: "flex", flexDirection: "column", paddingTop: "calc(env(safe-area-inset-top,0px) + 0px)" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10, background: "rgba(14,14,28,0.98)" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowNewDM(false), style: { background: "none", border: "none", color: "#F5C842", fontSize: 20, cursor: "pointer", padding: 0 }, children: "←" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "New Message" })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 16px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "input",
-        {
-          autoFocus: true,
-          value: userSearch,
-          onChange: (e) => setUserSearch(e.target.value),
-          placeholder: "Search by username...",
-          style: { width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 24, padding: "10px 16px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }
-        }
-      ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto" }, children: [
-        searchingUsers && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 20 }, children: "Searching..." }),
-        !searchingUsers && userSearch && userResults.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "No users found" }),
-        !userSearch && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🔍" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Type a username to find someone" })
-        ] }),
-        userResults.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onClick: () => {
-              setShowNewDM(false);
-              openThread(u2.id, u2.username, u2.avatar_url || "");
-            },
-            style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "img",
-                {
-                  src: u2.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u2.username}`,
-                  style: { width: 44, height: 44, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.3)" }
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: [
-                  "@",
-                  u2.username
-                ] }),
-                u2.display_name && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: u2.display_name })
-              ] })
-            ]
-          },
-          u2.id
-        ))
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto" }, children: [
-      loading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "Loading..." }),
-      !loading && threads.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 60 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "✉️" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16 }, children: "No messages yet" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13, marginTop: 8, color: "#444" }, children: "When someone messages you, it will appear here" })
-      ] }),
-      threads.map((t2) => {
-        const isIncoming = t2.sender_id !== currentUser.id;
-        const otherId = isIncoming ? t2.sender_id : t2.recipient_id;
-        const otherUsername = isIncoming ? t2.sender_username : t2.recipient_username;
-        const otherAvatar = isIncoming ? t2.sender_avatar : "";
-        const unread = !t2.is_read && t2.recipient_id === currentUser.id;
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onClick: () => openThread(otherId, otherUsername, otherAvatar),
-            style: { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", background: unread ? "rgba(108,99,255,0.08)" : "transparent" },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: otherAvatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + otherUsername, style: { width: 46, height: 46, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.3)" } }),
-                unread && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 0, right: 0, width: 12, height: 12, background: "#ff6b6b", borderRadius: "50%", border: "2px solid #0B0C1A" } })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: unread ? "#fff" : "#ccc", fontWeight: unread ? 700 : 400, fontSize: 14 }, children: [
-                  "@",
-                  otherUsername
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }, children: t2.text })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontSize: 11 }, children: fmtTime(t2.created_date) })
-            ]
-          },
-          t2.id
-        );
-      })
-    ] })
   ] });
 }
 function AdminPanel({ currentUser }) {
@@ -17181,8 +16100,9 @@ function AdminPanel({ currentUser }) {
   const loadVideos = async () => {
     setLoading(true);
     try {
-      const res = await request$1("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo?limit=500&sort=-created_date");
-      setAllVideos(res.items || res || []);
+      const res = await request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?limit=500&sort=-created_date");
+      const all = res.items || res || [];
+      setAllVideos(all.filter((v2) => !v2.is_archived));
     } catch (e) {
       console.error(e);
     }
@@ -17192,15 +16112,14 @@ function AdminPanel({ currentUser }) {
     setAnalyticsLoading(true);
     setAnalyticsError(null);
     try {
-      const resp = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}"
-      });
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error);
-      setAllUsers(data.users || []);
-      setAnalyticsData(data.analytics);
+      const [usersResp, videosResp] = await Promise.all([
+        request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=500&sort=-created_date"),
+        request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?limit=500&sort=-created_date")
+      ]);
+      const users = Array.isArray(usersResp) ? usersResp : (usersResp == null ? void 0 : usersResp.items) || [];
+      const videos2 = Array.isArray(videosResp) ? videosResp : (videosResp == null ? void 0 : videosResp.items) || [];
+      setAllUsers(users);
+      setAnalyticsData({ total_users: users.length, total_videos: videos2.length, videos: videos2 });
     } catch (e) {
       console.error("analytics error", e);
       setAnalyticsError(e.message || "Failed to load analytics");
@@ -17228,7 +16147,7 @@ function AdminPanel({ currentUser }) {
   const loadFounders = async () => {
     setFoundersLoading(true);
     try {
-      const res = await request$1("GET", "/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator?sort=-created_date&limit=100");
+      const res = await request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator?sort=-created_date&limit=100");
       setFounders(res.items || res || []);
     } catch (e) {
       console.error(e);
@@ -17240,7 +16159,7 @@ function AdminPanel({ currentUser }) {
   }, [modTab]);
   const updateFounderStatus = async (founder, status) => {
     try {
-      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
+      await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
       setFounders((prev) => prev.map((f2) => f2.id === founder.id ? { ...f2, status, notes: founderNote || f2.notes } : f2));
       setSelectedFounder(null);
       setFounderNote("");
@@ -17251,13 +16170,9 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const data = await fetch("https://sachi-c7f0261c.base44.app/functions/getAdminStats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}"
-      }).then((r2) => r2.json());
-      if (data.error) throw new Error(data.error);
-      setRegisteredUsers(data.users || []);
+      const usersResp = await request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=500&sort=-created_date");
+      const users = Array.isArray(usersResp) ? usersResp : (usersResp == null ? void 0 : usersResp.items) || [];
+      setRegisteredUsers(users);
     } catch (e) {
       console.error("loadRegisteredUsers error", e);
     }
@@ -17267,7 +16182,7 @@ function AdminPanel({ currentUser }) {
     setSaving(video.id);
     try {
       const newMature = !video.is_mature;
-      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, {
+      await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`, {
         is_mature: newMature,
         mature_reason: newMature ? reason || "other" : null
       });
@@ -17278,21 +16193,26 @@ function AdminPanel({ currentUser }) {
     setSaving(null);
   };
   const deleteVideo = async (video) => {
+    var _a, _b;
     if (!window.confirm(`Delete "${video.caption || "this video"}"? This cannot be undone.`)) return;
     setSaving(video.id);
     try {
-      await request$1("DELETE", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`);
-      setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
+      await request$1("DELETE", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`);
     } catch (e) {
-      alert("Failed to delete: " + e.message);
+      if (!((_a = e.message) == null ? void 0 : _a.includes("not found")) && !((_b = e.message) == null ? void 0 : _b.includes("404"))) {
+        alert("Failed to delete: " + e.message);
+        setSaving(null);
+        return;
+      }
     }
+    setAllVideos((prev) => prev.filter((v2) => v2.id !== video.id));
     setSaving(null);
   };
   const flagAI = async (video) => {
     setSaving(video.id);
     try {
       const newFlag = !video.is_ai_detected;
-      await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
+      await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`, { is_ai_detected: newFlag });
       setAllVideos((prev) => prev.map((v2) => v2.id === video.id ? { ...v2, is_ai_detected: newFlag } : v2));
     } catch (e) {
       alert("Failed to update: " + e.message);
@@ -17639,7 +16559,7 @@ function AdminPanel({ currentUser }) {
               {
                 onClick: async () => {
                   setSaving(video.id);
-                  await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${video.id}`, { is_approved: true });
+                  await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${video.id}`, { is_approved: true });
                   setAllVideos((p2) => p2.map((v2) => v2.id === video.id ? { ...v2, is_approved: true } : v2));
                   setSaving(null);
                 },
@@ -17957,95 +16877,2024 @@ function AdminPanel({ currentUser }) {
     ] })
   ] });
 }
-function HlsLivePlayer({ src, title, onClose }) {
-  const videoRef = React.useRef(null);
-  const [status, setStatus] = React.useState("loading");
-  React.useEffect(() => {
-    if (!src || !videoRef.current) return;
-    const video = videoRef.current;
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = src;
-      video.play().catch(() => {
-      });
-      setStatus("live");
-      return;
+function ModNavButton({ activeTab, setActiveTab }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    "button",
+    {
+      onClick: () => setActiveTab("admin"),
+      style: {
+        flex: 1,
+        padding: "4px 8px 6px",
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+        WebkitTapHighlightColor: "transparent",
+        borderRadius: 32,
+        transition: "background 0.15s",
+        marginBottom: 4
+      },
+      children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "svg",
+          {
+            width: "22",
+            height: "22",
+            viewBox: "0 0 24 24",
+            fill: "none",
+            stroke: activeTab === "admin" ? "#F5C842" : "#4A4A6A",
+            strokeWidth: "1.8",
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          fontSize: 9,
+          color: activeTab === "admin" ? "#F5C842" : "#4A4A6A",
+          fontWeight: activeTab === "admin" ? 700 : 400,
+          letterSpacing: 0.3
+        }, children: "Mod" })
+      ]
     }
-    if (window.Hls) {
-      attachHls(video, src);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js";
-    script.onload = () => attachHls(video, src);
-    script.onerror = () => setStatus("error");
-    document.head.appendChild(script);
-    function attachHls(video2, src2) {
-      if (!window.Hls || !window.Hls.isSupported()) {
-        setStatus("error");
-        return;
+  );
+}
+function GoLiveModal({ currentUser, onClose, onUploaded }) {
+  const [phase, setPhase] = reactExports.useState("preview");
+  const [elapsed, setElapsed] = reactExports.useState(0);
+  const [caption, setCaption] = reactExports.useState("");
+  const [error, setError] = reactExports.useState("");
+  const [reviewUrl, setReviewUrl] = reactExports.useState("");
+  const [chunks, setChunks] = reactExports.useState([]);
+  const videoRef = reactExports.useRef(null);
+  const streamRef = reactExports.useRef(null);
+  const recorderRef = reactExports.useRef(null);
+  const timerRef = reactExports.useRef(null);
+  const chunksRef = reactExports.useRef([]);
+  reactExports.useEffect(() => {
+    startCamera();
+    return () => stopCamera();
+  }, []);
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
       }
-      const hls = new window.Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 6 });
-      hls.loadSource(src2);
-      hls.attachMedia(video2);
-      hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
-        video2.play().catch(() => {
-        });
-        setStatus("live");
-      });
-      hls.on(window.Hls.Events.ERROR, (e, data) => {
-        if (data.fatal) setStatus("error");
-      });
-      video2._hls = hls;
+    } catch (e) {
+      setError("Camera access denied. Please allow camera and microphone permissions.");
     }
-    return () => {
-      if (video._hls) {
-        video._hls.destroy();
-        video._hls = null;
-      }
+  };
+  const stopCamera = () => {
+    if (streamRef.current) streamRef.current.getTracks().forEach((t2) => t2.stop());
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+  const startLive = () => {
+    if (!streamRef.current) return;
+    chunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : MediaRecorder.isTypeSupported("video/webm") ? "video/webm" : "video/mp4";
+    const recorder = new MediaRecorder(streamRef.current, { mimeType });
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
     };
-  }, [src]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "#000", zIndex: 9999, display: "flex", flexDirection: "column" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "rgba(0,0,0,0.85)", flexShrink: 0, zIndex: 1 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: title }),
-        status === "live" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { background: "#e53935", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 6, letterSpacing: 1 }, children: "LIVE" })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "50%", width: 34, height: 34, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }, children: "✕" })
+    recorder.start(500);
+    recorderRef.current = recorder;
+    setPhase("live");
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed((p2) => p2 + 1), 1e3);
+  };
+  const stopLive = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.onstop = () => {
+        var _a;
+        const mimeType = ((_a = chunksRef.current[0]) == null ? void 0 : _a.type) || "video/webm";
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        setReviewUrl(url);
+        setPhase("review");
+      };
+      recorderRef.current.stop();
+    } else {
+      setPhase("uploading");
+      setTimeout(() => uploadLive(), 800);
+    }
+  };
+  const uploadLive = async () => {
+    var _a, _b;
+    try {
+      const mimeType = ((_a = chunksRef.current[0]) == null ? void 0 : _a.type) || "video/webm";
+      const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+      const blob = new Blob(chunksRef.current, { type: mimeType });
+      const file = new File([blob], `live_${Date.now()}.${ext}`, { type: mimeType });
+      const uploadRes = await uploadFile(file, (pct) => console.log("GoLive upload:", pct + "%"));
+      const file_url = uploadRes.file_url || uploadRes;
+      let thumbUrl = "";
+      try {
+        const thumbBlob = await captureThumbnail(file);
+        const thumbFile = new File([thumbBlob], "thumb.jpg", { type: "image/jpeg" });
+        const thumbRes = await uploadFile(thumbFile);
+        thumbUrl = thumbRes.file_url || thumbRes;
+      } catch (_) {
+      }
+      const liveGeo = await getPostLocation();
+      await videos.create({
+        user_id: currentUser.id,
+        username: currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "user",
+        display_name: currentUser.display_name || currentUser.full_name || currentUser.username || "",
+        avatar_url: currentUser.avatar_url || "",
+        video_url: file_url,
+        thumbnail_url: thumbUrl,
+        caption: caption || "🔴 Live recording",
+        hashtags: ["live"],
+        likes_count: 0,
+        comments_count: 0,
+        views_count: 0,
+        shares_count: 0,
+        is_approved: true,
+        is_archived: false,
+        is_ai_detected: false,
+        duration_seconds: elapsed,
+        ...liveGeo
+      });
+      setPhase("done");
+      setTimeout(() => {
+        onUploaded();
+        onClose();
+      }, 2e3);
+    } catch (e) {
+      setError("Upload failed: " + e.message);
+      setPhase("preview");
+    }
+  };
+  const formatElapsed = (s) => {
+    const m2 = Math.floor(s / 60).toString().padStart(2, "0");
+    const sec = (s % 60).toString().padStart(2, "0");
+    return `${m2}:${sec}`;
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#000", zIndex: 9e3, display: "flex", flexDirection: "column" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "video",
+      {
+        ref: videoRef,
+        autoPlay: true,
+        muted: true,
+        playsInline: true,
+        style: {
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          transform: "scaleX(-1)"
+          /* mirror front cam */
+        }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 120,
+      background: "linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)",
+      pointerEvents: "none"
+    } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 200,
+      background: "linear-gradient(to top, rgba(0,0,0,0.85), transparent)",
+      pointerEvents: "none"
+    } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        onClick: () => {
+          stopCamera();
+          onClose();
+        },
+        style: {
+          position: "absolute",
+          top: 16,
+          left: 16,
+          zIndex: 100,
+          background: "rgba(0,0,0,0.5)",
+          border: "none",
+          borderRadius: "50%",
+          width: 44,
+          height: 44,
+          color: "#fff",
+          fontSize: 22,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        },
+        children: "✕"
+      }
+    ),
+    phase === "live" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      top: 16,
+      left: "50%",
+      transform: "translateX(-50%)",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      zIndex: 100
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        background: "#e53935",
+        borderRadius: 6,
+        padding: "3px 10px",
+        color: "#fff",
+        fontWeight: 800,
+        fontSize: 13,
+        letterSpacing: 1,
+        boxShadow: "0 0 12px rgba(229,57,53,0.8)",
+        animation: "livePulse 1.2s ease infinite"
+      }, children: "🔴 LIVE" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        background: "rgba(0,0,0,0.6)",
+        borderRadius: 6,
+        padding: "3px 10px",
+        color: "#fff",
+        fontWeight: 700,
+        fontSize: 13,
+        backdropFilter: "blur(4px)"
+      }, children: formatElapsed(elapsed) })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }, children: [
-      status === "loading" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 44, height: 44, border: "4px solid rgba(255,255,255,0.15)", borderTopColor: "#F5C842", borderRadius: "50%", animation: "spin 0.9s linear infinite" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13 }, children: "Connecting to stream…" })
-      ] }),
-      status === "error" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 24, textAlign: "center" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36 }, children: "📡" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "Stream not active yet" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 13 }, children: "The host may not be live yet. Try again in a moment." }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { marginTop: 8, padding: "10px 24px", background: "rgba(245,200,66,0.15)", border: "1px solid #F5C842", borderRadius: 12, color: "#F5C842", fontWeight: 700, fontSize: 14, cursor: "pointer" }, children: "Close" })
-      ] }),
+    (phase === "preview" || phase === "live") && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 160, left: 16, right: 16, zIndex: 100 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "input",
+      {
+        value: caption,
+        onChange: (e) => setCaption(e.target.value),
+        placeholder: "Add a caption for your live...",
+        style: {
+          width: "100%",
+          background: "rgba(0,0,0,0.55)",
+          border: "1px solid rgba(255,255,255,0.2)",
+          borderRadius: 12,
+          padding: "10px 14px",
+          color: "#fff",
+          fontSize: 14,
+          backdropFilter: "blur(8px)",
+          outline: "none",
+          boxSizing: "border-box"
+        }
+      }
+    ) }),
+    error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%,-50%)",
+      background: "rgba(200,0,0,0.85)",
+      borderRadius: 12,
+      padding: "16px 24px",
+      color: "#fff",
+      fontSize: 14,
+      zIndex: 200,
+      textAlign: "center",
+      maxWidth: 280
+    }, children: error }),
+    phase === "review" && reviewUrl && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      inset: 0,
+      background: "#000",
+      zIndex: 150,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 0
+    }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "video",
         {
-          ref: videoRef,
+          src: reviewUrl,
           controls: true,
           autoPlay: true,
           playsInline: true,
-          style: { width: "100%", height: "100%", objectFit: "contain", display: status === "error" ? "none" : "block" }
+          style: { width: "100%", height: "70%", objectFit: "contain", background: "#000" }
         }
-      )
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 8 }, children: "Review your live recording" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 16, marginTop: 16 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              URL.revokeObjectURL(reviewUrl);
+              setReviewUrl("");
+              chunksRef.current = [];
+              onClose();
+            },
+            style: {
+              padding: "12px 28px",
+              borderRadius: 12,
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "#fff",
+              fontSize: 14,
+              cursor: "pointer"
+            },
+            children: "🗑️ Discard"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              setPhase("uploading");
+              setTimeout(() => uploadLive(), 300);
+            },
+            style: {
+              padding: "12px 28px",
+              borderRadius: 12,
+              background: "linear-gradient(135deg,#F5C842,#FF9500)",
+              border: "none",
+              color: "#0B0C1A",
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: "pointer"
+            },
+            children: "📤 Post Live"
+          }
+        )
+      ] })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px 16px", background: "rgba(0,0,0,0.85)", textAlign: "center", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: "🌸 Streaming live on Sachi · sachistream.com" }) })
+    phase === "uploading" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      inset: 0,
+      background: "rgba(0,0,0,0.75)",
+      zIndex: 150,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 16
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48 }, children: "📤" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 18, fontWeight: 700 }, children: "Uploading your live..." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13 }, children: "This may take a moment" })
+    ] }),
+    phase === "done" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      inset: 0,
+      background: "rgba(0,0,0,0.85)",
+      zIndex: 150,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 16
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 56 }, children: "✅" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 20, fontWeight: 800 }, children: "Posted to feed!" })
+    ] }),
+    phase === "preview" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 60, left: "50%", transform: "translateX(-50%)", zIndex: 100 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: startLive,
+          style: {
+            width: 80,
+            height: 80,
+            borderRadius: "50%",
+            background: "#e53935",
+            border: "5px solid rgba(255,255,255,0.3)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 0 24px rgba(229,57,53,0.7)",
+            fontSize: 28
+          },
+          children: "🔴"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tap to Go Live" })
+    ] }),
+    phase === "live" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 60, left: "50%", transform: "translateX(-50%)", zIndex: 100 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: stopLive,
+          style: {
+            width: 80,
+            height: 80,
+            borderRadius: "50%",
+            background: "#222",
+            border: "5px solid #e53935",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 0 24px rgba(229,57,53,0.5)",
+            fontSize: 28
+          },
+          children: "⏹️"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tap to Stop & Post" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
+        @keyframes livePulse {
+          0%, 100% { opacity:1; box-shadow: 0 0 12px rgba(229,57,53,0.8); }
+          50% { opacity:0.7; box-shadow: 0 0 24px rgba(229,57,53,1); }
+        }
+      ` })
   ] });
 }
+function VideoManageGrid({ videos: vids, onRefresh }) {
+  const [menuVideo, setMenuVideo] = React.useState(null);
+  const [editVideo, setEditVideo] = React.useState(null);
+  const [editCaption, setEditCaption] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const [confirmDelete, setConfirmDelete] = React.useState(null);
+  const handleDelete = async () => {
+    try {
+      setSaving(true);
+      await videos.delete(confirmDelete.id);
+      setConfirmDelete(null);
+      onRefresh();
+    } catch (e) {
+      alert("Delete failed: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const handleSaveEdit = async () => {
+    try {
+      setSaving(true);
+      await videos.update(editVideo.id, { caption: editCaption });
+      setEditVideo(null);
+      onRefresh();
+    } catch (e) {
+      alert("Save failed: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  if (!vids || vids.length === 0) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { gridColumn: "1/-1", textAlign: "center", padding: 40, color: "#555" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 8 }, children: "📹" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No videos yet" })
+  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }, children: vids.map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        style: { position: "relative", aspectRatio: "9/16", background: "#111", overflow: "hidden", cursor: "pointer" },
+        onClick: () => setMenuVideo(v2),
+        children: [
+          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), onError: (e) => {
+            e.target.style.display = "none";
+          }, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            position: "absolute",
+            top: 6,
+            right: 6,
+            background: "rgba(0,0,0,0.6)",
+            borderRadius: "50%",
+            width: 24,
+            height: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            color: "#fff",
+            lineHeight: 1
+          }, children: "⋮" }),
+          v2.views_count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            position: "absolute",
+            bottom: 4,
+            left: 4,
+            background: "rgba(0,0,0,0.6)",
+            borderRadius: 8,
+            padding: "2px 6px",
+            fontSize: 10,
+            color: "#fff"
+          }, children: [
+            "👁 ",
+            v2.views_count
+          ] })
+        ]
+      },
+      v2.id
+    )) }),
+    menuVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        style: { position: "fixed", inset: 0, zIndex: 8e3, display: "flex", flexDirection: "column", justifyContent: "flex-end" },
+        onClick: () => setMenuVideo(null),
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            style: { background: "#1a1a2e", borderRadius: "20px 20px 0 0", padding: 20, maxWidth: 480, width: "100%", margin: "0 auto" },
+            onClick: (e) => e.stopPropagation(),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, marginBottom: 20, alignItems: "center" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 54, height: 72, background: "#111", borderRadius: 8, overflow: "hidden", flexShrink: 0 }, children: menuVideo.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: menuVideo.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }, children: "🎬" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: menuVideo.caption || "(no caption)" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginTop: 4 }, children: [
+                    "👁 ",
+                    menuVideo.views_count || 0,
+                    "  ❤️ ",
+                    menuVideo.likes_count || 0,
+                    "  💬 ",
+                    menuVideo.comments_count || 0
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => {
+                    setEditCaption(menuVideo.caption || "");
+                    setEditVideo(menuVideo);
+                    setMenuVideo(null);
+                  },
+                  style: {
+                    width: "100%",
+                    padding: "14px 0",
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 12,
+                    color: "#fff",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    marginBottom: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10
+                  },
+                  children: "✏️ Edit Caption"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => {
+                    setConfirmDelete(menuVideo);
+                    setMenuVideo(null);
+                  },
+                  style: {
+                    width: "100%",
+                    padding: "14px 0",
+                    background: "rgba(229,57,53,0.15)",
+                    border: "1px solid rgba(229,57,53,0.4)",
+                    borderRadius: 12,
+                    color: "#ff6b6b",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    marginBottom: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10
+                  },
+                  children: "🗑️ Delete Video"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => setMenuVideo(null),
+                  style: { width: "100%", padding: "12px 0", background: "none", border: "none", color: "#888", fontSize: 14, cursor: "pointer" },
+                  children: "Cancel"
+                }
+              )
+            ]
+          }
+        )
+      }
+    ),
+    editVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        style: { position: "fixed", inset: 0, zIndex: 8e3, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 },
+        onClick: () => setEditVideo(null),
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            style: { background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 420 },
+            onClick: (e) => e.stopPropagation(),
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 16 }, children: "✏️ Edit Caption" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "textarea",
+                {
+                  value: editCaption,
+                  onChange: (e) => setEditCaption(e.target.value),
+                  placeholder: "Write a caption...",
+                  rows: 4,
+                  style: {
+                    width: "100%",
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 12,
+                    color: "#fff",
+                    padding: 12,
+                    fontSize: 14,
+                    resize: "none",
+                    outline: "none",
+                    fontFamily: "inherit",
+                    boxSizing: "border-box"
+                  }
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, marginTop: 14 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: () => setEditVideo(null),
+                    style: {
+                      flex: 1,
+                      padding: "12px 0",
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 12,
+                      color: "#aaa",
+                      fontSize: 14,
+                      cursor: "pointer"
+                    },
+                    children: "Cancel"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: handleSaveEdit,
+                    disabled: saving,
+                    style: {
+                      flex: 2,
+                      padding: "12px 0",
+                      background: "linear-gradient(135deg,#F5C842,#FF9500)",
+                      border: "none",
+                      borderRadius: 12,
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: saving ? "not-allowed" : "pointer",
+                      opacity: saving ? 0.7 : 1
+                    },
+                    children: saving ? "Saving..." : "Save Changes"
+                  }
+                )
+              ] })
+            ]
+          }
+        )
+      }
+    ),
+    confirmDelete && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380, textAlign: "center" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🗑️" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 8 }, children: "Delete this video?" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "This can't be undone. The video will be permanently removed." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setConfirmDelete(null),
+            style: {
+              flex: 1,
+              padding: "12px 0",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 12,
+              color: "#aaa",
+              fontSize: 14,
+              cursor: "pointer"
+            },
+            children: "Keep it"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: handleDelete,
+            disabled: saving,
+            style: {
+              flex: 1,
+              padding: "12px 0",
+              background: "rgba(229,57,53,0.9)",
+              border: "none",
+              borderRadius: 12,
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: saving ? "not-allowed" : "pointer"
+            },
+            children: saving ? "Deleting..." : "Yes, Delete"
+          }
+        )
+      ] })
+    ] }) })
+  ] });
+}
+function RecentEpisodes({ episodes = [], loading = false, onEpisodeClick }) {
+  if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 13, padding: "12px 0" }, children: "Loading..." })
+  ] });
+  if (!episodes || !episodes.length) return null;
+  const fmtDuration = (sec) => {
+    if (!sec) return "";
+    const h = Math.floor(sec / 3600);
+    const m2 = Math.floor(sec % 3600 / 60);
+    if (h > 0) return `${h}h ${m2}m`;
+    return `${m2}m`;
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 24, marginBottom: 8 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }, children: "Recent Episodes" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: episodes.map((ep, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => onEpisodeClick && onEpisodeClick(ep), style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 14, cursor: "pointer", transition: "background 0.2s" }, onMouseEnter: (e) => e.currentTarget.style.background = "rgba(108,60,247,0.15)", onMouseLeave: (e) => e.currentTarget.style.background = "rgba(255,255,255,0.04)", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 40, borderRadius: 10, background: "linear-gradient(135deg,#6c3cf7,#4527a0)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontWeight: 800, color: "#fff", fontSize: 14 }, children: ep.episode_number || i + 1 }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, lineHeight: 1.4, marginBottom: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }, children: ep.title }),
+        ep.description && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", marginBottom: 6 }, children: ep.description }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          ep.duration_seconds > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: [
+            "⏱ ",
+            fmtDuration(ep.duration_seconds)
+          ] }),
+          ep.listener_count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 11 }, children: [
+            "🎧 ",
+            ep.listener_count
+          ] })
+        ] })
+      ] })
+    ] }, ep.id || i)) })
+  ] });
+}
+function PodcastPage({ currentUser, onNeedAuth }) {
+  var _a;
+  const CATEGORIES2 = ["All", "News & Politics", "Business", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Education"];
+  const [podcasts, setPodcasts] = reactExports.useState([]);
+  const [myShows, setMyShows] = reactExports.useState([]);
+  const [loadingPodcasts, setLoadingPodcasts] = reactExports.useState(true);
+  const [selectedCat, setSelectedCat] = reactExports.useState("All");
+  const [selectedPodcast, setSelectedPodcast] = reactExports.useState(null);
+  const [podcastEpisodes, setPodcastEpisodes] = reactExports.useState([]);
+  const [episodesLoading, setEpisodesLoading] = reactExports.useState(false);
+  const [showRegister, setShowRegister] = reactExports.useState(false);
+  const [registerForm, setRegisterForm] = reactExports.useState({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
+  const [registering, setRegistering] = reactExports.useState(false);
+  const [registerDone, setRegisterDone] = reactExports.useState(false);
+  const [toast, setToast] = reactExports.useState(null);
+  const [goingLive, setGoingLive] = reactExports.useState(false);
+  const [loadingStreamKey, setLoadingStreamKey] = reactExports.useState(false);
+  const [showStreamKey, setShowStreamKey] = reactExports.useState(false);
+  const [streamCreds, setStreamCreds] = reactExports.useState(null);
+  const [endingLive, setEndingLive] = reactExports.useState(false);
+  const [editingStream, setEditingStream] = reactExports.useState(false);
+  const [selectedEpisode, setSelectedEpisode] = reactExports.useState(null);
+  const [newStreamUrl, setNewStreamUrl] = reactExports.useState("");
+  const [liveNewsChannel, setLiveNewsChannel] = reactExports.useState(null);
+  const LIVE_NEWS_CHANNELS = [
+    { id: "ctv", name: "CTV News", emoji: "🍁", desc: "Canada's #1 news network", color: "linear-gradient(135deg,#c62828,#b71c1c)", url: "https://www.youtube.com/embed/live_stream?channel=UCt2BNvKMDuNg38w2MgI4mIA&autoplay=1" },
+    { id: "dn", name: "Democracy Now", emoji: "✊", desc: "Independent global news", color: "linear-gradient(135deg,#4a148c,#1a237e)", url: "https://www.youtube.com/embed/live_stream?channel=UC3KEoMzNz8eYnwBC34RaKCQ&autoplay=1" },
+    { id: "bbc", name: "BBC News", emoji: "🇬🇧", desc: "Global news from London", color: "linear-gradient(135deg,#b71c1c,#880e4f)", url: "https://www.youtube.com/embed/live_stream?channel=UC16niRr50-MSBwiO3YDb3RA&autoplay=1" },
+    { id: "aljaz", name: "Al Jazeera", emoji: "🌍", desc: "Breaking news worldwide", color: "linear-gradient(135deg,#1b5e20,#004d40)", url: "https://www.youtube.com/embed/live_stream?channel=UCNye-wNBqNL5ZzHSJj3l8Bg&autoplay=1" },
+    { id: "sky", name: "Sky News", emoji: "🌐", desc: "Live from the UK", color: "linear-gradient(135deg,#0277bd,#01579b)", url: "https://www.youtube.com/embed/live_stream?channel=UCiU6U_f2KO7P6LFID9eQ4bA&autoplay=1" },
+    { id: "dw", name: "DW News", emoji: "🇩🇪", desc: "International news in English", color: "linear-gradient(135deg,#37474f,#263238)", url: "https://www.youtube.com/embed/live_stream?channel=UCknLrEdhRCp1aegoMqRaCZg&autoplay=1" },
+    { id: "france", name: "France 24", emoji: "🇫🇷", desc: "Global news in English", color: "linear-gradient(135deg,#1565c0,#e53935)", url: "https://www.youtube.com/embed/live_stream?channel=UCQfwfsi5VrQ8yKZ-UWmAoBw&autoplay=1" }
+  ];
+  const showToast = (msg, type = "success", ms = 3e3) => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), ms);
+  };
+  reactExports.useEffect(() => {
+    loadPodcasts();
+  }, []);
+  reactExports.useEffect(() => {
+    if (currentUser) loadMyShows();
+  }, [currentUser]);
+  const loadPodcasts = async () => {
+    setLoadingPodcasts(true);
+    try {
+      const APP_ID2 = "69e79122bcc8fb5a04cfb834";
+      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast?status=Active`);
+      const list = Array.isArray(data) ? data : data.records || data.items || [];
+      setPodcasts(list);
+    } catch (e) {
+      console.error("loadPodcasts failed:", e);
+    } finally {
+      setLoadingPodcasts(false);
+    }
+  };
+  const loadMyShows = async () => {
+    if (!currentUser) return;
+    try {
+      const APP_ID2 = "69e79122bcc8fb5a04cfb834";
+      const data = await request$1("GET", `/apps/${APP_ID2}/entities/SachiPodcast`);
+      const all = Array.isArray(data) ? data : data.records || data.items || [];
+      const mine = all.filter(
+        (p2) => {
+          var _a2;
+          return p2.host_user_id === currentUser.id || p2.host_username === (currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0])) || p2.created_by === currentUser.email || currentUser.email === "jaygnz27@gmail.com" || currentUser.email === "lasanjaya@gmail.com";
+        }
+      );
+      setMyShows(mine);
+    } catch (e) {
+      console.error("loadMyShows failed:", e);
+    }
+  };
+  const filtered = selectedCat === "All" ? podcasts : podcasts.filter((p2) => p2.category === selectedCat);
+  const livePodcasts = filtered.filter((p2) => p2.is_live);
+  const regularPodcasts = filtered.filter((p2) => !p2.is_live);
+  const handleRegister = async () => {
+    var _a2;
+    if (!registerForm.title || !registerForm.host_name) return;
+    setRegistering(true);
+    try {
+      const cover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+      await request$1("POST", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast`, {
+        title: registerForm.title,
+        host_name: registerForm.host_name,
+        description: registerForm.description,
+        category: registerForm.category,
+        live_stream_url: registerForm.live_stream_url || "",
+        cover_color: cover.bg,
+        cover_emoji: cover.emoji,
+        status: "Active",
+        is_live: false,
+        listener_count: 0,
+        episode_count: 0,
+        follower_count: 0,
+        host_user_id: (currentUser == null ? void 0 : currentUser.id) || "",
+        host_username: (currentUser == null ? void 0 : currentUser.full_name) || ((_a2 = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a2.split("@")[0]) || ""
+      });
+      setRegisterDone(true);
+      await loadPodcasts();
+      await loadMyShows();
+      fetch("https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastWelcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          host_email: (currentUser == null ? void 0 : currentUser.email) || "",
+          host_name: registerForm.host_name,
+          podcast_title: registerForm.title,
+          category: registerForm.category
+        })
+      }).catch(() => {
+      });
+      setRegisterForm({ title: "", host_name: "", description: "", category: "Business", live_stream_url: "", coverIdx: 0 });
+    } catch (e) {
+      console.error(e);
+      showToast("Something went wrong. Please try again.", "error");
+    }
+    setRegistering(false);
+  };
+  if (selectedEpisode) {
+    const epUrl = selectedEpisode.live_stream_url || selectedEpisode.audio_url || selectedEpisode.video_url || "";
+    const getEpEmbed = (url) => {
+      if (!url) return null;
+      if (url.includes("youtube.com/watch")) return url.replace("watch?v=", "embed/").split("&")[0] + "?autoplay=1";
+      if (url.includes("youtu.be/")) return "https://www.youtube.com/embed/" + url.split("youtu.be/")[1].split("?")[0] + "?autoplay=1";
+      if (url.includes("rumble.com/embed")) return url.includes("?") ? url : url + "?pub=4";
+      if (url.includes("rumble.com")) {
+        const rmMatch = url.match(/rumble\.com\/(v[\w]+)-/);
+        if (rmMatch) return `https://rumble.com/embed/${rmMatch[1]}/?pub=4`;
+        return url;
+      }
+      if (url.includes("spotify.com/show/") || url.includes("spotify.com/episode/")) {
+        const id2 = url.split("/").pop().split("?")[0];
+        return url.includes("/episode/") ? `https://open.spotify.com/embed/episode/${id2}` : `https://open.spotify.com/embed/show/${id2}`;
+      }
+      return url;
+    };
+    const embedUrl = getEpEmbed(epUrl);
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 200, display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setSelectedEpisode(null), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 18 }, children: "←" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: selectedEpisode.title }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12 }, children: [
+            "Episode ",
+            selectedEpisode.episode_number
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }, children: [
+        embedUrl && (embedUrl.includes("youtube.com/embed") || embedUrl.includes("spotify.com/embed") || embedUrl.includes("rumble.com/embed")) ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "iframe",
+          {
+            src: embedUrl,
+            style: { width: "100%", maxWidth: 700, height: embedUrl.includes("spotify") ? 232 : "56vw", maxHeight: 500, borderRadius: 16, border: "none" },
+            allow: "autoplay; encrypted-media; fullscreen",
+            allowFullScreen: true
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", maxWidth: 500, background: "rgba(255,255,255,0.05)", borderRadius: 20, padding: 32, textAlign: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64, marginBottom: 16 }, children: "🎙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16, marginBottom: 8 }, children: selectedEpisode.title }),
+          selectedEpisode.description && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 24, lineHeight: 1.6 }, children: selectedEpisode.description }),
+          epUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "a",
+            {
+              href: epUrl,
+              target: "_blank",
+              rel: "noopener noreferrer",
+              style: { display: "inline-block", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", color: "#fff", padding: "14px 28px", borderRadius: 50, fontWeight: 700, fontSize: 15, textDecoration: "none" },
+              children: "🎧 Listen Now"
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 14 }, children: "No stream URL available yet" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginTop: 24, width: "100%", maxWidth: 500 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, lineHeight: 1.7 }, children: selectedEpisode.description }) })
+      ] })
+    ] });
+  }
+  if (selectedPodcast) {
+    const isHost = currentUser && (currentUser.id === selectedPodcast.host_user_id || currentUser.email === selectedPodcast.created_by || currentUser.full_name && currentUser.full_name === selectedPodcast.host_username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) === selectedPodcast.host_username || currentUser.email === "jaygnz27@gmail.com" || currentUser.email === "lasanjaya@gmail.com" || currentUser.id === selectedPodcast.created_by_id);
+    const coverBg = selectedPodcast.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
+    const coverEmoji = selectedPodcast.cover_emoji || "🎙️";
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
+      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", height: 240, background: coverBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setSelectedPodcast(null),
+            style: { position: "absolute", top: 16, left: 16, background: "rgba(0,0,0,0.3)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+            children: "←"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 60, marginBottom: 10 }, children: coverEmoji }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20, textAlign: "center", padding: "0 60px", textShadow: "0 2px 8px rgba(0,0,0,0.5)" }, children: selectedPodcast.title }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: 4 }, children: [
+          "by ",
+          selectedPodcast.host_name
+        ] }),
+        selectedPodcast.is_live && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 16, right: 16, background: "#e53935", borderRadius: 20, padding: "5px 12px", display: "flex", alignItems: "center", gap: 6, animation: "pulse 1.5s infinite" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 7, height: 7, borderRadius: "50%", background: "#fff" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 12 }, children: "LIVE" })
+        ] }),
+        selectedPodcast.status === "Pending" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 16, right: 16, background: "rgba(245,200,66,0.9)", borderRadius: 20, padding: "5px 12px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#000", fontWeight: 800, fontSize: 11 }, children: "⏳ PENDING REVIEW" }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px 20px 100px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 0, marginBottom: 20, background: "rgba(255,255,255,0.04)", borderRadius: 16, overflow: "hidden" }, children: [
+          { val: selectedPodcast.follower_count || 0, label: "Followers" },
+          { val: selectedPodcast.episode_count || 0, label: "Episodes" },
+          { val: selectedPodcast.is_live ? selectedPodcast.listener_count || 0 : "—", label: "Listening", red: selectedPodcast.is_live }
+        ].map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, textAlign: "center", padding: "14px 0", borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.06)" : "none" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: s.red ? "#e53935" : "#fff", fontWeight: 800, fontSize: 18 }, children: s.val }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2 }, children: s.label })
+        ] }, i)) }),
+        selectedPodcast.description ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 16, marginBottom: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 14, lineHeight: 1.6 }, children: selectedPodcast.description }) }) : null,
+        isHost && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ Host Controls" }),
+          selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(229,57,53,0.08)", border: "1px solid rgba(229,57,53,0.3)", borderRadius: 14, padding: 14, marginBottom: 12, textAlign: "center" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#e53935", fontWeight: 700, fontSize: 13 }, children: "🔴 You are currently LIVE" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginTop: 4 }, children: [
+                selectedPodcast.listener_count || 0,
+                " listeners tuned in"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 6 }, children: "🔗 Stream URL" }),
+              editingStream ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    value: newStreamUrl,
+                    onChange: (e) => setNewStreamUrl(e.target.value),
+                    placeholder: "https://youtube.com/watch?v=...",
+                    style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none" }
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+                  try {
+                    await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
+                    setEditingStream(false);
+                    showToast("✅ Stream URL saved!", "success");
+                  } catch (e) {
+                    showToast("Failed to save URL", "error");
+                  }
+                }, style: { background: "#6c3cf7", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }, children: "Save" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingStream(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontSize: 13, cursor: "pointer" }, children: "✕" })
+              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }, children: selectedPodcast.live_stream_url || "No stream URL set yet" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: () => {
+                      setNewStreamUrl(selectedPodcast.live_stream_url || "");
+                      setEditingStream(true);
+                    },
+                    style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 8, padding: "5px 12px", color: "#a78bfa", fontSize: 12, cursor: "pointer", fontWeight: 600, flexShrink: 0 },
+                    children: selectedPodcast.live_stream_url ? "Edit" : "Add URL"
+                  }
+                )
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: async () => {
+                  if (endingLive) return;
+                  setEndingLive(true);
+                  try {
+                    await fetch("https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastGoLiveNotify", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ podcast_id: selectedPodcast.id, set_live: false, admin_email: currentUser == null ? void 0 : currentUser.email })
+                    }).catch(() => {
+                    });
+                    try {
+                      await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: false, listener_count: 0 });
+                    } catch {
+                    }
+                    setSelectedPodcast((p2) => ({ ...p2, is_live: false, listener_count: 0 }));
+                    setPodcasts((ps) => ps.map((p2) => p2.id === selectedPodcast.id ? { ...p2, is_live: false } : p2));
+                    showToast("✅ Live session ended successfully", "success");
+                  } catch (e) {
+                    showToast("Failed to end session. Try again.", "error");
+                  }
+                  setEndingLive(false);
+                },
+                style: { width: "100%", padding: "15px 0", background: endingLive ? "rgba(229,57,53,0.3)" : "rgba(229,57,53,0.12)", border: "2px solid #e53935", borderRadius: 16, color: "#e53935", fontWeight: 800, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 },
+                children: endingLive ? "Ending..." : "⏹️ End Live Session"
+              }
+            )
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 6 }, children: [
+                "🔗 Stream URL ",
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.25)" }, children: "(YouTube Live, Twitch, etc.)" })
+              ] }),
+              editingStream ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    value: newStreamUrl,
+                    onChange: (e) => setNewStreamUrl(e.target.value),
+                    placeholder: "https://youtube.com/live/...",
+                    style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none" }
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+                  try {
+                    await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { live_stream_url: newStreamUrl });
+                    setSelectedPodcast((p2) => ({ ...p2, live_stream_url: newStreamUrl }));
+                    setEditingStream(false);
+                    showToast("✅ Stream URL saved!", "success");
+                  } catch (e) {
+                    showToast("Failed to save URL", "error");
+                  }
+                }, style: { background: "#6c3cf7", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }, children: "Save" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setEditingStream(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 14px", color: "#fff", fontSize: 13, cursor: "pointer" }, children: "✕" })
+              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: selectedPodcast.live_stream_url ? "#a78bfa" : "rgba(255,255,255,0.25)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "75%" }, children: selectedPodcast.live_stream_url || "No stream URL set yet" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "button",
+                  {
+                    onClick: () => {
+                      setNewStreamUrl(selectedPodcast.live_stream_url || "");
+                      setEditingStream(true);
+                    },
+                    style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 8, padding: "5px 12px", color: "#a78bfa", fontSize: 12, cursor: "pointer", fontWeight: 600, flexShrink: 0 },
+                    children: selectedPodcast.live_stream_url ? "Edit" : "Add URL"
+                  }
+                )
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(245,200,66,0.06)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 14, padding: 14, marginBottom: 14 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 12, fontWeight: 700, marginBottom: 8 }, children: "🎙️ Native Sachi Live (OBS / Streamlabs)" }),
+              selectedPodcast.stream_key ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 6 }, children: "Paste these into OBS → Settings → Stream:" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: 10, marginBottom: 6 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginBottom: 2 }, children: "RTMP Server" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a78bfa", fontSize: 12, wordBreak: "break-all", userSelect: "all" }, children: "rtmps://live.cloudflare.com:443/live/" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: 10, marginBottom: 8 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginBottom: 2 }, children: "Stream Key" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 12, wordBreak: "break-all", userSelect: "all", flex: 1 }, children: showStreamKey ? selectedPodcast.stream_key : "••••••••••••••••••••••••" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "button",
+                      {
+                        onClick: () => setShowStreamKey((s) => !s),
+                        style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 6, padding: "4px 8px", color: "#fff", fontSize: 11, cursor: "pointer" },
+                        children: showStreamKey ? "Hide" : "Show"
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "button",
+                      {
+                        onClick: () => {
+                          navigator.clipboard.writeText(selectedPodcast.stream_key);
+                          showToast("✅ Stream key copied!", "success");
+                        },
+                        style: { background: "rgba(108,60,247,0.3)", border: "none", borderRadius: 6, padding: "4px 8px", color: "#a78bfa", fontSize: 11, cursor: "pointer" },
+                        children: "Copy"
+                      }
+                    )
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 10 }, children: "Your stream saves automatically as an episode after going live 🎬" })
+              ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 10 }, children: "Get your personal RTMP stream key to broadcast live directly on Sachi using OBS or Streamlabs." }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: async () => {
+                  if (loadingStreamKey) return;
+                  setLoadingStreamKey(true);
+                  try {
+                    const cfRes = await fetch("https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/functions/createLiveStream", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_username: selectedPodcast.host_username || (currentUser == null ? void 0 : currentUser.username) })
+                    });
+                    const cfData = await cfRes.json();
+                    if (cfData.success) {
+                      setSelectedPodcast((p2) => ({ ...p2, stream_key: cfData.stream_key, cf_input_id: cfData.cf_input_id, live_stream_url: cfData.playback_url, rtmp_url: cfData.rtmp_url }));
+                      showToast("🎙️ Stream key generated!", "success");
+                    } else {
+                      showToast("Failed: " + (cfData.error || "Unknown error"), "error");
+                    }
+                  } catch (e) {
+                    showToast("Error creating stream", "error");
+                  }
+                  setLoadingStreamKey(false);
+                }, style: { width: "100%", padding: "11px 0", background: loadingStreamKey ? "rgba(245,200,66,0.2)" : "rgba(245,200,66,0.15)", border: "1px solid #F5C842", borderRadius: 12, color: "#F5C842", fontWeight: 700, fontSize: 14, cursor: "pointer" }, children: loadingStreamKey ? "⏳ Generating..." : "⚡ Generate My Stream Key" })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: async () => {
+                  if (goingLive) return;
+                  setGoingLive(true);
+                  try {
+                    const resp = await fetch("https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/functions/podcastGoLiveNotify", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ podcast_id: selectedPodcast.id, podcast_title: selectedPodcast.title, host_name: selectedPodcast.host_name, live_stream_url: selectedPodcast.live_stream_url || "", set_live: true, admin_email: currentUser == null ? void 0 : currentUser.email })
+                    });
+                    try {
+                      await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcast/${selectedPodcast.id}`, { is_live: true });
+                    } catch {
+                    }
+                    setSelectedPodcast((p2) => ({ ...p2, is_live: true }));
+                    setPodcasts((ps) => ps.map((p2) => p2.id === selectedPodcast.id ? { ...p2, is_live: true } : p2));
+                    showToast("🔴 You are LIVE! Users are being notified.", "live");
+                  } catch (e) {
+                    showToast("Could not go live. Try again.", "error");
+                  }
+                  setGoingLive(false);
+                },
+                style: { width: "100%", padding: "16px 0", background: goingLive ? "rgba(229,57,53,0.4)" : "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "0 4px 24px rgba(229,57,53,0.35)" },
+                children: goingLive ? "Going Live..." : "🔴 Go Live Now"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12, textAlign: "center", marginTop: 8 }, children: "Tapping Go Live notifies ALL Sachi users instantly via email" })
+          ] })
+        ] }),
+        !isHost && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+          const streamUrl = selectedPodcast.live_stream_url;
+          const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
+          const getEmbedUrl = (url) => {
+            if (!url) return null;
+            if (url.includes("rumble.com/c/")) {
+              const ch2 = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+              return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch2}`;
+            }
+            const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+            if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+            if (url.includes("rumble.com/embed/")) return url;
+            if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
+            const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+            if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+            const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+            if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+            const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+            if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+            return url;
+          };
+          const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
+          const [showPlayer, setShowPlayer] = React.useState(false);
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935", fontWeight: 800, fontSize: 13, letterSpacing: 1 }, children: "LIVE NOW" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: [
+                "· ",
+                selectedPodcast.listener_count || 0,
+                " watching"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => setShowPlayer(true),
+                style: { display: "flex", width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12, boxShadow: "0 4px 20px rgba(229,57,53,0.35)" },
+                children: isCloudflare ? "📡 Watch Live on Sachi" : "🎧 Watch Live Now"
+              }
+            ),
+            showPlayer && (isCloudflare ? /* @__PURE__ */ jsxRuntimeExports.jsx(HlsLivePlayer, { src: streamUrl, title: selectedPodcast.title, onClose: () => setShowPlayer(false) }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "#000", zIndex: 9999, display: "flex", flexDirection: "column" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "rgba(0,0,0,0.85)", flexShrink: 0 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 15 }, children: selectedPodcast.title })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowPlayer(false), style: { background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: "50%", width: 34, height: 34, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }, children: "✕" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("iframe", { src: embedUrl, style: { flex: 1, width: "100%", border: "none" }, allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen", allowFullScreen: true, title: selectedPodcast.title }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "10px 16px", background: "rgba(0,0,0,0.85)", textAlign: "center", flexShrink: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: "Streaming via Sachi · sachistream.com" }) })
+            ] }))
+          ] });
+        })() : !selectedPodcast.is_live ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => showToast("🔔 You will be notified when " + selectedPodcast.title + " goes live!", "success"),
+            style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 },
+            children: "🔔 Follow & Get Notified"
+          }
+        ) : null }),
+        !isHost && !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 16 }, children: selectedPodcast.is_live && selectedPodcast.live_stream_url ? (() => {
+          const streamUrl = selectedPodcast.live_stream_url;
+          const isCloudflare = streamUrl.includes("cloudflarestream.com") || streamUrl.includes(".m3u8");
+          const getEmbedUrl = (url) => {
+            if (!url) return null;
+            if (url.includes("rumble.com/c/")) {
+              const ch2 = url.split("rumble.com/c/")[1].replace(/\/.*/, "").replace(/\?.*/, "");
+              return `https://rumble.com/embed/live_feed/?url=https%3A%2F%2Frumble.com%2Fc%2F${ch2}`;
+            }
+            const rumbleVideo = url.match(/rumble\.com\/(v[a-zA-Z0-9]+)-/);
+            if (rumbleVideo) return `https://rumble.com/embed/${rumbleVideo[1]}/`;
+            if (url.includes("rumble.com/embed/")) return url;
+            if (url.includes("youtube.com/embed/")) return url + (url.includes("?") ? "&autoplay=1" : "?autoplay=1&rel=0");
+            const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+            if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
+            const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+            if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}?autoplay=1&rel=0`;
+            const liveMatch = url.match(/youtube\.com\/live\/([a-zA-Z0-9_-]+)/);
+            if (liveMatch) return `https://www.youtube.com/embed/${liveMatch[1]}?autoplay=1&rel=0`;
+            return url;
+          };
+          const embedUrl = !isCloudflare ? getEmbedUrl(streamUrl) : null;
+          const [showGuestPlayer, setShowGuestPlayer] = React.useState(false);
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 16 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 10, height: 10, background: "#e53935", borderRadius: "50%", animation: "pulse 1.2s infinite" } }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935", fontWeight: 800, fontSize: 13, letterSpacing: 1 }, children: "LIVE NOW" })
+            ] }),
+            isCloudflare ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => setShowGuestPlayer(true),
+                  style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#e53935,#b71c1c)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12, boxShadow: "0 4px 20px rgba(229,57,53,0.35)" },
+                  children: "📡 Watch Live on Sachi"
+                }
+              ),
+              showGuestPlayer && /* @__PURE__ */ jsxRuntimeExports.jsx(HlsLivePlayer, { src: streamUrl, title: selectedPodcast.title, onClose: () => setShowGuestPlayer(false) })
+            ] }) : embedUrl ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "relative", width: "100%", paddingBottom: "56.25%", borderRadius: 14, overflow: "hidden", background: "#000", boxShadow: "0 4px 24px rgba(229,57,53,0.25)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("iframe", { src: embedUrl, style: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }, allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture", allowFullScreen: true, title: selectedPodcast.title }) }) : null,
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", marginTop: 12, padding: "13px 0", background: "rgba(108,60,247,0.15)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 14, color: "#a78bfa", fontWeight: 700, fontSize: 15, cursor: "pointer" }, children: "Sign in to Follow this Podcast" })
+          ] });
+        })() : /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onNeedAuth, style: { width: "100%", padding: "16px 0", background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer", marginBottom: 16 }, children: "Sign in to Follow" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(RecentEpisodes, { episodes: podcastEpisodes, loading: episodesLoading, onEpisodeClick: setSelectedEpisode }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", border: "1px solid rgba(108,60,247,0.4)", borderRadius: 20, padding: "4px 14px", color: "#a78bfa", fontSize: 12, fontWeight: 600 }, children: selectedPodcast.category }) })
+      ] })
+    ] });
+  }
+  if (showRegister) {
+    const selectedCover = PODCAST_COVER_COLORS[registerForm.coverIdx || 0];
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 600, background: "#0B0C1A", overflowY: "auto" }, children: [
+      toast && /* @__PURE__ */ jsxRuntimeExports.jsx(Toast, { msg: toast.msg, type: toast.type }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px", paddingTop: "calc(env(safe-area-inset-top,0px) + 20px)", paddingBottom: 60 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowRegister(false), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: "50%", width: 38, height: 38, color: "#fff", fontSize: 20, cursor: "pointer", flexShrink: 0 }, children: "←" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "🎙️ Register Your Podcast" })
+        ] }),
+        registerDone ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "40px 20px" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 72, marginBottom: 16 }, children: "🎉" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 24, marginBottom: 10 }, children: "You are on the list!" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 15, marginBottom: 8, lineHeight: 1.6 }, children: [
+            "Your show is ",
+            /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#81c784" }, children: "live on Sachi right now." }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+            "No waiting. No approval needed."
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(46,125,50,0.1)", border: "1px solid rgba(46,125,50,0.3)", borderRadius: 14, padding: 16, margin: "20px 0 28px", textAlign: "left" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#81c784", fontWeight: 700, fontSize: 13, marginBottom: 8 }, children: "⚡ You are all set — here's how to go live:" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 1.7 }, children: [
+              "1. Go to ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#fff" }, children: "Podcasts tab" }),
+              ' and find your show under "My Shows"',
+              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+              "2. Tap your show to open it",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+              "3. (Optional) Add your stream link — YouTube Live, Twitch, etc.",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+              "4. Tap ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { style: { color: "#e53935" }, children: "🔴 Go Live Now" }),
+              " — all Sachi users get notified instantly"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                setRegisterDone(false);
+                setShowRegister(false);
+              },
+              style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "14px 36px", color: "#fff", fontWeight: 800, fontSize: 16, cursor: "pointer" },
+              children: "Back to Podcasts"
+            }
+          )
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 18 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 10, fontWeight: 600 }, children: "Choose Your Show Cover" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" }, children: PODCAST_COVER_COLORS.map((c, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => setRegisterForm((p2) => ({ ...p2, coverIdx: i })),
+                style: { width: 52, height: 52, borderRadius: 14, background: c.bg, border: registerForm.coverIdx === i ? "3px solid #F5C842" : "3px solid transparent", cursor: "pointer", fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center" },
+                children: c.emoji
+              },
+              i
+            )) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 12, width: "100%", height: 70, borderRadius: 16, background: selectedCover.bg, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 32 }, children: selectedCover.emoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 15, opacity: registerForm.title ? 1 : 0.4 }, children: registerForm.title || "Your Show Name" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
+              "Podcast Title ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935" }, children: "*" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                value: registerForm.title,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, title: e.target.value })),
+                placeholder: "e.g. The Daily Grind",
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
+              "Your Name ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#e53935" }, children: "*" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                value: registerForm.host_name,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, host_name: e.target.value })),
+                placeholder: "Full name or stage name",
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "What is your podcast about?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "textarea",
+              {
+                value: registerForm.description,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, description: e.target.value })),
+                placeholder: "Tell listeners what to expect — topics, guests, vibe...",
+                rows: 3,
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", resize: "none", boxSizing: "border-box" }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: "Category" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "select",
+              {
+                value: registerForm.category,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, category: e.target.value })),
+                style: { width: "100%", background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none" },
+                children: ["Business", "News & Politics", "Entertainment", "Comedy", "Sports", "Technology", "Health & Wellness", "True Crime", "Society & Culture", "Education", "Other"].map(
+                  (c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#111" }, children: c }, c)
+                )
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 6, fontWeight: 600 }, children: [
+              "Stream URL ",
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.25)", fontWeight: 400 }, children: "(optional — add later too)" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "input",
+              {
+                value: registerForm.live_stream_url,
+                onChange: (e) => setRegisterForm((p2) => ({ ...p2, live_stream_url: e.target.value })),
+                placeholder: "https://youtube.com/live/... or Twitch link",
+                style: { width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12, padding: "13px 14px", color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box" }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.25)", fontSize: 12, marginTop: 5 }, children: "Where listeners will tune in when you go live. You can update this anytime." })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: handleRegister,
+              disabled: registering || !registerForm.title || !registerForm.host_name,
+              style: { width: "100%", padding: "16px 0", background: !registerForm.title || !registerForm.host_name ? "rgba(108,60,247,0.3)" : registering ? "rgba(108,60,247,0.5)" : "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 16, color: "#fff", fontWeight: 800, fontSize: 17, cursor: !registerForm.title || !registerForm.host_name ? "not-allowed" : "pointer", marginTop: 4 },
+              children: registering ? "⏳ Submitting..." : "Submit My Podcast →"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 12, textAlign: "center" }, children: "Reviewed and approved within 24 hours" })
+        ] })
+      ] })
+    ] });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px", background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", borderRadius: 20, padding: "24px 20px", position: "relative", overflow: "hidden" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -20, right: -20, fontSize: 100, opacity: 0.07 }, children: "🎙️" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#a78bfa", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 }, children: "Sachi Podcasts" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22, lineHeight: 1.3, marginBottom: 8 }, children: [
+          "Listen Live.",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+          "Discover New Shows."
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 16, lineHeight: 1.5 }, children: "Tune into live sessions or browse on-demand — all in one place." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              if (!currentUser) {
+                onNeedAuth();
+                return;
+              }
+              setShowRegister(true);
+            },
+            style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 12, padding: "10px 20px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" },
+            children: "🎙️ Register Your Podcast"
+          }
+        )
+      ] }),
+      currentUser && myShows.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "0 16px 20px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 700, fontSize: 13, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }, children: "🎙️ My Shows" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: myShows.map((p2) => {
+          const coverBg = p2.cover_color || "linear-gradient(135deg,#1a0a2e,#0d1b4b)";
+          const coverEmoji = p2.cover_emoji || "🎙️";
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: async () => {
+                setSelectedPodcast(p2);
+                setEpisodesLoading(true);
+                setPodcastEpisodes([]);
+                try {
+                  const token = localStorage.getItem("token");
+                  const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                  const res = await fetch(`https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                  const json = await res.json();
+                  const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
+                  const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
+                  const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
+                  setPodcastEpisodes(sorted);
+                } catch (e) {
+                  setPodcastEpisodes([]);
+                } finally {
+                  setEpisodesLoading(false);
+                }
+              },
+              style: { background: "rgba(245,200,66,0.05)", border: "1px solid rgba(245,200,66,0.2)", borderRadius: 16, padding: 14, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 52, height: 52, borderRadius: 12, background: coverBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }, children: coverEmoji }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
+                    p2.is_live && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#e53935", borderRadius: 20, padding: "2px 8px", color: "#fff", fontWeight: 700, fontSize: 10, flexShrink: 0 }, children: "LIVE" })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 4 }, children: [
+                    "by ",
+                    p2.host_name
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "inline-block", background: p2.is_live ? "rgba(229,57,53,0.2)" : "rgba(46,125,50,0.2)", borderRadius: 20, padding: "2px 10px", color: p2.is_live ? "#ef9a9a" : "#81c784", fontSize: 11, fontWeight: 700 }, children: p2.is_live ? "🔴 Live Now" : "✅ Active" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
+              ]
+            },
+            p2.id
+          );
+        }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 4px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live News" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12 }, children: "• tap to watch" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 12, paddingBottom: 16, scrollbarWidth: "none" }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => setLiveNewsChannel(ch2),
+            style: { flexShrink: 0, width: 140, borderRadius: 16, overflow: "hidden", cursor: "pointer", position: "relative" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 80, background: ch2.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }, children: ch2.emoji }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "none", borderRadius: "0 0 16px 16px", padding: "8px 10px" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 5, height: 5, borderRadius: "50%", background: "#e53935", flexShrink: 0 } }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: ch2.name })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, lineHeight: 1.3 }, children: ch2.desc })
+              ] })
+            ]
+          },
+          ch2.id
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowX: "auto", display: "flex", gap: 8, padding: "0 16px 16px", scrollbarWidth: "none" }, children: CATEGORIES2.map((cat) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: () => setSelectedCat(cat),
+          style: { flexShrink: 0, padding: "7px 16px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: selectedCat === cat ? "#6c3cf7" : "rgba(255,255,255,0.07)", color: selectedCat === cat ? "#fff" : "rgba(255,255,255,0.5)", WebkitTapHighlightColor: "transparent" },
+          children: cat
+        },
+        cat
+      )) }),
+      livePodcasts.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 24 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 12px", display: "flex", alignItems: "center", gap: 8 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: "Live Now" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 12, padding: "0 16px", overflowX: "auto", scrollbarWidth: "none" }, children: livePodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: async () => {
+              setSelectedPodcast(p2);
+              setEpisodesLoading(true);
+              setPodcastEpisodes([]);
+              try {
+                const token = localStorage.getItem("token");
+                const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                const res = await fetch(`https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                const json = await res.json();
+                const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
+                const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
+                const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
+                setPodcastEpisodes(sorted);
+              } catch (e) {
+                setPodcastEpisodes([]);
+              } finally {
+                setEpisodesLoading(false);
+              }
+            },
+            style: { flexShrink: 0, width: 200, background: "rgba(229,57,53,0.08)", border: "1.5px solid rgba(229,57,53,0.3)", borderRadius: 16, padding: 16, cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#e53935", display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 20, padding: "3px 10px", marginBottom: 10 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 6, height: 6, borderRadius: "50%", background: "#fff" } }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 700, fontSize: 11 }, children: "LIVE" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 28, marginBottom: 8 }, children: "🎙️" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 4 }, children: p2.title }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 8 }, children: p2.host_name }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#e53935", fontSize: 12, fontWeight: 600 }, children: [
+                "🎧 ",
+                p2.listener_count || 0,
+                " listening"
+              ] })
+            ]
+          },
+          p2.id
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 700, marginBottom: 12, letterSpacing: 1, textTransform: "uppercase" }, children: selectedCat === "All" ? "All Shows" : selectedCat }),
+        loadingPodcasts && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(245,200,66,0.5)", fontSize: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 12, animation: "spin 1.5s linear infinite", display: "inline-block" }, children: "⟳" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading podcasts..." })
+        ] }),
+        !loadingPodcasts && regularPodcasts.length === 0 && livePodcasts.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)", fontSize: 14 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🎙️" }),
+          "No podcasts in this category yet."
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: regularPodcasts.map((p2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: async () => {
+              setSelectedPodcast(p2);
+              setEpisodesLoading(true);
+              setPodcastEpisodes([]);
+              try {
+                const token = localStorage.getItem("token");
+                const hdrs = token ? { "Authorization": `Bearer ${token}` } : {};
+                const res = await fetch(`https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiPodcastEpisode?limit=50`, { headers: hdrs });
+                const json = await res.json();
+                const items = Array.isArray(json) ? json : (json == null ? void 0 : json.records) || (json == null ? void 0 : json.items) || [];
+                const filtered2 = items.filter((ep) => ep.podcast_id === p2.id);
+                const sorted = filtered2.sort((a, b) => (b.episode_number || 0) - (a.episode_number || 0));
+                setPodcastEpisodes(sorted);
+              } catch (e) {
+                setPodcastEpisodes([]);
+              } finally {
+                setEpisodesLoading(false);
+              }
+            },
+            style: { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 16, cursor: "pointer", display: "flex", gap: 14, alignItems: "center" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 64, borderRadius: 12, background: "linear-gradient(135deg,#1a0a2e,#0d1b4b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }, children: "🎙️" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }, children: p2.title }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 12, marginBottom: 6 }, children: p2.host_name }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, alignItems: "center" }, children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "rgba(108,60,247,0.2)", borderRadius: 20, padding: "2px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 600 }, children: p2.category }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.25)", fontSize: 11 }, children: [
+                    p2.follower_count || 0,
+                    " followers"
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.2)", fontSize: 20 }, children: "›" })
+            ]
+          },
+          p2.id
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { margin: "32px 16px 0", background: "rgba(108,60,247,0.08)", border: "1px solid rgba(108,60,247,0.2)", borderRadius: 20, padding: 24, textAlign: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 32, marginBottom: 12 }, children: "🚀" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18, marginBottom: 8 }, children: "Have a podcast?" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 14, marginBottom: 16, lineHeight: 1.5 }, children: "Join Sachi and reach new listeners through our For You feed every day." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              if (!currentUser) {
+                onNeedAuth();
+                return;
+              }
+              setShowRegister(true);
+            },
+            style: { background: "linear-gradient(135deg,#6c3cf7,#4527a0)", border: "none", borderRadius: 14, padding: "13px 28px", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" },
+            children: "Get Started Free →"
+          }
+        )
+      ] })
+    ] }),
+    liveNewsChannel && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 9999, background: "#000", display: "flex", flexDirection: "column" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "16px 20px",
+        background: "rgba(0,0,0,0.9)",
+        borderBottom: "1px solid rgba(255,255,255,0.1)",
+        zIndex: 1e4
+      }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setLiveNewsChannel(null),
+            style: { background: "none", border: "none", color: "#fff", fontSize: 24, cursor: "pointer", lineHeight: 1, padding: 4 },
+            children: "✕"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: "heartbeat 1.4s ease-in-out infinite" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: [
+            liveNewsChannel.emoji,
+            " ",
+            liveNewsChannel.name
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { background: "#e53935", color: "#fff", fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", letterSpacing: 1 }, children: "LIVE" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40 } })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, position: "relative" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "iframe",
+        {
+          src: liveNewsChannel.url,
+          allow: "autoplay; encrypted-media; fullscreen; picture-in-picture",
+          allowFullScreen: true,
+          style: { position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" },
+          title: liveNewsChannel.name + " Live"
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        background: "rgba(0,0,0,0.9)",
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+        padding: "10px 16px",
+        overflowX: "auto",
+        display: "flex",
+        gap: 10,
+        scrollbarWidth: "none"
+      }, children: LIVE_NEWS_CHANNELS.map((ch2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => setLiveNewsChannel(ch2),
+          style: {
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 14px",
+            borderRadius: 20,
+            border: "none",
+            cursor: "pointer",
+            background: ch2.id === liveNewsChannel.id ? "rgba(229,57,53,0.3)" : "rgba(255,255,255,0.07)",
+            outline: ch2.id === liveNewsChannel.id ? "1.5px solid #e53935" : "none"
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 16 }, children: ch2.emoji }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#fff", fontWeight: 600, fontSize: 12, whiteSpace: "nowrap" }, children: ch2.name })
+          ]
+        },
+        ch2.id
+      )) })
+    ] })
+  ] });
+}
+function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile }) {
+  const [threads, setThreads] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [activeThread, setActiveThread] = reactExports.useState(null);
+  const [threadMsgs, setThreadMsgs] = reactExports.useState([]);
+  const [newMsg, setNewMsg] = reactExports.useState("");
+  const [sending, setSending] = reactExports.useState(false);
+  const [showNewDM, setShowNewDM] = reactExports.useState(false);
+  const [userSearch, setUserSearch] = reactExports.useState("");
+  const [userResults, setUserResults] = reactExports.useState([]);
+  const [searchingUsers, setSearchingUsers] = reactExports.useState(false);
+  const bottomRef = reactExports.useRef(null);
+  reactExports.useEffect(() => {
+    if (initialDMTarget && initialDMTarget.userId) {
+      openThread(initialDMTarget.userId, initialDMTarget.username, initialDMTarget.avatar);
+      if (onOpen) onOpen();
+    }
+  }, []);
+  const loadInbox = async () => {
+    try {
+      const res = await messages.getInbox(currentUser.id);
+      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+      const map = {};
+      items.forEach((m2) => {
+        if (!map[m2.thread_id] || new Date(m2.created_date) > new Date(map[m2.thread_id].created_date)) {
+          map[m2.thread_id] = m2;
+        }
+      });
+      setThreads(Object.values(map).sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
+    } catch (e) {
+    }
+    setLoading(false);
+  };
+  reactExports.useEffect(() => {
+    loadInbox();
+  }, [currentUser.id]);
+  reactExports.useEffect(() => {
+    if (!userSearch.trim()) {
+      setUserResults([]);
+      return;
+    }
+    const t2 = setTimeout(async () => {
+      setSearchingUsers(true);
+      try {
+        const res = await AthaVidUser.filter({ username__icontains: userSearch.trim() });
+        const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || [];
+        setUserResults(items.filter((u2) => u2.id !== currentUser.id).slice(0, 8));
+      } catch (e) {
+        setUserResults([]);
+      }
+      setSearchingUsers(false);
+    }, 300);
+    return () => clearTimeout(t2);
+  }, [userSearch]);
+  const openThread = async (senderId, senderUsername, senderAvatar) => {
+    setActiveThread({ userId: senderId, username: senderUsername, avatar: senderAvatar });
+    const res = await messages.getThread(currentUser.id, senderId);
+    const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+    const sorted = items.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    setThreadMsgs(sorted);
+    items.filter((m2) => m2.recipient_id === currentUser.id && !m2.is_read).forEach((m2) => messages.markRead(m2.id));
+    setTimeout(() => {
+      var _a;
+      return (_a = bottomRef.current) == null ? void 0 : _a.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+  const sendMsg = async () => {
+    if (!newMsg.trim() || !activeThread) return;
+    setSending(true);
+    const thread_id = [currentUser.id, activeThread.userId].sort().join("_");
+    try {
+      const sent = await messages.send({
+        sender_id: currentUser.id,
+        sender_username: currentUser.username,
+        sender_avatar: currentUser.avatar_url || "",
+        recipient_id: activeThread.userId,
+        recipient_username: activeThread.username,
+        text: newMsg.trim(),
+        is_read: false,
+        thread_id
+      });
+      setThreadMsgs((prev) => [...prev, sent]);
+      setNewMsg("");
+      setTimeout(() => {
+        var _a;
+        return (_a = bottomRef.current) == null ? void 0 : _a.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } catch (e) {
+      alert("Failed to send");
+    }
+    setSending(false);
+  };
+  const fmtTime2 = (d) => {
+    const dt = new Date(d);
+    const now = /* @__PURE__ */ new Date();
+    const diff = now - dt;
+    if (diff < 6e4) return "just now";
+    if (diff < 36e5) return Math.floor(diff / 6e4) + "m ago";
+    if (diff < 864e5) return Math.floor(diff / 36e5) + "h ago";
+    return dt.toLocaleDateString();
+  };
+  if (activeThread) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 500, display: "flex", flexDirection: "column" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 14px)", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 12, background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+        if (fromProfile) {
+          onClose();
+        } else {
+          setActiveThread(null);
+          setThreadMsgs([]);
+          loadInbox();
+        }
+      }, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 20, padding: 0 }, children: "←" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + activeThread.username, style: { width: 36, height: 36, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.4)" } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700 }, children: [
+        "@",
+        activeThread.username
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: 10 }, children: [
+      threadMsgs.map((m2, i) => {
+        const isMine = m2.sender_id === currentUser.id;
+        return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: isMine ? "flex-end" : "flex-start" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { maxWidth: "72%", background: isMine ? "linear-gradient(135deg,#6c63ff,#ff6b6b)" : "rgba(255,255,255,0.08)", borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px", padding: "10px 14px" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontSize: 14 }, children: m2.text }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginTop: 4, textAlign: isMine ? "right" : "left" }, children: fmtTime2(m2.created_date) })
+        ] }) }, m2.id || i);
+      }),
+      threadMsgs.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", marginTop: 60 }, children: "Start the conversation 👋" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref: bottomRef })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "10px 16px 32px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 8, alignItems: "center", background: "rgba(14,14,28,0.98)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          value: newMsg,
+          onChange: (e) => setNewMsg(e.target.value),
+          onKeyDown: (e) => e.key === "Enter" && sendMsg(),
+          placeholder: "Message...",
+          autoFocus: true,
+          style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 24, padding: "10px 16px", color: "#fff", fontSize: 14, outline: "none" }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: sendMsg,
+          disabled: sending || !newMsg.trim(),
+          style: { background: "linear-gradient(135deg,#6c63ff,#ff6b6b)", border: "none", borderRadius: "50%", width: 40, height: 40, color: "#fff", cursor: "pointer", fontSize: 18 },
+          children: "➤"
+        }
+      )
+    ] })
+  ] });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 100, display: "flex", flexDirection: "column" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "✉️ Inbox" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "button",
+        {
+          onClick: () => {
+            setShowNewDM(true);
+            setUserSearch("");
+            setUserResults([]);
+          },
+          style: { background: "linear-gradient(135deg,#6c63ff,#a855f7)", border: "none", borderRadius: 20, padding: "7px 14px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 },
+          children: "✏️ New"
+        }
+      )
+    ] }) }),
+    showNewDM && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", inset: 0, background: "#0B0C1A", zIndex: 200, display: "flex", flexDirection: "column", paddingTop: "calc(env(safe-area-inset-top,0px) + 0px)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10, background: "rgba(14,14,28,0.98)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowNewDM(false), style: { background: "none", border: "none", color: "#F5C842", fontSize: 20, cursor: "pointer", padding: 0 }, children: "←" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 16 }, children: "New Message" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 16px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "input",
+        {
+          autoFocus: true,
+          value: userSearch,
+          onChange: (e) => setUserSearch(e.target.value),
+          placeholder: "Search by username...",
+          style: { width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 24, padding: "10px 16px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto" }, children: [
+        searchingUsers && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 20 }, children: "Searching..." }),
+        !searchingUsers && userSearch && userResults.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "No users found" }),
+        !userSearch && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🔍" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Type a username to find someone" })
+        ] }),
+        userResults.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => {
+              setShowNewDM(false);
+              openThread(u2.id, u2.username, u2.avatar_url || "");
+            },
+            style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: u2.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u2.username}`,
+                  style: { width: 44, height: 44, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.3)" }
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: [
+                  "@",
+                  u2.username
+                ] }),
+                u2.display_name && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: u2.display_name })
+              ] })
+            ]
+          },
+          u2.id
+        ))
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, overflowY: "auto" }, children: [
+      loading && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "Loading..." }),
+      !loading && threads.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", color: "#555", padding: 60 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "✉️" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16 }, children: "No messages yet" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13, marginTop: 8, color: "#444" }, children: "When someone messages you, it will appear here" })
+      ] }),
+      threads.map((t2) => {
+        const isIncoming = t2.sender_id !== currentUser.id;
+        const otherId = isIncoming ? t2.sender_id : t2.recipient_id;
+        const otherUsername = isIncoming ? t2.sender_username : t2.recipient_username;
+        const otherAvatar = isIncoming ? t2.sender_avatar : "";
+        const unread = !t2.is_read && t2.recipient_id === currentUser.id;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => openThread(otherId, otherUsername, otherAvatar),
+            style: { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", background: unread ? "rgba(108,99,255,0.08)" : "transparent" },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: otherAvatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + otherUsername, style: { width: 46, height: 46, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.3)" } }),
+                unread && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 0, right: 0, width: 12, height: 12, background: "#ff6b6b", borderRadius: "50%", border: "2px solid #0B0C1A" } })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: unread ? "#fff" : "#ccc", fontWeight: unread ? 700 : 400, fontSize: 14 }, children: [
+                  "@",
+                  otherUsername
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }, children: t2.text })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontSize: 11 }, children: fmtTime2(t2.created_date) })
+            ]
+          },
+          t2.id
+        );
+      })
+    ] })
+  ] });
+}
+const APP_VERSION = "2.2.0";
+(function checkVersion() {
+  const stored = localStorage.getItem("sachi_app_version");
+  if (stored && stored !== APP_VERSION) {
+    localStorage.setItem("sachi_app_version", APP_VERSION);
+    window.location.reload(true);
+  } else {
+    localStorage.setItem("sachi_app_version", APP_VERSION);
+  }
+})();
 function App() {
   var _a;
-  const path = window.location.pathname;
-  if (path === "/terms") return /* @__PURE__ */ jsxRuntimeExports.jsx(Terms, {});
-  if (path === "/privacy") return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
-  if (path === "/child-safety") return /* @__PURE__ */ jsxRuntimeExports.jsx(ChildSafety, {});
-  if (path === "/founding-creator" || path === "/apply") return /* @__PURE__ */ jsxRuntimeExports.jsx(FoundingCreatorPage, { onBack: () => window.location.href = "/" });
-  const [hasEntered, setHasEntered] = reactExports.useState(false);
+  const deepLinkPostId = (() => {
+    const m2 = window.location.pathname.match(/^\/post\/([a-zA-Z0-9]+)/);
+    return m2 ? m2[1] : null;
+  })();
+  const [hasEntered, setHasEntered] = reactExports.useState(() => !!deepLinkPostId);
+  const [prefetchDone, setPrefetchDone] = reactExports.useState(false);
+  const [deepLinkScrolled, setDeepLinkScrolled] = reactExports.useState(false);
   const [globalIsPlaying, setGlobalIsPlaying] = reactExports.useState(false);
   reactExports.useEffect(() => {
     const onPlay = () => setGlobalIsPlaying(true);
@@ -18057,7 +18906,14 @@ function App() {
       window.removeEventListener("sachiVideoPause", onPause);
     };
   }, []);
-  const [currentUser, setCurrentUser] = reactExports.useState(() => auth.getUser());
+  const [currentUser, setCurrentUser] = reactExports.useState(() => {
+    try {
+      return auth.getUser();
+    } catch (e) {
+      localStorage.removeItem("sachi_user");
+      return null;
+    }
+  });
   reactExports.useEffect(() => {
     handleGoogleRedirectCallback().then((result) => {
       if (!result) return;
@@ -18074,7 +18930,37 @@ function App() {
       localStorage.removeItem("sachi_auth_intent");
     }
   }, []);
-  (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com";
+  reactExports.useEffect(() => {
+    if (!(currentUser == null ? void 0 : currentUser.email)) return;
+    const normalize = async () => {
+      try {
+        const res = await fetch(
+          `https://api.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`,
+          { headers: { "Content-Type": "application/json" } }
+        );
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
+        const canonical = items.find((u2) => u2.email === currentUser.email);
+        if (canonical && canonical.id && canonical.id !== currentUser.id) {
+          console.log("[SachiAuth] Normalizing user ID:", currentUser.id, "→", canonical.id);
+          const corrected = {
+            ...currentUser,
+            id: canonical.id,
+            full_name: canonical.full_name || currentUser.full_name,
+            username: canonical.username || currentUser.username,
+            avatar_url: canonical.avatar_url || currentUser.avatar_url,
+            _sachiProfileId: canonical.id
+          };
+          localStorage.setItem("sachi_user", JSON.stringify(corrected));
+          localStorage.setItem("sachi_google_user", JSON.stringify(corrected));
+          setCurrentUser(corrected);
+        }
+      } catch {
+      }
+    };
+    normalize();
+  }, [currentUser == null ? void 0 : currentUser.email]);
+  const isAdmin = (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "shakeebjasim.mail@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "helloshakeeb.mail@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "hasini.thisaravi@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "henderson.keith2@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
   const feedContainerRef = reactExports.useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
@@ -18094,12 +18980,13 @@ function App() {
   const [followingVideos, setFollowingVideos] = reactExports.useState([]);
   const [followedUserIds, setFollowedUserIds] = reactExports.useState(/* @__PURE__ */ new Set());
   React.useEffect(() => {
+    var _a2;
     if (!currentUser) {
       setFollowedUserIds(/* @__PURE__ */ new Set());
       return;
     }
-    follows.getFollowing(currentUser.id).then((res) => {
-      setFollowedUserIds(new Set((res.items || res || []).map((r2) => r2.following_id)));
+    follows.getFollowing(currentUser.id, currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0])).then((res) => {
+      setFollowedUserIds(new Set((Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || []).map((r2) => r2.following_id)));
     }).catch(() => {
     });
   }, [currentUser]);
@@ -18113,7 +19000,7 @@ function App() {
       messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {
       });
       try {
-        const res = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
+        const res = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
         const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
         setNotifCount(items.length);
       } catch (e) {
@@ -18145,9 +19032,11 @@ function App() {
   const [bookmarkRecords, setBookmarkRecords] = reactExports.useState({});
   const [blockedIds, setBlockedIds] = reactExports.useState(/* @__PURE__ */ new Set());
   const [feedPage, setFeedPage] = reactExports.useState(1);
-  const [feedHasMore, setFeedHasMore] = reactExports.useState(true);
+  const [showInviteDashboard, setShowInviteDashboard] = reactExports.useState(false);
+  const [feedHasMore, setFeedHasMore] = reactExports.useState(false);
   const FEED_PAGE_SIZE = 30;
   const [commentVideo, setCommentVideo] = reactExports.useState(null);
+  const [activeIndex, setActiveIndex] = reactExports.useState(0);
   const [showUpload, setShowUpload] = reactExports.useState(false);
   const [uploadToast, setUploadToast] = reactExports.useState(false);
   const [loginToast, setLoginToast] = reactExports.useState(false);
@@ -18175,7 +19064,7 @@ function App() {
   const [editProfileName, setEditProfileName] = reactExports.useState("");
   const [editProfileSaving, setEditProfileSaving] = reactExports.useState(false);
   reactExports.useEffect(() => {
-    loadVideos();
+    loadVideos(void 0, false, 1, () => setPrefetchDone(true));
   }, []);
   reactExports.useEffect(() => {
     const handleSachiShare = (e) => {
@@ -18195,7 +19084,7 @@ function App() {
     const loadAvatar = async () => {
       if (currentUser) {
         try {
-          const usersData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : usersData.items || [];
           const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
           if (match && match.avatar_url && !match.avatar_url.startsWith("data:")) {
@@ -18220,10 +19109,11 @@ function App() {
     loadAvatar();
   }, [currentUser]);
   const loadFollowingVideos = async (user) => {
+    var _a2;
     if (!user) return;
     try {
-      const res = await follows.getFollowing(user.id);
-      const items = res.items || res || [];
+      const res = await follows.getFollowing(user.id, user.username || ((_a2 = user.email) == null ? void 0 : _a2.split("@")[0]));
+      const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
       const ids = items.map((r2) => r2.following_id);
       setFollowingIds(ids);
       if (ids.length === 0) {
@@ -18237,7 +19127,7 @@ function App() {
       console.error(e);
     }
   };
-  const loadVideos = async (user, append = false, page = 1) => {
+  const loadVideos = async (user, append = false, page = 1, onReady = null) => {
     if (!append) setLoading(true);
     try {
       const skip = (page - 1) * FEED_PAGE_SIZE;
@@ -18249,29 +19139,68 @@ function App() {
         comments_count: v2.comments_count ?? v2.comment_count ?? 0,
         hypes_count: v2.hypes_count ?? v2.hype_count ?? 0
       }));
-      const raw = normalized.filter((v2) => !v2.is_archived);
+      const raw = normalized.filter((v2) => {
+        if (v2.is_archived) return false;
+        const thumb = v2.thumbnail_url || "";
+        const vid = v2.video_url || "";
+        if (thumb.includes("media.sachistream.com/uploads/")) return false;
+        if (vid.includes("media.sachistream.com/uploads/") && !vid.endsWith(".mp4") && !vid.endsWith(".mov") && !vid.endsWith(".webm")) return false;
+        if (thumb.includes("test.com") || thumb.includes("test.example")) return false;
+        return true;
+      });
       setFeedHasMore(rawAll.length === FEED_PAGE_SIZE);
       if (!raw.length && !append) {
-        setVideoList([]);
         setLoading(false);
+        if (onReady) onReady();
         return;
       }
-      const sorted = [...raw].sort((a, b) => {
-        const ageDiffHours = (new Date(b.created_date || 0) - new Date(a.created_date || 0)) / 36e5;
-        const engA = (a.likes_count || 0) * 2 + (a.comments_count || 0) * 3 + (a.views_count || 0) * 0.01;
-        const engB = (b.likes_count || 0) * 2 + (b.comments_count || 0) * 3 + (b.views_count || 0) * 0.01;
-        if (Math.abs(ageDiffHours) > 48 && engB - engA > 50) return 1;
-        if (Math.abs(ageDiffHours) > 48 && engA - engB > 50) return -1;
-        return new Date(b.created_date || 0) - new Date(a.created_date || 0);
-      });
-      const ranked = sorted;
+      const sorted = [...raw].sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+      const ranked2 = (() => {
+        const byUser = {};
+        for (const v2 of sorted) {
+          const uid = v2.user_id || v2.created_by || "unknown";
+          if (!byUser[uid]) byUser[uid] = [];
+          byUser[uid].push(v2);
+        }
+        const userQueues = Object.values(byUser).sort(
+          (a, b) => new Date(b[0].created_date || 0) - new Date(a[0].created_date || 0)
+        );
+        const result = [];
+        let round = 0;
+        while (result.length < sorted.length) {
+          let added = 0;
+          for (const queue of userQueues) {
+            if (queue[round]) {
+              result.push(queue[round]);
+              added++;
+            }
+          }
+          if (added === 0) break;
+          round++;
+        }
+        return result;
+      })();
+      const tagWithLiked = async (videos2) => {
+        if (!(user == null ? void 0 : user.id)) return videos2;
+        try {
+          const res = await request$1("GET", `/apps/${APP_ID}/entities/SachiLike?user_id=${user.id}&limit=500`);
+          const likeRecords = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+          const likedSet = new Set(likeRecords.map((r2) => r2.video_id));
+          return videos2.map((v2) => likedSet.has(v2.id) ? { ...v2, _likedByMe: true } : v2);
+        } catch {
+          return videos2;
+        }
+      };
       if (append) {
+        const tagged = await tagWithLiked(ranked2);
         setVideoList((prev) => {
           const existing = new Set(prev.map((v2) => v2.id));
-          return [...prev, ...ranked.filter((v2) => !existing.has(v2.id))];
+          return [...prev, ...tagged.filter((v2) => !existing.has(v2.id))];
         });
       } else {
-        setVideoList(ranked);
+        const tagged = await tagWithLiked(ranked2);
+        setVideoList(tagged);
+        if (onReady) onReady();
         requestAnimationFrame(() => {
           const el2 = feedContainerRef.current || window.__sachiEl;
           if (el2) el2.scrollTo({ top: 0, behavior: "instant" });
@@ -18279,7 +19208,7 @@ function App() {
       }
     } catch (err) {
       console.error("loadVideos error:", err);
-      if (!append) setVideoList([]);
+      if (onReady) onReady();
     }
     setLoading(false);
   };
@@ -18358,8 +19287,8 @@ function App() {
       const myUsername = currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
       (async () => {
         try {
-          const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowersCount(unique.length);
@@ -18368,8 +19297,8 @@ function App() {
       })();
       (async () => {
         try {
-          const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
+          const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+          const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
           const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowingCount(unique.length);
@@ -18381,27 +19310,68 @@ function App() {
   const handleLike = React.useCallback((videoId, delta) => {
     const feedEl = feedContainerRef.current;
     const savedScroll = feedEl ? feedEl.scrollTop : 0;
-    setVideoList((vs) => {
-      const updated = vs.map((v2) => {
-        var _a2;
-        if (v2.id !== videoId) return v2;
-        const newCount = Math.max(0, (v2.likes_count || 0) + delta);
-        videos.update(videoId, { likes_count: newCount, like_count: newCount }).catch(() => {
+    setVideoList((vs) => vs.map((v2) => {
+      var _a2;
+      if (v2.id !== videoId) return v2;
+      const optimisticCount = Math.max(0, (v2.likes_count || 0) + delta);
+      if (currentUser && ((_a2 = v2.hashtags) == null ? void 0 : _a2.length)) {
+        interests.signal(currentUser.id, v2.hashtags, delta > 0 ? 3 : -1).catch(() => {
         });
-        if (currentUser && ((_a2 = v2.hashtags) == null ? void 0 : _a2.length)) {
-          interests.signal(currentUser.id, v2.hashtags, delta > 0 ? 3 : -1).catch(() => {
-          });
-        }
-        return { ...v2, likes_count: newCount };
-      });
-      return updated;
-    });
+      }
+      return { ...v2, likes_count: optimisticCount };
+    }));
     if (feedEl) {
       requestAnimationFrame(() => {
         feedEl.scrollTop = savedScroll;
       });
     }
+    (async () => {
+      try {
+        const res = await likes.getByVideo(videoId);
+        const records = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
+        const verifiedCount = records.length;
+        if (verifiedCount === 0 && delta > 0) return;
+        videos.update(videoId, { likes_count: verifiedCount, like_count: verifiedCount }).catch(() => {
+        });
+        setVideoList((vs) => vs.map((v2) => v2.id === videoId ? { ...v2, likes_count: verifiedCount } : v2));
+      } catch (e) {
+        setVideoList((vs) => vs.map((v2) => {
+          if (v2.id !== videoId) return v2;
+          const fallbackCount = Math.max(0, v2.likes_count || 0);
+          videos.update(videoId, { likes_count: fallbackCount, like_count: fallbackCount }).catch(() => {
+          });
+          return v2;
+        }));
+      }
+    })();
   }, [currentUser, feedContainerRef]);
+  reactExports.useEffect(() => {
+    if (!deepLinkPostId || deepLinkScrolled || videoList.length === 0) return;
+    const idx = videoList.findIndex((v2) => v2.id === deepLinkPostId);
+    if (idx === -1) {
+      request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${deepLinkPostId}`).then((post) => {
+        if (post && post.id) {
+          setVideoList((prev) => {
+            if (prev.find((v2) => v2.id === post.id)) return prev;
+            return [post, ...prev];
+          });
+        }
+      }).catch(() => {
+      });
+      return;
+    }
+    setActiveIndex(idx);
+    setDeepLinkScrolled(true);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const el2 = feedContainerRef.current;
+        if (el2) {
+          el2.scrollTo({ top: idx * el2.clientHeight, behavior: "instant" });
+        }
+        window.history.replaceState({}, "", "/");
+      }, 100);
+    });
+  }, [videoList, deepLinkPostId, deepLinkScrolled]);
   const handleView = (videoId) => {
     var _a2;
     setVideoList((vs) => vs.map((v2) => v2.id === videoId ? { ...v2, views_count: (v2.views_count || 0) + 1 } : v2));
@@ -18429,12 +19399,12 @@ function App() {
   };
   const username = (currentUser == null ? void 0 : currentUser.full_name) || ((_a = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a.split("@")[0]) || "";
   if (!hasEntered) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(Landing, { onEnter: () => setHasEntered(true) });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(Landing, { onEnter: () => setHasEntered(true), prefetchDone });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0B0C1A", minHeight: "100svh", maxWidth: 480, margin: "0 auto", position: "relative", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, paddingTop: "env(safe-area-inset-top,0px)", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px", pointerEvents: "auto" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7 }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", alt: "Sachi", style: { width: 30, height: 30, borderRadius: 8, filter: "drop-shadow(0 0 6px rgba(245,200,66,0.5))" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-logo-new.png", alt: "Sachi", style: { width: 36, height: 36, borderRadius: 0, objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(232,64,12,0.55))" } }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 1 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 12, fontWeight: 700, color: "#F5C842", lineHeight: 1, marginBottom: 2 }, children: "™" })
@@ -18499,7 +19469,15 @@ function App() {
     activeTab === "feed" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: (el2) => {
       feedContainerRef.current = el2;
       window.__sachiEl = el2;
-    }, style: { height: "100svh", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y" }, children: [
+    }, onScroll: (e) => {
+      const el2 = e.currentTarget;
+      const idx = Math.round(el2.scrollTop / el2.clientHeight);
+      setActiveIndex(idx);
+      const feedItems = (feedTab === "forYou" ? videoList : followingVideos).filter((v2) => !blockedIds.has(v2.user_id));
+      if (feedTab === "forYou" && feedHasMore && !loading && idx >= feedItems.length - 3) {
+        loadMoreVideos();
+      }
+    }, style: { height: "calc(100dvh - 80px)", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y", overflowX: "hidden" }, children: [
       feedTab === "following" && followingIds.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         height: "100svh",
         display: "flex",
@@ -18540,11 +19518,11 @@ function App() {
           )
         ] })
       ] }),
-      loading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "100svh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
+      loading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "calc(100dvh - 80px)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48 }, children: "🎬" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(245,200,66,0.7)", fontSize: 14, letterSpacing: 1, fontWeight: 600 }, children: "Loading..." })
       ] }),
-      !loading && videoList.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "100svh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
+      !loading && videoList.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "calc(100dvh - 80px)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64 }, children: "🎬" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22 }, children: "No videos yet" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 15 }, children: "Be the first to post!" }),
@@ -18557,26 +19535,42 @@ function App() {
           }
         )
       ] }),
-      (feedTab === "forYou" ? videoList : followingVideos).filter((v2) => !blockedIds.has(v2.user_id)).map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-        VideoCard,
-        {
-          video: v2,
-          currentUser,
-          onCommentOpen: setCommentVideo,
-          onLike: handleLike,
-          onView: handleView,
-          onNeedAuth: () => setShowAuth(true),
-          onDelete: (id2) => setVideoList((prev) => prev.filter((v22) => v22.id !== id2)),
-          onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname }),
-          followedUserIds,
-          onFollowChange: handleFollowChange,
-          onShareCount: (videoId, newCount) => setVideoList((prev) => prev.map((v22) => v22.id === videoId ? { ...v22, shares_count: newCount } : v22)),
-          onBookmark: { isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark },
-          blockedIds
-        },
-        v2.id
-      )),
-      feedTab === "forYou" && feedHasMore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: "24px 0 40px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: loadMoreVideos, style: { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 20, padding: "10px 28px", color: "#fff", fontSize: 14, cursor: "pointer", fontWeight: 600 }, children: "Load more" }) }),
+      (() => {
+        const feedItems = (feedTab === "forYou" ? videoList : followingVideos).filter((v2) => !blockedIds.has(v2.user_id));
+        const windowStart = Math.max(0, activeIndex - 2);
+        const windowEnd = Math.min(feedItems.length - 1, activeIndex + 2);
+        return feedItems.map((v2, idx) => {
+          const inWindow = idx >= windowStart && idx <= windowEnd;
+          if (!inWindow) {
+            return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "calc(100dvh - 80px)", scrollSnapAlign: "start", scrollSnapStop: "always", flexShrink: 0, overflow: "hidden" } }, v2.id);
+          }
+          return /* @__PURE__ */ jsxRuntimeExports.jsx(
+            VideoCard,
+            {
+              video: v2,
+              currentUser,
+              onCommentOpen: setCommentVideo,
+              onLike: handleLike,
+              onView: (videoId) => {
+                handleView(videoId);
+              },
+              onNeedAuth: () => setShowAuth(true),
+              onDelete: (id2) => setVideoList((prev) => prev.filter((v22) => v22.id !== id2)),
+              onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname }),
+              followedUserIds,
+              onFollowChange: handleFollowChange,
+              onShareCount: (videoId, newCount) => setVideoList((prev) => prev.map((v22) => v22.id === videoId ? { ...v22, shares_count: newCount } : v22)),
+              onBookmark: { isBookmarked: (vid) => bookmarkedIds.has(vid), handle: handleBookmark },
+              blockedIds
+            },
+            v2.id
+          );
+        });
+      })(),
+      feedTab === "forYou" && feedHasMore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "calc(100dvh - 80px)", scrollSnapAlign: "start", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "rgba(245,200,66,0.6)" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 32, height: 32, border: "3px solid rgba(245,200,66,0.2)", borderTop: "3px solid #F5C842", borderRadius: "50%", animation: "spin 0.8s linear infinite" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, letterSpacing: 1, fontWeight: 600 }, children: "Loading more" })
+      ] }) }),
       feedTab === "following" && followingVideos.length === 0 && !loading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "60px 24px", color: "rgba(255,255,255,0.3)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 16 }, children: "👀" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 8 }, children: "Nothing here yet" }),
@@ -18710,7 +19704,7 @@ function App() {
                 setShowFollowersList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowersList(unique);
@@ -18733,7 +19727,7 @@ function App() {
                 setShowFollowingList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
                   const all = (r1 == null ? void 0 : r1.items) || r1 || [];
                   const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
                   setFollowingList(unique);
@@ -18889,126 +19883,108 @@ function App() {
         fromProfile: (inboxDMTarget == null ? void 0 : inboxDMTarget.fromProfile) || false
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, paddingBottom: "env(safe-area-inset-bottom,8px)", paddingTop: 0, display: "flex", justifyContent: "center", pointerEvents: "none", opacity: activeTab === "feed" && globalIsPlaying ? 0.25 : 1, transition: "opacity 0.4s ease" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { pointerEvents: "auto", margin: "0 16px 8px", background: "rgba(14,14,28,0.96)", backdropFilter: "blur(30px)", borderRadius: 40, border: "1px solid rgba(245,200,66,0.15)", display: "flex", alignItems: "center", padding: "6px 8px", gap: 2, boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: goHome,
-          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "feed" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: activeTab === "feed" ? "#F5C842" : "none", stroke: activeTab === "feed" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "9 22 9 12 15 12 15 22" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "feed" ? 700 : 400, letterSpacing: 0.3 }, children: "Home" })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => setActiveTab("explore"),
-          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "explore" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "explore" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "11", cy: "11", r: "7" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "explore" ? 700 : 400, letterSpacing: 0.3 }, children: "Explore" })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => requireAuth(() => setActiveTab("notifications")),
-          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "notifications" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s", position: "relative" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "notifications" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M13.73 21a2 2 0 0 1-3.46 0" })
+    currentUser && activeTab === "home" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => setShowInviteDashboard(true), style: { position: "fixed", top: 16, right: 16, zIndex: 200, background: "linear-gradient(135deg,#F5C842,#FF9500)", borderRadius: 20, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 16px rgba(245,200,66,0.4)", fontFamily: "-apple-system,sans-serif" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 14 }, children: "🚀" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#0B0C1A", fontWeight: 800, fontSize: 12 }, children: "Invite" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, pointerEvents: "none", opacity: activeTab === "feed" && globalIsPlaying ? 0.25 : 1, transition: "opacity 0.4s ease" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 480 70", xmlns: "http://www.w3.org/2000/svg", style: { position: "absolute", bottom: 0, left: 0, width: "100%", height: 70, display: "block" }, preserveAspectRatio: "none", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("defs", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("filter", { id: "navBlur", children: /* @__PURE__ */ jsxRuntimeExports.jsx("feGaussianBlur", { stdDeviation: "0.5" }) }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "path",
+          {
+            d: "M0,70 L0,40 Q80,42 180,38 Q220,20 240,18 Q260,20 300,38 Q400,42 480,40 L480,70 Z",
+            fill: "rgba(14,14,28,0.97)",
+            filter: "url(#navBlur)"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "path",
+          {
+            d: "M0,40 Q80,42 180,38 Q220,20 240,18 Q260,20 300,38 Q400,42 480,40",
+            fill: "none",
+            stroke: "rgba(245,200,66,0.18)",
+            strokeWidth: "1"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { pointerEvents: "auto", position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "space-around", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 6px)", paddingLeft: 8, paddingRight: 8, height: 70, width: "100%" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: goHome,
+            style: { flex: 1, padding: "4px 8px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.15s", marginBottom: 4 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: activeTab === "feed" ? "#F5C842" : "none", stroke: activeTab === "feed" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "9 22 9 12 15 12 15 22" })
               ] }),
-              notifCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -4, right: -4, background: "#F5C842", borderRadius: "50%", width: 14, height: 14, fontSize: 8, color: "#0B0C1A", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }, children: notifCount > 9 ? "9+" : notifCount })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "notifications" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "notifications" ? 700 : 400, letterSpacing: 0.3 }, children: "Activity" })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => requireAuth(() => setShowUpload(true)),
-          style: { flex: 1, minWidth: 52, padding: "8px 10px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: "#F5C842", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "10" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "12", y1: "8", x2: "12", y2: "16" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8", y1: "12", x2: "16", y2: "12" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#F5C842", fontWeight: 600, letterSpacing: 0.3 }, children: "Post" })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => setActiveTab("podcast"),
-          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "podcast" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "podcast" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 10v2a7 7 0 0 1-14 0v-2" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "12", y1: "19", x2: "12", y2: "23" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "8", y1: "23", x2: "16", y2: "23" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "podcast" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "podcast" ? 700 : 400, letterSpacing: 0.3 }, children: "Podcasts" })
-          ]
-        }
-      ),
-      ((currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com") && /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => setActiveTab("admin"),
-          style: { flex: 1, minWidth: 52, padding: "8px 10px 6px", background: activeTab === "admin" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "admin" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "admin" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "admin" ? 700 : 400, letterSpacing: 0.3 }, children: "Mod" })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => requireAuth(() => setActiveTab("inbox")),
-          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "inbox" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s", position: "relative" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "inbox" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "22,6 12,13 2,6" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "feed" ? 700 : 400, letterSpacing: 0.3 }, children: "Home" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => setActiveTab("explore"),
+            style: { flex: 1, padding: "4px 8px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.15s", marginBottom: 8 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "explore" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "11", cy: "11", r: "7" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "21", y1: "21", x2: "16.65", y2: "16.65" })
               ] }),
-              unreadCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -4, right: -4, background: "#ff6b6b", borderRadius: "50%", width: 14, height: 14, fontSize: 8, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }, children: unreadCount > 9 ? "9+" : unreadCount })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "inbox" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "inbox" ? 700 : 400, letterSpacing: 0.3 }, children: "Inbox" })
-          ]
-        }
-      ),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          onClick: () => setActiveTab("profile"),
-          style: { flex: 1, minWidth: 52, padding: "8px 12px 6px", background: activeTab === "profile" ? "rgba(245,200,66,0.15)" : "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.2s" },
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "21", height: "21", viewBox: "0 0 24 24", fill: activeTab === "profile" ? "#F5C842" : "none", stroke: activeTab === "profile" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "7", r: "4" })
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "profile" ? 700 : 400, letterSpacing: 0.3 }, children: "Me" })
-          ]
-        }
-      )
-    ] }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "explore" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "explore" ? 700 : 400, letterSpacing: 0.3 }, children: "Explore" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => requireAuth(() => setShowUpload(true)),
+            style: { flex: "0 0 64px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", WebkitTapHighlightColor: "transparent", padding: "0 4px", marginBottom: 30, gap: 3, position: "relative", zIndex: 2 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 50, height: 50, borderRadius: "50%", background: "linear-gradient(135deg,#F5C842,#f97316)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 18px rgba(245,200,66,0.55), 0 2px 8px rgba(0,0,0,0.5)", border: "3px solid rgba(14,14,28,0.96)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", stroke: "#0B0C1A", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "12", y1: "5", x2: "12", y2: "19" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("line", { x1: "5", y1: "12", x2: "19", y2: "12" })
+              ] }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#F5C842", fontWeight: 600, letterSpacing: 0.3, marginTop: 2 }, children: "Post" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => requireAuth(() => setActiveTab("notifications")),
+            style: { flex: 1, padding: "4px 8px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.15s", position: "relative", marginBottom: 8 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: activeTab === "notifications" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M13.73 21a2 2 0 0 1-3.46 0" })
+                ] }),
+                notifCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: -4, right: -4, background: "#F5C842", borderRadius: "50%", width: 14, height: 14, fontSize: 8, color: "#0B0C1A", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }, children: notifCount > 9 ? "9+" : notifCount })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "notifications" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "notifications" ? 700 : 400, letterSpacing: 0.3 }, children: "Activity" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => setActiveTab("profile"),
+            style: { flex: 1, padding: "4px 8px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.15s", marginBottom: 4 },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: activeTab === "profile" ? "#F5C842" : "none", stroke: activeTab === "profile" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "7", r: "4" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "profile" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "profile" ? 700 : 400, letterSpacing: 0.3 }, children: "Me" })
+            ]
+          }
+        ),
+        isAdmin && /* @__PURE__ */ jsxRuntimeExports.jsx(ModNavButton, { activeTab, setActiveTab })
+      ] })
+    ] }),
     showSearch && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 500, background: "#000", display: "flex", flexDirection: "column" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 12px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, display: "flex", alignItems: "center", background: "rgba(255,255,255,0.08)", borderRadius: 22, padding: "8px 14px", gap: 8 }, children: [
@@ -19213,12 +20189,18 @@ function App() {
       setCommentVideo(null);
       setShowAuth(true);
     } }),
-    showUpload && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(UploadModal, { currentUser, onClose: () => setShowUpload(false), onUploaded: () => {
+    showUpload && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(UploadModal, { currentUser, onClose: () => setShowUpload(false), onUploaded: (newPost) => {
+      if (newPost && newPost.id) {
+        setVideoList((prev) => [newPost, ...prev.filter((v2) => v2.id !== newPost.id)]);
+      }
       goHome();
       setUploadToast(true);
       setTimeout(() => setUploadToast(false), 4e3);
     } }),
-    showGoLive && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(GoLiveModal, { currentUser, onClose: () => setShowGoLive(false), onUploaded: () => {
+    showGoLive && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(GoLiveModal, { currentUser, onClose: () => setShowGoLive(false), onUploaded: (newPost) => {
+      if (newPost && newPost.id) {
+        setVideoList((prev) => [newPost, ...prev.filter((v2) => v2.id !== newPost.id)]);
+      }
       goHome();
       setUploadToast(true);
       setTimeout(() => setUploadToast(false), 4e3);
@@ -19370,7 +20352,7 @@ function App() {
                       if (!editProfileName.trim()) return;
                       setEditProfileSaving(true);
                       try {
-                        await request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { full_name: editProfileName.trim() });
+                        await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/auth/me`, { full_name: editProfileName.trim() });
                         setCurrentUser((u2) => ({ ...u2, full_name: editProfileName.trim() }));
                         setShowEditProfile(false);
                       } catch (e) {
@@ -19410,30 +20392,26 @@ function App() {
       localStorage.setItem("avatar_last", url);
       localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, avatar_url: url }));
       try {
-        const usersData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+        const usersData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
         const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
         const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
         if (match) {
           if (url.startsWith("https://") || url.startsWith("http://")) {
-            await fetch("https://sachi-c7f0261c.base44.app/functions/uploadAvatar", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ image_base64: url, mime_type: "image/jpeg", entity_id: match.id })
-            });
+            await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           }
         }
       } catch (e) {
         console.warn("User entity update failed:", e);
       }
       try {
-        await request$1("PUT", `/apps/69b2ee18a8e6fb58c7f0261c/auth/me`, { avatar_url: url });
+        await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/auth/me`, { avatar_url: url });
       } catch (e) {
         console.warn("Auth avatar update failed (ok for Google users):", e);
       }
       try {
-        const vidsData = await request$1("GET", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
+        const vidsData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
         const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
-        await Promise.all(vids.map((v2) => request$1("PATCH", `/apps/69b2ee18a8e6fb58c7f0261c/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
+        await Promise.all(vids.map((v2) => request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
         setVideoList((vs) => vs.map(
           (v2) => {
             var _a3;
@@ -19443,13 +20421,16 @@ function App() {
       } catch (e) {
         console.warn("Video avatar sync failed:", e);
       }
-    }, onClose: () => setShowAvatarPicker(false) })
+    }, onClose: () => setShowAvatarPicker(false) }),
+    showInviteDashboard && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "flex-end" }, onClick: (e) => {
+      if (e.target === e.currentTarget) setShowInviteDashboard(false);
+    }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", maxWidth: 480, margin: "0 auto", animation: "slideUp 0.3s ease" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(InviteDashboard, { currentUser, onClose: () => setShowInviteDashboard(false) }) }) })
   ] });
 }
-const API = "https://sachi-04cfb834.base44.app/api";
-const APP_ID = "69e79122bcc8fb5a04cfb834";
-const APP_BASE = `/apps/${APP_ID}`;
-const SACHI_FN = "https://sachi-04cfb834.base44.app/functions";
+const API = "https://app.base44.com/api";
+const APP_ID$1 = "69e79122bcc8fb5a04cfb834";
+const APP_BASE = `/apps/${APP_ID$1}`;
+const SACHI_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/functions";
 const COVER_COLORS = [
   { bg: "linear-gradient(135deg,#1a0a2e,#6c3cf7)", emoji: "🎙️" },
   { bg: "linear-gradient(135deg,#0d2137,#1565C0)", emoji: "🎧" },
@@ -19755,11 +20736,11 @@ function PodcastHost() {
     liveTag: { background: "rgba(229,57,53,0.2)", color: "#e53935", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 800 }
   };
   if (loading) return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { ...s.page, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: { width: 60, height: 60, borderRadius: 16, marginBottom: 16 } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-crystal.png", style: { width: 60, height: 60, borderRadius: 16, marginBottom: 16 } }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "Loading..." })
   ] }) });
   if (!user) return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { ...s.page, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 32, maxWidth: 360 }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: { width: 72, height: 72, borderRadius: 20, marginBottom: 20, boxShadow: "0 0 40px rgba(245,200,66,0.3)" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-crystal.png", style: { width: 72, height: 72, borderRadius: 20, marginBottom: 20, boxShadow: "0 0 40px rgba(245,200,66,0.3)" } }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 26, fontWeight: 800, color: "#F5C842", marginBottom: 8 }, children: "Podcast Host" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 14, lineHeight: 1.7, marginBottom: 32 }, children: "Manage your Sachi podcast, go live, and add episodes — all from one place." }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: triggerGoogleLogin, style: { background: "#fff", border: "none", borderRadius: 14, padding: "14px 32px", color: "#1a1a2e", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, margin: "0 auto" }, children: [
@@ -19771,7 +20752,7 @@ function PodcastHost() {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.page, children: [
     toast && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: toast.type === "error" ? "#e53935" : toast.type === "live" ? "#e53935" : "#2e7d32", color: "#fff", borderRadius: 12, padding: "12px 24px", fontSize: 14, fontWeight: 600, zIndex: 999, boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }, children: toast.msg }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.header, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-icon-v4.png", style: s.logo }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-crystal.png", style: s.logo }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: s.title, children: "Sachi Podcast Host" }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: s.subtitle, children: [
@@ -20034,20 +21015,25 @@ function PodcastHost() {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, errorInfo: null };
   }
   static getDerivedStateFromError(e) {
     return { error: e };
   }
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
+    console.error("=== SACHI CRASH ===", error, errorInfo == null ? void 0 : errorInfo.componentStack);
   }
   render() {
+    var _a, _b;
     if (this.state.error) {
-      return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#0f0f1a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 16, padding: 32, maxWidth: 340, width: "100%", textAlign: "center", border: "1px solid rgba(255,107,107,0.3)" }, children: [
+      const msg = ((_a = this.state.error) == null ? void 0 : _a.message) || String(this.state.error);
+      const stack = ((_b = this.state.errorInfo) == null ? void 0 : _b.componentStack) || "";
+      return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { background: "#0f0f1a", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 16, padding: 32, maxWidth: 400, width: "100%", textAlign: "center", border: "1px solid rgba(255,107,107,0.3)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "😅" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff6b6b", fontWeight: 800, fontSize: 18, marginBottom: 8 }, children: "Something went wrong" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "Please reload and try again." }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ff9999", fontSize: 12, marginBottom: 12, fontFamily: "monospace", background: "rgba(255,0,0,0.08)", padding: 10, borderRadius: 8, textAlign: "left", wordBreak: "break-all", maxHeight: 120, overflow: "auto" }, children: msg }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginBottom: 24, fontFamily: "monospace", textAlign: "left", maxHeight: 80, overflow: "auto", wordBreak: "break-all" }, children: stack.slice(0, 300) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
@@ -20065,6 +21051,9 @@ function Root() {
   const path = window.location.pathname;
   if (path === "/privacy" || path === "/privacy/") return /* @__PURE__ */ jsxRuntimeExports.jsx(Privacy, {});
   if (path === "/podcast-host" || path === "/podcast-host/") return /* @__PURE__ */ jsxRuntimeExports.jsx(PodcastHost, {});
+  if (path === "/terms" || path === "/terms/") return /* @__PURE__ */ jsxRuntimeExports.jsx(Terms, {});
+  if (path === "/child-safety" || path === "/child-safety/") return /* @__PURE__ */ jsxRuntimeExports.jsx(ChildSafety, {});
+  if (path === "/founding-creator" || path === "/apply" || path === "/founding-creator/" || path === "/apply/") return /* @__PURE__ */ jsxRuntimeExports.jsx(FoundingCreatorPage, { onBack: () => window.location.href = "/" });
   return /* @__PURE__ */ jsxRuntimeExports.jsx(App, {});
 }
 client.createRoot(document.getElementById("root")).render(

@@ -233,8 +233,22 @@ export const follows = {
   async unfollow(recordId) {
     return request("DELETE", `/apps/${APP_ID}/entities/Follow/${recordId}`);
   },
-  async getFollowing(follower_id) {
-    return request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${follower_id}&limit=500`);
+  async getFollowing(follower_id, follower_username) {
+    // Query by ID first, then by username to catch records saved under any account ID
+    const [res1, res2] = await Promise.all([
+      request("GET", `/apps/${APP_ID}/entities/Follow?follower_id=${follower_id}&limit=500`).catch(() => []),
+      follower_username
+        ? request("GET", `/apps/${APP_ID}/entities/Follow?follower_username=${encodeURIComponent(follower_username)}&limit=500`).catch(() => [])
+        : Promise.resolve([]),
+    ]);
+    const arr1 = Array.isArray(res1) ? res1 : (res1?.items || res1?.records || []);
+    const arr2 = Array.isArray(res2) ? res2 : (res2?.items || res2?.records || []);
+    // Merge and deduplicate by following_id
+    const seen = new Map();
+    for (const r of [...arr1, ...arr2]) {
+      if (r.following_id && !seen.has(r.following_id)) seen.set(r.following_id, r);
+    }
+    return [...seen.values()];
   },
   async getFollowers(following_id) {
     return request("GET", `/apps/${APP_ID}/entities/Follow?following_id=${following_id}&limit=500`);

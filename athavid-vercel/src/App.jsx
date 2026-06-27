@@ -142,6 +142,40 @@ function App() {
     }
   }, []);
 
+  // ── ID normalizer: verify currentUser.id against canonical SachiUser on startup ──
+  // Prevents stale/ghost IDs from persisting across sessions and causing
+  // likes/follows to be written under the wrong user_id
+  useEffect(() => {
+    if (!currentUser?.email) return;
+    const normalize = async () => {
+      try {
+        const res = await fetch(
+          `https://api.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`,
+          { headers: { "Content-Type": "application/json" } }
+        );
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
+        const canonical = items.find(u => u.email === currentUser.email);
+        if (canonical && canonical.id && canonical.id !== currentUser.id) {
+          // Stale/ghost ID detected — silently correct it
+          console.log("[SachiAuth] Normalizing user ID:", currentUser.id, "→", canonical.id);
+          const corrected = {
+            ...currentUser,
+            id: canonical.id,
+            full_name: canonical.full_name || currentUser.full_name,
+            username: canonical.username || currentUser.username,
+            avatar_url: canonical.avatar_url || currentUser.avatar_url,
+            _sachiProfileId: canonical.id,
+          };
+          localStorage.setItem("sachi_user", JSON.stringify(corrected));
+          localStorage.setItem("sachi_google_user", JSON.stringify(corrected));
+          setCurrentUser(corrected);
+        }
+      } catch { /* silent — don't break the app if this fails */ }
+    };
+    normalize();
+  }, [currentUser?.email]);
+
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com" || currentUser?.email === "shakeebjasim.mail@gmail.com" || currentUser?.email === "helloshakeeb.mail@gmail.com" || currentUser?.email === "hasini.thisaravi@gmail.com" || currentUser?.email === "henderson.keith2@gmail.com";
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
@@ -165,8 +199,8 @@ function App() {
   // Load all followed user IDs once on login
   React.useEffect(() => {
     if (!currentUser) { setFollowedUserIds(new Set()); return; }
-    follows.getFollowing(currentUser.id).then(res => {
-      setFollowedUserIds(new Set((res.items || res || []).map(r => r.following_id)));
+    follows.getFollowing(currentUser.id, currentUser.username || currentUser.email?.split("@")[0]).then(res => {
+      setFollowedUserIds(new Set((Array.isArray(res) ? res : (res?.items || res?.records || [])).map(r => r.following_id)));
     }).catch(() => {});
   }, [currentUser]);
 
@@ -309,8 +343,8 @@ function App() {
   const loadFollowingVideos = async (user) => {
     if (!user) return;
     try {
-      const res = await follows.getFollowing(user.id);
-      const items = res.items || res || [];
+      const res = await follows.getFollowing(user.id, user.username || user.email?.split("@")[0]);
+      const items = Array.isArray(res) ? res : (res?.items || res?.records || []);
       const ids = items.map(r => r.following_id);
       setFollowingIds(ids);
       if (ids.length === 0) { setFollowingVideos([]); return; }

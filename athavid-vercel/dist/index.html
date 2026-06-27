@@ -23,43 +23,16 @@
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/sachi-logo-v5.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/sachi-logo-v5.png" />
+    <link rel="apple-touch-icon" href="/sachi-icon-v6.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/sachi-icon-v6.png" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" href="/sachi-logo-v5.png" />
+    <link rel="icon" type="image/png" href="/sachi-icon-v6.png" />
 
     <style>
       body { margin: 0; background: #0B0C1A; }
-      #splash {
-        position: fixed;
-        inset: 0;
-        background: #0B0C1A;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        z-index: 99999;
-        transition: opacity 0.4s ease;
-      }
-      #splash img {
-        width: 90px;
-        height: 90px;
-        border-radius: 20px;
-        animation: pulse 1.6s ease-in-out infinite;
-      }
-      #splash-text {
-        font-family: Georgia, serif;
-        font-size: 36px;
-        font-weight: 700;
-        color: #F5C842;
-        letter-spacing: -0.5px;
-      }
-      @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.8; transform: scale(0.96); }
+50% { opacity: 0.8; transform: scale(0.96); }
       }
       #static-footer {
         position: fixed;
@@ -80,7 +53,7 @@
         margin: 0 8px;
       }
     </style>
-    <script type="module" crossorigin src="/assets/sachi2-CkKzNoBX.js"></script>
+    <script type="module" crossorigin src="/assets/sachi2-C29wi8IC.js"></script>
   </head>
   <body>
     <!-- Static footer — visible to crawlers before JS loads -->
@@ -89,24 +62,10 @@
       <a href="/terms.html">Terms of Service</a>
     </div>
 
-    <!-- Inline splash shown while JS loads -->
-    <div id="splash">
-      <img src="/sachi-logo-v5.png" alt="Sachi" />
-      <div id="splash-text">sachi</div>
-    </div>
+
 
     <div id="root"></div>
-    <script>
-      // Hide splash once React mounts
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          var s = document.getElementById('splash');
-          if (s) { s.style.opacity = '0'; setTimeout(function(){ s.remove(); }, 400); }
-          var f = document.getElementById('static-footer');
-          if (f) { f.style.opacity = '0'; setTimeout(function(){ f.remove(); }, 400); }
-        }, 600);
-      });
-    </script>
+
   
     <script>
       // Service Worker — register only, NO forced reloads
