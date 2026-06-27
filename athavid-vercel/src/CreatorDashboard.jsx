@@ -263,9 +263,9 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
                 aspectRatio: "9/13",
                 borderRadius: 7,
                 overflow: "hidden",
-                border: i === 0 ? "2px solid #FFD700" : i === 1 ? "2px solid #C0C0C0" : i === 2 ? "2px solid #CD7F32" : "1.5px solid rgba(245,200,66,0.35)",
+                border: "2px solid #F5C842",
                 background: "#111",
-                boxShadow: i < 3 ? "0 0 6px rgba(245,200,66,0.25)" : "none",
+                boxShadow: "0 0 6px rgba(245,200,66,0.3)",
               }}>
                 <img
                   src={v.thumbnail_url || v.cover_image || `https://ui-avatars.com/api/?name=${i+1}&background=1a1b2e&color=F5C842&size=128`}
