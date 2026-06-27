@@ -6,7 +6,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { messages, request } from "./api.js";
 
 function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile }) {
-  const enteredDirectly = React.useRef(!!(initialDMTarget && initialDMTarget.userId));
+  // canGoBackToList: true if user navigated from inbox list into a thread (so back goes to list)
+  const [canGoBackToList, setCanGoBackToList] = React.useState(false);
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeThread, setActiveThread] = useState(null); // { userId, username, avatar }
@@ -61,7 +62,8 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
     return () => clearTimeout(t);
   }, [userSearch]);
 
-  const openThread = async (senderId, senderUsername, senderAvatar) => {
+  const openThread = async (senderId, senderUsername, senderAvatar, fromList=false) => {
+    if (fromList) setCanGoBackToList(true);
     setActiveThread({ userId: senderId, username: senderUsername, avatar: senderAvatar });
     const res = await messages.getThread(currentUser.id, senderId);
     const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
@@ -107,7 +109,7 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
   if (activeThread) return (
     <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:500, display:"flex", flexDirection:"column" }}>
       <div style={{ padding:"14px 16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 14px)", borderBottom:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:12, background:"rgba(14,14,28,0.98)", backdropFilter:"blur(20px)" }}>
-        <button onClick={() => { if (fromProfile || enteredDirectly.current) { onClose(); } else { setActiveThread(null); setThreadMsgs([]); loadInbox(); } }} style={{ background:"none", border:"none", color:"#F5C842", cursor:"pointer", fontSize:22, padding:"0 8px 0 0", lineHeight:1 }}>←</button>
+        <button onClick={() => { if (canGoBackToList) { setCanGoBackToList(false); setActiveThread(null); setThreadMsgs([]); loadInbox(); } else { onClose(); } }} style={{ background:"none", border:"none", color:"#F5C842", cursor:"pointer", fontSize:22, padding:"0 8px 0 0", lineHeight:1 }}>←</button>
         <img src={activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed="+activeThread.username} style={{ width:36, height:36, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.4)" }} />
         <div style={{ color:"#fff", fontWeight:700 }}>@{activeThread.username}</div>
       </div>
@@ -211,7 +213,7 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
           const otherAvatar = isIncoming ? t.sender_avatar : "";
           const unread = !t.is_read && t.recipient_id === currentUser.id;
           return (
-            <div key={t.id} onClick={() => openThread(otherId, otherUsername, otherAvatar)}
+            <div key={t.id} onClick={() => openThread(otherId, otherUsername, otherAvatar, true)}
               style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderBottom:"1px solid rgba(255,255,255,0.05)", cursor:"pointer", background: unread ? "rgba(108,99,255,0.08)" : "transparent" }}>
               <div style={{ position:"relative" }}>
                 <img src={otherAvatar || "https://api.dicebear.com/7.x/avataaars/svg?seed="+otherUsername} style={{ width:46, height:46, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.3)" }} />
