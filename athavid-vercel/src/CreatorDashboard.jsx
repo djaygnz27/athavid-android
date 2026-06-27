@@ -30,7 +30,7 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
 
       // Top 3 posts by likes
       const sorted = [...videoArr].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
-      setTopPosts(sorted.slice(0, 3));
+      setTopPosts(sorted.slice(0, 9));
 
       // Followers count
       const followersRes = await request("GET", `/apps/${SACHI_APP_ID}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => []);
@@ -249,22 +249,22 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
         ))}
       </div>
 
-      {/* Top Posts */}
+      {/* Top Posts — 3-col grid */}
       {topPosts.length > 0 && (
-        <div style={{ padding: "0 16px 24px" }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ padding: "0 16px 20px" }}>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
             🔥 <span>Your Top Posts</span>
+            <span style={{ marginLeft: "auto", fontSize: 11, color: "#555", fontWeight: 400 }}>{topPosts.length} videos</span>
           </div>
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
             {topPosts.map((v, i) => (
               <div key={v.id} style={{
                 position: "relative",
-                minWidth: 110,
-                height: 160,
-                borderRadius: 12,
+                aspectRatio: "9/14",
+                borderRadius: 8,
                 overflow: "hidden",
-                border: "1px solid rgba(245,200,66,0.2)",
-                flexShrink: 0,
+                border: "1px solid rgba(245,200,66,0.15)",
+                background: "#111",
               }}>
                 <img
                   src={v.thumbnail_url || v.cover_image || `https://ui-avatars.com/api/?name=${i+1}&background=1a1b2e&color=F5C842&size=128`}
@@ -272,12 +272,18 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 {/* Gradient overlay */}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)" }} />
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 55%)" }} />
                 {/* Like count */}
-                <div style={{ position: "absolute", bottom: 8, left: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: "#fff" }}>
-                  <span style={{ color: "#F5C842" }}>❤️</span>
+                <div style={{ position: "absolute", bottom: 5, left: 5, display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: "#fff" }}>
+                  <span style={{ fontSize: 10 }}>❤️</span>
                   {fmtCount(v.likes_count || v.like_count || 0)}
                 </div>
+                {/* Rank badge for top 3 */}
+                {i < 3 && (
+                  <div style={{ position: "absolute", top: 4, right: 4, background: i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : "#CD7F32", borderRadius: 99, width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 900, color: "#000" }}>
+                    {i + 1}
+                  </div>
+                )}
               </div>
             ))}
           </div>
