@@ -428,8 +428,17 @@ export const messages = {
   },
   async getInbox(user_id) {
     try {
-      const res = await request("GET", `/apps/${APP_ID}/entities/SachiMessage?recipient_id=${user_id}&limit=500`);
-      return Array.isArray(res) ? res : (res?.items || res?.records || []);
+      // Fetch both received AND sent messages so full thread list appears
+      const [r1, r2] = await Promise.all([
+        request("GET", `/apps/${APP_ID}/entities/SachiMessage?recipient_id=${user_id}&limit=500`).catch(() => []),
+        request("GET", `/apps/${APP_ID}/entities/SachiMessage?sender_id=${user_id}&limit=500`).catch(() => []),
+      ]);
+      const a1 = Array.isArray(r1) ? r1 : (r1?.items || r1?.records || []);
+      const a2 = Array.isArray(r2) ? r2 : (r2?.items || r2?.records || []);
+      // Merge, deduplicate by id
+      const seen = new Map();
+      [...a1, ...a2].forEach(m => { if (m.id) seen.set(m.id, m); });
+      return [...seen.values()];
     } catch { return []; }
   },
   async getThread(user_id, other_id) {

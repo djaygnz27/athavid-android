@@ -227,8 +227,14 @@ function App() {
   // Poll unread message count + notif count
   React.useEffect(() => {
     if (!currentUser) { setUnreadCount(0); setNotifCount(0); return; }
+    // Reset badge immediately on user change to clear any ghost-ID stale count
+    setUnreadCount(0);
     const poll = async () => {
-      messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {});
+      // Query unread by recipient_id (canonical ID) — DB has 0 messages so this should always return 0
+      // If ghost ID was used before, this corrects the badge immediately
+      messages.getUnreadCount(currentUser.id).then(count => {
+        setUnreadCount(count);
+      }).catch(() => setUnreadCount(0));
       try {
         const res = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
         const items = Array.isArray(res) ? res : (res?.records || res?.items || []);
