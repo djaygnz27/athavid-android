@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { messages, request } from "./api.js";
 
 function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile }) {
+  const enteredDirectly = React.useRef(!!(initialDMTarget && initialDMTarget.userId));
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeThread, setActiveThread] = useState(null); // { userId, username, avatar }
@@ -106,7 +107,7 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
   if (activeThread) return (
     <div style={{ position:"fixed", inset:0, background:"#0B0C1A", zIndex:500, display:"flex", flexDirection:"column" }}>
       <div style={{ padding:"14px 16px", paddingTop:"calc(env(safe-area-inset-top,0px) + 14px)", borderBottom:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:12, background:"rgba(14,14,28,0.98)", backdropFilter:"blur(20px)" }}>
-        <button onClick={() => { if (fromProfile) { onClose(); } else { setActiveThread(null); setThreadMsgs([]); loadInbox(); } }} style={{ background:"none", border:"none", color:"#F5C842", cursor:"pointer", fontSize:20, padding:0 }}>←</button>
+        <button onClick={() => { if (fromProfile || enteredDirectly.current) { onClose(); } else { setActiveThread(null); setThreadMsgs([]); loadInbox(); } }} style={{ background:"none", border:"none", color:"#F5C842", cursor:"pointer", fontSize:22, padding:"0 8px 0 0", lineHeight:1 }}>←</button>
         <img src={activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed="+activeThread.username} style={{ width:36, height:36, borderRadius:"50%", border:"2px solid rgba(108,99,255,0.4)" }} />
         <div style={{ color:"#fff", fontWeight:700 }}>@{activeThread.username}</div>
       </div>
