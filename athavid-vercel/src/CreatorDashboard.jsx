@@ -69,18 +69,41 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
         const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
         setDrawerData(arr.sort((a,b) => (b.likes_count||0)-(a.likes_count||0)));
       } else if (type === "likes") {
-        // Videos the user has liked
-        const res = await request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?user_id=${currentUser.id}&limit=200`).catch(() => []);
-        const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
-        // Also try by username
-        const res2 = currentUser.username
-          ? await request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?username=${encodeURIComponent(currentUser.username)}&limit=200`).catch(() => [])
-          : [];
+        // Step 1: Get all SachiLike records for this user (by user_id + username)
+        const [res1, res2] = await Promise.all([
+          request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?user_id=${currentUser.id}&limit=200`).catch(() => []),
+          currentUser.username
+            ? request("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?username=${encodeURIComponent(currentUser.username)}&limit=200`).catch(() => [])
+            : Promise.resolve([]),
+        ]);
+        const arr1 = Array.isArray(res1) ? res1 : (res1?.items || res1?.records || []);
         const arr2 = Array.isArray(res2) ? res2 : (res2?.items || res2?.records || []);
         // Deduplicate by video_id
         const seen = new Map();
-        [...arr, ...arr2].forEach(r => { if (r.video_id && !seen.has(r.video_id)) seen.set(r.video_id, r); });
-        setDrawerData([...seen.values()]);
+        [...arr1, ...arr2].forEach(r => { if (r.video_id && !seen.has(r.video_id)) seen.set(r.video_id, r); });
+        const likeRecords = [...seen.values()];
+        // Step 2: Fetch actual video records in parallel (batches of 10)
+        const videoIds = likeRecords.map(r => r.video_id).filter(Boolean);
+        const videoMap = new Map();
+        await Promise.all(
+          videoIds.map(vid =>
+            request("GET", `/apps/${SACHI_APP_ID}/entities/SachiVideo/${vid}`).then(v => {
+              if (v?.id) videoMap.set(v.id, v);
+            }).catch(() => {})
+          )
+        );
+        // Merge like records with full video data
+        const merged = likeRecords.map(r => {
+          const v = videoMap.get(r.video_id) || {};
+          return {
+            ...r,
+            thumbnail_url: v.thumbnail_url || v.cover_image || null,
+            likes_count: v.likes_count || v.like_count || 0,
+            title: v.title || v.caption || "",
+            _videoFound: !!v.id,
+          };
+        }).filter(r => r._videoFound || r.video_id); // keep all, show placeholder only if truly missing
+        setDrawerData(merged);
       } else if (type === "followers") {
         const res = await follows.getFollowers(currentUser.id).catch(() => []);
         const arr = Array.isArray(res) ? res : (res?.items || res?.records || []);
@@ -406,11 +429,19 @@ export default function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfil
                 // Video grid (videos + liked videos)
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, padding: "0 2px" }}>
                   {drawerData.map((r, i) => {
-                    const thumb = r.thumbnail_url || r.cover_image || `https://ui-avatars.com/api/?name=${i+1}&background=1a1b2e&color=F5C842&size=128`;
+                    const thumb = r.thumbnail_url || r.cover_image || null;
                     const likeCount = r.likes_count || r.like_count || 0;
                     return (
-                      <div key={r.id || i} style={{ position: "relative", aspectRatio: "9/16", overflow: "hidden", background: "#0B0C1A" }}>
-                        <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <div key={r.id || i} style={{ position: "relative", aspectRatio: "9/16", overflow: "hidden", background: "#141528", borderRadius: 4 }}>
+                        {thumb ? (
+                          <img src={thumb} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            onError={e => { e.target.style.display = "none"; }}
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1a1b2e,#0B0C1A)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(245,200,66,0.3)" strokeWidth="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                          </div>
+                        )}
                         <div style={{ position: "absolute", bottom: 4, left: 4, fontSize: 11, fontWeight: 700, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.8)", display: "flex", alignItems: "center", gap: 2 }}>
                           <span>❤️</span> {likeCount}
                         </div>
