@@ -251,8 +251,10 @@ function App() {
 
   // Expose openDM globally so profile sheet can trigger it
   React.useEffect(() => {
-    window.__openDM = (userId, username, avatar) => {
-      setInboxDMTarget({ userId, username, avatar, fromProfile: true });
+    window.__openDM = (userId, username, avatar, dmSourceProfile) => {
+      // Remember which tab was active so inbox can return to it
+      setInboxDMTarget({ userId, username, avatar, fromProfile: true, sourceProfile: dmSourceProfile || null });
+      setPrevTab(activeTab);  // store current tab (e.g. "dashboard", "feed")
       setActiveTab("inbox");
     };
     return () => { delete window.__openDM; };
@@ -1046,7 +1048,16 @@ function App() {
       {activeTab === "inbox" && currentUser && (
         <InboxPanel
           currentUser={currentUser}
-          onClose={() => { const dest = prevTab || "feed"; setPrevTab(null); setActiveTab(dest); }}
+          onClose={() => {
+            const dest = prevTab || "feed";
+            setPrevTab(null);
+            setActiveTab(dest);
+            // If opened from a profile sheet, reopen it
+            if (inboxDMTarget?.fromProfile && inboxDMTarget?.sourceProfile) {
+              setProfileSheet(inboxDMTarget.sourceProfile);
+            }
+            setInboxDMTarget(null);
+          }}
           initialDMTarget={inboxDMTarget}
           onOpen={() => setInboxDMTarget(null)}
           fromProfile={inboxDMTarget?.fromProfile || false}

@@ -167,7 +167,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
                         WebkitTapHighlightColor:"transparent", touchAction:"manipulation" }}>
                       {followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"}
                     </button>
-                    <button onClick={() => { onClose(); window.__openDM && window.__openDM(userId, username, profile?.avatar_url || ""); }}
+                    <button onClick={() => { onClose(); window.__openDM && window.__openDM(userId, username, profile?.avatar_url || "", { userId, username }); }}
                       style={{ padding:"10px 22px", borderRadius:24, background:"linear-gradient(135deg,#6c63ff,#a855f7)", border:"none",
                         color:"#fff", fontWeight:800, fontSize:14, cursor:"pointer", WebkitTapHighlightColor:"transparent",
                         boxShadow:"0 2px 12px rgba(108,99,255,0.4)" }}>
