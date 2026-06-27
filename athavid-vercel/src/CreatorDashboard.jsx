@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { videos, follows, likes, request } from "./api.js";
+import TopPostsGrid from "./TopPostsGrid.jsx";
 
 const SACHI_APP_ID = "69e79122bcc8fb5a04cfb834";
 
