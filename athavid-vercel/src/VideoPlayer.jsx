@@ -66,7 +66,18 @@ export default function VideoPlayer({
     const attachHls = () => {
       if (!window.Hls || !window.Hls.isSupported()) return;
       if (el._hls) { try { el._hls.destroy(); } catch (e) {} el._hls = null; }
-      const hls = new window.Hls({ maxBufferLength: 30, startLevel: -1, enableWorker: false });
+      const hls = new window.Hls({
+        maxBufferLength: 60,          // deeper buffer = smoother playback
+        maxMaxBufferLength: 120,      // allow up to 2min buffer
+        startLevel: -1,               // let ABR pick start level
+        abrEwmaDefaultEstimate: 5000000, // assume 5Mbps connection — starts at high quality
+        abrBandWidthFactor: 0.95,     // use 95% of measured bandwidth
+        abrBandWidthUpFactor: 0.7,    // climb quality faster on good signal
+        capLevelToPlayerSize: false,  // don't cap quality to player pixel size
+        enableWorker: true,           // use web worker for better perf
+        lowLatencyMode: false,
+        backBufferLength: 30,
+      });
       hls.loadSource(url);
       hls.attachMedia(el);
       hls.on(window.Hls.Events.MANIFEST_PARSED, tryPlay);
