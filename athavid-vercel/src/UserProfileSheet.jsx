@@ -47,9 +47,9 @@ function HoneycombGrid({ videos: vids, onSelect }) {
     </div>
   );
 
-  const CELL = 108; // px — diameter of each circle
-  const GAP = 6;
-  const ROW_H = CELL * 0.82;
+  const CELL = 110; // px — diameter of each circle
+  const GAP = 4;
+  const ROW_H = CELL * 0.78;
   const OFFSET = (CELL + GAP) / 2;
   const PER_ROW = 3;
 
@@ -533,23 +533,28 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
               {/* ── SACHI FAM ── */}
               <SachiFamRow userId={userId} />
 
-              {/* ── HIGHLIGHT REEL (top 3 most liked) ── */}
+              {/* ── HIGHLIGHT REEL (top 3 most liked) — circles, no squares ── */}
               {userVideos.length >= 3 && (() => {
                 const top3 = [...userVideos].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0)).slice(0,3);
+                const medals = ["🥇","🥈","🥉"];
+                const ringColor = ["#FFD700","#C0C0C0","#CD7F32"];
+                const SZ = 104;
                 return (
                   <div style={{ padding:"14px 16px 6px" }}>
                     <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:10, textTransform:"uppercase" }}>
                       🏆 Highlight Reel
                     </div>
-                    <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
+                    <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
                       {top3.map((v, i) => (
                         <div key={v.id} onClick={() => {
                           const idx = userVideos.findIndex(x => x.id === v.id);
                           if (idx >= 0) setPlayerIndex(idx);
-                        }} style={{ flexShrink:0, width:100, cursor:"pointer", position:"relative" }}>
-                          <div style={{ width:100, height:160, borderRadius:12, overflow:"hidden",
-                            border: i===0 ? "2px solid #FFD700" : i===1 ? "2px solid #C0C0C0" : "2px solid #CD7F32",
-                            background:"#111" }}>
+                        }} style={{ flexShrink:0, width:SZ, cursor:"pointer", position:"relative", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
+                          {/* Circle thumbnail */}
+                          <div style={{ width:SZ, height:SZ, borderRadius:"50%", overflow:"hidden",
+                            border: `3px solid ${ringColor[i]}`,
+                            boxShadow: `0 0 12px ${ringColor[i]}55`,
+                            background:"#111", position:"relative", flexShrink:0 }}>
                             {v.thumbnail_url ? (
                               <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                             ) : (
@@ -557,13 +562,14 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
                                 style={{ width:"100%", height:"100%", objectFit:"cover" }}
                                 onLoadedMetadata={e => { try { e.target.currentTime=1; } catch {} }} />
                             )}
-                            <div style={{ position:"absolute", top:6, left:8, fontSize:14 }}>
-                              {i===0?"🥇":i===1?"🥈":"🥉"}
+                            {/* Medal badge */}
+                            <div style={{ position:"absolute", top:4, right:4, fontSize:16, lineHeight:1 }}>
+                              {medals[i]}
                             </div>
-                            <div style={{ position:"absolute", bottom:4, left:0, right:0, textAlign:"center",
-                              color:"#fff", fontSize:10, fontWeight:800, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
-                              ❤️ {v.likes_count || 0}
-                            </div>
+                          </div>
+                          {/* Like count below circle */}
+                          <div style={{ color:"rgba(255,255,255,0.7)", fontSize:10, fontWeight:700, textAlign:"center" }}>
+                            ❤️ {v.likes_count || 0}
                           </div>
                         </div>
                       ))}

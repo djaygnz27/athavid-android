@@ -42,9 +42,9 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
   );
 
   // ── Honeycomb layout constants ──
-  const CELL = 109; // circle diameter
-  const GAP = 6;
-  const ROW_H = CELL * 0.82;
+  const CELL = 110; // circle diameter
+  const GAP = 4;
+  const ROW_H = CELL * 0.78;
   const PER_ROW = 3;
   const OFFSET = (CELL + GAP) / 2;
 

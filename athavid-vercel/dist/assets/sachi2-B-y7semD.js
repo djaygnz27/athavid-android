@@ -15847,8 +15847,8 @@ function HoneycombGrid({ videos: vids, onSelect }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🎬" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No videos yet" })
   ] });
-  const CELL = 108;
-  const GAP = 6;
+  const CELL = 110;
+  const GAP = 4;
   const OFFSET = (CELL + GAP) / 2;
   const PER_ROW = 3;
   const rows = [];
@@ -15861,7 +15861,7 @@ function HoneycombGrid({ videos: vids, onSelect }) {
       display: "flex",
       justifyContent: isOffset ? "flex-start" : "center",
       paddingLeft: isOffset ? OFFSET : 0,
-      marginTop: ri2 === 0 ? 12 : -19.440000000000012 - 2,
+      marginTop: ri2 === 0 ? 12 : -24.200000000000003 - 2,
       gap: GAP,
       paddingRight: 8,
       paddingLeft: isOffset ? OFFSET + 8 : 8
@@ -16374,51 +16374,49 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
         /* @__PURE__ */ jsxRuntimeExports.jsx(SachiFamRow, { userId }),
         userVideos.length >= 3 && (() => {
           const top3 = [...userVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3);
+          const medals = ["🥇", "🥈", "🥉"];
+          const ringColor = ["#FFD700", "#C0C0C0", "#CD7F32"];
+          const SZ = 104;
           return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px 6px" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }, children: "🏆 Highlight Reel" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }, children: top3.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: () => {
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, justifyContent: "center" }, children: top3.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => {
               const idx = userVideos.findIndex((x2) => x2.id === v2.id);
               if (idx >= 0) setPlayerIndex(idx);
-            }, style: { flexShrink: 0, width: 100, cursor: "pointer", position: "relative" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-              width: 100,
-              height: 160,
-              borderRadius: 12,
-              overflow: "hidden",
-              border: i === 0 ? "2px solid #FFD700" : i === 1 ? "2px solid #C0C0C0" : "2px solid #CD7F32",
-              background: "#111"
-            }, children: [
-              v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "video",
-                {
-                  src: resolveMediaUrl(v2.video_url),
-                  muted: true,
-                  playsInline: true,
-                  preload: "metadata",
-                  style: { width: "100%", height: "100%", objectFit: "cover" },
-                  onLoadedMetadata: (e) => {
-                    try {
-                      e.target.currentTime = 1;
-                    } catch {
+            }, style: { flexShrink: 0, width: SZ, cursor: "pointer", position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+                width: SZ,
+                height: SZ,
+                borderRadius: "50%",
+                overflow: "hidden",
+                border: `3px solid ${ringColor[i]}`,
+                boxShadow: `0 0 12px ${ringColor[i]}55`,
+                background: "#111",
+                position: "relative",
+                flexShrink: 0
+              }, children: [
+                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "video",
+                  {
+                    src: resolveMediaUrl(v2.video_url),
+                    muted: true,
+                    playsInline: true,
+                    preload: "metadata",
+                    style: { width: "100%", height: "100%", objectFit: "cover" },
+                    onLoadedMetadata: (e) => {
+                      try {
+                        e.target.currentTime = 1;
+                      } catch {
+                      }
                     }
                   }
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 6, left: 8, fontSize: 14 }, children: i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-                position: "absolute",
-                bottom: 4,
-                left: 0,
-                right: 0,
-                textAlign: "center",
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 800,
-                textShadow: "0 1px 4px rgba(0,0,0,0.9)"
-              }, children: [
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 4, right: 4, fontSize: 16, lineHeight: 1 }, children: medals[i] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 700, textAlign: "center" }, children: [
                 "❤️ ",
                 v2.likes_count || 0
               ] })
-            ] }) }, v2.id)) })
+            ] }, v2.id)) })
           ] });
         })(),
         isOwnProfile && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 0" }, children: [{ id: "posts", label: "Posts", icon: "🎬" }, { id: "saved", label: "Saved", icon: "🔖" }].map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -18222,8 +18220,8 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 8 }, children: "📹" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No videos yet" })
   ] });
-  const CELL = 109;
-  const GAP = 6;
+  const CELL = 110;
+  const GAP = 4;
   const PER_ROW = 3;
   const OFFSET = (CELL + GAP) / 2;
   const rows = [];
@@ -18236,7 +18234,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         display: "flex",
         justifyContent: isOffset ? "flex-start" : "center",
-        marginTop: ri2 === 0 ? 12 : -19.620000000000005 - 2,
+        marginTop: ri2 === 0 ? 12 : -24.200000000000003 - 2,
         gap: GAP,
         paddingLeft: isOffset ? OFFSET + 8 : 8,
         paddingRight: 8
