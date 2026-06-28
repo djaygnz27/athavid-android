@@ -198,10 +198,10 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
                       <div style={{ color:"rgba(255,255,255,0.4)", fontSize:14 }}>No saved posts yet</div>
                     </div>
                   ) : (
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:2 }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:2 }}>
                       {savedVideos.map((v, i) => (
                         <div key={v.id} onClick={() => { setPlayerIndex(i); }}
-                          style={{ position:"relative", aspectRatio:"1/1", background:"#111", overflow:"hidden", cursor:"pointer" }}>
+                          style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}>
                           {v.thumbnail_url ? (
                             <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                           ) : (
@@ -227,10 +227,10 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
                     <div>No videos yet</div>
                   </div>
                 ) : (
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:2 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:2 }}>
                     {userVideos.map((v, i) => (
                       <div key={v.id} onClick={() => setPlayerIndex(i)}
-                        style={{ position:"relative", aspectRatio:"1/1", background:"#111", overflow:"hidden", cursor:"pointer" }}>
+                        style={{ position:"relative", aspectRatio:"9/16", background:"#111", overflow:"hidden", cursor:"pointer" }}>
                         {v.thumbnail_url ? (
                           <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                         ) : (
