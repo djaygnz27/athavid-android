@@ -42,7 +42,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
   );
 
   // ── Honeycomb layout constants ──
-  const CELL = 108;
+  const CELL = 109; // circle diameter
   const GAP = 6;
   const ROW_H = CELL * 0.82;
   const PER_ROW = 3;
@@ -198,3 +198,5 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
 }
 
 export default VideoManageGrid;
+// circle build 1782663267
+// force-1782663352

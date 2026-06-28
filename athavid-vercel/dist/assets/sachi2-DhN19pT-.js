@@ -7424,7 +7424,7 @@ function Landing({ onEnter, prefetchDone = false }) {
     )
   ] });
 }
-const APP_ID$5 = "69e79122bcc8fb5a04cfb834";
+const APP_ID$6 = "69e79122bcc8fb5a04cfb834";
 const BASE_URL$3 = "https://sachi-04cfb834.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
@@ -7459,34 +7459,34 @@ async function request$1(method, path, body) {
 }
 const auth = {
   async signIn(email, password) {
-    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/login`, { email, password });
+    const data = await request$1("POST", `/apps/${APP_ID$6}/auth/login`, { email, password });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async signUp(email, password, fullName) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/register`, { email, password, full_name: fullName });
+    return request$1("POST", `/apps/${APP_ID$6}/auth/register`, { email, password, full_name: fullName });
   },
   async verifyOtp(email, otpCode) {
-    const data = await request$1("POST", `/apps/${APP_ID$5}/auth/verify-otp`, { email, otp_code: otpCode });
+    const data = await request$1("POST", `/apps/${APP_ID$6}/auth/verify-otp`, { email, otp_code: otpCode });
     const token = data.access_token || data.token;
     if (token) setToken(token);
     if (data.user) localStorage.setItem("sachi_user", JSON.stringify(data.user));
     return data;
   },
   async resendOtp(email) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/resend-otp`, { email });
+    return request$1("POST", `/apps/${APP_ID$6}/auth/resend-otp`, { email });
   },
   getUser() {
     const u2 = localStorage.getItem("sachi_user");
     return u2 ? JSON.parse(u2) : null;
   },
   async forgotPassword(email) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password-request`, { email });
+    return request$1("POST", `/apps/${APP_ID$6}/auth/reset-password-request`, { email });
   },
   async resetPassword(email, resetToken, newPassword) {
-    return request$1("POST", `/apps/${APP_ID$5}/auth/reset-password`, {
+    return request$1("POST", `/apps/${APP_ID$6}/auth/reset-password`, {
       reset_token: resetToken,
       new_password: newPassword
     });
@@ -7497,20 +7497,20 @@ const auth = {
 };
 const videos = {
   async list(limit = 30, skip = 0) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
+    return request$1("GET", `/apps/${APP_ID$6}/entities/SachiVideo?sort=-created_date&limit=${limit}&skip=${skip}`);
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiVideo`, data);
+    return request$1("POST", `/apps/${APP_ID$6}/entities/SachiVideo`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$6}/entities/SachiVideo/${id2}`, data);
   },
   async myVideos(userId, userEmail) {
-    const res1 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
+    const res1 = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`);
     const items1 = (res1 == null ? void 0 : res1.items) || (Array.isArray(res1) ? res1 : []);
     let items2 = [];
     if (userEmail) {
-      const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
+      const res2 = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiVideo?created_by=${encodeURIComponent(userEmail)}&limit=500&sort=-created_date`);
       items2 = (res2 == null ? void 0 : res2.items) || (Array.isArray(res2) ? res2 : []);
     }
     const seen = /* @__PURE__ */ new Set();
@@ -7522,8 +7522,8 @@ const videos = {
   },
   async byUser(userId) {
     const [res1, res2] = await Promise.all([
-      request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
-      request$1("GET", `/apps/${APP_ID$5}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => [])
+      request$1("GET", `/apps/${APP_ID$6}/entities/SachiVideo?user_id=${userId}&limit=500&sort=-created_date`).catch(() => []),
+      request$1("GET", `/apps/${APP_ID$6}/entities/SachiVideo?created_by=${userId}&limit=500&sort=-created_date`).catch(() => [])
     ]);
     const items1 = Array.isArray(res1) ? res1 : (res1 == null ? void 0 : res1.items) || [];
     const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || [];
@@ -7536,22 +7536,22 @@ const videos = {
     return merged;
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiVideo/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$6}/entities/SachiVideo/${id2}`);
   }
 };
 const comments = {
   async list(videoId) {
-    const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=500`);
+    const res = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiComment?video_id=${videoId}&sort=created_date&limit=500`);
     return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || (res == null ? void 0 : res.data) || [];
   },
   async create(data) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiComment`, data);
+    return request$1("POST", `/apps/${APP_ID$6}/entities/SachiComment`, data);
   },
   async update(id2, data) {
-    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`, data);
+    return request$1("PUT", `/apps/${APP_ID$6}/entities/SachiComment/${id2}`, data);
   },
   async delete(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiComment/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$6}/entities/SachiComment/${id2}`);
   }
 };
 async function uploadFile(file, onProgress) {
@@ -7635,7 +7635,9 @@ async function r2Upload(file, uploadUrl, onProgress) {
 }
 const follows = {
   async follow(follower_id, follower_username, following_id, following_username) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/Follow`, {
+    if (follower_id && follower_id === following_id) return null;
+    if (follower_username && follower_username === following_username) return null;
+    return request$1("POST", `/apps/${APP_ID$6}/entities/Follow`, {
       follower_id,
       follower_username,
       following_id,
@@ -7643,7 +7645,7 @@ const follows = {
     });
   },
   async unfollow(recordId) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/Follow/${recordId}`);
+    return request$1("DELETE", `/apps/${APP_ID$6}/entities/Follow/${recordId}`);
   },
   // ⛔ LOCKED — GET FOLLOWING START
   // DO NOT MODIFY WITHOUT EXPLICIT PERMISSION FROM JAY
@@ -7665,8 +7667,8 @@ const follows = {
   // - Wrap the return in {items: ...} — all parsers expect plain array
   async getFollowing(follower_id, follower_username) {
     const [res1, res2] = await Promise.all([
-      request$1("GET", `/apps/${APP_ID$5}/entities/Follow?follower_id=${follower_id}&limit=500`).catch(() => []),
-      follower_username ? request$1("GET", `/apps/${APP_ID$5}/entities/Follow?follower_username=${encodeURIComponent(follower_username)}&limit=500`).catch(() => []) : Promise.resolve([])
+      request$1("GET", `/apps/${APP_ID$6}/entities/Follow?follower_id=${follower_id}&limit=500`).catch(() => []),
+      follower_username ? request$1("GET", `/apps/${APP_ID$6}/entities/Follow?follower_username=${encodeURIComponent(follower_username)}&limit=500`).catch(() => []) : Promise.resolve([])
     ]);
     const arr1 = Array.isArray(res1) ? res1 : (res1 == null ? void 0 : res1.items) || (res1 == null ? void 0 : res1.records) || [];
     const arr2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || (res2 == null ? void 0 : res2.records) || [];
@@ -7678,35 +7680,35 @@ const follows = {
   },
   // ⛔ LOCKED — GET FOLLOWING END
   async getFollowers(following_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/Follow?following_id=${following_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$6}/entities/Follow?following_id=${following_id}&limit=500`);
   }
 };
 const bookmarks = {
   async add(user_id, username, video_id) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBookmark`, { user_id, username, video_id });
+    return request$1("POST", `/apps/${APP_ID$6}/entities/SachiBookmark`, { user_id, username, video_id });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBookmark/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$6}/entities/SachiBookmark/${id2}`);
   },
   async getByUser(user_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$6}/entities/SachiBookmark?user_id=${user_id}&limit=500`);
   }
 };
 const blocks = {
   async block(blocker_id, blocker_username, blocked_id, blocked_username) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
+    return request$1("POST", `/apps/${APP_ID$6}/entities/SachiBlock`, { blocker_id, blocker_username, blocked_id, blocked_username });
   },
   async unblock(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiBlock/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$6}/entities/SachiBlock/${id2}`);
   },
   async getBlockedByUser(blocker_id) {
-    return request$1("GET", `/apps/${APP_ID$5}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
+    return request$1("GET", `/apps/${APP_ID$6}/entities/SachiBlock?blocker_id=${blocker_id}&limit=500`);
   }
 };
 const interests = {
   async get(userId) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/UserInterest?user_id=${userId}&limit=100`);
+      const res = await request$1("GET", `/apps/${APP_ID$6}/entities/UserInterest?user_id=${userId}&limit=100`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
     } catch {
       return [];
@@ -7722,13 +7724,13 @@ const interests = {
       const entry = existing.find((e) => e.hashtag === clean);
       if (entry) {
         const decayed = Math.max(0, (entry.score || 0) * 0.95);
-        await request$1("PUT", `/apps/${APP_ID$5}/entities/UserInterest/${entry.id}`, {
+        await request$1("PUT", `/apps/${APP_ID$6}/entities/UserInterest/${entry.id}`, {
           score: decayed + points,
           last_updated: now
         }).catch(() => {
         });
       } else {
-        await request$1("POST", `/apps/${APP_ID$5}/entities/UserInterest`, {
+        await request$1("POST", `/apps/${APP_ID$6}/entities/UserInterest`, {
           user_id: userId,
           hashtag: clean,
           score: points,
@@ -7776,7 +7778,7 @@ const interests = {
 };
 const likes = {
   async add(video_id, user_id, username, display_name, avatar_url) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiLike`, {
+    return request$1("POST", `/apps/${APP_ID$6}/entities/SachiLike`, {
       video_id,
       user_id,
       username,
@@ -7785,15 +7787,15 @@ const likes = {
     });
   },
   async remove(id2) {
-    return request$1("DELETE", `/apps/${APP_ID$5}/entities/SachiLike/${id2}`);
+    return request$1("DELETE", `/apps/${APP_ID$6}/entities/SachiLike/${id2}`);
   },
   async checkUserLiked(video_id, user_id, username) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
+      const res = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiLike?video_id=${video_id}&user_id=${user_id}&limit=1`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
       if (items.length > 0) return items[0];
       if (username) {
-        const res2 = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(username)}&limit=5`);
+        const res2 = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiLike?video_id=${video_id}&username=${encodeURIComponent(username)}&limit=5`);
         const items2 = Array.isArray(res2) ? res2 : (res2 == null ? void 0 : res2.items) || (res2 == null ? void 0 : res2.records) || [];
         if (items2.length > 0) return items2[0];
       }
@@ -7804,7 +7806,7 @@ const likes = {
   },
   async getByVideo(video_id) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiLike?video_id=${video_id}&limit=500`);
+      const res = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiLike?video_id=${video_id}&limit=500`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
     } catch {
       return [];
@@ -7813,7 +7815,7 @@ const likes = {
 };
 const messages = {
   async send({ sender_id, sender_username, sender_avatar, recipient_id, recipient_username, text, thread_id }) {
-    return request$1("POST", `/apps/${APP_ID$5}/entities/SachiMessage`, {
+    return request$1("POST", `/apps/${APP_ID$6}/entities/SachiMessage`, {
       sender_id,
       sender_username,
       sender_avatar,
@@ -7826,8 +7828,17 @@ const messages = {
   },
   async getInbox(user_id) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&limit=500`);
-      return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+      const [r1, r2] = await Promise.all([
+        request$1("GET", `/apps/${APP_ID$6}/entities/SachiMessage?recipient_id=${user_id}&limit=500`).catch(() => []),
+        request$1("GET", `/apps/${APP_ID$6}/entities/SachiMessage?sender_id=${user_id}&limit=500`).catch(() => [])
+      ]);
+      const a1 = Array.isArray(r1) ? r1 : (r1 == null ? void 0 : r1.items) || (r1 == null ? void 0 : r1.records) || [];
+      const a2 = Array.isArray(r2) ? r2 : (r2 == null ? void 0 : r2.items) || (r2 == null ? void 0 : r2.records) || [];
+      const seen = /* @__PURE__ */ new Map();
+      [...a1, ...a2].forEach((m2) => {
+        if (m2.id) seen.set(m2.id, m2);
+      });
+      return [...seen.values()];
     } catch {
       return [];
     }
@@ -7835,18 +7846,18 @@ const messages = {
   async getThread(user_id, other_id) {
     try {
       const thread_id = [user_id, other_id].sort().join("_");
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?thread_id=${thread_id}&limit=500`);
+      const res = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiMessage?thread_id=${thread_id}&limit=500`);
       return Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
     } catch {
       return [];
     }
   },
   async markRead(id2) {
-    return request$1("PUT", `/apps/${APP_ID$5}/entities/SachiMessage/${id2}`, { is_read: true });
+    return request$1("PUT", `/apps/${APP_ID$6}/entities/SachiMessage/${id2}`, { is_read: true });
   },
   async getUnreadCount(user_id) {
     try {
-      const res = await request$1("GET", `/apps/${APP_ID$5}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=500`);
+      const res = await request$1("GET", `/apps/${APP_ID$6}/entities/SachiMessage?recipient_id=${user_id}&is_read=false&limit=500`);
       const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
       return items.filter((m2) => !m2.is_read).length;
     } catch {
@@ -7974,14 +7985,14 @@ const COUNTRIES = [
   "Zimbabwe"
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
-const APP_ID$4 = "69e79122bcc8fb5a04cfb834";
+const APP_ID$5 = "69e79122bcc8fb5a04cfb834";
 const BASE_URL$2 = "https://app.base44.com/api";
 async function lookupSachiUser(email) {
   try {
     const headers = { "Content-Type": "application/json" };
     try {
       const res = await fetch(
-        `${BASE_URL$2}/apps/${APP_ID$4}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
+        `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
         { headers }
       );
       const data = await res.json();
@@ -7994,7 +8005,7 @@ async function lookupSachiUser(email) {
     const sessionObj = existingSession ? JSON.parse(existingSession) : null;
     if (sessionObj == null ? void 0 : sessionObj.token) headers["Authorization"] = `Bearer ${sessionObj.token}`;
     const res2 = await fetch(
-      `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL$2}/apps/${APP_ID$5}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers }
     );
     const data2 = await res2.json();
@@ -8323,7 +8334,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL$2}/apps/${APP_ID$4}/entities/AthaVidUser`,
+        `${BASE_URL$2}/apps/${APP_ID$5}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8766,7 +8777,7 @@ function Terms() {
     ] })
   ] });
 }
-const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
+const APP_ID$4 = "69e79122bcc8fb5a04cfb834";
 const BASE_URL$1 = "https://app.base44.com/api";
 const COINS_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiCoin";
 const GIFTS = [
@@ -8802,7 +8813,7 @@ async function apiReq$1(method, path, body) {
 }
 async function getWallet(userId) {
   var _a;
-  const d = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
+  const d = await apiReq$1("GET", `/apps/${APP_ID$4}/entities/SachiCoinWallet?user_id=${userId}&limit=1`);
   return Array.isArray(d) ? d[0] : (_a = d == null ? void 0 : d.items) == null ? void 0 : _a[0];
 }
 async function sendGiftAPI(giftData) {
@@ -8816,11 +8827,11 @@ async function sendGiftAPI(giftData) {
   } catch {
     const wallet = await getWallet(giftData.sender_id);
     if (!wallet || wallet.coins < giftData.coin_cost) return { error: "Insufficient coins" };
-    await apiReq$1("PUT", `/apps/${APP_ID$3}/entities/SachiCoinWallet/${wallet.id}`, {
+    await apiReq$1("PUT", `/apps/${APP_ID$4}/entities/SachiCoinWallet/${wallet.id}`, {
       coins: wallet.coins - giftData.coin_cost,
       total_spent_coins: (wallet.total_spent_coins || 0) + giftData.coin_cost
     });
-    const gift = await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiGift`, giftData);
+    const gift = await apiReq$1("POST", `/apps/${APP_ID$4}/entities/SachiGift`, giftData);
     return { success: true, gift, coins_remaining: wallet.coins - giftData.coin_cost };
   }
 }
@@ -9208,7 +9219,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       try {
         const w2 = await getWallet(currentUser.id);
         setWallet(w2);
-        const g = await apiReq$1("GET", `/apps/${APP_ID$3}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
+        const g = await apiReq$1("GET", `/apps/${APP_ID$4}/entities/SachiGift?host_id=${currentUser.id}&sort=-created_date&limit=20`);
         setGifts(Array.isArray(g) ? g : (g == null ? void 0 : g.items) || []);
       } catch {
       }
@@ -9233,7 +9244,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
       setPayoutSent(true);
       setShowPayout(false);
     } catch {
-      await apiReq$1("POST", `/apps/${APP_ID$3}/entities/SachiPayoutRequest`, {
+      await apiReq$1("POST", `/apps/${APP_ID$4}/entities/SachiPayoutRequest`, {
         host_id: currentUser.id,
         host_username: currentUser.username || "host",
         host_email: currentUser.email,
@@ -9389,9 +9400,9 @@ function HostEarningsPanel({ currentUser, onClose }) {
     ] })
   ] });
 }
-const APP_ID$2 = "69e79122bcc8fb5a04cfb834";
+const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
 const BASE_URL = "https://app.base44.com/api";
-const APP_BASE$1 = `/apps/${APP_ID$2}`;
+const APP_BASE$1 = `/apps/${APP_ID$3}`;
 async function apiReq(method, path, body) {
   const token = localStorage.getItem("sachi_token");
   const headers = { "Content-Type": "application/json" };
@@ -11276,9 +11287,9 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
           video_id: video.id,
           user_id: currentUser.id,
           content: text.trim(),
-          comment_text: text.trim(),
           username,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
+          comment_text: text.trim(),
           likes_count: 0
         });
         setList((prev) => [...prev, c]);
@@ -11387,8 +11398,8 @@ function CommentSheet({ video, currentUser, onClose, onCommentPosted, onNeedAuth
       if (!editText.trim()) return;
       setSaving(true);
       try {
-        await comments.update(c.id, { comment_text: editText.trim(), content: editText.trim() });
-        setList((prev) => prev.map((x2) => x2.id === c.id ? { ...x2, comment_text: editText.trim(), content: editText.trim() } : x2));
+        await comments.update(c.id, { comment_text: editText.trim() });
+        setList((prev) => prev.map((x2) => x2.id === c.id ? { ...x2, comment_text: editText.trim() } : x2));
         setEditing(false);
       } catch (e) {
         alert("Could not save edit.");
@@ -11928,7 +11939,27 @@ function VideoPlayer({
         }
         el2._hls = null;
       }
-      const hls = new window.Hls({ maxBufferLength: 30, startLevel: -1, enableWorker: false });
+      const hls = new window.Hls({
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        startLevel: 99,
+        // always start at HIGHEST quality level available
+        autoLevelCapping: -1,
+        // no cap — allow any quality level
+        abrEwmaDefaultEstimate: 2e7,
+        // assume 20Mbps — forces highest tier immediately
+        abrBandWidthFactor: 1,
+        // use 100% of measured bandwidth
+        abrBandWidthUpFactor: 1,
+        // upgrade quality instantly when signal allows
+        capLevelToPlayerSize: false,
+        // never cap quality to screen pixel size
+        enableWorker: true,
+        lowLatencyMode: false,
+        backBufferLength: 30,
+        progressive: true
+        // start rendering as soon as first bytes arrive
+      });
       hls.loadSource(url);
       hls.attachMedia(el2);
       hls.on(window.Hls.Events.MANIFEST_PARSED, tryPlay);
@@ -12029,7 +12060,7 @@ function VideoPlayer({
             });
           }
         },
-        style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }
+        style: { width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block", imageRendering: "high-quality", WebkitBackfaceVisibility: "hidden", backfaceVisibility: "hidden", transform: "translateZ(0)" }
       }
     ),
     video.sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx("audio", { ref: soundRef, src: video.sound_url, loop: true, preload: "none", style: { display: "none" } }),
@@ -12974,7 +13005,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
           style: { display: "flex", flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" },
           onClick: tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name)),
           children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }, children: video.display_name || video.username }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 4 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 16, letterSpacing: -0.3 }, children: video.display_name || video.username }),
+              video._is_verified && /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", style: { flexShrink: 0 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "12", fill: "#1D9BF0" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M9.5 16.5l-3.5-3.5 1.4-1.4 2.1 2.1 5.6-5.6 1.4 1.4z", fill: "white" })
+              ] }),
+              video._badge === "FC" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "linear-gradient(135deg,#FFD700,#FF8C00)", color: "#000", padding: "1px 6px", borderRadius: 20, fontWeight: 800, letterSpacing: 0.3 }, children: "FC" }),
+              video._badge === "MOD" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "rgba(107,255,154,0.25)", color: "#6BFFB8", padding: "1px 6px", borderRadius: 20, fontWeight: 800, border: "1px solid rgba(107,255,154,0.4)" }, children: "MOD" })
+            ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.35)", fontSize: 12 }, children: [
               "@",
               video.username
@@ -15779,7 +15818,287 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
     ] })
   ] });
 }
-function UserProfileSheet({ userId, username, currentUser, onClose }) {
+const APP_ID$2 = "69e79122bcc8fb5a04cfb834";
+function calcVibeScore(videoList, followersCount) {
+  if (!videoList.length) return 0;
+  const totalLikes = videoList.reduce((s, v2) => s + (v2.likes_count || 0), 0);
+  const avgLikes = totalLikes / videoList.length;
+  const postFreq = Math.min(videoList.length / 10, 1);
+  const followerScore = Math.min(followersCount / 500, 1);
+  const engagementScore = Math.min(avgLikes / 50, 1);
+  const raw = followerScore * 35 + engagementScore * 40 + postFreq * 25;
+  return Math.round(Math.min(raw, 100));
+}
+function vibeColor(score) {
+  if (score >= 80) return ["#FFD700", "#FF8C00"];
+  if (score >= 60) return ["#a855f7", "#6c63ff"];
+  if (score >= 40) return ["#22c55e", "#06b6d4"];
+  return ["#64748b", "#94a3b8"];
+}
+function vibeLabel(score) {
+  if (score >= 90) return "🔥 On Fire";
+  if (score >= 75) return "⚡ Electrifying";
+  if (score >= 60) return "✨ Rising";
+  if (score >= 40) return "🌱 Building";
+  return "👋 Just Started";
+}
+function HoneycombGrid({ videos: vids, onSelect }) {
+  if (!vids.length) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🎬" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No videos yet" })
+  ] });
+  const CELL = 108;
+  const GAP = 6;
+  const OFFSET = (CELL + GAP) / 2;
+  const PER_ROW = 3;
+  const rows = [];
+  for (let i = 0; i < vids.length; i += PER_ROW) {
+    rows.push(vids.slice(i, i + PER_ROW));
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", paddingBottom: 100 }, children: rows.map((row, ri2) => {
+    const isOffset = ri2 % 2 === 1;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      display: "flex",
+      justifyContent: isOffset ? "flex-start" : "center",
+      paddingLeft: isOffset ? OFFSET : 0,
+      marginTop: ri2 === 0 ? 12 : -19.440000000000012 - 2,
+      gap: GAP,
+      paddingRight: 8,
+      paddingLeft: isOffset ? OFFSET + 8 : 8
+    }, children: row.map((v2, ci2) => /* @__PURE__ */ jsxRuntimeExports.jsx(HexCell, { video: v2, size: CELL, onSelect: () => onSelect(ri2 * PER_ROW + ci2) }, v2.id)) }, ri2);
+  }) });
+}
+function HexCell({ video: v2, size, onSelect }) {
+  const thumb = v2.thumbnail_url ? resolveMediaUrl(v2.thumbnail_url) : null;
+  const hasLikes = (v2.likes_count || 0) > 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: onSelect, style: {
+    width: size,
+    height: size,
+    borderRadius: "50%",
+    overflow: "hidden",
+    cursor: "pointer",
+    position: "relative",
+    flexShrink: 0,
+    border: "2px solid rgba(245,200,66,0.35)",
+    boxShadow: "0 4px 18px rgba(0,0,0,0.5)",
+    background: "#111"
+  }, children: [
+    thumb ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: thumb, style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "video",
+      {
+        src: resolveMediaUrl(v2.video_url),
+        muted: true,
+        playsInline: true,
+        preload: "metadata",
+        style: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
+        onLoadedMetadata: (e) => {
+          try {
+            e.target.currentTime = 1;
+          } catch {
+          }
+        }
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "radial-gradient(circle at 60% 70%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 60%)" } }),
+    hasLikes && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      position: "absolute",
+      bottom: 14,
+      left: 0,
+      right: 0,
+      textAlign: "center",
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: 800,
+      textShadow: "0 1px 4px rgba(0,0,0,0.9)"
+    }, children: [
+      "❤️ ",
+      v2.likes_count
+    ] }),
+    !v2.is_photo && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      top: 10,
+      right: 12,
+      width: 16,
+      height: 16,
+      borderRadius: "50%",
+      background: "rgba(255,255,255,0.2)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 7, color: "#fff" }, children: "▶" }) })
+  ] });
+}
+function SachiFamRow({ userId }) {
+  const [fans, setFans] = React.useState([]);
+  React.useEffect(() => {
+    request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?limit=500`).then((res) => {
+      const all = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+      const counts = {};
+      const avatarMap = {};
+      for (const l2 of all) {
+        if (!l2.username) continue;
+        counts[l2.username] = (counts[l2.username] || 0) + 1;
+        if (l2.avatar_url) avatarMap[l2.username] = l2.avatar_url;
+      }
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([uname, cnt]) => ({ username: uname, count: cnt, avatar: avatarMap[uname] }));
+      setFans(sorted);
+    }).catch(() => {
+    });
+  }, [userId]);
+  if (!fans.length) return null;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px 6px" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }, children: "🫂 Sachi Fam" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }, children: fans.map((f2) => {
+      var _a;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flexShrink: 0, textAlign: "center" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          overflow: "hidden",
+          border: "2px solid rgba(245,200,66,0.5)",
+          background: "#1a1a2e",
+          marginBottom: 3
+        }, children: f2.avatar ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: f2.avatar, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg,#6c63ff,#a855f7)",
+          color: "#fff",
+          fontWeight: 800,
+          fontSize: 16
+        }, children: (_a = f2.username[0]) == null ? void 0 : _a.toUpperCase() }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          color: "rgba(255,255,255,0.55)",
+          fontSize: 9,
+          fontWeight: 600,
+          maxWidth: 44,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap"
+        }, children: [
+          "@",
+          f2.username
+        ] })
+      ] }, f2.username);
+    }) })
+  ] });
+}
+function CreatorCard({ videoList, profile }) {
+  const totalLikes = videoList.reduce((s, v2) => s + (v2.likes_count || 0), 0);
+  const memberSince = (profile == null ? void 0 : profile.created_date) ? new Date(profile.created_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
+  const streak = React.useMemo(() => {
+    if (!videoList.length) return 0;
+    const dates = [...new Set(videoList.map(
+      (v2) => v2.created_date ? new Date(v2.created_date).toDateString() : null
+    ).filter(Boolean))].sort((a, b) => new Date(b) - new Date(a));
+    let s = 0;
+    let cur = /* @__PURE__ */ new Date();
+    cur.setHours(0, 0, 0, 0);
+    for (const d of dates) {
+      const dt = new Date(d);
+      dt.setHours(0, 0, 0, 0);
+      const diff = Math.round((cur - dt) / 864e5);
+      if (diff <= 1) {
+        s++;
+        cur = dt;
+      } else break;
+    }
+    return s;
+  }, [videoList]);
+  const cards = [
+    { icon: "🔥", label: "Day Streak", value: streak || "—" },
+    { icon: "❤️", label: "Total Love", value: totalLikes >= 1e3 ? `${(totalLikes / 1e3).toFixed(1)}K` : totalLikes },
+    { icon: "🎬", label: "Videos", value: videoList.length },
+    { icon: "📅", label: "Since", value: memberSince || "—" }
+  ];
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }, children: cards.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 16,
+    padding: "12px 14px",
+    display: "flex",
+    alignItems: "center",
+    gap: 10
+  }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22 }, children: c.icon }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 16, lineHeight: 1 }, children: c.value }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginTop: 2 }, children: c.label })
+    ] })
+  ] }, c.label)) });
+}
+function MoodBanner({ videoList }) {
+  const topVideo = React.useMemo(() => {
+    if (!videoList.length) return null;
+    return [...videoList].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))[0];
+  }, [videoList]);
+  const bannerSrc = (topVideo == null ? void 0 : topVideo.video_url) ? resolveMediaUrl(topVideo.video_url) : null;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, height: 200, overflow: "hidden", zIndex: 0 }, children: [
+    bannerSrc ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "video",
+      {
+        src: bannerSrc,
+        autoPlay: true,
+        muted: true,
+        loop: true,
+        playsInline: true,
+        style: { width: "100%", height: "100%", objectFit: "cover", opacity: 0.35, filter: "blur(2px) saturate(1.4)" }
+      }
+    ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", background: "linear-gradient(135deg,#1a0533,#0d1b3e,#1a0533)" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(15,15,26,0.1) 0%, rgba(15,15,26,0.7) 60%, #0f0f1a 100%)" } })
+  ] });
+}
+function VibeRing({ score, avatarUrl, size = 90 }) {
+  const [c1, c2] = vibeColor(score);
+  const r2 = size / 2;
+  const stroke = 3.5;
+  const circ = 2 * Math.PI * (r2 - stroke);
+  const pct = score / 100;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: size, height: size, flexShrink: 0 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+      position: "absolute",
+      inset: -4,
+      borderRadius: "50%",
+      background: `radial-gradient(circle, ${c1}33 0%, transparent 70%)`,
+      animation: "vibeGlow 2.5s ease-in-out infinite alternate"
+    } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: size, height: size, style: { position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: r2, cy: r2, r: r2 - stroke, fill: "none", stroke: "rgba(255,255,255,0.08)", strokeWidth: stroke }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "circle",
+        {
+          cx: r2,
+          cy: r2,
+          r: r2 - stroke,
+          fill: "none",
+          stroke: `url(#vg_${score})`,
+          strokeWidth: stroke + 1,
+          strokeDasharray: circ,
+          strokeDashoffset: circ * (1 - pct),
+          strokeLinecap: "round"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("defs", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("linearGradient", { id: `vg_${score}`, x1: "0%", y1: "0%", x2: "100%", y2: "0%", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "0%", stopColor: c1 }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "100%", stopColor: c2 })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: avatarUrl, style: {
+      position: "absolute",
+      top: stroke + 2,
+      left: stroke + 2,
+      width: size - stroke * 2 - 4,
+      height: size - stroke * 2 - 4,
+      borderRadius: "50%",
+      objectFit: "cover",
+      background: "#1a1a2e"
+    } })
+  ] });
+}
+function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = "Back" }) {
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -15803,9 +16122,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         return;
       }
       const fetched = await Promise.all(
-        videoIds.map(
-          (id2) => request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${id2}`).catch(() => null)
-        )
+        videoIds.map((id2) => request$1("GET", `/apps/${APP_ID$2}/entities/SachiVideo/${id2}`).catch(() => null))
       );
       setSavedVideos(fetched.filter(Boolean));
     } catch (e) {
@@ -15818,18 +16135,32 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   React.useEffect(() => {
     setLoading(true);
     Promise.all([
-      request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=200`).catch(() => null),
+      request$1("GET", `/apps/${APP_ID$2}/entities/AthaVidUser?limit=200`).catch(() => null),
       videos.byUser(userId).catch(() => []),
-      // Live follower count: how many people follow this profile
-      request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
-      // Live following count: how many people this profile follows
-      request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null)
-    ]).then(([userRes, vids, followersRes, followingRes]) => {
+      request$1("GET", `/apps/${APP_ID$2}/entities/Follow?following_id=${userId}&limit=500`).catch(() => null),
+      request$1("GET", `/apps/${APP_ID$2}/entities/Follow?follower_id=${userId}&limit=500`).catch(() => null),
+      request$1("GET", `/apps/${APP_ID$2}/entities/SachiUser?limit=200`).catch(() => null)
+    ]).then(([userRes, vids, followersRes, followingRes, sachiRes]) => {
       const allUsers = (userRes == null ? void 0 : userRes.items) || userRes || [];
       const u2 = allUsers.find((x2) => x2.id === userId || x2.created_by === userId) || null;
       const liveFollowers = ((followersRes == null ? void 0 : followersRes.items) || followersRes || []).length;
       const liveFollowing = ((followingRes == null ? void 0 : followingRes.items) || followingRes || []).length;
-      setProfile(u2 ? { ...u2, followers_count: liveFollowers, following_count: liveFollowing } : { followers_count: liveFollowers, following_count: liveFollowing });
+      const sachiUsers = (sachiRes == null ? void 0 : sachiRes.items) || sachiRes || [];
+      const sachiUser = sachiUsers.find((x2) => x2.id === userId || x2.username === username) || null;
+      setProfile(u2 ? {
+        ...u2,
+        followers_count: liveFollowers,
+        following_count: liveFollowing,
+        badge: (sachiUser == null ? void 0 : sachiUser.badge) || null,
+        is_verified: (sachiUser == null ? void 0 : sachiUser.is_verified) || false,
+        created_date: (sachiUser == null ? void 0 : sachiUser.created_date) || (u2 == null ? void 0 : u2.created_date)
+      } : {
+        followers_count: liveFollowers,
+        following_count: liveFollowing,
+        badge: (sachiUser == null ? void 0 : sachiUser.badge) || null,
+        is_verified: (sachiUser == null ? void 0 : sachiUser.is_verified) || false,
+        created_date: sachiUser == null ? void 0 : sachiUser.created_date
+      });
       const vidList = Array.isArray(vids) ? vids : (vids == null ? void 0 : vids.items) || [];
       setUserVideos(vidList);
       setLoading(false);
@@ -15852,19 +16183,13 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
         setFollowRecord(null);
         setProfile((p2) => p2 ? { ...p2, followers_count: Math.max(0, (p2.followers_count || 1) - 1) } : p2);
       } else {
-        const rec = await follows.follow(
-          currentUser.id,
-          currentUser.username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]),
-          userId,
-          username
-        );
+        const rec = await follows.follow(currentUser.id, currentUser.username || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]), userId, username);
         setFollowRecord(rec);
         setProfile((p2) => p2 ? { ...p2, followers_count: (p2.followers_count || 0) + 1 } : p2);
       }
       try {
-        const myFollowingRes = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`);
+        const myFollowingRes = await request$1("GET", `/apps/${APP_ID$2}/entities/Follow?follower_id=${currentUser.id}&limit=500`);
         const myFollowingCount = ((myFollowingRes == null ? void 0 : myFollowingRes.items) || myFollowingRes || []).length;
-        setProfile((p2) => p2 ? { ...p2 } : p2);
         localStorage.setItem(`sachi_following_count_${currentUser.id}`, myFollowingCount);
       } catch (e) {
       }
@@ -15875,228 +16200,261 @@ function UserProfileSheet({ userId, username, currentUser, onClose }) {
   };
   const displayName = (profile == null ? void 0 : profile.display_name) || username || "User";
   const avatarUrl = (profile == null ? void 0 : profile.avatar_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`;
+  const vibeScore = calcVibeScore(userVideos, (profile == null ? void 0 : profile.followers_count) || 0);
+  const [vc1, vc2] = vibeColor(vibeScore);
+  const activeVideos = profileTab === "saved" ? savedVideos : userVideos;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, zIndex: 4e3, display: "flex", alignItems: "flex-end", justifyContent: "center" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: onClose, style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)" } }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-        position: "relative",
-        background: "#0f0f1a",
-        borderRadius: "24px 24px 0 0",
-        width: "100%",
-        maxWidth: 480,
-        maxHeight: "88vh",
+    /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `
+        @keyframes vibeGlow {
+          from { opacity:0.6; transform:scale(0.98); }
+          to { opacity:1; transform:scale(1.03); }
+        }
+        @keyframes fadeInUp {
+          from { opacity:0; transform:translateY(16px); }
+          to { opacity:1; transform:translateY(0); }
+        }
+      ` }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 4e3, background: "#0f0f1a", display: "flex", flexDirection: "column", overflowY: "auto" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: "100%", minHeight: "100%", display: "flex", flexDirection: "column" }, children: [
+      !loading && /* @__PURE__ */ jsxRuntimeExports.jsx(MoodBanner, { videoList: userVideos }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
         display: "flex",
-        flexDirection: "column",
-        zIndex: 4001,
-        overflow: "hidden"
+        alignItems: "center",
+        padding: "14px 16px 10px",
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        background: "linear-gradient(to bottom, rgba(15,15,26,0.85) 0%, transparent 100%)",
+        backdropFilter: "blur(0px)"
+      }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: onClose, style: {
+        background: "rgba(0,0,0,0.4)",
+        border: "1px solid rgba(245,200,66,0.3)",
+        borderRadius: 20,
+        cursor: "pointer",
+        color: "#F5C842",
+        padding: "6px 16px 6px 10px",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        WebkitTapHighlightColor: "transparent"
       }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 40, height: 4, background: "#333", borderRadius: 99, margin: "14px auto 0", flexShrink: 0 } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: {
-          position: "absolute",
-          top: 12,
-          right: 16,
-          background: "none",
-          border: "none",
-          color: "#888",
-          fontSize: 22,
-          cursor: "pointer",
-          zIndex: 1
-        }, children: "✕" }),
-        loading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 60, color: "#555" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "⏳" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading profile..." })
-        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "16px 20px 20px", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 18 }, children: "←" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 13, fontWeight: 700 }, children: backLabel })
+      ] }) }),
+      loading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 80, color: "#555" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "⏳" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "Loading profile..." })
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { animation: "fadeInUp 0.4s ease forwards" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", zIndex: 5, padding: "0 20px 16px", textAlign: "center", marginTop: 80 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: "center", marginBottom: 12 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(VibeRing, { score: vibeScore, avatarUrl, size: 96 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              position: "absolute",
+              bottom: -6,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: `linear-gradient(135deg, ${vc1}, ${vc2})`,
+              borderRadius: 20,
+              padding: "2px 10px",
+              fontSize: 11,
+              fontWeight: 800,
+              color: "#000",
+              whiteSpace: "nowrap",
+              boxShadow: `0 2px 10px ${vc1}66`
+            }, children: [
+              vibeScore,
+              " · ",
+              vibeLabel(vibeScore)
+            ] })
+          ] }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, marginBottom: 2 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: displayName }),
+            (profile == null ? void 0 : profile.is_verified) && /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "12", fill: "#1D9BF0" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M9.5 16.5l-3.5-3.5 1.4-1.4 2.1 2.1 5.6-5.6 1.4 1.4z", fill: "white" })
+            ] }),
+            (profile == null ? void 0 : profile.badge) === "FC" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+              fontSize: 10,
+              background: "linear-gradient(135deg,#FFD700,#FF8C00)",
+              color: "#000",
+              padding: "2px 7px",
+              borderRadius: 20,
+              fontWeight: 800
+            }, children: "FC" }),
+            (profile == null ? void 0 : profile.badge) === "MOD" && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: {
+              fontSize: 10,
+              background: "rgba(107,255,154,0.2)",
+              color: "#6BFFB8",
+              padding: "2px 7px",
+              borderRadius: 20,
+              fontWeight: 800,
+              border: "1px solid rgba(107,255,154,0.4)"
+            }, children: "MOD" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 6 }, children: [
+            "@",
+            username
+          ] }),
+          (profile == null ? void 0 : profile.bio) && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 13, marginBottom: 8, lineHeight: 1.5, maxWidth: 280, margin: "0 auto 8px" }, children: profile.bio }),
+          (profile == null ? void 0 : profile.location) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 12, marginBottom: 8 }, children: [
+            "📍 ",
+            profile.location
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            display: "flex",
+            justifyContent: "center",
+            gap: 0,
+            marginTop: 14,
+            marginBottom: 16,
+            background: "rgba(255,255,255,0.04)",
+            borderRadius: 20,
+            padding: "10px 4px",
+            border: "1px solid rgba(255,255,255,0.07)"
+          }, children: [
+            { value: userVideos.length, label: "Videos" },
+            { value: (profile == null ? void 0 : profile.followers_count) || 0, label: "Followers" },
+            { value: (profile == null ? void 0 : profile.following_count) || 0, label: "Following" },
+            { value: userVideos.reduce((s, v2) => s + (v2.likes_count || 0), 0), label: "❤️ Love" }
+          ].map((s, i, arr) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            flex: 1,
+            textAlign: "center",
+            borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
+            padding: "0 4px"
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: s.value >= 1e3 ? `${(s.value / 1e3).toFixed(1)}K` : s.value }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10 }, children: s.label })
+          ] }, s.label)) }),
+          !isOwnProfile && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, justifyContent: "center" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "img",
+              "button",
               {
-                src: avatarUrl,
-                style: { width: 80, height: 80, borderRadius: "50%", border: "3px solid #ff6b6b", marginBottom: 10, background: "#1a1a2e" }
+                onClick: doFollow,
+                disabled: followLoading,
+                style: {
+                  padding: "10px 32px",
+                  borderRadius: 24,
+                  background: followRecord ? "#22c55e" : "linear-gradient(135deg,#ff0000,#ff4444)",
+                  border: "none",
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  opacity: followLoading ? 0.6 : 1,
+                  boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.4)" : "0 2px 12px rgba(255,0,0,0.4)",
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation"
+                },
+                children: followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"
               }
             ),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18 }, children: displayName }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#666", fontSize: 13, marginBottom: 4 }, children: [
-              "@",
-              username
-            ] }),
-            (profile == null ? void 0 : profile.bio) && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#aaa", fontSize: 13, marginBottom: 8, lineHeight: 1.5 }, children: profile.bio }),
-            (profile == null ? void 0 : profile.location) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#666", fontSize: 12, marginBottom: 8 }, children: [
-              "📍 ",
-              profile.location
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "center", gap: 28, marginTop: 12, marginBottom: 14 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18 }, children: userVideos.length }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: "Videos" })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18 }, children: (profile == null ? void 0 : profile.followers_count) || 0 }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: "Followers" })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 18 }, children: (profile == null ? void 0 : profile.following_count) || 0 }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 11 }, children: "Following" })
-              ] })
-            ] }),
-            !isOwnProfile && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10, justifyContent: "center" }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => {
+                  onClose();
+                  window.__openDM && window.__openDM(userId, username, (profile == null ? void 0 : profile.avatar_url) || "", { userId, username });
+                },
+                style: {
+                  padding: "10px 22px",
+                  borderRadius: 24,
+                  background: "linear-gradient(135deg,#6c63ff,#a855f7)",
+                  border: "none",
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
+                  boxShadow: "0 2px 12px rgba(108,99,255,0.4)"
+                },
+                children: "💬 Message"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CreatorCard, { videoList: userVideos, profile }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SachiFamRow, { userId }),
+        userVideos.length >= 3 && (() => {
+          const top3 = [...userVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3);
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px 6px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }, children: "🏆 Highlight Reel" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }, children: top3.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { onClick: () => {
+              const idx = userVideos.findIndex((x2) => x2.id === v2.id);
+              if (idx >= 0) setPlayerIndex(idx);
+            }, style: { flexShrink: 0, width: 100, cursor: "pointer", position: "relative" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              width: 100,
+              height: 160,
+              borderRadius: 12,
+              overflow: "hidden",
+              border: i === 0 ? "2px solid #FFD700" : i === 1 ? "2px solid #C0C0C0" : "2px solid #CD7F32",
+              background: "#111"
+            }, children: [
+              v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "video",
                 {
-                  onClick: doFollow,
-                  disabled: followLoading,
-                  style: {
-                    padding: "10px 32px",
-                    borderRadius: 24,
-                    background: followRecord ? "#22c55e" : "#ff0000",
-                    border: "none",
-                    color: "#fff",
-                    fontWeight: 800,
-                    fontSize: 14,
-                    cursor: "pointer",
-                    opacity: followLoading ? 0.6 : 1,
-                    boxShadow: followRecord ? "0 2px 12px rgba(34,197,94,0.5)" : "0 2px 12px rgba(255,0,0,0.4)",
-                    transition: "background 0.25s, box-shadow 0.25s",
-                    WebkitTapHighlightColor: "transparent",
-                    touchAction: "manipulation"
-                  },
-                  children: followLoading ? "..." : followRecord ? "✓ Following" : "+ Follow"
+                  src: resolveMediaUrl(v2.video_url),
+                  muted: true,
+                  playsInline: true,
+                  preload: "metadata",
+                  style: { width: "100%", height: "100%", objectFit: "cover" },
+                  onLoadedMetadata: (e) => {
+                    try {
+                      e.target.currentTime = 1;
+                    } catch {
+                    }
+                  }
                 }
               ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  onClick: () => {
-                    onClose();
-                    window.__openDM && window.__openDM(userId, username, (profile == null ? void 0 : profile.avatar_url) || "");
-                  },
-                  style: {
-                    padding: "10px 22px",
-                    borderRadius: 24,
-                    background: "linear-gradient(135deg,#6c63ff,#a855f7)",
-                    border: "none",
-                    color: "#fff",
-                    fontWeight: 800,
-                    fontSize: 14,
-                    cursor: "pointer",
-                    WebkitTapHighlightColor: "transparent",
-                    boxShadow: "0 2px 12px rgba(108,99,255,0.4)"
-                  },
-                  children: "💬 Send Message"
-                }
-              )
-            ] })
-          ] }),
-          isOwnProfile && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 2 }, children: [{ id: "posts", label: "Posts", icon: "🎬" }, { id: "saved", label: "Saved", icon: "🔖" }].map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              onClick: () => setProfileTab(t2.id),
-              style: {
-                flex: 1,
-                background: "none",
-                border: "none",
-                borderBottom: profileTab === t2.id ? "2px solid #F5C842" : "2px solid transparent",
-                color: profileTab === t2.id ? "#F5C842" : "rgba(255,255,255,0.4)",
-                fontWeight: profileTab === t2.id ? 700 : 400,
-                fontSize: 13,
-                padding: "10px 0",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 5
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2.icon }),
-                " ",
-                t2.label
-              ]
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 6, left: 8, fontSize: 14 }, children: i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+                position: "absolute",
+                bottom: 4,
+                left: 0,
+                right: 0,
+                textAlign: "center",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 800,
+                textShadow: "0 1px 4px rgba(0,0,0,0.9)"
+              }, children: [
+                "❤️ ",
+                v2.likes_count || 0
+              ] })
+            ] }) }, v2.id)) })
+          ] });
+        })(),
+        isOwnProfile && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 0" }, children: [{ id: "posts", label: "Posts", icon: "🎬" }, { id: "saved", label: "Saved", icon: "🔖" }].map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => setProfileTab(t2.id),
+            style: {
+              flex: 1,
+              background: "none",
+              border: "none",
+              borderBottom: profileTab === t2.id ? "2px solid #F5C842" : "2px solid transparent",
+              color: profileTab === t2.id ? "#F5C842" : "rgba(255,255,255,0.4)",
+              fontWeight: profileTab === t2.id ? 700 : 400,
+              fontSize: 13,
+              padding: "10px 0",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5
             },
-            t2.id
-          )) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1, padding: 2 }, children: profileTab === "saved" ? savedLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: "Loading saved…" }) : savedVideos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🔖" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No saved posts yet" })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }, children: savedVideos.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              onClick: () => {
-                setPlayerIndex(i);
-              },
-              style: { position: "relative", aspectRatio: "1/1", background: "#111", overflow: "hidden", cursor: "pointer" },
-              children: [
-                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "video",
-                  {
-                    src: resolveMediaUrl(v2.video_url),
-                    style: { width: "100%", height: "100%", objectFit: "cover" },
-                    muted: true,
-                    playsInline: true,
-                    preload: "metadata",
-                    onLoadedMetadata: (e) => {
-                      try {
-                        e.target.currentTime = 1;
-                      } catch {
-                      }
-                    }
-                  }
-                ),
-                !v2.is_photo && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, opacity: 0.8 }, children: "▶" }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" } }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 4, left: 4, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", gap: 6 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                  "❤️ ",
-                  v2.likes_count || 0
-                ] }) })
-              ]
-            },
-            v2.id
-          )) }) : userVideos.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🎬" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No videos yet" })
-          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }, children: userVideos.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              onClick: () => setPlayerIndex(i),
-              style: { position: "relative", aspectRatio: "1/1", background: "#111", overflow: "hidden", cursor: "pointer" },
-              children: [
-                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "video",
-                  {
-                    src: resolveMediaUrl(v2.video_url),
-                    style: { width: "100%", height: "100%", objectFit: "cover" },
-                    muted: true,
-                    playsInline: true,
-                    preload: "metadata",
-                    onLoadedMetadata: (e) => {
-                      try {
-                        e.target.currentTime = 1;
-                      } catch {
-                      }
-                    }
-                  }
-                ),
-                !v2.is_photo && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22, opacity: 0.8 }, children: "▶" }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%)" } }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 4, left: 4, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", gap: 6 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                    "❤️ ",
-                    v2.likes_count || 0
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                    "👁 ",
-                    v2.views_count || 0
-                  ] })
-                ] })
-              ]
-            },
-            v2.id
-          )) }) })
-        ] })
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2.icon }),
+              " ",
+              t2.label
+            ]
+          },
+          t2.id
+        )) }),
+        profileTab === "saved" ? savedLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: "Loading saved…" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(HoneycombGrid, { videos: savedVideos, onSelect: (i) => setPlayerIndex(i) }) : /* @__PURE__ */ jsxRuntimeExports.jsx(HoneycombGrid, { videos: userVideos, onSelect: (i) => setPlayerIndex(i) })
       ] })
-    ] }),
+    ] }) }),
     playerIndex !== null && /* @__PURE__ */ jsxRuntimeExports.jsx(
       ProfileVideoPlayer,
       {
-        videos: profileTab === "saved" ? savedVideos : userVideos,
+        videos: activeVideos,
         startIndex: playerIndex,
         profile,
         username,
@@ -17334,6 +17692,502 @@ function GoLiveModal({ currentUser, onClose, onUploaded }) {
       ` })
   ] });
 }
+const HOLD_MS = 300;
+function TopPostsGrid({ topPosts, fmtCount }) {
+  const holdTimers = reactExports.useRef({});
+  const activeVideo = reactExports.useRef(null);
+  const stopActive = reactExports.useCallback(() => {
+    if (activeVideo.current) {
+      activeVideo.current.pause();
+      activeVideo.current.currentTime = 0;
+      activeVideo.current = null;
+    }
+  }, []);
+  const handleHoldStart = reactExports.useCallback((v2) => {
+    const src = v2.media_url || v2.video_url;
+    if (!src) return;
+    holdTimers.current[v2.id] = setTimeout(() => {
+      stopActive();
+      const el2 = document.getElementById(`top-preview-${v2.id}`);
+      if (el2) {
+        el2.currentTime = 0;
+        el2.play().catch(() => {
+        });
+        activeVideo.current = el2;
+      }
+    }, HOLD_MS);
+  }, [stopActive]);
+  const handleHoldEnd = reactExports.useCallback((v2) => {
+    clearTimeout(holdTimers.current[v2.id]);
+    stopActive();
+  }, [stopActive]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px 20px" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontWeight: 700, fontSize: 15, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }, children: [
+      "🔥 ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Your Top Posts" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { marginLeft: "auto", fontSize: 11, color: "#555", fontWeight: 400 }, children: [
+        topPosts.length,
+        " videos"
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }, children: topPosts.map((v2, i) => {
+      const thumb = v2.thumbnail_url || v2.cover_image || `https://ui-avatars.com/api/?name=${i + 1}&background=1a1b2e&color=F5C842&size=128`;
+      const src = v2.media_url || v2.video_url;
+      const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : "#CD7F32";
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          onTouchStart: () => handleHoldStart(v2),
+          onTouchEnd: () => handleHoldEnd(v2),
+          onTouchCancel: () => handleHoldEnd(v2),
+          onMouseDown: () => handleHoldStart(v2),
+          onMouseUp: () => handleHoldEnd(v2),
+          onMouseLeave: () => handleHoldEnd(v2),
+          style: {
+            position: "relative",
+            aspectRatio: "9/13",
+            borderRadius: 7,
+            overflow: "hidden",
+            border: "2px solid #F5C842",
+            background: "#111",
+            boxShadow: "0 0 6px rgba(245,200,66,0.3)",
+            cursor: "pointer",
+            userSelect: "none",
+            WebkitUserSelect: "none"
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: thumb,
+                alt: "",
+                style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 1 }
+              }
+            ),
+            src && /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "video",
+              {
+                id: `top-preview-${v2.id}`,
+                src,
+                muted: true,
+                playsInline: true,
+                loop: true,
+                preload: "none",
+                style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 2, opacity: 0 },
+                onPlay: (e) => {
+                  e.target.style.opacity = 1;
+                },
+                onPause: (e) => {
+                  e.target.style.opacity = 0;
+                }
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)", zIndex: 3 } }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 4, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 2, fontSize: 10, fontWeight: 800, color: "#fff", zIndex: 4 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 9 }, children: "❤️" }),
+              fmtCount(v2.likes_count || v2.like_count || 0)
+            ] }),
+            i === 0 && src && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 4, right: 3, fontSize: 8, color: "rgba(255,255,255,0.5)", zIndex: 4, letterSpacing: 0 }, children: "▶ hold" }),
+            i < 3 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 3, left: 3, background: rankColor, borderRadius: 99, width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 900, color: "#000", zIndex: 4 }, children: i + 1 })
+          ]
+        },
+        v2.id
+      );
+    }) })
+  ] });
+}
+const SACHI_APP_ID = "69e79122bcc8fb5a04cfb834";
+function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfile, unreadCount, notifCount, onOpenInbox, onOpenNotifications }) {
+  var _a;
+  const [stats, setStats] = reactExports.useState({ videoCount: 0, totalLikes: 0, followers: 0, following: 0 });
+  const [topPosts, setTopPosts] = reactExports.useState([]);
+  const [loading, setLoading] = reactExports.useState(true);
+  const [foundingCreator, setFoundingCreator] = reactExports.useState(false);
+  const [drawer, setDrawer] = reactExports.useState(null);
+  const [drawerData, setDrawerData] = reactExports.useState([]);
+  const [drawerLoading, setDrawerLoading] = reactExports.useState(false);
+  reactExports.useEffect(() => {
+    if (!currentUser) return;
+    loadStats();
+  }, [currentUser]);
+  async function loadStats() {
+    var _a2;
+    setLoading(true);
+    try {
+      const userVideos = await videos.byUser(currentUser.id).catch(() => []);
+      const videoArr = Array.isArray(userVideos) ? userVideos : (userVideos == null ? void 0 : userVideos.items) || (userVideos == null ? void 0 : userVideos.records) || [];
+      const totalLikes = videoArr.reduce((sum, v2) => sum + (v2.likes_count || v2.like_count || 0), 0);
+      const sorted = [...videoArr].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
+      setTopPosts(sorted.slice(0, 12));
+      const followersRes = await request$1("GET", `/apps/${SACHI_APP_ID}/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => []);
+      const followersArr = Array.isArray(followersRes) ? followersRes : (followersRes == null ? void 0 : followersRes.items) || (followersRes == null ? void 0 : followersRes.records) || [];
+      const followingRes = await follows.getFollowing(currentUser.id, currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0])).catch(() => []);
+      const followingArr = Array.isArray(followingRes) ? followingRes : (followingRes == null ? void 0 : followingRes.items) || (followingRes == null ? void 0 : followingRes.records) || [];
+      const sachiUserRes = await request$1("GET", `/apps/${SACHI_APP_ID}/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`).catch(() => []);
+      const sachiUsers = Array.isArray(sachiUserRes) ? sachiUserRes : (sachiUserRes == null ? void 0 : sachiUserRes.items) || (sachiUserRes == null ? void 0 : sachiUserRes.records) || [];
+      const sachiUser = sachiUsers.find((u2) => u2.email === currentUser.email);
+      if ((sachiUser == null ? void 0 : sachiUser.badge) === "FC") setFoundingCreator(true);
+      setStats({
+        videoCount: videoArr.length,
+        totalLikes,
+        followers: followersArr.length,
+        following: followingArr.length
+      });
+    } catch (e) {
+      console.warn("[CreatorDashboard] loadStats error", e);
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function openDrawer(type) {
+    var _a2, _b;
+    setDrawer(type);
+    setDrawerData([]);
+    setDrawerLoading(true);
+    try {
+      if (type === "videos") {
+        const res = await videos.byUser(currentUser.id).catch(() => []);
+        const arr = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+        setDrawerData(arr.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)));
+      } else if (type === "likes") {
+        const vRes = await videos.byUser(currentUser.id).catch(() => []);
+        const myVideos = Array.isArray(vRes) ? vRes : (vRes == null ? void 0 : vRes.items) || (vRes == null ? void 0 : vRes.records) || [];
+        const myVideoIds = myVideos.map((v2) => v2.id).filter(Boolean);
+        const likerMap = /* @__PURE__ */ new Map();
+        await Promise.all(
+          myVideoIds.map(
+            (vid) => request$1("GET", `/apps/${SACHI_APP_ID}/entities/SachiLike?video_id=${vid}&limit=200`).then((res) => {
+              const arr = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+              arr.forEach((r2) => {
+                const key = r2.username || r2.user_id;
+                if (key && !likerMap.has(key)) likerMap.set(key, r2);
+              });
+            }).catch(() => {
+            })
+          )
+        );
+        const myUsername = currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]);
+        likerMap.delete(myUsername);
+        likerMap.delete(currentUser.id);
+        const likers = [...likerMap.values()];
+        const enriched = await Promise.all(
+          likers.map(async (liker) => {
+            if (liker.avatar_url) return liker;
+            try {
+              const uname = liker.username;
+              if (!uname) return liker;
+              const res = await request$1("GET", `/apps/${SACHI_APP_ID}/entities/SachiUser?username=${encodeURIComponent(uname)}&limit=1`);
+              const arr = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+              if (arr.length > 0 && arr[0].avatar_url) {
+                return { ...liker, avatar_url: arr[0].avatar_url };
+              }
+            } catch (e) {
+            }
+            return liker;
+          })
+        );
+        setDrawerData(enriched);
+      } else if (type === "followers") {
+        const res = await follows.getFollowers(currentUser.id).catch(() => []);
+        const arr = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+        setDrawerData(arr);
+      } else if (type === "following") {
+        const res = await follows.getFollowing(currentUser.id, currentUser.username || ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0])).catch(() => []);
+        const arr = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+        setDrawerData(arr);
+      }
+    } catch (e) {
+      console.warn("[CreatorDashboard] drawer load error", e);
+    } finally {
+      setDrawerLoading(false);
+    }
+  }
+  const username = (currentUser == null ? void 0 : currentUser.username) || ((_a = currentUser == null ? void 0 : currentUser.email) == null ? void 0 : _a.split("@")[0]) || "You";
+  const avatarUrl = (currentUser == null ? void 0 : currentUser.avatar_url) || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1a1b2e&color=F5C842&size=128&bold=true&format=png`;
+  function fmtCount(n2) {
+    if (n2 >= 1e6) return (n2 / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
+    if (n2 >= 1e3) return (n2 / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
+    return String(n2);
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+    minHeight: "100dvh",
+    background: "#0B0C1A",
+    color: "#fff",
+    fontFamily: "'Inter', sans-serif",
+    paddingBottom: 90,
+    overflowY: "auto"
+  }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "calc(env(safe-area-inset-top, 0px) + 14px) 20px 10px",
+      position: "sticky",
+      top: 0,
+      background: "#0B0C1A",
+      zIndex: 10,
+      borderBottom: "1px solid rgba(255,255,255,0.05)"
+    }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-logo-new.png", alt: "Sachi", style: { width: 32, height: 32, borderRadius: 0, objectFit: "contain", filter: "drop-shadow(0 0 6px rgba(232,64,12,0.5))" } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 1 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 22, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 11, fontWeight: 700, color: "#F5C842", lineHeight: 1, marginBottom: 2 }, children: "™" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 16 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: onOpenInbox, style: { background: "none", border: "none", cursor: "pointer", position: "relative", padding: 4 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: unreadCount > 0 ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }) }),
+          unreadCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { position: "absolute", top: 0, right: 0, background: "#F5C842", color: "#0B0C1A", borderRadius: "50%", fontSize: 9, fontWeight: 800, width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center" }, children: unreadCount > 9 ? "9+" : unreadCount })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: onOpenNotifications, style: { background: "none", border: "none", cursor: "pointer", position: "relative", padding: 4 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: notifCount > 0 ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M13.73 21a2 2 0 0 1-3.46 0" })
+          ] }),
+          notifCount > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { position: "absolute", top: 0, right: 0, background: "#FF4444", color: "#fff", borderRadius: "50%", fontSize: 9, fontWeight: 800, width: 14, height: 14, display: "flex", alignItems: "center", justifyContent: "center" }, children: notifCount > 9 ? "9+" : notifCount })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 20px 12px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", marginBottom: 12 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: 88,
+          height: 88,
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #F5C842, #FF8C00)",
+          padding: 3
+        }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            src: avatarUrl,
+            alt: username,
+            style: { width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", display: "block" }
+          }
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", bottom: 4, right: 4, width: 14, height: 14, background: "#22C55E", borderRadius: "50%", border: "2px solid #0B0C1A" } })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontWeight: 800, fontSize: 20, marginBottom: 4 }, children: [
+        "@",
+        username
+      ] }),
+      foundingCreator && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        background: "rgba(245,200,66,0.15)",
+        border: "1px solid rgba(245,200,66,0.4)",
+        color: "#F5C842",
+        fontSize: 11,
+        fontWeight: 700,
+        borderRadius: 20,
+        padding: "3px 12px",
+        marginBottom: 8,
+        letterSpacing: 0.5
+      }, children: "✨ Founding Creator" }),
+      (currentUser == null ? void 0 : currentUser.bio) && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 13, textAlign: "center", maxWidth: 260, lineHeight: 1.5 }, children: currentUser.bio })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, padding: "0 16px 20px" }, children: [
+      { label: "Videos", value: fmtCount(stats.videoCount), type: "videos" },
+      { label: "Likes", value: fmtCount(stats.totalLikes), type: "likes" },
+      { label: "Followers", value: fmtCount(stats.followers), type: "followers" },
+      { label: "Following", value: fmtCount(stats.following), type: "following" }
+    ].map((s) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => openDrawer(s.type), style: {
+      background: "#141528",
+      border: "1px solid rgba(245,200,66,0.15)",
+      borderRadius: 12,
+      padding: "12px 6px",
+      textAlign: "center",
+      cursor: "pointer",
+      WebkitTapHighlightColor: "transparent",
+      transition: "border-color 0.15s",
+      active: { borderColor: "rgba(245,200,66,0.5)" }
+    }, children: [
+      loading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 24, background: "rgba(255,255,255,0.08)", borderRadius: 6, marginBottom: 4 } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 800, fontSize: 18, color: "#fff", lineHeight: 1 }, children: s.value }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 4, letterSpacing: 0.3 }, children: s.label })
+    ] }, s.label)) }),
+    topPosts.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(TopPostsGrid, { topPosts, fmtCount }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", margin: "0 16px 24px" } }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "0 16px", display: "flex", flexDirection: "column", gap: 14 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => onGoToFeed("following"),
+          style: {
+            width: "100%",
+            background: "#141528",
+            border: "1.5px solid rgba(245,200,66,0.5)",
+            borderRadius: 16,
+            padding: "18px 20px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            textAlign: "left",
+            boxShadow: "0 0 20px rgba(245,200,66,0.08)"
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: "rgba(245,200,66,0.12)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 22,
+              flexShrink: 0
+            }, children: "👥" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 800, fontSize: 16, color: "#fff", marginBottom: 2 }, children: "Following" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)" }, children: "Videos from people you follow" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginLeft: "auto", color: "rgba(245,200,66,0.6)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "9 18 15 12 9 6" }) }) })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => onGoToFeed("forYou"),
+          style: {
+            width: "100%",
+            background: "linear-gradient(135deg, #F5C842 0%, #FF8C00 100%)",
+            border: "none",
+            borderRadius: 16,
+            padding: "18px 20px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            textAlign: "left",
+            boxShadow: "0 4px 24px rgba(245,200,66,0.3)"
+          },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: "rgba(0,0,0,0.15)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 22,
+              flexShrink: 0
+            }, children: "🔥" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontWeight: 800, fontSize: 16, color: "#0B0C1A", marginBottom: 2 }, children: "For You" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "rgba(11,12,26,0.6)" }, children: "Discover everyone on Sachi" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginLeft: "auto", color: "rgba(11,12,26,0.5)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "9 18 15 12 9 6" }) }) })
+          ]
+        }
+      )
+    ] }),
+    drawer && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        onClick: () => setDrawer(null),
+        style: {
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.6)",
+          zIndex: 400,
+          display: "flex",
+          alignItems: "flex-end"
+        },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: (e) => e.stopPropagation(),
+            style: {
+              width: "100%",
+              maxWidth: 480,
+              margin: "0 auto",
+              background: "#141528",
+              borderRadius: "20px 20px 0 0",
+              maxHeight: "72dvh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden"
+            },
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px 12px", borderBottom: "1px solid rgba(255,255,255,0.07)" }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontWeight: 800, fontSize: 16, color: "#fff" }, children: drawer === "videos" ? "🎬 My Videos" : drawer === "likes" ? "❤️ People Who Liked You" : drawer === "followers" ? "👥 Followers" : "👣 Following" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setDrawer(null), style: { background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", fontSize: 22, lineHeight: 1, padding: 0 }, children: "×" })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", flex: 1, padding: "8px 0 20px" }, children: drawerLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "40px 0", fontSize: 14 }, children: "Loading…" }) : drawerData.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "40px 0", fontSize: 14 }, children: drawer === "followers" ? "No followers yet" : drawer === "following" ? "Not following anyone yet" : drawer === "likes" ? "No likes yet" : "No videos yet" }) : drawer === "followers" || drawer === "following" || drawer === "likes" ? (
+                // People list
+                drawerData.map((r2, i) => {
+                  const name = drawer === "followers" ? r2.follower_username || r2.follower_id || "Unknown" : drawer === "following" ? r2.following_username || r2.following_id || "Unknown" : r2.username || r2.user_id || "Unknown";
+                  const userId = drawer === "followers" ? r2.follower_id || r2.follower_username : drawer === "following" ? r2.following_id || r2.following_username : r2.user_id || r2.username;
+                  const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1a1b2e&color=F5C842&size=64&bold=true&format=png`;
+                  return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "div",
+                    {
+                      onClick: () => {
+                        const savedDrawer = drawer;
+                        setDrawer(null);
+                        if (onOpenProfile) onOpenProfile(userId, name, () => setDrawer(savedDrawer));
+                      },
+                      style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.04)" },
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(
+                          "img",
+                          {
+                            src: r2.follower_avatar || r2.following_avatar || r2.avatar_url || avatarFallback,
+                            alt: name,
+                            style: { width: 44, height: 44, borderRadius: "50%", objectFit: "cover", background: "#0B0C1A" },
+                            onError: (e) => {
+                              e.target.src = avatarFallback;
+                            }
+                          }
+                        ),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { fontWeight: 700, fontSize: 14, color: "#fff" }, children: [
+                            "@",
+                            name
+                          ] }),
+                          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }, children: "Tap to view profile" })
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "rgba(255,255,255,0.25)", fontSize: 18 }, children: "›" })
+                      ]
+                    },
+                    r2.id || i
+                  );
+                })
+              ) : (
+                // Video grid (videos + liked videos)
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2, padding: "0 2px" }, children: drawerData.map((r2, i) => {
+                  const thumb = r2.thumbnail_url || r2.cover_image || null;
+                  const likeCount = r2.likes_count || r2.like_count || 0;
+                  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", aspectRatio: "9/16", overflow: "hidden", background: "#141528", borderRadius: 4 }, children: [
+                    thumb ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "img",
+                      {
+                        src: thumb,
+                        alt: "",
+                        style: { width: "100%", height: "100%", objectFit: "cover" },
+                        onError: (e) => {
+                          e.target.style.display = "none";
+                        }
+                      }
+                    ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", background: "linear-gradient(135deg,#1a1b2e,#0B0C1A)", display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "28", height: "28", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(245,200,66,0.3)", strokeWidth: "1.5", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("polygon", { points: "23 7 16 12 23 17 23 7" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("rect", { x: "1", y: "5", width: "15", height: "14", rx: "2", ry: "2" })
+                    ] }) }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", bottom: 4, left: 4, fontSize: 11, fontWeight: 700, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.8)", display: "flex", alignItems: "center", gap: 2 }, children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "❤️" }),
+                      " ",
+                      likeCount
+                    ] })
+                  ] }, r2.id || i);
+                }) })
+              ) })
+            ]
+          }
+        )
+      }
+    )
+  ] });
+}
 function VideoManageGrid({ videos: vids, onRefresh }) {
   const [menuVideo, setMenuVideo] = React.useState(null);
   const [editVideo, setEditVideo] = React.useState(null);
@@ -17364,52 +18218,93 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
       setSaving(false);
     }
   };
-  if (!vids || vids.length === 0) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { gridColumn: "1/-1", textAlign: "center", padding: 40, color: "#555" }, children: [
+  if (!vids || vids.length === 0) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#555" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 8 }, children: "📹" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: "No videos yet" })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No videos yet" })
   ] });
+  const CELL = 109;
+  const GAP = 6;
+  const PER_ROW = 3;
+  const OFFSET = (CELL + GAP) / 2;
+  const rows = [];
+  for (let i = 0; i < vids.length; i += PER_ROW) {
+    rows.push(vids.slice(i, i + PER_ROW));
+  }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2 }, children: vids.map((v2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-      "div",
-      {
-        style: { position: "relative", aspectRatio: "9/16", background: "#111", overflow: "hidden", cursor: "pointer" },
-        onClick: () => setMenuVideo(v2),
-        children: [
-          v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), onError: (e) => {
-            e.target.style.display = "none";
-          }, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-            position: "absolute",
-            top: 6,
-            right: 6,
-            background: "rgba(0,0,0,0.6)",
-            borderRadius: "50%",
-            width: 24,
-            height: 24,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 14,
-            color: "#fff",
-            lineHeight: 1
-          }, children: "⋮" }),
-          v2.views_count > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-            position: "absolute",
-            bottom: 4,
-            left: 4,
-            background: "rgba(0,0,0,0.6)",
-            borderRadius: 8,
-            padding: "2px 6px",
-            fontSize: 10,
-            color: "#fff"
-          }, children: [
-            "👁 ",
-            v2.views_count
-          ] })
-        ]
-      },
-      v2.id
-    )) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingBottom: 12 }, children: rows.map((row, ri2) => {
+      const isOffset = ri2 % 2 === 1;
+      return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        display: "flex",
+        justifyContent: isOffset ? "flex-start" : "center",
+        marginTop: ri2 === 0 ? 12 : -19.620000000000005 - 2,
+        gap: GAP,
+        paddingLeft: isOffset ? OFFSET + 8 : 8,
+        paddingRight: 8
+      }, children: row.map((v2, ci2) => {
+        const thumb = v2.thumbnail_url ? resolveMediaUrl(v2.thumbnail_url) : null;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            onClick: () => setMenuVideo(v2),
+            style: {
+              width: CELL,
+              height: CELL,
+              borderRadius: "50%",
+              overflow: "hidden",
+              cursor: "pointer",
+              position: "relative",
+              flexShrink: 0,
+              border: "2px solid rgba(245,200,66,0.35)",
+              boxShadow: "0 4px 18px rgba(0,0,0,0.5)",
+              background: "#111"
+            },
+            children: [
+              thumb ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: thumb,
+                  onError: (e) => {
+                    e.target.style.display = "none";
+                  },
+                  style: { width: "100%", height: "100%", objectFit: "cover", display: "block" }
+                }
+              ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "radial-gradient(circle at 60% 70%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%)" } }),
+              (v2.likes_count || 0) > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+                position: "absolute",
+                bottom: 14,
+                left: 0,
+                right: 0,
+                textAlign: "center",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 800,
+                textShadow: "0 1px 4px rgba(0,0,0,0.9)"
+              }, children: [
+                "❤️ ",
+                v2.likes_count
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+                position: "absolute",
+                top: 10,
+                right: 12,
+                width: 18,
+                height: 18,
+                borderRadius: "50%",
+                background: "rgba(0,0,0,0.55)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 10,
+                color: "#fff",
+                lineHeight: 1
+              }, children: "⋮" })
+            ]
+          },
+          v2.id
+        );
+      }) }, ri2);
+    }) }),
     menuVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
@@ -17422,7 +18317,15 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
             onClick: (e) => e.stopPropagation(),
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, marginBottom: 20, alignItems: "center" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 54, height: 72, background: "#111", borderRadius: 8, overflow: "hidden", flexShrink: 0 }, children: menuVideo.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: menuVideo.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }, children: "🎬" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+                  width: 54,
+                  height: 54,
+                  background: "#111",
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                  border: "2px solid rgba(245,200,66,0.4)"
+                }, children: menuVideo.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(menuVideo.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }, children: "🎬" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: menuVideo.caption || "(no caption)" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginTop: 4 }, children: [
@@ -17582,7 +18485,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
     confirmDelete && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380, textAlign: "center" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🗑️" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 8 }, children: "Delete this video?" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "This can't be undone. The video will be permanently removed." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "This can't be undone." }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 10 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
@@ -18638,6 +19541,7 @@ function PodcastPage({ currentUser, onNeedAuth }) {
   ] });
 }
 function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile }) {
+  const [canGoBackToList, setCanGoBackToList] = React.useState(false);
   const [threads, setThreads] = reactExports.useState([]);
   const [loading, setLoading] = reactExports.useState(true);
   const [activeThread, setActiveThread] = reactExports.useState(null);
@@ -18691,7 +19595,8 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
     }, 300);
     return () => clearTimeout(t2);
   }, [userSearch]);
-  const openThread = async (senderId, senderUsername, senderAvatar) => {
+  const openThread = async (senderId, senderUsername, senderAvatar, fromList = false) => {
+    if (fromList) setCanGoBackToList(true);
     setActiveThread({ userId: senderId, username: senderUsername, avatar: senderAvatar });
     const res = await messages.getThread(currentUser.id, senderId);
     const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
@@ -18741,14 +19646,15 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
   if (activeThread) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 500, display: "flex", flexDirection: "column" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 14px)", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 12, background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
-        if (fromProfile) {
-          onClose();
-        } else {
+        if (canGoBackToList) {
+          setCanGoBackToList(false);
           setActiveThread(null);
           setThreadMsgs([]);
           loadInbox();
+        } else {
+          onClose();
         }
-      }, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 20, padding: 0 }, children: "←" }),
+      }, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 22, padding: "0 8px 0 0", lineHeight: 1 }, children: "←" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: activeThread.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + activeThread.username, style: { width: 36, height: 36, borderRadius: "50%", border: "2px solid rgba(108,99,255,0.4)" } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700 }, children: [
         "@",
@@ -18791,7 +19697,10 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
   ] });
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", inset: 0, background: "#0B0C1A", zIndex: 100, display: "flex", flexDirection: "column" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px", paddingTop: "calc(env(safe-area-inset-top,0px) + 16px)", borderBottom: "1px solid rgba(255,255,255,0.08)", background: "rgba(14,14,28,0.98)", backdropFilter: "blur(20px)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "✉️ Inbox" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onClose, style: { background: "none", border: "none", color: "#F5C842", cursor: "pointer", fontSize: 22, padding: 0, lineHeight: 1 }, children: "←" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: "✉️ Inbox" })
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
@@ -18872,7 +19781,7 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
         return /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
-            onClick: () => openThread(otherId, otherUsername, otherAvatar),
+            onClick: () => openThread(otherId, otherUsername, otherAvatar, true),
             style: { display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", background: unread ? "rgba(108,99,255,0.08)" : "transparent" },
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
@@ -18979,12 +19888,33 @@ function App() {
     };
     normalize();
   }, [currentUser == null ? void 0 : currentUser.email]);
+  React.useEffect(() => {
+    var _a2;
+    if (!currentUser) return;
+    const username2 = currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]);
+    if (!username2) return;
+    (async () => {
+      try {
+        const res = await follows.getFollowing(currentUser.id, username2);
+        const items = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || [];
+        const selfFollows = items.filter(
+          (r2) => r2.following_username === username2 || r2.following_id === currentUser.id
+        );
+        for (const r2 of selfFollows) {
+          await follows.unfollow(r2.id);
+          console.log("[sachi] Removed self-follow record:", r2.id);
+        }
+      } catch (e) {
+      }
+    })();
+  }, [currentUser == null ? void 0 : currentUser.id]);
   const isAdmin = (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "shakeebjasim.mail@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "helloshakeeb.mail@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "hasini.thisaravi@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "henderson.keith2@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
   const feedContainerRef = reactExports.useRef(null);
   const [feedKey, setFeedKey] = React.useState(0);
+  const [prevTab, setPrevTab] = React.useState(null);
   const [loading, setLoading] = reactExports.useState(true);
-  const [activeTab, setActiveTab] = reactExports.useState("feed");
+  const [activeTab, setActiveTab] = reactExports.useState("dashboard");
   const [unreadCount, setUnreadCount] = reactExports.useState(0);
   const [notifCount, setNotifCount] = reactExports.useState(0);
   const [inboxDMTarget, setInboxDMTarget] = reactExports.useState(null);
@@ -19015,9 +19945,16 @@ function App() {
       setNotifCount(0);
       return;
     }
+    setUnreadCount(0);
+    setNotifCount(0);
+    try {
+      localStorage.removeItem("sachi_unread_cache");
+    } catch (e) {
+    }
     const poll = async () => {
-      messages.getUnreadCount(currentUser.id).then(setUnreadCount).catch(() => {
-      });
+      messages.getUnreadCount(currentUser.id).then((count) => {
+        setUnreadCount(count);
+      }).catch(() => setUnreadCount(0));
       try {
         const res = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiNotification?recipient_id=${currentUser.id}&is_read=false&limit=50`);
         const items = Array.isArray(res) ? res : (res == null ? void 0 : res.records) || (res == null ? void 0 : res.items) || [];
@@ -19030,8 +19967,9 @@ function App() {
     return () => clearInterval(iv);
   }, [currentUser]);
   React.useEffect(() => {
-    window.__openDM = (userId, username2, avatar) => {
-      setInboxDMTarget({ userId, username: username2, avatar, fromProfile: true });
+    window.__openDM = (userId, username2, avatar, dmSourceProfile) => {
+      setInboxDMTarget({ userId, username: username2, avatar, fromProfile: true, sourceProfile: dmSourceProfile || null });
+      setPrevTab(activeTab);
       setActiveTab("inbox");
     };
     return () => {
@@ -19210,15 +20148,45 @@ function App() {
           return videos2;
         }
       };
+      const enrichWithBadges = async (videos2) => {
+        try {
+          const userIds = [...new Set(videos2.map((v2) => v2.user_id || v2.created_by).filter(Boolean))];
+          if (!userIds.length) return videos2;
+          const res = await request$1("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`);
+          const users = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+          const byId = {};
+          const byUsername = {};
+          for (const u2 of users) {
+            if (u2.id) byId[u2.id] = u2;
+            if (u2.username) byUsername[u2.username.toLowerCase()] = u2;
+          }
+          return videos2.map((v2) => {
+            const uid = v2.user_id || v2.created_by;
+            const sachiUser = byId[uid] || byUsername[(v2.username || "").toLowerCase()];
+            if (!sachiUser) return v2;
+            return {
+              ...v2,
+              _badge: sachiUser.badge || null,
+              // "FC", "MOD", etc.
+              _is_verified: sachiUser.is_verified || false
+              // blue check
+            };
+          });
+        } catch {
+          return videos2;
+        }
+      };
       if (append) {
         const tagged = await tagWithLiked(ranked2);
+        const enriched = await enrichWithBadges(tagged);
         setVideoList((prev) => {
           const existing = new Set(prev.map((v2) => v2.id));
-          return [...prev, ...tagged.filter((v2) => !existing.has(v2.id))];
+          return [...prev, ...enriched.filter((v2) => !existing.has(v2.id))];
         });
       } else {
         const tagged = await tagWithLiked(ranked2);
-        setVideoList(tagged);
+        const enriched = await enrichWithBadges(tagged);
+        setVideoList(enriched);
         if (onReady) onReady();
         requestAnimationFrame(() => {
           const el2 = feedContainerRef.current || window.__sachiEl;
@@ -19294,10 +20262,13 @@ function App() {
     }
   };
   const goHome = () => {
-    setActiveTab("feed");
-    setFeedPage(1);
-    setFeedKey((k2) => k2 + 1);
-    loadVideos(currentUser, false, 1);
+    if (activeTab === "feed") {
+      setFeedPage(1);
+      setFeedKey((k2) => k2 + 1);
+      loadVideos(currentUser, false, 1);
+    } else {
+      setActiveTab(currentUser ? "dashboard" : "feed");
+    }
   };
   reactExports.useEffect(() => {
     var _a2;
@@ -19421,8 +20392,19 @@ function App() {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Landing, { onEnter: () => setHasEntered(true), prefetchDone });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#0B0C1A", minHeight: "100svh", maxWidth: 480, margin: "0 auto", position: "relative", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, paddingTop: "env(safe-area-inset-top,0px)", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px", pointerEvents: "auto" }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 7 }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 300, display: activeTab === "dashboard" ? "none" : void 0, paddingTop: "env(safe-area-inset-top,0px)", overflow: "visible", background: "linear-gradient(to bottom, rgba(11,12,26,0.92) 0%, transparent 100%)", backdropFilter: "blur(8px)", pointerEvents: "none" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px 6px", pointerEvents: "auto" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 4 }, children: [
+        activeTab === "feed" && prevTab === "dashboard" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              setPrevTab(null);
+              setActiveTab("dashboard");
+            },
+            style: { background: "none", border: "none", cursor: "pointer", padding: "4px 6px 4px 0", WebkitTapHighlightColor: "transparent", display: "flex", alignItems: "center" },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "#F5C842", strokeWidth: "2.2", strokeLinecap: "round", strokeLinejoin: "round", children: /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "15 18 9 12 15 6" }) })
+          }
+        ),
         /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-logo-new.png", alt: "Sachi", style: { width: 36, height: 36, borderRadius: 0, objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(232,64,12,0.55))" } }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "baseline", gap: 1 }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 24, fontWeight: 900, letterSpacing: -0.5, background: "linear-gradient(135deg,#F5C842,#FF9500)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }, children: "Sachi" }),
@@ -19485,6 +20467,35 @@ function App() {
         }
       ) })
     ] }) }),
+    activeTab === "dashboard" && currentUser && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CreatorDashboard,
+      {
+        currentUser,
+        unreadCount,
+        notifCount,
+        onOpenInbox: () => {
+          setPrevTab("dashboard");
+          setActiveTab("inbox");
+        },
+        onOpenNotifications: () => {
+          setPrevTab("dashboard");
+          setActiveTab("activity");
+        },
+        onGoToFeed: (tab) => {
+          setFeedTab(tab);
+          setPrevTab("dashboard");
+          setActiveTab("feed");
+        },
+        onOpenProfile: (userId, username2, onBack) => setProfileSheet({ userId, username: username2, backLabel: "Back", onBack: onBack || null })
+      }
+    ),
+    activeTab === "dashboard" && !currentUser && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80dvh", gap: 16, padding: "0 32px" }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48 }, children: "👋" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22 }, children: "Welcome to Sachi" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 14, textAlign: "center", maxWidth: 260 }, children: "Sign in to see your dashboard, stats, and start watching" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setShowAuth(true), style: { marginTop: 8, background: "linear-gradient(135deg,#F5C842,#FF8C00)", color: "#0B0C1A", fontWeight: 800, fontSize: 16, border: "none", borderRadius: 14, padding: "14px 40px", cursor: "pointer" }, children: "Sign In" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setActiveTab("feed"), style: { background: "none", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.6)", fontSize: 14, borderRadius: 12, padding: "10px 24px", cursor: "pointer" }, children: "Browse Without Signing In" })
+    ] }),
     activeTab === "feed" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: (el2) => {
       feedContainerRef.current = el2;
       window.__sachiEl = el2;
@@ -19575,7 +20586,7 @@ function App() {
               },
               onNeedAuth: () => setShowAuth(true),
               onDelete: (id2) => setVideoList((prev) => prev.filter((v22) => v22.id !== id2)),
-              onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname }),
+              onProfileOpen: (uid, uname) => setProfileSheet({ userId: uid, username: uname, backLabel: "Feed", onBack: null }),
               followedUserIds,
               onFollowChange: handleFollowChange,
               onShareCount: (videoId, newCount) => setVideoList((prev) => prev.map((v22) => v22.id === videoId ? { ...v22, shares_count: newCount } : v22)),
@@ -19596,41 +20607,20 @@ function App() {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13 }, children: "Follow creators to see their posts here" })
       ] })
     ] }, feedKey),
-    activeTab === "profile" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A", position: "relative", zIndex: 10, isolation: "isolate" }, children: !currentUser ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 60 }, children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "div",
-        {
-          style: { position: "relative", display: "inline-block", cursor: "pointer", marginBottom: 16 },
-          onClick: () => setShowAuth(true),
-          children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-              width: 90,
-              height: 90,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.08)",
-              border: "3px solid rgba(245,200,66,0.4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 44
-            }, children: "👤" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-              position: "absolute",
-              bottom: 2,
-              right: 2,
-              background: "#F5C842",
-              borderRadius: "50%",
-              width: 26,
-              height: 26,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 13,
-              border: "2px solid #0B0C1A"
-            }, children: "📷" })
-          ]
-        }
-      ),
+    activeTab === "profile" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingTop: 0, paddingBottom: 80, minHeight: "100svh", background: "#0f0f1a", position: "relative", zIndex: 10, isolation: "isolate", overflowY: "auto" }, children: !currentUser ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 80 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        width: 90,
+        height: 90,
+        borderRadius: "50%",
+        background: "rgba(255,255,255,0.08)",
+        border: "3px solid rgba(245,200,66,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 44,
+        margin: "0 auto 16px",
+        cursor: "pointer"
+      }, onClick: () => setShowAuth(true), children: "👤" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20, marginBottom: 8 }, children: "You're not logged in" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 14, marginBottom: 24 }, children: "Sign up to post and build your profile" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -19641,180 +20631,315 @@ function App() {
           children: "Sign Up / Log In"
         }
       )
-    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "20px 20px 0", textAlign: "center" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 12, gap: 8 }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
+    ] }) : (() => {
+      const myVibeScore = (() => {
+        if (!myVideos.length) return 0;
+        const totalLikes = myVideos.reduce((s, v2) => s + (v2.likes_count || 0), 0);
+        const avgLikes = totalLikes / myVideos.length;
+        const postFreq = Math.min(myVideos.length / 10, 1);
+        const followerScore = Math.min(meFollowersCount / 500, 1);
+        const engScore = Math.min(avgLikes / 50, 1);
+        return Math.round(Math.min(followerScore * 35 + engScore * 40 + postFreq * 25, 100));
+      })();
+      const vibeColors = myVibeScore >= 80 ? ["#FFD700", "#FF8C00"] : myVibeScore >= 60 ? ["#a855f7", "#6c63ff"] : myVibeScore >= 40 ? ["#22c55e", "#06b6d4"] : ["#64748b", "#94a3b8"];
+      const vibeLabel2 = myVibeScore >= 90 ? "🔥 On Fire" : myVibeScore >= 75 ? "⚡ Electrifying" : myVibeScore >= 60 ? "✨ Rising" : myVibeScore >= 40 ? "🌱 Building" : "👋 Just Started";
+      const [vc1, vc2] = vibeColors;
+      const myAvatarUrl = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`;
+      const totalLoves = myVideos.reduce((s, v2) => s + (v2.likes_count || 0), 0);
+      const myStreak = (() => {
+        if (!myVideos.length) return 0;
+        const dates = [...new Set(myVideos.map((v2) => v2.created_date ? new Date(v2.created_date).toDateString() : null).filter(Boolean))].sort((a, b) => new Date(b) - new Date(a));
+        let s = 0;
+        let cur = /* @__PURE__ */ new Date();
+        cur.setHours(0, 0, 0, 0);
+        for (const d of dates) {
+          const dt = new Date(d);
+          dt.setHours(0, 0, 0, 0);
+          const diff = Math.round((cur - dt) / 864e5);
+          if (diff <= 1) {
+            s++;
+            cur = dt;
+          } else break;
+        }
+        return s;
+      })();
+      const memberSince = (currentUser == null ? void 0 : currentUser.created_date) ? new Date(currentUser.created_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
+      const top3 = [...myVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3);
+      const bannerVideo = myVideos.length ? [...myVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))[0] : null;
+      const bannerSrc = (bannerVideo == null ? void 0 : bannerVideo.video_url) ? bannerVideo.video_url.startsWith("http") ? bannerVideo.video_url : `https://customer-stream.cloudflare.com/${bannerVideo.video_url}/manifest/video.m3u8` : null;
+      const RSIZE = 96, rstroke = 3.5, rr = RSIZE / 2, rcirc = 2 * Math.PI * (rr - rstroke), rpct = myVibeScore / 100;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("style", { children: `@keyframes vibeGlow{from{opacity:.6;transform:scale(.98)}to{opacity:1;transform:scale(1.03)}} @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}` }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, height: 200, overflow: "hidden", zIndex: 0 }, children: [
+          bannerSrc ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "video",
             {
-              style: { position: "relative", display: "inline-block", cursor: "pointer" },
-              onClick: () => setShowAvatarPicker(true),
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "img",
-                  {
-                    src: avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
-                    style: { width: 90, height: 90, borderRadius: "50%", border: "3px solid #F5C842", display: "block", background: "rgba(255,255,255,0.05)" }
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-                  position: "absolute",
-                  bottom: 2,
-                  right: 2,
-                  background: "#F5C842",
-                  borderRadius: "50%",
-                  width: 26,
-                  height: 26,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 13,
-                  border: "2px solid #0B0C1A"
-                }, children: "✏️" })
-              ]
+              src: bannerSrc,
+              autoPlay: true,
+              muted: true,
+              loop: true,
+              playsInline: true,
+              style: { width: "100%", height: "100%", objectFit: "cover", opacity: 0.35, filter: "blur(2px) saturate(1.4)" }
             }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: () => setShowAvatarPicker(true),
-              style: {
-                background: "rgba(245,200,66,0.1)",
-                border: "1px solid rgba(245,200,66,0.3)",
-                borderRadius: 20,
-                padding: "6px 18px",
-                color: "#F5C842",
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer"
-              },
-              children: "Change Avatar"
-            }
-          )
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", background: "linear-gradient(135deg,#1a0533,#0d1b3e,#1a0533)" } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(15,15,26,0.1) 0%, rgba(15,15,26,0.7) 60%, #0f0f1a 100%)" } })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer" },
-            onClick: () => {
-              setEditProfileName((currentUser == null ? void 0 : currentUser.full_name) || "");
-              setShowEditProfile(true);
-            },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: currentUser.full_name || username }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 13, color: "#888" }, children: "✏️" })
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 13, marginTop: 2 }, children: [
-          "@",
-          username
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "center", gap: 0, marginTop: 20, marginBottom: 20, pointerEvents: "auto" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: "10px 24px" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: myVideos.length }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 12 }, children: "Videos" })
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              style: { textAlign: "center", padding: "10px 24px", background: "none", border: "none", cursor: "pointer", pointerEvents: "auto", WebkitTapHighlightColor: "transparent" },
-              onClick: async () => {
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", zIndex: 5, animation: "fadeInUp 0.4s ease forwards" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: 56 } }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: "center", marginBottom: 14 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: -4, borderRadius: "50%", background: `radial-gradient(circle,${vc1}33 0%,transparent 70%)`, animation: "vibeGlow 2.5s ease-in-out infinite alternate" } }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: RSIZE, height: RSIZE, style: { position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: rr, cy: rr, r: rr - rstroke, fill: "none", stroke: "rgba(255,255,255,0.08)", strokeWidth: rstroke }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "circle",
+                {
+                  cx: rr,
+                  cy: rr,
+                  r: rr - rstroke,
+                  fill: "none",
+                  stroke: `url(#mg)`,
+                  strokeWidth: rstroke + 1,
+                  strokeDasharray: rcirc,
+                  strokeDashoffset: rcirc * (1 - rpct),
+                  strokeLinecap: "round"
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("defs", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("linearGradient", { id: "mg", x1: "0%", y1: "0%", x2: "100%", y2: "0%", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "0%", stopColor: vc1 }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "100%", stopColor: vc2 })
+              ] }) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "relative", width: RSIZE, height: RSIZE, cursor: "pointer" }, onClick: () => setShowAvatarPicker(true), children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: myAvatarUrl, style: {
+                position: "absolute",
+                top: rstroke + 2,
+                left: rstroke + 2,
+                width: RSIZE - rstroke * 2 - 4,
+                height: RSIZE - rstroke * 2 - 4,
+                borderRadius: "50%",
+                objectFit: "cover",
+                background: "#1a1a2e"
+              } }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+                position: "absolute",
+                bottom: rstroke + 4,
+                right: rstroke + 4,
+                background: "#F5C842",
+                borderRadius: "50%",
+                width: 22,
+                height: 22,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 11,
+                border: "2px solid #0f0f1a"
+              }, children: "✏️" })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              position: "absolute",
+              bottom: -8,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: `linear-gradient(135deg,${vc1},${vc2})`,
+              borderRadius: 20,
+              padding: "2px 10px",
+              fontSize: 11,
+              fontWeight: 800,
+              color: "#000",
+              whiteSpace: "nowrap",
+              boxShadow: `0 2px 10px ${vc1}66`
+            }, children: [
+              myVibeScore,
+              " · ",
+              vibeLabel2
+            ] })
+          ] }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", marginTop: 18, padding: "0 20px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", marginBottom: 2 },
+                onClick: () => {
+                  setEditProfileName((currentUser == null ? void 0 : currentUser.full_name) || "");
+                  setShowEditProfile(true);
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: currentUser.full_name || username }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)" }, children: "✏️" })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 13, marginBottom: 6 }, children: [
+              "@",
+              username
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              display: "flex",
+              justifyContent: "center",
+              gap: 0,
+              marginTop: 14,
+              marginBottom: 16,
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 20,
+              padding: "10px 4px",
+              border: "1px solid rgba(255,255,255,0.07)"
+            }, children: [
+              { value: myVideos.length, label: "Videos", action: null },
+              { value: meFollowersCount, label: "Followers", action: async () => {
                 setShowFollowersList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
-                  const all = (r1 == null ? void 0 : r1.items) || r1 || [];
-                  const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
-                  setFollowersList(unique);
+                  const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const all = (r2 == null ? void 0 : r2.items) || r2 || [];
+                  setFollowersList([...new Map(all.map((f2) => [f2.id, f2])).values()]);
                 } catch (e) {
                   setFollowersList([]);
                 }
                 setFollowListLoading(false);
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: meFollowersCount }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 12, fontWeight: 600 }, children: "Followers" })
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "button",
-            {
-              style: { textAlign: "center", padding: "10px 24px", background: "none", border: "none", cursor: "pointer", pointerEvents: "auto", WebkitTapHighlightColor: "transparent" },
-              onClick: async () => {
+              } },
+              { value: meFollowingCount, label: "Following", action: async () => {
                 setShowFollowingList(true);
                 setFollowListLoading(true);
                 try {
-                  const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
-                  const all = (r1 == null ? void 0 : r1.items) || r1 || [];
-                  const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
-                  setFollowingList(unique);
+                  const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
+                  const all = (r2 == null ? void 0 : r2.items) || r2 || [];
+                  setFollowingList([...new Map(all.map((f2) => [f2.id, f2])).values()]);
                 } catch (e) {
                   setFollowingList([]);
                 }
                 setFollowListLoading(false);
+              } },
+              { value: totalLoves >= 1e3 ? `${(totalLoves / 1e3).toFixed(1)}K` : totalLoves, label: "❤️ Love", action: null }
+            ].map((s, i, arr) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                onClick: s.action || void 0,
+                style: {
+                  flex: 1,
+                  textAlign: "center",
+                  borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none",
+                  padding: "0 4px",
+                  cursor: s.action ? "pointer" : "default"
+                },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 16 }, children: s.value }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10 }, children: s.label })
+                ]
               },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 20 }, children: meFollowingCount }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 12, fontWeight: 600 }, children: "Following" })
-              ]
+              s.label
+            )) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "4px 16px 4px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }, children: [
+            { icon: "🔥", label: "Day Streak", value: myStreak || "—" },
+            { icon: "❤️", label: "Total Love", value: totalLoves >= 1e3 ? `${(totalLoves / 1e3).toFixed(1)}K` : totalLoves },
+            { icon: "🎬", label: "Videos", value: myVideos.length },
+            { icon: "📅", label: "Since", value: memberSince || "—" }
+          ].map((c) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 16,
+            padding: "12px 14px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10
+          }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 22 }, children: c.icon }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 16, lineHeight: 1 }, children: c.value }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginTop: 2 }, children: c.label })
+            ] })
+          ] }, c.label)) }),
+          top3.length >= 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px 6px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }, children: "🏆 Highlight Reel" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }, children: top3.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flexShrink: 0, width: 100, cursor: "pointer", position: "relative" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              width: 100,
+              height: 160,
+              borderRadius: 12,
+              overflow: "hidden",
+              border: i === 0 ? "2px solid #FFD700" : i === 1 ? "2px solid #C0C0C0" : "2px solid #CD7F32",
+              background: "#111"
+            }, children: [
+              v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "img",
+                {
+                  src: v2.thumbnail_url.startsWith("http") ? v2.thumbnail_url : `https://customer-stream.cloudflare.com/${v2.thumbnail_url}/thumbnails/thumbnail.jpg`,
+                  style: { width: "100%", height: "100%", objectFit: "cover" }
+                }
+              ) : null,
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 6, left: 8, fontSize: 14 }, children: i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+                position: "absolute",
+                bottom: 4,
+                left: 0,
+                right: 0,
+                textAlign: "center",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 800,
+                textShadow: "0 1px 4px rgba(0,0,0,0.9)"
+              }, children: [
+                "❤️ ",
+                v2.likes_count || 0
+              ] })
+            ] }) }, v2.id)) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "8px 0 0" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, margin: "0 16px 10px", textTransform: "uppercase" }, children: "🎬 My Videos" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(VideoManageGrid, { videos: myVideos, onRefresh: () => videos.myVideos(currentUser.id, currentUser.email).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => {
+            }) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 20px 8px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => window.location.href = "/founding-creator",
+              style: {
+                width: "100%",
+                padding: "15px 0",
+                background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                border: "1.5px solid rgba(245,200,66,0.4)",
+                borderRadius: 14,
+                color: "#F5C842",
+                fontWeight: 700,
+                fontSize: 15,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8
+              },
+              children: "🌸 Apply to be a Founding Creator"
             }
-          )
+          ) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "8px 20px 40px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                auth.signOut();
+                localStorage.removeItem("sachi_google_user");
+                setCurrentUser(null);
+                setActiveTab("feed");
+              },
+              style: {
+                width: "100%",
+                padding: "14px 0",
+                background: "rgba(255,50,50,0.1)",
+                border: "1.5px solid rgba(255,80,80,0.3)",
+                borderRadius: 14,
+                color: "#ff5555",
+                fontWeight: 700,
+                fontSize: 15,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8
+              },
+              children: "🚪 Log Out"
+            }
+          ) })
         ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(VideoManageGrid, { videos: myVideos, onRefresh: () => videos.myVideos(currentUser.id, currentUser.email).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => {
-      }) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "0 20px 12px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => window.location.href = "/founding-creator",
-          style: {
-            width: "100%",
-            padding: "15px 0",
-            background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
-            border: "1.5px solid rgba(245,200,66,0.4)",
-            borderRadius: 14,
-            color: "#F5C842",
-            fontWeight: 700,
-            fontSize: 15,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8
-          },
-          children: "🌸 Apply to be a Founding Creator"
-        }
-      ) }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "24px 20px 32px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        "button",
-        {
-          onClick: () => {
-            auth.signOut();
-            localStorage.removeItem("sachi_google_user");
-            setCurrentUser(null);
-            setActiveTab("feed");
-          },
-          style: {
-            width: "100%",
-            padding: "14px 0",
-            background: "rgba(255,50,50,0.1)",
-            border: "1.5px solid rgba(255,80,80,0.3)",
-            borderRadius: 14,
-            color: "#ff5555",
-            fontWeight: 700,
-            fontSize: 15,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8
-          },
-          children: "🚪 Log Out"
-        }
-      ) })
-    ] }) }),
+      ] });
+    })() }),
     activeTab === "explore" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { paddingTop: 70, paddingBottom: 80, minHeight: "100svh", background: "#0B0C1A" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "16px 16px 8px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.07)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, display: "flex", alignItems: "center", background: "rgba(255,255,255,0.08)", borderRadius: 22, padding: "8px 14px", gap: 8 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "rgba(255,255,255,0.4)", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
@@ -19896,7 +21021,15 @@ function App() {
       InboxPanel,
       {
         currentUser,
-        onClose: () => setActiveTab("feed"),
+        onClose: () => {
+          const dest = prevTab || "feed";
+          setPrevTab(null);
+          setActiveTab(dest);
+          if ((inboxDMTarget == null ? void 0 : inboxDMTarget.fromProfile) && (inboxDMTarget == null ? void 0 : inboxDMTarget.sourceProfile)) {
+            setProfileSheet({ ...inboxDMTarget.sourceProfile, backLabel: "Back", onBack: null });
+          }
+          setInboxDMTarget(null);
+        },
         initialDMTarget: inboxDMTarget,
         onOpen: () => setInboxDMTarget(null),
         fromProfile: (inboxDMTarget == null ? void 0 : inboxDMTarget.fromProfile) || false
@@ -19906,7 +21039,7 @@ function App() {
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 14 }, children: "🚀" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#0B0C1A", fontWeight: 800, fontSize: 12 }, children: "Invite" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, pointerEvents: "none", opacity: activeTab === "feed" && globalIsPlaying ? 0.25 : 1, transition: "opacity 0.4s ease" }, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 480, zIndex: 200, pointerEvents: "none", opacity: (activeTab === "feed" || activeTab === "dashboard") && globalIsPlaying ? 0.25 : 1, transition: "opacity 0.4s ease" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 480 70", xmlns: "http://www.w3.org/2000/svg", style: { position: "absolute", bottom: 0, left: 0, width: "100%", height: 70, display: "block" }, preserveAspectRatio: "none", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("defs", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("filter", { id: "navBlur", children: /* @__PURE__ */ jsxRuntimeExports.jsx("feGaussianBlur", { stdDeviation: "0.5" }) }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -19934,11 +21067,11 @@ function App() {
             onClick: goHome,
             style: { flex: 1, padding: "4px 8px 6px", background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, WebkitTapHighlightColor: "transparent", borderRadius: 32, transition: "background 0.15s", marginBottom: 4 },
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: activeTab === "feed" ? "#F5C842" : "none", stroke: activeTab === "feed" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { width: "22", height: "22", viewBox: "0 0 24 24", fill: activeTab === "feed" || activeTab === "dashboard" ? "#F5C842" : "none", stroke: activeTab === "feed" || activeTab === "dashboard" ? "#F5C842" : "#4A4A6A", strokeWidth: "1.8", strokeLinecap: "round", strokeLinejoin: "round", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z" }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "9 22 9 12 15 12 15 22" })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "feed" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "feed" ? 700 : 400, letterSpacing: 0.3 }, children: "Home" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: activeTab === "feed" || activeTab === "dashboard" ? "#F5C842" : "#4A4A6A", fontWeight: activeTab === "feed" || activeTab === "dashboard" ? 700 : 400, letterSpacing: 0.3 }, children: "Home" })
             ]
           }
         ),
@@ -20061,7 +21194,12 @@ function App() {
         userId: profileSheet.userId,
         username: profileSheet.username,
         currentUser,
-        onClose: () => setProfileSheet(null)
+        onClose: () => {
+          const cb2 = profileSheet == null ? void 0 : profileSheet.onBack;
+          setProfileSheet(null);
+          if (cb2) cb2();
+        },
+        backLabel: (profileSheet == null ? void 0 : profileSheet.backLabel) || "Back"
       }
     ),
     showFollowersList && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -20110,7 +21248,7 @@ function App() {
               },
               onClick: () => {
                 setShowFollowersList(false);
-                setProfileSheet({ userId: f2.follower_id, username: f2.follower_username });
+                setProfileSheet({ userId: f2.follower_id, username: f2.follower_username, backLabel: "Followers", onBack: () => setShowFollowersList(true) });
               },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -20180,7 +21318,7 @@ function App() {
               },
               onClick: () => {
                 setShowFollowingList(false);
-                setProfileSheet({ userId: f2.following_id, username: f2.following_username });
+                setProfileSheet({ userId: f2.following_id, username: f2.following_username, backLabel: "Following", onBack: () => setShowFollowingList(true) });
               },
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -20308,7 +21446,7 @@ function App() {
     showAuth && /* @__PURE__ */ jsxRuntimeExports.jsx(AuthModal, { onClose: () => setShowAuth(false), onSuccess: (user) => {
       setCurrentUser(user);
       setShowAuth(false);
-      setActiveTab("feed");
+      setActiveTab("dashboard");
       setFeedKey((k2) => k2 + 1);
       setLoginToast(true);
       setTimeout(() => setLoginToast(false), 4e3);
