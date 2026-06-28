@@ -67,16 +67,18 @@ export default function VideoPlayer({
       if (!window.Hls || !window.Hls.isSupported()) return;
       if (el._hls) { try { el._hls.destroy(); } catch (e) {} el._hls = null; }
       const hls = new window.Hls({
-        maxBufferLength: 60,          // deeper buffer = smoother playback
-        maxMaxBufferLength: 120,      // allow up to 2min buffer
-        startLevel: -1,               // let ABR pick start level
-        abrEwmaDefaultEstimate: 5000000, // assume 5Mbps connection — starts at high quality
-        abrBandWidthFactor: 0.95,     // use 95% of measured bandwidth
-        abrBandWidthUpFactor: 0.7,    // climb quality faster on good signal
-        capLevelToPlayerSize: false,  // don't cap quality to player pixel size
-        enableWorker: true,           // use web worker for better perf
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        startLevel: 99,               // always start at HIGHEST quality level available
+        autoLevelCapping: -1,         // no cap — allow any quality level
+        abrEwmaDefaultEstimate: 20000000, // assume 20Mbps — forces highest tier immediately
+        abrBandWidthFactor: 1.0,      // use 100% of measured bandwidth
+        abrBandWidthUpFactor: 1.0,    // upgrade quality instantly when signal allows
+        capLevelToPlayerSize: false,  // never cap quality to screen pixel size
+        enableWorker: true,
         lowLatencyMode: false,
         backBufferLength: 30,
+        progressive: true,            // start rendering as soon as first bytes arrive
       });
       hls.loadSource(url);
       hls.attachMedia(el);
@@ -178,7 +180,7 @@ export default function VideoPlayer({
             soundRef.current.play().catch(() => {});
           }
         }}
-        style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block" }}
+        style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none", display: "block", imageRendering: "high-quality", WebkitBackfaceVisibility: "hidden", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
       />
 
       {/* ── SOUND TRACK (separate audio element) ── */}
