@@ -20167,9 +20167,9 @@ function App() {
             return {
               ...v2,
               _badge: sachiUser.badge || null,
-              // "FC", "MOD", etc.
-              _is_verified: sachiUser.is_verified || false
-              // blue check
+              _is_verified: sachiUser.is_verified || false,
+              // Always use the latest avatar from SachiUser — this is the source of truth
+              avatar_url: sachiUser.avatar_url || v2.avatar_url || null
             };
           });
         } catch {
@@ -21549,16 +21549,24 @@ function App() {
       localStorage.setItem("avatar_last", url);
       localStorage.setItem("sachi_user", JSON.stringify({ ...currentUser, avatar_url: url }));
       try {
+        const suData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`);
+        const suList = Array.isArray(suData) ? suData : (suData == null ? void 0 : suData.items) || (suData == null ? void 0 : suData.records) || [];
+        const suMatch = suList.find((u2) => u2.email === currentUser.email || u2.id === currentUser.id);
+        if (suMatch) {
+          await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser/${suMatch.id}/`, { avatar_url: url });
+        }
+      } catch (e) {
+        console.warn("SachiUser avatar update failed:", e);
+      }
+      try {
         const usersData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
         const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
         const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
         if (match) {
-          if (url.startsWith("https://") || url.startsWith("http://")) {
-            await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
-          }
+          await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
         }
       } catch (e) {
-        console.warn("User entity update failed:", e);
+        console.warn("AthaVidUser avatar update failed:", e);
       }
       try {
         await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/auth/me`, { avatar_url: url });

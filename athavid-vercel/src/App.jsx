@@ -495,8 +495,10 @@ function App() {
             if (!sachiUser) return v;
             return {
               ...v,
-              _badge: sachiUser.badge || null,           // "FC", "MOD", etc.
-              _is_verified: sachiUser.is_verified || false, // blue check
+              _badge: sachiUser.badge || null,
+              _is_verified: sachiUser.is_verified || false,
+              // Always use the latest avatar from SachiUser — this is the source of truth
+              avatar_url: sachiUser.avatar_url || v.avatar_url || null,
             };
           });
         } catch { return videos; }
@@ -1532,25 +1534,32 @@ function App() {
         localStorage.setItem('avatar_last', url);
         localStorage.setItem('sachi_user', JSON.stringify({ ...currentUser, avatar_url: url }));
 
-        // Background sync to DB — works for ALL auth types (Google + email)
+        // 1. Update SachiUser (canonical — what the feed reads for avatars)
+        try {
+          const suData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`);
+          const suList = Array.isArray(suData) ? suData : (suData?.items || suData?.records || []);
+          const suMatch = suList.find(u => u.email === currentUser.email || u.id === currentUser.id);
+          if (suMatch) {
+            await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser/${suMatch.id}/`, { avatar_url: url });
+          }
+        } catch(e) { console.warn("SachiUser avatar update failed:", e); }
+
+        // 2. Update AthaVidUser (legacy fallback)
         try {
           const usersData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           if (match) {
-            if (url.startsWith("https://") || url.startsWith("http://")) {
-              // Already a URL (DiceBear, CDN etc) — direct entity update
-              await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
-            }
+            await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
           }
-        } catch(e) { console.warn("User entity update failed:", e); }
+        } catch(e) { console.warn("AthaVidUser avatar update failed:", e); }
 
-        // Also try auth/me update (works for email users)
+        // 3. Update auth/me (email users)
         try {
           await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/auth/me`, { avatar_url: url });
         } catch(e) { console.warn("Auth avatar update failed (ok for Google users):", e); }
 
-        // Update all existing videos so feed shows new avatar immediately
+        // 4. Backfill all your videos so feed shows new avatar immediately
         try {
           const vidsData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || currentUser.email?.split("@")[0])}&limit=200`);
           const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
