@@ -674,7 +674,21 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       <div style={{ position:"absolute", bottom:96, left:16, right:72, zIndex:500, transition:"opacity 0.25s ease", opacity: photoSwiping ? 0 : (showUI || !!photoUrls) ? 1 : 0, pointerEvents: (photoSwiping || !(showUI || !!photoUrls)) ? "none" : "auto", visibility: (showUI || !!photoUrls) ? "visible" : "hidden" }}>
         <div style={{ display:"flex", flexDirection:"row", alignItems:"center", gap:8, marginBottom:8, cursor:"pointer" }}
           onClick={tap(() => onProfileOpen && (video.user_id || video.created_by) && onProfileOpen(video.user_id || video.created_by, video.username || video.display_name))}>
-          <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+            <div style={{ color:"#F5C842", fontWeight:800, fontSize:16, letterSpacing:-0.3 }}>{video.display_name || video.username}</div>
+            {video._is_verified && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink:0 }}>
+                <circle cx="12" cy="12" r="12" fill="#1D9BF0"/>
+                <path d="M9.5 16.5l-3.5-3.5 1.4-1.4 2.1 2.1 5.6-5.6 1.4 1.4z" fill="white"/>
+              </svg>
+            )}
+            {video._badge === "FC" && (
+              <span style={{ fontSize:10, background:"linear-gradient(135deg,#FFD700,#FF8C00)", color:"#000", padding:"1px 6px", borderRadius:20, fontWeight:800, letterSpacing:0.3 }}>FC</span>
+            )}
+            {video._badge === "MOD" && (
+              <span style={{ fontSize:10, background:"rgba(107,255,154,0.25)", color:"#6BFFB8", padding:"1px 6px", borderRadius:20, fontWeight:800, border:"1px solid rgba(107,255,154,0.4)" }}>MOD</span>
+            )}
+          </div>
           <div style={{ color:"rgba(255,255,255,0.35)", fontSize:12 }}>@{video.username}</div>
         </div>
         {video.sound_title && (

@@ -473,15 +473,46 @@ function App() {
         } catch { return videos; }
       };
 
+      // Enrich videos with uploader badge (FC / blue check) from SachiUser
+      const enrichWithBadges = async (videos) => {
+        try {
+          // Get unique user_ids from this batch
+          const userIds = [...new Set(videos.map(v => v.user_id || v.created_by).filter(Boolean))];
+          if (!userIds.length) return videos;
+          // Fetch SachiUser records in one go (up to 200 users per batch)
+          const res = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`);
+          const users = Array.isArray(res) ? res : (res?.items || res?.records || []);
+          // Build lookup map by id AND by username for fallback
+          const byId = {};
+          const byUsername = {};
+          for (const u of users) {
+            if (u.id) byId[u.id] = u;
+            if (u.username) byUsername[u.username.toLowerCase()] = u;
+          }
+          return videos.map(v => {
+            const uid = v.user_id || v.created_by;
+            const sachiUser = byId[uid] || byUsername[(v.username||"").toLowerCase()];
+            if (!sachiUser) return v;
+            return {
+              ...v,
+              _badge: sachiUser.badge || null,           // "FC", "MOD", etc.
+              _is_verified: sachiUser.is_verified || false, // blue check
+            };
+          });
+        } catch { return videos; }
+      };
+
       if (append) {
         const tagged = await tagWithLiked(ranked2);
+        const enriched = await enrichWithBadges(tagged);
         setVideoList(prev => {
           const existing = new Set(prev.map(v => v.id));
-          return [...prev, ...tagged.filter(v => !existing.has(v.id))];
+          return [...prev, ...enriched.filter(v => !existing.has(v.id))];
         });
       } else {
         const tagged = await tagWithLiked(ranked2);
-        setVideoList(tagged);
+        const enriched = await enrichWithBadges(tagged);
+        setVideoList(enriched);
         if (onReady) onReady(); // signal prefetch complete
         requestAnimationFrame(() => {
           const el = feedContainerRef.current || window.__sachiEl;
