@@ -918,17 +918,12 @@ function App() {
 
       {/* Profile */}
       {activeTab === "profile" && (
-        <div style={{ paddingTop:70, paddingBottom:80, minHeight:"100svh", background:"#0B0C1A", position:"relative", zIndex:10, isolation:"isolate" }}>
+        <div style={{ paddingTop:0, paddingBottom:80, minHeight:"100svh", background:"#0f0f1a", position:"relative", zIndex:10, isolation:"isolate", overflowY:"auto" }}>
           {!currentUser ? (
-            <div style={{ textAlign:"center", padding:60 }}>
-              <div style={{ position:"relative", display:"inline-block", cursor:"pointer", marginBottom:16 }}
-                onClick={() => setShowAuth(true)}>
-                <div style={{ width:90, height:90, borderRadius:"50%", background:"rgba(255,255,255,0.08)",
-                  border:"3px solid rgba(245,200,66,0.4)", display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:44 }}>👤</div>
-                <div style={{ position:"absolute", bottom:2, right:2, background:"#F5C842", borderRadius:"50%", width:26, height:26,
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0B0C1A" }}>📷</div>
-              </div>
+            <div style={{ textAlign:"center", padding:80 }}>
+              <div style={{ width:90, height:90, borderRadius:"50%", background:"rgba(255,255,255,0.08)",
+                border:"3px solid rgba(245,200,66,0.4)", display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:44, margin:"0 auto 16px", cursor:"pointer" }} onClick={() => setShowAuth(true)}>👤</div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:20, marginBottom:8 }}>You're not logged in</div>
               <div style={{ color:"#666", fontSize:14, marginBottom:24 }}>Sign up to post and build your profile</div>
               <button onClick={() => setShowAuth(true)}
@@ -936,91 +931,186 @@ function App() {
                 Sign Up / Log In
               </button>
             </div>
-          ) : (
-            <>
-              <div style={{ padding:"20px 20px 0", textAlign:"center" }}>
-                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:12, gap:8 }}>
-                  <div style={{ position:"relative", display:"inline-block", cursor:"pointer" }}
-                    onClick={() => setShowAvatarPicker(true)}>
-                    <img src={avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`}
-                      style={{ width:90, height:90, borderRadius:"50%", border:"3px solid #F5C842", display:"block", background:"rgba(255,255,255,0.05)" }} />
-                    <div style={{ position:"absolute", bottom:2, right:2, background:"#F5C842", borderRadius:"50%", width:26, height:26,
-                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, border:"2px solid #0B0C1A" }}>✏️</div>
-                  </div>
-                  <button
-                    onClick={() => setShowAvatarPicker(true)}
-                    style={{ background:"rgba(245,200,66,0.1)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20,
-                      padding:"6px 18px", color:"#F5C842", fontWeight:700, fontSize:13, cursor:"pointer" }}>
-                    Change Avatar
-                  </button>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, cursor:"pointer" }}
-                  onClick={() => { setEditProfileName(currentUser?.full_name || ''); setShowEditProfile(true); }}>
-                  <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
-                  <div style={{ fontSize:13, color:"#888" }}>✏️</div>
-                </div>
-                <div style={{ color:"#888", fontSize:13, marginTop:2 }}>@{username}</div>
-                <div style={{ display:"flex", justifyContent:"center", gap:0, marginTop:20, marginBottom:20, pointerEvents:"auto" }}>
-                  <div style={{ textAlign:"center", padding:"10px 24px" }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{myVideos.length}</div>
-                    <div style={{ color:"#888", fontSize:12 }}>Videos</div>
-                  </div>
-                  <button style={{ textAlign:"center", padding:"10px 24px", background:"none", border:"none", cursor:"pointer", pointerEvents:"auto", WebkitTapHighlightColor:"transparent" }}
-                    onClick={async () => {
-                      setShowFollowersList(true);
-                      setFollowListLoading(true);
-                      try {
-                        const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
-                        const all = r1?.items || r1 || [];
-                        const unique = [...new Map(all.map(f=>[f.id,f])).values()];
-                        setFollowersList(unique);
-                      } catch(e) { setFollowersList([]); }
-                      setFollowListLoading(false);
-                    }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowersCount}</div>
-                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Followers</div>
-                  </button>
-                  <button style={{ textAlign:"center", padding:"10px 24px", background:"none", border:"none", cursor:"pointer", pointerEvents:"auto", WebkitTapHighlightColor:"transparent" }}
-                    onClick={async () => {
-                      setShowFollowingList(true);
-                      setFollowListLoading(true);
-                      try {
-                        const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
-                        const all = r1?.items || r1 || [];
-                        const unique = [...new Map(all.map(f=>[f.id,f])).values()];
-                        setFollowingList(unique);
-                      } catch(e) { setFollowingList([]); }
-                      setFollowListLoading(false);
-                    }}>
-                    <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{meFollowingCount}</div>
-                    <div style={{ color:"#F5C842", fontSize:12, fontWeight:600 }}>Following</div>
-                  </button>
-                </div>
-              </div>
-              <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
+          ) : (() => {
+            // ── Vibe Score helpers ──
+            const myVibeScore = (() => {
+              if (!myVideos.length) return 0;
+              const totalLikes = myVideos.reduce((s,v)=>s+(v.likes_count||0),0);
+              const avgLikes = totalLikes / myVideos.length;
+              const postFreq = Math.min(myVideos.length/10,1);
+              const followerScore = Math.min(meFollowersCount/500,1);
+              const engScore = Math.min(avgLikes/50,1);
+              return Math.round(Math.min((followerScore*35)+(engScore*40)+(postFreq*25),100));
+            })();
+            const vibeColors = myVibeScore>=80?["#FFD700","#FF8C00"]:myVibeScore>=60?["#a855f7","#6c63ff"]:myVibeScore>=40?["#22c55e","#06b6d4"]:["#64748b","#94a3b8"];
+            const vibeLabel = myVibeScore>=90?"🔥 On Fire":myVibeScore>=75?"⚡ Electrifying":myVibeScore>=60?"✨ Rising":myVibeScore>=40?"🌱 Building":"👋 Just Started";
+            const [vc1,vc2] = vibeColors;
+            const myAvatarUrl = avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`;
+            const totalLoves = myVideos.reduce((s,v)=>s+(v.likes_count||0),0);
+            const myStreak = (() => {
+              if (!myVideos.length) return 0;
+              const dates = [...new Set(myVideos.map(v=>v.created_date?new Date(v.created_date).toDateString():null).filter(Boolean))].sort((a,b)=>new Date(b)-new Date(a));
+              let s=0; let cur=new Date(); cur.setHours(0,0,0,0);
+              for (const d of dates) { const dt=new Date(d); dt.setHours(0,0,0,0); const diff=Math.round((cur-dt)/86400000); if(diff<=1){s++;cur=dt;}else break; }
+              return s;
+            })();
+            const memberSince = currentUser?.created_date ? new Date(currentUser.created_date).toLocaleDateString("en-US",{month:"short",year:"numeric"}) : null;
+            const top3 = [...myVideos].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0)).slice(0,3);
+            // Mood banner — top video
+            const bannerVideo = myVideos.length ? [...myVideos].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0))[0] : null;
+            const bannerSrc = bannerVideo?.video_url ? (bannerVideo.video_url.startsWith("http")?bannerVideo.video_url:`https://customer-stream.cloudflare.com/${bannerVideo.video_url}/manifest/video.m3u8`) : null;
+            // Ring svg
+            const RSIZE=96, rstroke=3.5, rr=RSIZE/2, rcirc=2*Math.PI*(rr-rstroke), rpct=myVibeScore/100;
 
-              {/* Founding Creator CTA */}
-              <div style={{ padding:"0 20px 12px" }}>
-                <button onClick={() => window.location.href='/founding-creator'}
-                  style={{ width:"100%", padding:"15px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
-                    border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:14,
-                    color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer",
-                    display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  🌸 Apply to be a Founding Creator
-                </button>
-              </div>
-              {/* Log Out */}
-              <div style={{ padding:"24px 20px 32px" }}>
-                <button onClick={() => { auth.signOut(); localStorage.removeItem('sachi_google_user'); setCurrentUser(null); setActiveTab('feed'); }}
-                  style={{ width:"100%", padding:"14px 0", background:"rgba(255,50,50,0.1)",
-                    border:"1.5px solid rgba(255,80,80,0.3)", borderRadius:14,
-                    color:"#ff5555", fontWeight:700, fontSize:15, cursor:"pointer",
-                    display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  🚪 Log Out
-                </button>
-              </div>
-            </>
-          )}
+            return (
+              <>
+                <style>{`@keyframes vibeGlow{from{opacity:.6;transform:scale(.98)}to{opacity:1;transform:scale(1.03)}} @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+                {/* Mood Banner */}
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:200, overflow:"hidden", zIndex:0 }}>
+                  {bannerSrc ? (
+                    <video src={bannerSrc} autoPlay muted loop playsInline
+                      style={{ width:"100%", height:"100%", objectFit:"cover", opacity:0.35, filter:"blur(2px) saturate(1.4)" }} />
+                  ) : (
+                    <div style={{ width:"100%", height:"100%", background:"linear-gradient(135deg,#1a0533,#0d1b3e,#1a0533)" }} />
+                  )}
+                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom, rgba(15,15,26,0.1) 0%, rgba(15,15,26,0.7) 60%, #0f0f1a 100%)" }} />
+                </div>
+
+                <div style={{ position:"relative", zIndex:5, animation:"fadeInUp 0.4s ease forwards" }}>
+                  {/* Spacer for banner */}
+                  <div style={{ height:56 }} />
+
+                  {/* Avatar + Vibe Ring */}
+                  <div style={{ display:"flex", justifyContent:"center", marginBottom:14 }}>
+                    <div style={{ position:"relative" }}>
+                      <div style={{ position:"absolute", inset:-4, borderRadius:"50%", background:`radial-gradient(circle,${vc1}33 0%,transparent 70%)`, animation:"vibeGlow 2.5s ease-in-out infinite alternate" }} />
+                      <svg width={RSIZE} height={RSIZE} style={{ position:"absolute", top:0, left:0, transform:"rotate(-90deg)" }}>
+                        <circle cx={rr} cy={rr} r={rr-rstroke} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={rstroke} />
+                        <circle cx={rr} cy={rr} r={rr-rstroke} fill="none" stroke={`url(#mg)`} strokeWidth={rstroke+1}
+                          strokeDasharray={rcirc} strokeDashoffset={rcirc*(1-rpct)} strokeLinecap="round" />
+                        <defs><linearGradient id="mg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={vc1}/><stop offset="100%" stopColor={vc2}/></linearGradient></defs>
+                      </svg>
+                      {/* Avatar — tappable to change */}
+                      <div style={{ position:"relative", width:RSIZE, height:RSIZE, cursor:"pointer" }} onClick={() => setShowAvatarPicker(true)}>
+                        <img src={myAvatarUrl} style={{ position:"absolute", top:rstroke+2, left:rstroke+2,
+                          width:RSIZE-rstroke*2-4, height:RSIZE-rstroke*2-4, borderRadius:"50%", objectFit:"cover", background:"#1a1a2e" }} />
+                        <div style={{ position:"absolute", bottom:rstroke+4, right:rstroke+4, background:"#F5C842", borderRadius:"50%", width:22, height:22,
+                          display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, border:"2px solid #0f0f1a" }}>✏️</div>
+                      </div>
+                      {/* Vibe badge */}
+                      <div style={{ position:"absolute", bottom:-8, left:"50%", transform:"translateX(-50%)",
+                        background:`linear-gradient(135deg,${vc1},${vc2})`, borderRadius:20, padding:"2px 10px",
+                        fontSize:11, fontWeight:800, color:"#000", whiteSpace:"nowrap", boxShadow:`0 2px 10px ${vc1}66` }}>
+                        {myVibeScore} · {vibeLabel}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Name + edit */}
+                  <div style={{ textAlign:"center", marginTop:18, padding:"0 20px" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, cursor:"pointer", marginBottom:2 }}
+                      onClick={() => { setEditProfileName(currentUser?.full_name||""); setShowEditProfile(true); }}>
+                      <div style={{ color:"#fff", fontWeight:800, fontSize:20 }}>{currentUser.full_name || username}</div>
+                      <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>✏️</div>
+                    </div>
+                    <div style={{ color:"rgba(255,255,255,0.4)", fontSize:13, marginBottom:6 }}>@{username}</div>
+
+                    {/* Stats row */}
+                    <div style={{ display:"flex", justifyContent:"center", gap:0, marginTop:14, marginBottom:16,
+                      background:"rgba(255,255,255,0.04)", borderRadius:20, padding:"10px 4px",
+                      border:"1px solid rgba(255,255,255,0.07)" }}>
+                      {[
+                        { value:myVideos.length, label:"Videos", action:null },
+                        { value:meFollowersCount, label:"Followers", action:async()=>{ setShowFollowersList(true); setFollowListLoading(true); try { const r=await request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null); const all=r?.items||r||[]; setFollowersList([...new Map(all.map(f=>[f.id,f])).values()]); }catch(e){setFollowersList([]);} setFollowListLoading(false); }},
+                        { value:meFollowingCount, label:"Following", action:async()=>{ setShowFollowingList(true); setFollowListLoading(true); try { const r=await request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null); const all=r?.items||r||[]; setFollowingList([...new Map(all.map(f=>[f.id,f])).values()]); }catch(e){setFollowingList([]);} setFollowListLoading(false); }},
+                        { value:totalLoves>=1000?`${(totalLoves/1000).toFixed(1)}K`:totalLoves, label:"❤️ Love", action:null },
+                      ].map((s,i,arr)=>(
+                        <div key={s.label} onClick={s.action||undefined}
+                          style={{ flex:1, textAlign:"center", borderRight:i<arr.length-1?"1px solid rgba(255,255,255,0.08)":"none",
+                            padding:"0 4px", cursor:s.action?"pointer":"default" }}>
+                          <div style={{ color:"#fff", fontWeight:800, fontSize:16 }}>{s.value}</div>
+                          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10 }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Creator Card */}
+                  <div style={{ padding:"4px 16px 4px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                    {[
+                      { icon:"🔥", label:"Day Streak", value:myStreak||"—" },
+                      { icon:"❤️", label:"Total Love", value:totalLoves>=1000?`${(totalLoves/1000).toFixed(1)}K`:totalLoves },
+                      { icon:"🎬", label:"Videos", value:myVideos.length },
+                      { icon:"📅", label:"Since", value:memberSince||"—" },
+                    ].map(c=>(
+                      <div key={c.label} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)",
+                        borderRadius:16, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{ fontSize:22 }}>{c.icon}</div>
+                        <div>
+                          <div style={{ color:"#fff", fontWeight:800, fontSize:16, lineHeight:1 }}>{c.value}</div>
+                          <div style={{ color:"rgba(255,255,255,0.4)", fontSize:10, marginTop:2 }}>{c.label}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Highlight Reel */}
+                  {top3.length >= 2 && (
+                    <div style={{ padding:"14px 16px 6px" }}>
+                      <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:10, textTransform:"uppercase" }}>
+                        🏆 Highlight Reel
+                      </div>
+                      <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
+                        {top3.map((v,i)=>(
+                          <div key={v.id} style={{ flexShrink:0, width:100, cursor:"pointer", position:"relative" }}>
+                            <div style={{ width:100, height:160, borderRadius:12, overflow:"hidden",
+                              border:i===0?"2px solid #FFD700":i===1?"2px solid #C0C0C0":"2px solid #CD7F32", background:"#111" }}>
+                              {v.thumbnail_url ? (
+                                <img src={v.thumbnail_url.startsWith("http")?v.thumbnail_url:`https://customer-stream.cloudflare.com/${v.thumbnail_url}/thumbnails/thumbnail.jpg`}
+                                  style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                              ) : null}
+                              <div style={{ position:"absolute", top:6, left:8, fontSize:14 }}>{i===0?"🥇":i===1?"🥈":"🥉"}</div>
+                              <div style={{ position:"absolute", bottom:4, left:0, right:0, textAlign:"center",
+                                color:"#fff", fontSize:10, fontWeight:800, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>❤️ {v.likes_count||0}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Video Grid */}
+                  <div style={{ padding:"8px 0 0" }}>
+                    <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:1, margin:"0 16px 10px", textTransform:"uppercase" }}>
+                      🎬 My Videos
+                    </div>
+                    <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
+                  </div>
+
+                  {/* Founding Creator CTA */}
+                  <div style={{ padding:"12px 20px 8px" }}>
+                    <button onClick={() => window.location.href='/founding-creator'}
+                      style={{ width:"100%", padding:"15px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                        border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:14, color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer",
+                        display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      🌸 Apply to be a Founding Creator
+                    </button>
+                  </div>
+
+                  {/* Log Out */}
+                  <div style={{ padding:"8px 20px 40px" }}>
+                    <button onClick={() => { auth.signOut(); localStorage.removeItem('sachi_google_user'); setCurrentUser(null); setActiveTab('feed'); }}
+                      style={{ width:"100%", padding:"14px 0", background:"rgba(255,50,50,0.1)",
+                        border:"1.5px solid rgba(255,80,80,0.3)", borderRadius:14, color:"#ff5555", fontWeight:700, fontSize:15, cursor:"pointer",
+                        display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      🚪 Log Out
+                    </button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
