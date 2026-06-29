@@ -1057,30 +1057,7 @@ function App() {
                     ))}
                   </div>
 
-                  {/* Highlight Reel */}
-                  {top3.length >= 2 && (
-                    <div style={{ padding:"14px 16px 6px" }}>
-                      <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:10, textTransform:"uppercase" }}>
-                        🏆 Highlight Reel
-                      </div>
-                      <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
-                        {top3.map((v,i)=>(
-                          <div key={v.id} style={{ flexShrink:0, width:100, cursor:"pointer", position:"relative" }}>
-                            <div style={{ width:100, height:160, borderRadius:12, overflow:"hidden",
-                              border:i===0?"2px solid #FFD700":i===1?"2px solid #C0C0C0":"2px solid #CD7F32", background:"#111" }}>
-                              {v.thumbnail_url ? (
-                                <img src={v.thumbnail_url.startsWith("http")?v.thumbnail_url:`https://customer-stream.cloudflare.com/${v.thumbnail_url}/thumbnails/thumbnail.jpg`}
-                                  style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                              ) : null}
-                              <div style={{ position:"absolute", top:6, left:8, fontSize:14 }}>{i===0?"🥇":i===1?"🥈":"🥉"}</div>
-                              <div style={{ position:"absolute", bottom:4, left:0, right:0, textAlign:"center",
-                                color:"#fff", fontSize:10, fontWeight:800, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>❤️ {v.likes_count||0}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+
 
                   {/* Video Grid */}
                   <div style={{ padding:"8px 0 0" }}>

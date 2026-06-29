@@ -41,12 +41,12 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
     </div>
   );
 
-  // ── Honeycomb layout constants ──
-  const CELL = 110; // circle diameter
-  const GAP = 4;
-  const ROW_H = CELL * 0.78;
+  // ── Uniform circle grid (88px, gold border, 3 per row) ──
+  const CELL = 88;
+  const GAP = 10;
   const PER_ROW = 3;
-  const OFFSET = (CELL + GAP) / 2;
+  const topLikedIds = [...vids].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0)).slice(0,3).map(v=>v.id);
+  const medals = ["🥇","🥈","🥉"];
 
   const rows = [];
   for (let i = 0; i < vids.length; i += PER_ROW) {
@@ -55,56 +55,64 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
 
   return (
     <>
-      {/* Honeycomb grid */}
-      <div style={{ paddingBottom: 12 }}>
-        {rows.map((row, ri) => {
-          const isOffset = ri % 2 === 1;
-          return (
-            <div key={ri} style={{
-              display:"flex",
-              justifyContent: isOffset ? "flex-start" : "center",
-              marginTop: ri === 0 ? 12 : -(CELL - ROW_H) - 2,
-              gap: GAP,
-              paddingLeft: isOffset ? OFFSET + 8 : 8,
-              paddingRight: 8,
-            }}>
-              {row.map((v, ci) => {
-                const thumb = v.thumbnail_url ? resolveMediaUrl(v.thumbnail_url) : null;
-                return (
-                  <div key={v.id} onClick={() => setMenuVideo(v)}
-                    style={{
-                      width: CELL, height: CELL, borderRadius:"50%", overflow:"hidden",
-                      cursor:"pointer", position:"relative", flexShrink:0,
-                      border:"2px solid rgba(245,200,66,0.35)",
-                      boxShadow:"0 4px 18px rgba(0,0,0,0.5)",
-                      background:"#111",
-                    }}>
-                    {thumb ? (
-                      <img src={thumb} onError={e => { e.target.style.display="none"; }}
-                        style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-                    ) : (
-                      <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>
-                    )}
-                    {/* Dark overlay */}
-                    <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 60% 70%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%)" }} />
-                    {/* Like count */}
-                    {(v.likes_count || 0) > 0 && (
-                      <div style={{ position:"absolute", bottom:14, left:0, right:0, textAlign:"center",
-                        color:"#fff", fontSize:10, fontWeight:800, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
-                        ❤️ {v.likes_count}
-                      </div>
-                    )}
-                    {/* Edit dot */}
-                    <div style={{ position:"absolute", top:10, right:12,
-                      width:18, height:18, borderRadius:"50%", background:"rgba(0,0,0,0.55)",
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:10, color:"#fff", lineHeight:1 }}>⋮</div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+      {/* Uniform circle grid */}
+      <div style={{ paddingBottom: 12, paddingTop: 8 }}>
+        {rows.map((row, ri) => (
+          <div key={ri} style={{
+            display:"flex",
+            justifyContent:"center",
+            gap: GAP,
+            marginBottom: GAP,
+            paddingLeft: 8,
+            paddingRight: 8,
+          }}>
+            {row.map((v, ci) => {
+              const globalIdx = ri * PER_ROW + ci;
+              const medalIdx = topLikedIds.indexOf(v.id);
+              const isMedal = medalIdx >= 0;
+              const thumb = v.thumbnail_url ? resolveMediaUrl(v.thumbnail_url) : null;
+              return (
+                <div key={v.id} onClick={() => setMenuVideo(v)}
+                  style={{
+                    width: CELL, height: CELL, borderRadius:"50%", overflow:"hidden",
+                    cursor:"pointer", position:"relative", flexShrink:0,
+                    border: isMedal ? "2.5px solid #FFD700" : "2px solid #F5C842",
+                    boxShadow: isMedal
+                      ? "0 0 14px rgba(255,215,0,0.55), 0 4px 12px rgba(0,0,0,0.6)"
+                      : "0 0 8px rgba(245,200,66,0.3), 0 4px 10px rgba(0,0,0,0.5)",
+                    background:"#111",
+                  }}>
+                  {thumb ? (
+                    <img src={thumb} onError={e => { e.target.style.display="none"; }}
+                      style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                  ) : (
+                    <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🎬</div>
+                  )}
+                  {/* Dark overlay */}
+                  <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 75%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%)" }} />
+                  {/* Medal badge */}
+                  {isMedal && (
+                    <div style={{ position:"absolute", top:3, right:5, fontSize:13, lineHeight:1 }}>
+                      {medals[medalIdx]}
+                    </div>
+                  )}
+                  {/* Like count */}
+                  {(v.likes_count || 0) > 0 && (
+                    <div style={{ position:"absolute", bottom:10, left:0, right:0, textAlign:"center",
+                      color:"#fff", fontSize:9, fontWeight:800, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
+                      ❤️ {v.likes_count}
+                    </div>
+                  )}
+                  {/* Edit dot */}
+                  <div style={{ position:"absolute", top:8, left:8,
+                    width:16, height:16, borderRadius:"50%", background:"rgba(0,0,0,0.55)",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:10, color:"#fff", lineHeight:1 }}>⋮</div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Action Menu Sheet */}

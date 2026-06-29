@@ -39,6 +39,7 @@ function vibeLabel(score) {
 
 // ── Uniform Circle Grid ────────────────────────────────────────────────────
 // Single consistent format: small circles, gold border, 3 per row
+const _GRID_V = 3; // v3 circle grid — force bundle hash
 function CircleGrid({ videos: vids, onSelect, topLikedIds }) {
   if (!vids.length) return (
     <div style={{ textAlign:"center", padding:40, color:"#444" }}>
@@ -580,3 +581,4 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
 }
 
 export default UserProfileSheet;
+// circle-grid-v2 1782740612
