@@ -167,11 +167,7 @@ function App() {
     if (!currentUser?.email) return;
     const normalize = async () => {
       try {
-        const res = await fetch(
-          `https://api.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`,
-          { headers: { "Content-Type": "application/json" } }
-        );
-        const data = await res.json();
+        const data = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`);
         const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
         const canonical = items.find(u => u.email === currentUser.email);
         if (canonical && canonical.id && canonical.id !== currentUser.id) {
