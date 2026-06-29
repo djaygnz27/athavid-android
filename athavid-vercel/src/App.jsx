@@ -1064,7 +1064,7 @@ function App() {
                     <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:1, margin:"0 16px 10px", textTransform:"uppercase" }}>
                       🎬 My Videos
                     </div>
-                    <VideoManageGrid videos={myVideos} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
+                    <VideoManageGrid videos={myVideos} currentUser={currentUser} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
                   </div>
 
                   {/* Founding Creator CTA */}
