@@ -1,23 +1,15 @@
 // SachiLive.jsx — Sachi LIVE Hub v3.0 — with Gift System
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { GiftTray, GiftAnimationOverlay, HostEarningsPanel, CoinWalletWidget, getWallet, GIFTS } from "./SachiGifts.jsx";
+import { request as apiRequest, getToken } from "./api.js";
 
 const APP_ID = "69e79122bcc8fb5a04cfb834";
 const BASE_URL = "https://app.base44.com/api";
 const APP_BASE = `/apps/${APP_ID}`;
 
-// Auth-aware fetch with proper error handling
+// Auth-aware fetch — delegates to api.js request() which handles Google + email tokens
 async function apiReq(method, path, body) {
-  const token = localStorage.getItem("sachi_token");
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(BASE_URL + path, {
-    method, headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || data.error || `Error ${res.status}`);
-  return data;
+  return apiRequest(method, path, body);
 }
 
 const liveRooms = {

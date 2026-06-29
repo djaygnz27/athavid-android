@@ -7425,7 +7425,7 @@ function Landing({ onEnter, prefetchDone = false }) {
   ] });
 }
 const APP_ID$6 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL$3 = "https://sachi-04cfb834.base44.app/api";
+const BASE_URL$2 = "https://sachi-04cfb834.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
   sessionToken = t2;
@@ -7443,7 +7443,7 @@ async function request$1(method, path, body) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${BASE_URL$3}${path}`, {
+  const res = await fetch(`${BASE_URL$2}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : void 0
@@ -7986,13 +7986,13 @@ const COUNTRIES = [
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID$5 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL$2 = "https://app.base44.com/api";
+const BASE_URL$1 = "https://app.base44.com/api";
 async function lookupSachiUser(email) {
   try {
     const headers = { "Content-Type": "application/json" };
     try {
       const res = await fetch(
-        `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
+        `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
         { headers }
       );
       const data = await res.json();
@@ -8005,7 +8005,7 @@ async function lookupSachiUser(email) {
     const sessionObj = existingSession ? JSON.parse(existingSession) : null;
     if (sessionObj == null ? void 0 : sessionObj.token) headers["Authorization"] = `Bearer ${sessionObj.token}`;
     const res2 = await fetch(
-      `${BASE_URL$2}/apps/${APP_ID$5}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
+      `${BASE_URL$1}/apps/${APP_ID$5}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
       { headers }
     );
     const data2 = await res2.json();
@@ -8334,7 +8334,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL$2}/apps/${APP_ID$5}/entities/AthaVidUser`,
+        `${BASE_URL$1}/apps/${APP_ID$5}/entities/AthaVidUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8778,7 +8778,7 @@ function Terms() {
   ] });
 }
 const APP_ID$4 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL$1 = "https://app.base44.com/api";
+const BASE_URL = "https://app.base44.com/api";
 const COINS_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiCoin";
 const GIFTS = [
   { id: "sakura", name: "Sakura", emoji: "🌸", icon: "🌸", coins: 5, color: "#e91e8c", glow: "rgba(233,30,140,0.6)", rarity: "common", anim: "float" },
@@ -8804,7 +8804,7 @@ const COIN_PACKS = [
   { id: "pack_10000", coins: 1e4, price: "$49.99", tag: "BEST VALUE", icon: "👑", price_id: "price_1TKVSmKB9bqKOOJ0fOjNzyQy" }
 ];
 async function apiReq$1(method, path, body) {
-  const res = await fetch(BASE_URL$1 + path, {
+  const res = await fetch(BASE_URL + path, {
     method,
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : void 0
@@ -9401,20 +9401,9 @@ function HostEarningsPanel({ currentUser, onClose }) {
   ] });
 }
 const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://app.base44.com/api";
 const APP_BASE$1 = `/apps/${APP_ID$3}`;
 async function apiReq(method, path, body) {
-  const token = localStorage.getItem("sachi_token");
-  const headers = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(BASE_URL + path, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : void 0
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || data.error || `Error ${res.status}`);
-  return data;
+  return request$1(method, path, body);
 }
 const liveRooms = {
   list: () => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveRoom?sort=-viewer_count&limit=50`),
