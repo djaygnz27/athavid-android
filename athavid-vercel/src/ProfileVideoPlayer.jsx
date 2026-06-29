@@ -35,7 +35,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
 
   return (
     <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
-      style={{ position:"fixed", inset:0, zIndex:5000, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+      style={{ position:"fixed", inset:0, zIndex:9500, background:"#000", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
 
       {/* Video */}
       <video ref={videoRef} key={v.id} src={resolveMediaUrl(v.video_url)} autoPlay playsInline loop muted={muted}
@@ -46,16 +46,24 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents:"none" }} />
 
       {/* Top bar */}
-      <div style={{ position:"absolute", top:0, left:0, right:0, display:"flex", alignItems:"center", padding:"50px 16px 16px", zIndex:10 }}>
+      <div style={{ position:"absolute", top:0, left:0, right:0, display:"flex", alignItems:"center",
+        padding:"calc(env(safe-area-inset-top, 20px) + 16px) 16px 16px",
+        zIndex:20, background:"linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)" }}>
         <button onClick={onClose}
-          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
-            color:"#fff", fontSize:20, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>←</button>
-        <div style={{ flex:1, textAlign:"center", color:"#fff", fontWeight:800, fontSize:15 }}>
+          style={{ background:"rgba(0,0,0,0.55)", border:"1.5px solid rgba(255,255,255,0.25)",
+            borderRadius:"50%", width:44, height:44, minWidth:44,
+            color:"#fff", fontSize:22, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            WebkitTapHighlightColor:"transparent", flexShrink:0 }}>‹</button>
+        <div style={{ flex:1, textAlign:"center", color:"#fff", fontWeight:800, fontSize:15, padding:"0 8px" }}>
           {profile?.display_name || username}
         </div>
         <button onClick={() => setMuted(m => !m)}
-          style={{ background:"rgba(0,0,0,0.4)", border:"none", borderRadius:"50%", width:40, height:40,
-            color:"#fff", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          style={{ background:"rgba(0,0,0,0.55)", border:"1.5px solid rgba(255,255,255,0.25)",
+            borderRadius:"50%", width:44, height:44, minWidth:44,
+            color:"#fff", fontSize:18, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            WebkitTapHighlightColor:"transparent", flexShrink:0 }}>
           {muted ? "🔇" : "🔊"}
         </button>
       </div>
