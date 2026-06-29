@@ -33,11 +33,12 @@ function AdminPanel({ currentUser }) {
     setAnalyticsLoading(true);
     setAnalyticsError(null);
     try {
+      // ⛔ LOCKED — uses /api/admin-users (service token) to bypass RLS for user list
       const [usersResp, videosResp] = await Promise.all([
-        request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?limit=500&sort=-created_date"),
+        fetch("/api/admin-users").then(r => r.json()),
         request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?limit=500&sort=-created_date")
       ]);
-      const users = Array.isArray(usersResp) ? usersResp : (usersResp?.items || usersResp?.records || []);
+      const users = usersResp?.items || [];
       const videos = Array.isArray(videosResp) ? videosResp : (videosResp?.items || videosResp?.records || []);
       setAllUsers(users);
 
@@ -137,11 +138,13 @@ function AdminPanel({ currentUser }) {
     } catch(e) { alert("Failed: " + e.message); }
   };
 
+  // ⛔ LOCKED — loadRegisteredUsers uses /api/admin-users (service token) to bypass RLS
+  // Do NOT revert to request("GET", entities/SachiUser) — that only returns Jay's own record
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const usersResp = await request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?limit=500&sort=-created_date");
-      const users = Array.isArray(usersResp) ? usersResp : (usersResp?.items || []);
+      const usersResp = await fetch("/api/admin-users").then(r => r.json());
+      const users = usersResp?.items || [];
       setRegisteredUsers(users);
     } catch(e) { console.error("loadRegisteredUsers error", e); }
     setUsersLoading(false);
