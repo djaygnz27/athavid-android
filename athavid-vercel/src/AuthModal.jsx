@@ -40,8 +40,8 @@ const FUNCTIONS_URL = "";  // local Vercel API routes
 // → returned null on every sign-in → ghost IDs created → likes/follows invisible
 //
 // WHAT IT DOES:
-// PRIMARY path: queries SachiUser (real Base44 auth table) — this has the canonical ID
-// FALLBACK: queries AthaVidUser for any legacy profile records that may exist
+// Uses the Vercel /api/lookup-user endpoint (service token) to bypass CORS + RLS
+// Falls back to localStorage session if the API is unavailable
 // The order is critical — SachiUser MUST be queried first
 //
 // DO NOT:
@@ -50,34 +50,34 @@ const FUNCTIONS_URL = "";  // local Vercel API routes
 // - Change the entity name "SachiUser" (it is the Base44 auth entity)
 async function lookupSachiUser(email) {
   try {
-    const headers = { "Content-Type": "application/json" };
-
-    // PRIMARY: query SachiUser (the real Base44 auth table) — this is the canonical source
-    try {
-      const res = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
-        { headers }
-      );
+    // Use Vercel API route — has service token, no CORS issue
+    const res = await fetch(`/api/lookup-user?email=${encodeURIComponent(email)}`);
+    if (res.ok) {
       const data = await res.json();
-      const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
-      const found = items.find(u => u.email === email);
-      if (found) return found;
-    } catch {}
+      if (data?.id) return data;
+    }
+  } catch {}
 
-    // FALLBACK: query AthaVidUser (profile table) for legacy records
+  // Fallback: try with stored session token if available
+  try {
     const existingSession = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
     const sessionObj = existingSession ? JSON.parse(existingSession) : null;
-    if (sessionObj?.token) headers["Authorization"] = `Bearer ${sessionObj.token}`;
-    const res2 = await fetch(
-      `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
-      { headers }
-    );
-    const data2 = await res2.json();
-    const items2 = Array.isArray(data2) ? data2 : (data2?.items || data2?.records || []);
-    return items2.find(u => u.email === email) || null;
-  } catch {
-    return null;
-  }
+    const token = sessionObj?.token;
+    if (token) {
+      const res = await fetch(
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
+        { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
+        const found = items.find(u => u.email === email);
+        if (found) return found;
+      }
+    }
+  } catch {}
+
+  return null;
 }
 // ⛔ LOCKED — LOOKUP SACHI USER END
 
