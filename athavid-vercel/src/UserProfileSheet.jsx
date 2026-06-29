@@ -37,9 +37,9 @@ function vibeLabel(score) {
   return "👋 Just Started";
 }
 
-// ── Honeycomb helpers ──────────────────────────────────────────────────────
-// Renders a hex grid: row 1 = 3 cells, row 2 = 2 cells offset, alternating
-function HoneycombGrid({ videos: vids, onSelect }) {
+// ── Uniform Circle Grid ────────────────────────────────────────────────────
+// Single consistent format: small circles, gold border, 3 per row
+function CircleGrid({ videos: vids, onSelect, topLikedIds }) {
   if (!vids.length) return (
     <div style={{ textAlign:"center", padding:40, color:"#444" }}>
       <div style={{ fontSize:36, marginBottom:8 }}>🎬</div>
@@ -47,77 +47,77 @@ function HoneycombGrid({ videos: vids, onSelect }) {
     </div>
   );
 
-  const CELL = 110; // px — diameter of each circle
-  const GAP = 4;
-  const ROW_H = CELL * 0.78;
-  const OFFSET = (CELL + GAP) / 2;
-  const PER_ROW = 3;
+  const CELL = 88; // px — smaller, tighter circles
+  const GAP = 10;
+  const medals = ["🥇","🥈","🥉"];
 
   const rows = [];
-  for (let i = 0; i < vids.length; i += PER_ROW) {
-    rows.push(vids.slice(i, i + PER_ROW));
+  for (let i = 0; i < vids.length; i += 3) {
+    rows.push(vids.slice(i, i + 3));
   }
 
   return (
-    <div style={{ overflowY:"auto", paddingBottom:100 }}>
-      {rows.map((row, ri) => {
-        const isOffset = ri % 2 === 1;
-        return (
-          <div key={ri} style={{
-            display:"flex",
-            justifyContent: isOffset ? "flex-start" : "center",
-            paddingLeft: isOffset ? OFFSET : 0,
-            marginTop: ri === 0 ? 12 : -(CELL - ROW_H) - 2,
-            gap: GAP,
-            paddingRight: 8,
-            paddingLeft: isOffset ? OFFSET + 8 : 8,
-          }}>
-            {row.map((v, ci) => (
-              <HexCell key={v.id} video={v} size={CELL} onSelect={() => onSelect(ri * PER_ROW + ci)} />
-            ))}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+    <div style={{ overflowY:"auto", paddingBottom:100, paddingTop:8 }}>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{
+          display:"flex",
+          justifyContent:"center",
+          gap: GAP,
+          marginBottom: GAP,
+          paddingHorizontal: 12,
+        }}>
+          {row.map((v, ci) => {
+            const globalIdx = ri * 3 + ci;
+            const medalIdx = topLikedIds ? topLikedIds.indexOf(v.id) : -1;
+            const isMedal = medalIdx >= 0 && medalIdx < 3;
+            const thumb = v.thumbnail_url ? resolveMediaUrl(v.thumbnail_url) : null;
+            const hasLikes = (v.likes_count || 0) > 0;
 
-function HexCell({ video: v, size, onSelect }) {
-  const thumb = v.thumbnail_url ? resolveMediaUrl(v.thumbnail_url) : null;
-  const hasLikes = (v.likes_count || 0) > 0;
-
-  return (
-    <div onClick={onSelect} style={{
-      width: size, height: size, borderRadius:"50%", overflow:"hidden", cursor:"pointer",
-      position:"relative", flexShrink:0,
-      border:"2px solid rgba(245,200,66,0.35)",
-      boxShadow:"0 4px 18px rgba(0,0,0,0.5)",
-      background:"#111",
-    }}>
-      {thumb ? (
-        <img src={thumb} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-      ) : (
-        <video src={resolveMediaUrl(v.video_url)} muted playsInline preload="metadata"
-          style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
-          onLoadedMetadata={e => { try { e.target.currentTime = 1; } catch {} }} />
-      )}
-      {/* Dark overlay */}
-      <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 60% 70%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 60%)" }} />
-      {/* Like count */}
-      {hasLikes && (
-        <div style={{ position:"absolute", bottom:14, left:0, right:0, textAlign:"center",
-          color:"#fff", fontSize:10, fontWeight:800, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
-          ❤️ {v.likes_count}
+            return (
+              <div key={v.id} onClick={() => onSelect(globalIdx)} style={{
+                width: CELL, height: CELL, borderRadius:"50%", overflow:"hidden",
+                cursor:"pointer", position:"relative", flexShrink:0,
+                border: isMedal ? "2.5px solid #FFD700" : "2px solid #F5C842",
+                boxShadow: isMedal
+                  ? "0 0 14px rgba(255,215,0,0.55), 0 4px 12px rgba(0,0,0,0.6)"
+                  : "0 0 8px rgba(245,200,66,0.3), 0 4px 10px rgba(0,0,0,0.5)",
+                background:"#111",
+              }}>
+                {thumb ? (
+                  <img src={thumb} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                ) : (
+                  <video src={resolveMediaUrl(v.video_url)} muted playsInline preload="metadata"
+                    style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+                    onLoadedMetadata={e => { try { e.target.currentTime = 1; } catch {} }} />
+                )}
+                {/* Dark overlay */}
+                <div style={{ position:"absolute", inset:0, background:"radial-gradient(circle at 50% 75%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%)" }} />
+                {/* Medal badge on top-3 */}
+                {isMedal && (
+                  <div style={{ position:"absolute", top:3, right:5, fontSize:14, lineHeight:1 }}>
+                    {medals[medalIdx]}
+                  </div>
+                )}
+                {/* Like count */}
+                {hasLikes && (
+                  <div style={{ position:"absolute", bottom:10, left:0, right:0, textAlign:"center",
+                    color:"#fff", fontSize:9, fontWeight:800, textShadow:"0 1px 4px rgba(0,0,0,0.9)" }}>
+                    ❤️ {v.likes_count}
+                  </div>
+                )}
+                {/* Play dot for videos */}
+                {!v.is_photo && (
+                  <div style={{ position:"absolute", top:8, left:8,
+                    width:14, height:14, borderRadius:"50%", background:"rgba(255,255,255,0.18)",
+                    display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <div style={{ fontSize:6, color:"#fff", marginLeft:1 }}>▶</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      )}
-      {/* Video play dot */}
-      {!v.is_photo && (
-        <div style={{ position:"absolute", top:10, right:12,
-          width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.2)",
-          display:"flex", alignItems:"center", justifyContent:"center" }}>
-          <div style={{ fontSize:7, color:"#fff" }}>▶</div>
-        </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -533,50 +533,6 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
               {/* ── SACHI FAM ── */}
               <SachiFamRow userId={userId} />
 
-              {/* ── HIGHLIGHT REEL (top 3 most liked) — circles, no squares ── */}
-              {userVideos.length >= 3 && (() => {
-                const top3 = [...userVideos].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0)).slice(0,3);
-                const medals = ["🥇","🥈","🥉"];
-                const ringColor = ["#FFD700","#C0C0C0","#CD7F32"];
-                const SZ = 104;
-                return (
-                  <div style={{ padding:"14px 16px 6px" }}>
-                    <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11, fontWeight:700, letterSpacing:1, marginBottom:10, textTransform:"uppercase" }}>
-                      🏆 Highlight Reel
-                    </div>
-                    <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-                      {top3.map((v, i) => (
-                        <div key={v.id} onClick={() => {
-                          const idx = userVideos.findIndex(x => x.id === v.id);
-                          if (idx >= 0) setPlayerIndex(idx);
-                        }} style={{ flexShrink:0, width:SZ, cursor:"pointer", position:"relative", display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                          {/* Circle thumbnail */}
-                          <div style={{ width:SZ, height:SZ, borderRadius:"50%", overflow:"hidden",
-                            border: `3px solid ${ringColor[i]}`,
-                            boxShadow: `0 0 12px ${ringColor[i]}55`,
-                            background:"#111", position:"relative", flexShrink:0 }}>
-                            {v.thumbnail_url ? (
-                              <img src={resolveMediaUrl(v.thumbnail_url)} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                            ) : (
-                              <video src={resolveMediaUrl(v.video_url)} muted playsInline preload="metadata"
-                                style={{ width:"100%", height:"100%", objectFit:"cover" }}
-                                onLoadedMetadata={e => { try { e.target.currentTime=1; } catch {} }} />
-                            )}
-                            {/* Medal badge */}
-                            <div style={{ position:"absolute", top:4, right:4, fontSize:16, lineHeight:1 }}>
-                              {medals[i]}
-                            </div>
-                          </div>
-                          {/* Like count below circle */}
-                          <div style={{ color:"rgba(255,255,255,0.7)", fontSize:10, fontWeight:700, textAlign:"center" }}>
-                            ❤️ {v.likes_count || 0}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
 
               {/* ── TAB SWITCHER ── */}
               {isOwnProfile && (
@@ -599,10 +555,10 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
                 savedLoading ? (
                   <div style={{ textAlign:"center", padding:40, color:"#444" }}>Loading saved…</div>
                 ) : (
-                  <HoneycombGrid videos={savedVideos} onSelect={i => setPlayerIndex(i)} />
+                  <CircleGrid videos={savedVideos} onSelect={i => setPlayerIndex(i)} topLikedIds={[]} />
                 )
               ) : (
-                <HoneycombGrid videos={userVideos} onSelect={i => setPlayerIndex(i)} />
+                <CircleGrid videos={userVideos} onSelect={i => setPlayerIndex(i)} topLikedIds={[...userVideos].sort((a,b)=>(b.likes_count||0)-(a.likes_count||0)).slice(0,3).map(v=>v.id)} />
               )}
 
             </div>
