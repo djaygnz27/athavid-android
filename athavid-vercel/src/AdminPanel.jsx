@@ -34,13 +34,68 @@ function AdminPanel({ currentUser }) {
     setAnalyticsError(null);
     try {
       const [usersResp, videosResp] = await Promise.all([
-        request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=500&sort=-created_date"),
+        request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?limit=500&sort=-created_date"),
         request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?limit=500&sort=-created_date")
       ]);
-      const users = Array.isArray(usersResp) ? usersResp : (usersResp?.items || []);
-      const videos = Array.isArray(videosResp) ? videosResp : (videosResp?.items || []);
+      const users = Array.isArray(usersResp) ? usersResp : (usersResp?.items || usersResp?.records || []);
+      const videos = Array.isArray(videosResp) ? videosResp : (videosResp?.items || videosResp?.records || []);
       setAllUsers(users);
-      setAnalyticsData({ total_users: users.length, total_videos: videos.length, videos });
+
+      // ── Compute all fields the UI needs ──
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0,10);
+      const weekAgo = new Date(); weekAgo.setDate(today.getDate()-7);
+
+      const newToday = users.filter(u => (u.created_date||"").slice(0,10) === todayStr).length;
+      const newThisWeek = users.filter(u => new Date(u.created_date) >= weekAgo).length;
+
+      const totalViews    = videos.reduce((s,v) => s + (v.views_count||0), 0);
+      const totalLikes    = videos.reduce((s,v) => s + (v.likes_count||0), 0);
+      const totalComments = videos.reduce((s,v) => s + (v.comments_count||0), 0);
+      const matureCount   = videos.filter(v => v.is_mature).length;
+
+      // Daily videos — last 14 days
+      const dailyVideos = Array.from({length:14}, (_,i) => {
+        const d = new Date(); d.setDate(today.getDate() - (13-i));
+        const ds = d.toISOString().slice(0,10);
+        return { date: ds, count: videos.filter(v => (v.created_date||"").slice(0,10) === ds).length };
+      });
+
+      // Daily users — last 14 days
+      const dailyUsers = Array.from({length:14}, (_,i) => {
+        const d = new Date(); d.setDate(today.getDate() - (13-i));
+        const ds = d.toISOString().slice(0,10);
+        return { date: ds, count: users.filter(u => (u.created_date||"").slice(0,10) === ds).length };
+      });
+
+      // Top creators by video count
+      const creatorMap = {};
+      videos.forEach(v => {
+        const uname = v.username || v.created_by || "unknown";
+        creatorMap[uname] = (creatorMap[uname]||0) + 1;
+      });
+      const topCreators = Object.entries(creatorMap)
+        .sort((a,b) => b[1]-a[1]).slice(0,10)
+        .map(([username,count]) => ({ username, count }));
+
+      // Top videos by views
+      const topVideos = [...videos].sort((a,b) => (b.views_count||0)-(a.views_count||0)).slice(0,10);
+
+      setAnalyticsData({
+        totalUsers: users.length,
+        totalVideos: videos.length,
+        totalViews,
+        totalLikes,
+        totalComments,
+        matureCount,
+        newToday,
+        newThisWeek,
+        recentUsers: [...users].sort((a,b) => new Date(b.created_date) - new Date(a.created_date)).slice(0,50),
+        dailyVideos,
+        dailyUsers,
+        topCreators,
+        topVideos,
+      });
     } catch(e) {
       console.error("analytics error", e);
       setAnalyticsError(e.message || "Failed to load analytics");
@@ -85,7 +140,7 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const usersResp = await request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=500&sort=-created_date");
+      const usersResp = await request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?limit=500&sort=-created_date");
       const users = Array.isArray(usersResp) ? usersResp : (usersResp?.items || []);
       setRegisteredUsers(users);
     } catch(e) { console.error("loadRegisteredUsers error", e); }
