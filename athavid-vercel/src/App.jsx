@@ -587,21 +587,29 @@ function App() {
         .then(r => setMyVideos(Array.isArray(r) ? r : []))
         .catch(() => setMyVideos([]));
       // Live follow counts - check both current ID and legacy username match
-      const myUsername = currentUser.full_name || currentUser.email?.split("@")[0] || "";
+      // Query by BOTH current ID and all known usernames to catch ghost-ID records
+      const myUsername = currentUser.username || currentUser.email?.split("@")[0] || "";
+      const myUsername2 = currentUser.email?.split("@")[0] || "";
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null);
-          const r2 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
-          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+          const [r1, r2, r3] = await Promise.all([
+            request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null),
+            myUsername ? request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null) : null,
+            myUsername2 && myUsername2 !== myUsername ? request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername2)}&limit=500`).catch(()=>null) : null,
+          ]);
+          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[]), ...(r3?.items||r3||[])];
           const unique = [...new Map(all.map(f => [f.id, f])).values()];
           setMeFollowersCount(unique.length);
         } catch(e) {}
       })();
       (async () => {
         try {
-          const r1 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null);
-          const r2 = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null);
-          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[])];
+          const [r1, r2, r3] = await Promise.all([
+            request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null),
+            myUsername ? request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(()=>null) : null,
+            myUsername2 && myUsername2 !== myUsername ? request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername2)}&limit=500`).catch(()=>null) : null,
+          ]);
+          const all = [...(r1?.items||r1||[]), ...(r2?.items||r2||[]), ...(r3?.items||r3||[])];
           const unique = [...new Map(all.map(f => [f.id, f])).values()];
           setMeFollowingCount(unique.length);
         } catch(e) {}
@@ -1020,8 +1028,8 @@ function App() {
                       border:"1px solid rgba(255,255,255,0.07)" }}>
                       {[
                         { value:myVideos.length, label:"Videos", action:null },
-                        { value:meFollowersCount, label:"Followers", action:async()=>{ setShowFollowersList(true); setFollowListLoading(true); try { const r=await request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null); const all=r?.items||r||[]; setFollowersList([...new Map(all.map(f=>[f.id,f])).values()]); }catch(e){setFollowersList([]);} setFollowListLoading(false); }},
-                        { value:meFollowingCount, label:"Following", action:async()=>{ setShowFollowingList(true); setFollowListLoading(true); try { const r=await request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null); const all=r?.items||r||[]; setFollowingList([...new Map(all.map(f=>[f.id,f])).values()]); }catch(e){setFollowingList([]);} setFollowListLoading(false); }},
+                        { value:meFollowersCount, label:"Followers", action:async()=>{ setShowFollowersList(true); setFollowListLoading(true); try { const uname=currentUser.username||currentUser.email?.split("@")[0]||""; const [r1,r2]=await Promise.all([request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(()=>null),uname?request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(uname)}&limit=500`).catch(()=>null):null]); const all=[...(r1?.items||r1||[]),...(r2?.items||r2||[])]; setFollowersList([...new Map(all.map(f=>[f.id,f])).values()]); }catch(e){setFollowersList([]);} setFollowListLoading(false); }},
+                        { value:meFollowingCount, label:"Following", action:async()=>{ setShowFollowingList(true); setFollowListLoading(true); try { const uname=currentUser.username||currentUser.email?.split("@")[0]||""; const [r1,r2]=await Promise.all([request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(()=>null),uname?request("GET",`/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(uname)}&limit=500`).catch(()=>null):null]); const all=[...(r1?.items||r1||[]),...(r2?.items||r2||[])]; setFollowingList([...new Map(all.map(f=>[f.id,f])).values()]); }catch(e){setFollowingList([]);} setFollowListLoading(false); }},
                         { value:totalLoves>=1000?`${(totalLoves/1000).toFixed(1)}K`:totalLoves, label:"❤️ Love", action:null },
                       ].map((s,i,arr)=>(
                         <div key={s.label} onClick={s.action||undefined}
