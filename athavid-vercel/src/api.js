@@ -200,16 +200,28 @@ async function tusUpload(file, uploadUrl, onProgress) {
       xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
       xhr.setRequestHeader("Upload-Offset", String(offset));
       xhr.setRequestHeader("Tus-Resumable", "1.0.0");
-      xhr.timeout = 60000; // 60s per chunk
+      xhr.timeout = 120000; // 120s per chunk
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          console.log(`TUS chunk progress: ${Math.round(e.loaded/e.total*100)}% of chunk at offset ${offset}`);
+        }
+      };
       xhr.onload = () => {
+        console.log(`TUS chunk complete: HTTP ${xhr.status} at offset ${offset}`);
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(xhr);
         } else {
-          reject(new Error(`TUS chunk failed: HTTP ${xhr.status}`));
+          reject(new Error(`TUS chunk failed: HTTP ${xhr.status} body: ${xhr.responseText?.slice(0,200)}`));
         }
       };
-      xhr.onerror = () => reject(new Error("TUS XHR network error"));
-      xhr.ontimeout = () => reject(new Error("TUS XHR timeout"));
+      xhr.onerror = () => {
+        console.error(`TUS XHR network error at offset ${offset}`);
+        reject(new Error("TUS XHR network error"));
+      };
+      xhr.ontimeout = () => {
+        console.error(`TUS XHR timeout at offset ${offset}`);
+        reject(new Error("TUS XHR timeout after 120s"));
+      };
       xhr.send(chunk);
     });
   }
