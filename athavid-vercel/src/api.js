@@ -148,19 +148,20 @@ export async function uploadFile(file, onProgress) {
   const creds = await credRes.json();
 
   if (isVideo) {
-    // 2a. TUS upload directly to Cloudflare Stream
-    // If upload fails, immediately delete the CF session to free up quota
+    // 2a. Upload video directly to Cloudflare Stream via simple form POST
+    // NOT TUS — avoids ERR_HTTP2_PROTOCOL_ERROR entirely.
+    // CF's direct_upload URL accepts a plain multipart/form-data POST.
     try {
-      await tusUpload(file, creds.upload_url, onProgress);
+      await cfFormUpload(file, creds.upload_url, onProgress);
     } catch (uploadErr) {
-      // Non-blocking cleanup — fire and forget
+      // Cleanup the CF session so it doesn't eat quota
       console.warn("Upload failed, cleaning up CF session:", creds.stream_uid);
       fetch("/api/delete-cf-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stream_uid: creds.stream_uid }),
-      }).catch(() => {}); // silent — quota cleanup is best-effort
-      throw uploadErr; // re-throw so the UI shows the error
+      }).catch(() => {});
+      throw uploadErr;
     }
 
     // ⛔ LOCKED — MP4 trigger START
@@ -198,54 +199,37 @@ export async function uploadFile(file, onProgress) {
   }
 }
 
-// TUS protocol upload (Cloudflare Stream)
-// Routes chunks through /api/upload-chunk (Vercel proxy) instead of direct to Cloudflare.
-// Direct browser → Cloudflare TUS causes ERR_HTTP2_PROTOCOL_ERROR on Chrome/Mac.
-// Vercel proxy → Cloudflare uses HTTP/1.1 on the server side — problem gone.
-async function tusUpload(file, cfUploadUrl, onProgress) {
-  const CHUNK = 10 * 1024 * 1024; // 10MB chunks (keep under Vercel 4.5MB body? use fetch streaming)
-  const MAX_RETRIES = 3;
+// Cloudflare Stream direct form upload (replaces TUS)
+// Browser POSTs the file as multipart/form-data to CF's one-time upload URL.
+// No HTTP/2 chunking issues — standard browser fetch, one request.
+// onProgress is approximate (fetch doesn't expose upload progress natively,
+// so we fake it with a timer for UX).
+async function cfFormUpload(file, uploadUrl, onProgress) {
+  // Fake progress while uploading (fetch has no upload progress API)
+  let fakeProgress = 0;
+  const fakeTimer = setInterval(() => {
+    fakeProgress = Math.min(fakeProgress + 2, 90);
+    if (onProgress) onProgress(fakeProgress);
+  }, 500);
 
-  async function patchChunk(chunk, offset) {
-    const res = await fetch("/api/upload-chunk", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/offset+octet-stream",
-        "Upload-Offset": String(offset),
-        "Tus-Resumable": "1.0.0",
-        "X-CF-Upload-URL": cfUploadUrl,
-      },
-      body: chunk,
+  try {
+    const form = new FormData();
+    form.append("file", file, file.name);
+
+    const res = await fetch(uploadUrl, {
+      method: "POST",
+      body: form,
+      // No Content-Type header — browser sets it with boundary automatically
     });
+
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      throw new Error(`TUS chunk failed: HTTP ${res.status} — ${errText.slice(0, 200)}`);
+      throw new Error(`CF upload failed: HTTP ${res.status} — ${errText.slice(0, 300)}`);
     }
-    return res;
-  }
 
-  let offset = 0;
-  while (offset < file.size) {
-    const chunk = file.slice(offset, offset + CHUNK);
-    let lastErr;
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        console.log(`TUS chunk: offset=${offset}, size=${chunk.size}, attempt=${attempt + 1}`);
-        await patchChunk(chunk, offset);
-        console.log(`TUS chunk OK at offset ${offset}`);
-        break;
-      } catch (err) {
-        lastErr = err;
-        if (attempt < MAX_RETRIES) {
-          const delay = Math.min(1500 * Math.pow(2, attempt), 8000);
-          console.warn(`TUS chunk failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying in ${delay}ms...`, err.message);
-          await new Promise(r => setTimeout(r, delay));
-        }
-      }
-      if (attempt === MAX_RETRIES) throw lastErr;
-    }
-    offset += chunk.size;
-    if (onProgress) onProgress(Math.round((offset / file.size) * 100));
+    if (onProgress) onProgress(100);
+  } finally {
+    clearInterval(fakeTimer);
   }
 }
 

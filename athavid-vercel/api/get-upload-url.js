@@ -32,26 +32,28 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "type and filename required" });
   }
 
-  // ── VIDEO: Cloudflare Stream TUS direct upload ──────────────────────────
+  // ── VIDEO: Cloudflare Stream direct upload (non-TUS, simple form POST) ──
+  // Uses /stream/direct_upload to get a one-time upload URL the browser can
+  // POST a multipart form to. No TUS, no HTTP/2 issues, no chunking needed.
   if (type === "video") {
     if (!CF_TOKEN) return res.status(500).json({ error: "CLOUDFLARE_API_TOKEN not set" });
-    if (!filesize) return res.status(400).json({ error: "filesize required for video upload" });
+
+    // maxDuration from client (seconds), default 600 (10 min), max 1800 (30 min)
+    const maxDuration = Math.min(parseInt(body.maxDuration || "600", 10), 1800);
 
     try {
       const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/stream?direct_user=true`,
+        `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/stream/direct_upload`,
         {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${CF_TOKEN}`,
-            "Tus-Resumable": "1.0.0",
-            "Upload-Length": String(filesize),
-            "Upload-Metadata": [
-              `name ${btoa(filename)}`,
-              `requireSignedURLs false`,
-              `allowedorigins ${btoa("sachistream.com")}`,
-            ].join(","),
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            maxDurationSeconds: maxDuration,
+            requireSignedURLs: false,
+          }),
         }
       );
 
@@ -60,16 +62,18 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: "Cloudflare Stream error", details: err });
       }
 
-      const uploadUrl  = cfRes.headers.get("location");
-      const streamUid  = cfRes.headers.get("stream-media-id");
+      const data = await cfRes.json();
+      const uploadUrl = data.result.uploadURL;  // browser POSTs file here as multipart form
+      const streamUid = data.result.uid;
       const playbackUrl = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${streamUid}/manifest/video.m3u8`;
       const thumbnailUrl = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${streamUid}/thumbnails/thumbnail.jpg`;
 
       return res.status(200).json({
-        upload_url:   uploadUrl,   // TUS endpoint — client uploads directly here
-        stream_uid:   streamUid,
-        playback_url: playbackUrl, // save this as video_url in the DB record
+        upload_url:    uploadUrl,   // browser POSTs multipart form here
+        stream_uid:    streamUid,
+        playback_url:  playbackUrl,
         thumbnail_url: thumbnailUrl,
+        method:        "form",      // tells client to use form POST not TUS
       });
     } catch (e) {
       return res.status(500).json({ error: e.message });
