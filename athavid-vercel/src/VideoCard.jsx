@@ -468,6 +468,18 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Delete failed");
+
+      // Also delete the Cloudflare Stream video to free up quota
+      // Extract stream UID from video_url or thumbnail_url
+      const cfUidMatch = (video.video_url || video.thumbnail_url || "").match(/cloudflarestream\.com\/([a-f0-9]{32})/);
+      if (cfUidMatch) {
+        fetch("/api/delete-cf-stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stream_uid: cfUidMatch[1] }),
+        }).catch(() => {}); // silent — non-blocking
+      }
+
       onDelete && onDelete(video.id);
     } catch(err) { alert("Failed to delete. Try again."); }
   };

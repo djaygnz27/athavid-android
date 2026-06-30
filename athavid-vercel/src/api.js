@@ -149,7 +149,19 @@ export async function uploadFile(file, onProgress) {
 
   if (isVideo) {
     // 2a. TUS upload directly to Cloudflare Stream
-    await tusUpload(file, creds.upload_url, onProgress);
+    // If upload fails, immediately delete the CF session to free up quota
+    try {
+      await tusUpload(file, creds.upload_url, onProgress);
+    } catch (uploadErr) {
+      // Non-blocking cleanup — fire and forget
+      console.warn("Upload failed, cleaning up CF session:", creds.stream_uid);
+      fetch("/api/delete-cf-stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stream_uid: creds.stream_uid }),
+      }).catch(() => {}); // silent — quota cleanup is best-effort
+      throw uploadErr; // re-throw so the UI shows the error
+    }
 
     // ⛔ LOCKED — MP4 trigger START
     // DO NOT remove or bypass this block without explicit permission from Jay.
