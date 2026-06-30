@@ -111,6 +111,7 @@ function AdminPanel({ currentUser }) {
 
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [lastSeenMap, setLastSeenMap] = useState({}); // username -> last session_start ISO string
 
   // ── Founding Creators state ──
   const [founders, setFounders] = useState([]);
@@ -143,9 +144,23 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const usersResp = await fetch("/api/admin-users").then(r => r.json());
+      const [usersResp, sessionsResp] = await Promise.all([
+        fetch("/api/admin-users").then(r => r.json()),
+        fetch("/api/admin-sessions").then(r => r.json()).catch(() => ({ items: [] }))
+      ]);
       const users = usersResp?.items || [];
       setRegisteredUsers(users);
+
+      // Build lastSeenMap: username -> most recent session_start
+      const sessions = sessionsResp?.items || [];
+      const map = {};
+      sessions.forEach(s => {
+        if (!s.username) return;
+        const key = s.username.toLowerCase();
+        const ts = s.session_start || s.created_date;
+        if (!map[key] || ts > map[key]) map[key] = ts;
+      });
+      setLastSeenMap(map);
     } catch(e) { console.error("loadRegisteredUsers error", e); }
     setUsersLoading(false);
   };
@@ -518,12 +533,26 @@ function AdminPanel({ currentUser }) {
                             <div style={{ color:"#888", fontSize:11 }}>
                               {u.created_date ? new Date(u.created_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : ""}
                             </div>
-                            <div style={{ color:"#777", fontSize:10, marginTop:1 }}>
-                              {u.created_date ? new Date(u.created_date).toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}) : ""}
-                            </div>
                             <div style={{ color: u.status==="active" ? "#6BFFB8" : "#FF6B6B", fontSize:10, fontWeight:700, marginTop:2 }}>
                               {u.status || "active"}
                             </div>
+                            {(() => {
+                              const ls = lastSeenMap[(u.username||"").toLowerCase()];
+                              if (!ls) return <div style={{ color:"#555", fontSize:10, marginTop:2 }}>Never seen</div>;
+                              const diff = Date.now() - new Date(ls).getTime();
+                              const mins = Math.floor(diff/60000);
+                              const hrs = Math.floor(mins/60);
+                              const days = Math.floor(hrs/24);
+                              let label;
+                              if (mins < 5) label = "🟢 Just now";
+                              else if (mins < 60) label = `🟢 ${mins}m ago`;
+                              else if (hrs < 24) label = `🟡 ${hrs}h ago`;
+                              else if (days === 1) label = "🟠 Yesterday";
+                              else if (days < 7) label = `🟠 ${days}d ago`;
+                              else if (days < 30) label = `🔴 ${days}d ago`;
+                              else label = `⚫ ${Math.floor(days/30)}mo ago`;
+                              return <div style={{ fontSize:10, marginTop:2, fontWeight:700 }}>{label}</div>;
+                            })()}
                           </div>
                         </div>
                         );
