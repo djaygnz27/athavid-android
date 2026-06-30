@@ -187,42 +187,51 @@ export async function uploadFile(file, onProgress) {
 }
 
 // TUS protocol upload (Cloudflare Stream)
-// Retries each chunk up to 3 times with exponential backoff on network errors
-// NOTE: No HEAD resume check — Cloudflare's TUS endpoint blocks HEAD via CORS from browser
+// Uses XHR instead of fetch — avoids ERR_HTTP2_PROTOCOL_ERROR on Chrome/Mac
+// fetch() triggers HTTP/2 which Cloudflare TUS rejects; XHR forces HTTP/1.1
 async function tusUpload(file, uploadUrl, onProgress) {
   const CHUNK = 20 * 1024 * 1024; // 20MB chunks
   const MAX_RETRIES = 3;
 
-  // Helper: fetch with retry + 30s timeout per chunk
-  async function fetchWithRetry(url, opts, attempt = 0) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000); // 30s per chunk max
-      const res = await fetch(url, { ...opts, signal: controller.signal });
-      clearTimeout(timeout);
-      return res;
-    } catch (err) {
-      if (attempt >= MAX_RETRIES) throw err;
-      const delay = Math.min(1500 * Math.pow(2, attempt), 8000); // 1.5s, 3s, 6s, 8s cap
-      console.warn(`TUS chunk failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying in ${delay}ms...`, err.message);
-      await new Promise(r => setTimeout(r, delay));
-      return fetchWithRetry(url, opts, attempt + 1);
-    }
+  function xhrPatch(url, chunk, offset) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PATCH", url, true);
+      xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
+      xhr.setRequestHeader("Upload-Offset", String(offset));
+      xhr.setRequestHeader("Tus-Resumable", "1.0.0");
+      xhr.timeout = 60000; // 60s per chunk
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr);
+        } else {
+          reject(new Error(`TUS chunk failed: HTTP ${xhr.status}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("TUS XHR network error"));
+      xhr.ontimeout = () => reject(new Error("TUS XHR timeout"));
+      xhr.send(chunk);
+    });
   }
 
   let offset = 0;
   while (offset < file.size) {
     const chunk = file.slice(offset, offset + CHUNK);
-    const res = await fetchWithRetry(uploadUrl, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/offset+octet-stream",
-        "Upload-Offset": String(offset),
-        "Tus-Resumable": "1.0.0",
-      },
-      body: chunk,
-    });
-    if (!res.ok) throw new Error(`TUS upload failed at offset ${offset}: ${res.status}`);
+    let lastErr;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        await xhrPatch(uploadUrl, chunk, offset);
+        break; // success
+      } catch (err) {
+        lastErr = err;
+        if (attempt < MAX_RETRIES) {
+          const delay = Math.min(1500 * Math.pow(2, attempt), 8000);
+          console.warn(`TUS chunk failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying in ${delay}ms...`, err.message);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+      if (attempt === MAX_RETRIES) throw lastErr;
+    }
     offset += chunk.size;
     if (onProgress) onProgress(Math.round((offset / file.size) * 100));
   }
