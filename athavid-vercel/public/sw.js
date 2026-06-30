@@ -70,6 +70,16 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Cloudflare Stream TUS uploads — must bypass SW entirely
+  // The SW wrapping breaks streaming PATCH requests (body can't be cloned/re-read)
+  if (
+    url.hostname.includes('cloudflarestream.com') ||
+    url.hostname.includes('cloudflarestorage.com') ||
+    url.hostname.includes('r2.cloudflarestorage.com')
+  ) {
+    return; // Do NOT call event.respondWith — browser handles it natively
+  }
+
   // Everything else (API calls etc) — network only, no caching
   event.respondWith(fetch(event.request));
 });
