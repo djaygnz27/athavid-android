@@ -1,5 +1,5 @@
 // SACHi STREAM Service Worker — cache-first, NO forced reloads
-const CACHE_VERSION = 'sachi-v4';
+const CACHE_VERSION = 'sachi-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const CACHE_EXTENSIONS = ['.png', '.ico', '.jpg', '.jpeg', '.webp', '.svg', '.woff2', '.woff'];
