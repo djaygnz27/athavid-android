@@ -199,43 +199,29 @@ export async function uploadFile(file, onProgress) {
 }
 
 // TUS protocol upload (Cloudflare Stream)
-// Uses XHR instead of fetch — avoids ERR_HTTP2_PROTOCOL_ERROR on Chrome/Mac
-// fetch() triggers HTTP/2 which Cloudflare TUS rejects; XHR forces HTTP/1.1
-async function tusUpload(file, uploadUrl, onProgress) {
-  const CHUNK = 20 * 1024 * 1024; // 20MB chunks
+// Routes chunks through /api/upload-chunk (Vercel proxy) instead of direct to Cloudflare.
+// Direct browser → Cloudflare TUS causes ERR_HTTP2_PROTOCOL_ERROR on Chrome/Mac.
+// Vercel proxy → Cloudflare uses HTTP/1.1 on the server side — problem gone.
+async function tusUpload(file, cfUploadUrl, onProgress) {
+  const CHUNK = 10 * 1024 * 1024; // 10MB chunks (keep under Vercel 4.5MB body? use fetch streaming)
   const MAX_RETRIES = 3;
 
-  function xhrPatch(url, chunk, offset) {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("PATCH", url, true);
-      xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
-      xhr.setRequestHeader("Upload-Offset", String(offset));
-      xhr.setRequestHeader("Tus-Resumable", "1.0.0");
-      xhr.timeout = 120000; // 120s per chunk
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          console.log(`TUS chunk progress: ${Math.round(e.loaded/e.total*100)}% of chunk at offset ${offset}`);
-        }
-      };
-      xhr.onload = () => {
-        console.log(`TUS chunk complete: HTTP ${xhr.status} at offset ${offset}`);
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(xhr);
-        } else {
-          reject(new Error(`TUS chunk failed: HTTP ${xhr.status} body: ${xhr.responseText?.slice(0,200)}`));
-        }
-      };
-      xhr.onerror = () => {
-        console.error(`TUS XHR network error at offset ${offset}`);
-        reject(new Error("TUS XHR network error"));
-      };
-      xhr.ontimeout = () => {
-        console.error(`TUS XHR timeout at offset ${offset}`);
-        reject(new Error("TUS XHR timeout after 120s"));
-      };
-      xhr.send(chunk);
+  async function patchChunk(chunk, offset) {
+    const res = await fetch("/api/upload-chunk", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/offset+octet-stream",
+        "Upload-Offset": String(offset),
+        "Tus-Resumable": "1.0.0",
+        "X-CF-Upload-URL": cfUploadUrl,
+      },
+      body: chunk,
     });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(`TUS chunk failed: HTTP ${res.status} — ${errText.slice(0, 200)}`);
+    }
+    return res;
   }
 
   let offset = 0;
@@ -244,8 +230,10 @@ async function tusUpload(file, uploadUrl, onProgress) {
     let lastErr;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        await xhrPatch(uploadUrl, chunk, offset);
-        break; // success
+        console.log(`TUS chunk: offset=${offset}, size=${chunk.size}, attempt=${attempt + 1}`);
+        await patchChunk(chunk, offset);
+        console.log(`TUS chunk OK at offset ${offset}`);
+        break;
       } catch (err) {
         lastErr = err;
         if (attempt < MAX_RETRIES) {

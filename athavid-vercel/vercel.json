@@ -70,5 +70,11 @@
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/upload-chunk.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
 }
