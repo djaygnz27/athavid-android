@@ -5,7 +5,8 @@ const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const CACHE_EXTENSIONS = ['.png', '.ico', '.jpg', '.jpeg', '.webp', '.svg', '.woff2', '.woff'];
 
 self.addEventListener('install', event => {
-  // DO NOT skipWaiting — let the old SW finish serving the current session
+  // skipWaiting so new SW activates immediately — critical for upload fix
+  self.skipWaiting();
   event.waitUntil(
     caches.open(STATIC_CACHE).then(cache =>
       cache.addAll(['/icon-192.png', '/icon-512.png', '/favicon.ico']).catch(() => {})
