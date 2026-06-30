@@ -1,7 +1,7 @@
 // Vercel serverless function — returns all SachiUser records using service token
 // Used by AdminPanel to bypass RLS and show all registered users
 const APP_ID = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://api.base44.com/api";
+const BASE_URL = "https://sachi-04cfb834.base44.app/api";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
