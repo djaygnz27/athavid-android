@@ -58,24 +58,6 @@ async function lookupSachiUser(email) {
     }
   } catch {}
 
-  // Fallback: try with stored session token if available
-  try {
-    const existingSession = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
-    const sessionObj = existingSession ? JSON.parse(existingSession) : null;
-    const token = sessionObj?.token;
-    if (token) {
-      const res = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
-        { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
-        const found = items.find(u => u.email === email);
-        if (found) return found;
-      }
-    }
-  } catch {}
 
   return null;
 }
