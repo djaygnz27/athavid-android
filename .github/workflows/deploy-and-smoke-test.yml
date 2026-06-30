@@ -1,0 +1,81 @@
+name: Sachi Deploy Gate
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy-and-smoke:
+    name: Deploy + Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd athavid-vercel && npm install --legacy-peer-deps
+
+      - name: Build
+        run: cd athavid-vercel && npm run build
+
+      - name: Deploy to Vercel (production)
+        run: |
+          npm install -g vercel --legacy-peer-deps 2>/dev/null
+          cd athavid-vercel
+          vercel deploy --prod \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=jaygnz27-1313 \
+            --yes 2>&1 | tail -5
+
+      - name: Wait for deployment to propagate
+        run: sleep 45
+
+      # ── SMOKE TESTS ──────────────────────────────────────────────────────────
+
+      - name: 🔎 Test — Site loads (200)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://sachistream.com)
+          echo "Site HTTP status: $STATUS"
+          [ "$STATUS" = "200" ] || { echo "❌ Site returned $STATUS"; exit 1; }
+          echo "✅ Site loads"
+
+      - name: 🔎 Test — /api/admin-users returns users (service token check)
+        run: |
+          RESPONSE=$(curl -sL https://sachistream.com/api/admin-users)
+          COUNT=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('count',0))" 2>/dev/null || echo "0")
+          echo "User count from admin-users: $COUNT"
+          [ "$COUNT" -gt "0" ] || { echo "❌ admin-users returned 0 — service token or BASE_URL broken"; echo "Response: $RESPONSE"; exit 1; }
+          echo "✅ admin-users OK ($COUNT users)"
+
+      - name: 🔎 Test — /api/lookup-user is reachable
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://sachistream.com/api/lookup-user?email=test@test.com")
+          echo "lookup-user status: $STATUS"
+          { [ "$STATUS" = "200" ] || [ "$STATUS" = "404" ]; } || { echo "❌ lookup-user returned $STATUS"; exit 1; }
+          echo "✅ lookup-user reachable"
+
+      - name: 🔎 Test — /api/get-upload-url is reachable (not 500)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://sachistream.com/api/get-upload-url \
+            -H "Content-Type: application/json" -d '{}')
+          echo "get-upload-url status: $STATUS"
+          [ "$STATUS" != "500" ] || { echo "❌ get-upload-url crashed (500)"; exit 1; }
+          echo "✅ get-upload-url reachable"
+
+      - name: 🔎 Test — /api/session-start is reachable (not 500)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://sachistream.com/api/session-start \
+            -H "Content-Type: application/json" -d '{}')
+          echo "session-start status: $STATUS"
+          [ "$STATUS" != "500" ] || { echo "❌ session-start crashed (500)"; exit 1; }
+          echo "✅ session-start reachable"
+
+      - name: 🟢 All smoke tests passed
+        run: |
+          echo "================================================"
+          echo "✅ sachistream.com is healthy — deploy complete"
+          echo "================================================"
