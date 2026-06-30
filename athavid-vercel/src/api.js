@@ -187,12 +187,51 @@ export async function uploadFile(file, onProgress) {
 }
 
 // TUS protocol upload (Cloudflare Stream)
+// Retries each chunk up to 4 times with exponential backoff on network errors
 async function tusUpload(file, uploadUrl, onProgress) {
-  const CHUNK = 50 * 1024 * 1024; // 50MB chunks
+  const CHUNK = 20 * 1024 * 1024; // 20MB chunks (smaller = more reliable on slow connections)
+  const MAX_RETRIES = 4;
+
+  // Helper: fetch with retry on network errors (Failed to fetch, AbortError, etc.)
+  async function fetchWithRetry(url, opts, attempt = 0) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000); // 60s per chunk
+      const res = await fetch(url, { ...opts, signal: controller.signal });
+      clearTimeout(timeout);
+      return res;
+    } catch (err) {
+      if (attempt >= MAX_RETRIES) throw err;
+      const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // 1s, 2s, 4s, 8s, 10s cap
+      console.warn(`TUS chunk failed (attempt ${attempt + 1}/${MAX_RETRIES}), retrying in ${delay}ms...`, err.message);
+      await new Promise(r => setTimeout(r, delay));
+      return fetchWithRetry(url, opts, attempt + 1);
+    }
+  }
+
+  // First: check how much Cloudflare already has (resume support)
   let offset = 0;
+  try {
+    const headRes = await fetch(uploadUrl, {
+      method: "HEAD",
+      headers: { "Tus-Resumable": "1.0.0" },
+    });
+    if (headRes.ok) {
+      const serverOffset = parseInt(headRes.headers.get("Upload-Offset") || "0", 10);
+      if (!isNaN(serverOffset) && serverOffset > 0) {
+        console.log(`Resuming TUS upload from offset ${serverOffset}`);
+        offset = serverOffset;
+        if (onProgress) onProgress(Math.round((offset / file.size) * 100));
+      }
+    }
+  } catch (e) {
+    // Non-fatal — start from 0
+    console.warn("TUS HEAD check failed, starting from 0:", e.message);
+  }
+
   while (offset < file.size) {
     const chunk = file.slice(offset, offset + CHUNK);
-    const res = await fetch(uploadUrl, {
+    const res = await fetchWithRetry(uploadUrl, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/offset+octet-stream",
