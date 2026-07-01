@@ -35,6 +35,10 @@ function httpsDelete(hostname, path, headers) {
   });
 }
 
+
+// CRITICAL: disable Vercel's default 4.5MB body size limit
+module.exports.config = { api: { bodyParser: false, responseLimit: false } };
+
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
