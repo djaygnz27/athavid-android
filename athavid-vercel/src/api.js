@@ -192,63 +192,61 @@ export async function uploadFile(file, onProgress) {
   }
 }
 
-// Cloudflare Stream 2-step direct upload:
-// Step 1: Get a CF upload URL from our tiny Vercel function (/api/get-cf-session) — <1KB request, no size limit issue
-// Step 2: Browser uploads the video DIRECTLY to Cloudflare — bypasses Vercel's 4.5MB hard limit entirely
+// Cloudflare Stream TUS chunked upload — browser → CF directly
+// Uses TUS protocol (chunked PATCH requests) which avoids:
+//   1. Vercel 4.5MB body limit (we never proxy the file)
+//   2. ERR_HTTP2_PROTOCOL_ERROR (PATCH chunks are HTTP/1.1 compatible)
+// Each chunk is 8MB. Resumable on network interruption.
 async function cfFormUpload(file, _uploadUrl, onProgress) {
-  // Step 1: Get CF upload session (tiny request to Vercel)
-  const maxDuration = 1800; // 30 min max
+  if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
+
+  // Step 1: Get CF TUS upload URL from our server (tiny JSON request)
   const sessionRes = await fetch("/api/get-cf-session", {
     method: "POST",
-    headers: { "X-Max-Duration": String(maxDuration) },
+    headers: { "X-Max-Duration": "1800" },
   });
   if (!sessionRes.ok) {
-    const errText = await sessionRes.text();
-    throw new Error(`Failed to get upload session: ${sessionRes.status} — ${errText.slice(0, 200)}`);
+    const errText = await sessionRes.text().catch(() => "");
+    throw new Error(`Failed to get upload session: HTTP ${sessionRes.status} — ${errText.slice(0, 200)}`);
   }
   const sessionData = await sessionRes.json();
-  const cfUploadUrl = sessionData.upload_url;
+  const tusUrl = sessionData.upload_url; // e.g. https://upload.cloudflarestream.com/<uid>
 
-  // Step 2: Upload directly from browser to Cloudflare using fetch()
-  // Using fetch() instead of XHR for better error visibility and streaming support
-  if (file.size === 0) throw new Error("File is empty — please select a valid video");
+  // Step 2: TUS chunked upload — browser PATCH chunks directly to CF
+  // Each chunk is 8MB — well under any limit, no HTTP/2 streaming issues
+  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB
+  let offset = 0;
 
-  // Simulate progress since fetch doesn't have native upload progress
-  let progressInterval = null;
-  if (onProgress) {
-    let fakeProgress = 0;
-    const estimatedMs = Math.max(3000, (file.size / 1024 / 1024) * 1500); // ~1.5s per MB
-    const step = 100 / (estimatedMs / 200);
-    progressInterval = setInterval(() => {
-      fakeProgress = Math.min(fakeProgress + step, 92);
-      onProgress(Math.round(fakeProgress));
-    }, 200);
+  const uploadChunk = (chunk, currentOffset) => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PATCH", tusUrl, true);
+    xhr.setRequestHeader("Tus-Resumable", "1.0.0");
+    xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
+    xhr.setRequestHeader("Upload-Offset", String(currentOffset));
+    xhr.setRequestHeader("Content-Length", String(chunk.size));
+
+    xhr.onload = () => {
+      if (xhr.status === 204) {
+        resolve();
+      } else {
+        reject(new Error(`Chunk upload failed: HTTP ${xhr.status} at offset ${currentOffset} — ${xhr.responseText.slice(0, 100)}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error(`Chunk network error at offset ${currentOffset}`));
+    xhr.ontimeout = () => reject(new Error("Chunk timed out"));
+    xhr.timeout = 120000; // 2 min per chunk
+    xhr.send(chunk);
+  });
+
+  while (offset < file.size) {
+    const chunk = file.slice(offset, offset + CHUNK_SIZE);
+    await uploadChunk(chunk, offset);
+    offset = Math.min(offset + CHUNK_SIZE, file.size);
+    if (onProgress) onProgress(Math.round((offset / file.size) * 100));
   }
 
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
+  if (onProgress) onProgress(100);
 
-    const uploadRes = await fetch(cfUploadUrl, {
-      method: "POST",
-      body: formData,
-      signal: AbortSignal.timeout(600000), // 10 minute timeout
-    });
-
-    if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
-    if (onProgress) onProgress(100);
-
-    if (!uploadRes.ok) {
-      const errText = await uploadRes.text().catch(() => "");
-      throw new Error(`CF upload rejected: HTTP ${uploadRes.status} — ${errText.slice(0, 200)}`);
-    }
-  } catch (err) {
-    if (progressInterval) { clearInterval(progressInterval); }
-    if (err.name === "TimeoutError") throw new Error("Upload timed out — try a shorter video");
-    throw new Error("Upload failed: " + (err.message || "network error"));
-  }
-
-  // Return the CF metadata from the session
   return {
     stream_uid:    sessionData.stream_uid,
     playback_url:  sessionData.playback_url,
