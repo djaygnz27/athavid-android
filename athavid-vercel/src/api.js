@@ -203,40 +203,46 @@ export async function uploadFile(file, onProgress) {
 }
 
 // Cloudflare Stream server-side upload proxy
-// Browser sends video to Vercel (/api/upload-video), Vercel forwards to CF.
-// Eliminates ERR_HTTP2_PROTOCOL_ERROR — browser never talks to CF directly.
-// onProgress is faked via timer (XHR upload progress not available with fetch).
-async function cfFormUpload(file, _uploadUrl, onProgress) {
-  // Fake progress ticker for UX
-  let fakeProgress = 0;
-  const fakeTimer = setInterval(() => {
-    fakeProgress = Math.min(fakeProgress + 3, 90);
-    if (onProgress) onProgress(fakeProgress);
-  }, 800);
+// Uses XMLHttpRequest instead of fetch() to avoid Chrome ERR_HTTP2_PROTOCOL_ERROR
+// on large POST bodies. XHR forces HTTP/1.1 upgrade, fetch() uses HTTP/2 which
+// breaks on large uploads. XHR also gives real upload progress.
+function cfFormUpload(file, _uploadUrl, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload-video", true);
+    xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+    xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
+    xhr.setRequestHeader("X-Max-Duration", "600");
 
-  try {
-    const res = await fetch("/api/upload-video", {
-      method: "POST",
-      headers: {
-        "Content-Type": file.type || "video/mp4",
-        "X-File-Name": encodeURIComponent(file.name),
-        "X-Max-Duration": "600",
-      },
-      body: file,  // stream raw bytes — no FormData wrapper needed server-side
-    });
+    // Real upload progress from XHR
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || `Upload failed: HTTP ${res.status}`);
-    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (onProgress) onProgress(100);
+          resolve(data);
+        } catch (e) {
+          reject(new Error("Invalid JSON response from upload server"));
+        }
+      } else {
+        let errMsg = `Upload failed: HTTP ${xhr.status}`;
+        try { errMsg = JSON.parse(xhr.responseText).error || errMsg; } catch {}
+        reject(new Error(errMsg));
+      }
+    };
 
-    const data = await res.json();
-    if (onProgress) onProgress(100);
-    // Return the CF stream info so the caller can update creds
-    return data;
-  } finally {
-    clearInterval(fakeTimer);
-  }
+    xhr.onerror = () => reject(new Error("Upload failed: network error (XHR)"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out"));
+    xhr.timeout = 600000; // 10 minutes for large files
+
+    xhr.send(file); // send raw file bytes
+  });
 }
 
 // Direct PUT to R2 presigned URL
