@@ -79,6 +79,9 @@
     "api/upload-video.js": {
       "maxDuration": 300,
       "memory": 3008
+    },
+    "api/trigger-mp4.js": {
+      "maxDuration": 60
     }
   }
 }

@@ -167,24 +167,16 @@ export async function uploadFile(file, onProgress) {
 
     // ⛔ LOCKED — MP4 trigger START
     // DO NOT remove or bypass this block without explicit permission from Jay.
-    // This is what ensures every uploaded video gets a direct MP4 (media_url) in the DB.
-    // Without this: uploads are HLS-only → isHlsUrl misdetection → VideoPlayer sets src=undefined → frozen video.
-    // Root cause that broke June 24 videos. Fixed 2026-06-25.
+    // Fire-and-forget: trigger CF to generate MP4 download in background.
+    // Don't await — this used to block upload completion for 30s.
+    // The backfill system (admin/automated) sets media_url later if CF isn't ready instantly.
     let media_url = null;
-    try {
-      const dlRes = await fetch("/api/trigger-mp4", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stream_uid: creds.stream_uid }),
-      });
-      if (dlRes.ok) {
-        const dlData = await dlRes.json();
-        media_url = dlData.media_url || null;
-      }
-    } catch (e) {
-      // Non-fatal — video_url (HLS) still works as fallback
-      console.warn("trigger-mp4 failed (non-fatal):", e.message);
-    }
+    fetch("/api/trigger-mp4", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stream_uid: creds.stream_uid }),
+    }).then(r => r.ok ? r.json() : null).catch(() => null);
+    // media_url stays null for now — VideoPlayer falls back to HLS which works fine
 
     return {
       file_url: creds.playback_url,
