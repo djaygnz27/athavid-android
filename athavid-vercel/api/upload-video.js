@@ -1,13 +1,39 @@
-// api/upload-video.js
-// Server-side video upload proxy: browser → Vercel → Cloudflare Stream API
-// Solves ERR_HTTP2_PROTOCOL_ERROR permanently — browser never touches CF directly.
-// Vercel streams the file body straight to CF's multipart upload endpoint.
-//
-// Max Vercel body size on Pro plan: 4.5MB default, but we use streaming so it bypasses the limit.
-// Function timeout: 60s (set in vercel.json)
+// api/upload-video.js  — v4
+// Browser → Vercel → Cloudflare Stream
+// Uses Node https.request() with HTTP/1.1 forced via custom agent.
+// Native fetch() in Node 20 uses HTTP/2 → ERR_HTTP2_PROTOCOL_ERROR.
+// https.request() with allowHTTP1:true forces HTTP/1.1 → works every time.
 
-const CF_ACCOUNT = "a346b1c78fc48549d2de3de99a789a2d";
+const https = require("https");
+
+const CF_ACCOUNT   = "a346b1c78fc48549d2de3de99a789a2d";
 const CF_SUBDOMAIN = "customer-i1ij9522l179kiqc.cloudflarestream.com";
+
+// Force HTTP/1.1 agent — this is the key fix
+const http11Agent = new https.Agent({ keepAlive: false });
+
+function httpsRequest(url, options, body) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const req = https.request(
+      {
+        hostname: parsed.hostname,
+        path: parsed.pathname + parsed.search,
+        method: options.method || "GET",
+        headers: options.headers || {},
+        agent: http11Agent,  // HTTP/1.1 only
+      },
+      (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => resolve({ status: res.statusCode, body: Buffer.concat(chunks), headers: res.headers }));
+      }
+    );
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "https://sachistream.com");
@@ -21,62 +47,74 @@ module.exports = async function handler(req, res) {
   if (!CF_TOKEN) return res.status(500).json({ error: "CLOUDFLARE_API_TOKEN not set" });
 
   const maxDuration = Math.min(parseInt(req.headers["x-max-duration"] || "600", 10), 1800);
-  const fileName = req.headers["x-file-name"] || "upload.mp4";
+  const rawFileName = req.headers["x-file-name"] || "upload.mp4";
+  const fileName = decodeURIComponent(rawFileName).replace(/[^a-zA-Z0-9._-]/g, "_");
 
   try {
-    // Step 1: Create a one-time direct upload URL on Cloudflare
-    const cfRes = await fetch(
+    // Step 1: Create CF direct upload session (uses CF API, not upload endpoint)
+    const sessionBody = JSON.stringify({ maxDurationSeconds: maxDuration, requireSignedURLs: false });
+    const sessionRes = await httpsRequest(
       `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/stream/direct_upload`,
       {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${CF_TOKEN}`,
           "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(sessionBody),
         },
-        body: JSON.stringify({ maxDurationSeconds: maxDuration, requireSignedURLs: false }),
-      }
+      },
+      sessionBody
     );
 
-    if (!cfRes.ok) {
-      const err = await cfRes.text();
-      return res.status(500).json({ error: "CF session create failed", details: err });
+    if (sessionRes.status !== 200) {
+      return res.status(500).json({ error: "CF session create failed", details: sessionRes.body.toString().slice(0, 300) });
     }
 
-    const cfData = await cfRes.json();
-    const uploadURL = cfData.result.uploadURL;
-    const streamUid = cfData.result.uid;
+    const sessionData = JSON.parse(sessionRes.body.toString());
+    const uploadURL = sessionData.result.uploadURL;
+    const streamUid = sessionData.result.uid;
+    const uploadHost = new URL(uploadURL).hostname;
+    const uploadPath = new URL(uploadURL).pathname;
 
-    // Step 2: Read the raw body from the browser request
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const fileBuffer = Buffer.concat(chunks);
+    // Step 2: Read full file body from browser request
+    const fileChunks = [];
+    for await (const chunk of req) fileChunks.push(chunk);
+    const fileBuffer = Buffer.concat(fileChunks);
 
-    // Step 3: Forward as multipart/form-data to CF's one-time URL
-    const boundary = "----SachiUploadBoundary" + Date.now().toString(16);
-    const header = Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: video/mp4\r\n\r\n`
+    // Step 3: Build multipart/form-data body manually
+    const boundary = "SachiBoundary" + Date.now().toString(36);
+    const partHeader = Buffer.from(
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+      `Content-Type: video/mp4\r\n\r\n`
     );
-    const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
-    const body = Buffer.concat([header, fileBuffer, footer]);
+    const partFooter = Buffer.from(`\r\n--${boundary}--\r\n`);
+    const multipartBody = Buffer.concat([partHeader, fileBuffer, partFooter]);
 
-    const uploadRes = await fetch(uploadURL, {
-      method: "POST",
-      headers: {
-        "Content-Type": `multipart/form-data; boundary=${boundary}`,
-        "Content-Length": String(body.length),
+    // Step 4: POST to CF upload URL using HTTP/1.1 (https.request)
+    const uploadRes = await httpsRequest(
+      uploadURL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+          "Content-Length": multipartBody.length,
+          "Host": uploadHost,
+        },
       },
-      body,
-      duplex: "half",
-    });
+      multipartBody
+    );
 
-    if (!uploadRes.ok) {
-      const errText = await uploadRes.text().catch(() => "");
+    if (uploadRes.status < 200 || uploadRes.status >= 300) {
       // Clean up the CF session
-      fetch(`https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/stream/${streamUid}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${CF_TOKEN}` },
-      }).catch(() => {});
-      return res.status(500).json({ error: `CF upload failed: ${uploadRes.status}`, details: errText.slice(0, 300) });
+      httpsRequest(
+        `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/stream/${streamUid}`,
+        { method: "DELETE", headers: { "Authorization": `Bearer ${CF_TOKEN}` } }
+      ).catch(() => {});
+      return res.status(500).json({
+        error: `CF upload rejected: HTTP ${uploadRes.status}`,
+        details: uploadRes.body.toString().slice(0, 300),
+      });
     }
 
     return res.status(200).json({
