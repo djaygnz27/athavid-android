@@ -7604,7 +7604,7 @@ async function uploadFile(file, onProgress) {
 }
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
-  const CHUNK_SIZE = 5 * 1024 * 1024;
+  const CHUNK_SIZE = 4 * 1024 * 1024;
   const sessionRes = await fetch("/api/get-tus-session", {
     method: "POST",
     headers: {
@@ -7626,17 +7626,20 @@ async function cfFormUpload(file, _uploadUrl, onProgress) {
     const chunk = file.slice(offset, end);
     const newOffset = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("PATCH", tusUrl, true);
-      xhr.setRequestHeader("Tus-Resumable", "1.0.0");
-      xhr.setRequestHeader("Upload-Offset", String(offset));
-      xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
+      xhr.open("POST", "/api/upload-chunk", true);
+      xhr.setRequestHeader("X-Tus-Url", encodeURIComponent(tusUrl));
+      xhr.setRequestHeader("X-Upload-Offset", String(offset));
       xhr.timeout = 6e4;
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          const respOffset = parseInt(xhr.getResponseHeader("Upload-Offset"), 10);
-          resolve(Number.isFinite(respOffset) ? respOffset : end);
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(Number.isFinite(data.new_offset) ? data.new_offset : end);
+          } catch {
+            resolve(end);
+          }
         } else {
-          reject(new Error(`Chunk upload rejected: HTTP ${xhr.status} at offset ${offset}`));
+          reject(new Error(`Chunk upload rejected: HTTP ${xhr.status} at offset ${offset} — ${xhr.responseText.slice(0, 200)}`));
         }
       };
       xhr.onerror = () => reject(new Error(`Chunk network error at offset ${offset}`));
