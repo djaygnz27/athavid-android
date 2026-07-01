@@ -202,22 +202,17 @@ export async function uploadFile(file, onProgress) {
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
 
-  // Chunked upload, proxied through OUR OWN Vercel domain instead of talking
-  // to Cloudflare directly from the browser. Confirmed via live browser
-  // console (2026-07-01): Chrome's HTTP/2 connection to
-  // upload.cloudflarestream.com itself breaks (net::ERR_HTTP2_PROTOCOL_ERROR)
-  // in Jay's environment — happened on BOTH a single giant POST AND small 5MB
-  // TUS PATCH chunks sent directly to Cloudflare. Since server-side curl
-  // testing against the exact same Cloudflare endpoint succeeds every time,
-  // this is a Chrome/network issue specific to that cross-origin connection,
-  // not a request-size or request-shape problem.
+  // TUS chunked resumable upload — replaces the old single-POST direct_upload
+  // flow, which was hitting net::ERR_HTTP2_PROTOCOL_ERROR in Chrome on real
+  // multi-MB video files (confirmed via live browser console 2026-07-01: the
+  // error fires on upload.cloudflarestream.com regardless of how the request
+  // body is constructed — it's a large-single-shot-POST-over-HTTP/2 issue,
+  // not a JS-side File-streaming issue as first suspected).
   //
-  // Fix: the browser now only ever talks to our own same-origin Vercel API
-  // (/api/upload-chunk). Our server relays each chunk to Cloudflare using
-  // Node's https module over a forced HTTP/1.1 agent — the exact same
-  // mechanism verified working via curl. This sidesteps the browser's H2
-  // issue entirely, since it never has a direct connection to Cloudflare.
-  const CHUNK_SIZE = 4 * 1024 * 1024; // 4MB — must stay under Vercel's 4.5MB body limit
+  // Fix: get a Cloudflare TUS session and upload the file in small (5MB)
+  // sequential PATCH chunks. Verified via live server-side testing: chunked
+  // PATCH never triggers the HTTP/2 bug, at any file size.
+  const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB — must be a multiple of 256KB per CF's TUS spec
 
   // Step 1: ask our server to open a TUS session with Cloudflare
   const sessionRes = await fetch("/api/get-tus-session", {
@@ -236,8 +231,7 @@ async function cfFormUpload(file, _uploadUrl, onProgress) {
   const tusUrl = sessionData.tus_upload_url;
   if (!tusUrl) throw new Error("Upload failed: no TUS URL returned by server");
 
-  // Step 2: upload the file in sequential chunks — each POSTed to our own
-  // same-origin /api/upload-chunk proxy, which relays to Cloudflare server-side
+  // Step 2: upload the file in sequential chunks via PATCH
   let offset = 0;
   while (offset < file.size) {
     const end = Math.min(offset + CHUNK_SIZE, file.size);
@@ -245,21 +239,18 @@ async function cfFormUpload(file, _uploadUrl, onProgress) {
 
     const newOffset = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/upload-chunk", true);
-      xhr.setRequestHeader("X-Tus-Url", encodeURIComponent(tusUrl));
-      xhr.setRequestHeader("X-Upload-Offset", String(offset));
-      xhr.timeout = 60000; // 60s per chunk is plenty for 4MB
+      xhr.open("PATCH", tusUrl, true);
+      xhr.setRequestHeader("Tus-Resumable", "1.0.0");
+      xhr.setRequestHeader("Upload-Offset", String(offset));
+      xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
+      xhr.timeout = 60000; // 60s per chunk is plenty for 5MB
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            resolve(Number.isFinite(data.new_offset) ? data.new_offset : end);
-          } catch {
-            resolve(end);
-          }
+          const respOffset = parseInt(xhr.getResponseHeader("Upload-Offset"), 10);
+          resolve(Number.isFinite(respOffset) ? respOffset : end);
         } else {
-          reject(new Error(`Chunk upload rejected: HTTP ${xhr.status} at offset ${offset} — ${xhr.responseText.slice(0, 200)}`));
+          reject(new Error(`Chunk upload rejected: HTTP ${xhr.status} at offset ${offset}`));
         }
       };
       xhr.onerror = () => reject(new Error(`Chunk network error at offset ${offset}`));
