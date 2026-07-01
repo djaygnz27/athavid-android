@@ -7604,49 +7604,48 @@ async function uploadFile(file, onProgress) {
 }
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
-  const sessionRes = await fetch("/api/get-cf-session", {
+  const CHUNK_SIZE = 5 * 1024 * 1024;
+  const sessionRes = await fetch("/api/get-tus-session", {
     method: "POST",
-    headers: { "X-Max-Duration": "1800" }
+    headers: {
+      "X-Max-Duration": "1800",
+      "X-File-Size": String(file.size),
+      "X-File-Name": encodeURIComponent(file.name || "video.mp4")
+    }
   });
   if (!sessionRes.ok) {
     const errText = await sessionRes.text().catch(() => "");
     throw new Error(`Failed to get upload session: HTTP ${sessionRes.status} — ${errText.slice(0, 200)}`);
   }
   const sessionData = await sessionRes.json();
-  const cfUploadUrl = sessionData.upload_url;
-  const boundary = "----SachiUpload" + Date.now().toString(36) + Math.random().toString(36).slice(2);
-  const safeName = (file.name || "video.mp4").replace(/[^a-zA-Z0-9._-]/g, "_");
-  const head = `--${boundary}
-Content-Disposition: form-data; name="file"; filename="${safeName}"
-Content-Type: ${file.type || "video/mp4"}
-
-`;
-  const tail = `
---${boundary}--
-`;
-  const bodyBlob = new Blob([head, file, tail], { type: `multipart/form-data; boundary=${boundary}` });
-  await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", cfUploadUrl, true);
-    xhr.setRequestHeader("Content-Type", `multipart/form-data; boundary=${boundary}`);
-    xhr.timeout = 6e5;
-    if (onProgress && xhr.upload) {
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100));
+  const tusUrl = sessionData.tus_upload_url;
+  if (!tusUrl) throw new Error("Upload failed: no TUS URL returned by server");
+  let offset = 0;
+  while (offset < file.size) {
+    const end = Math.min(offset + CHUNK_SIZE, file.size);
+    const chunk = file.slice(offset, end);
+    const newOffset = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PATCH", tusUrl, true);
+      xhr.setRequestHeader("Tus-Resumable", "1.0.0");
+      xhr.setRequestHeader("Upload-Offset", String(offset));
+      xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
+      xhr.timeout = 6e4;
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const respOffset = parseInt(xhr.getResponseHeader("Upload-Offset"), 10);
+          resolve(Number.isFinite(respOffset) ? respOffset : end);
+        } else {
+          reject(new Error(`Chunk upload rejected: HTTP ${xhr.status} at offset ${offset}`));
+        }
       };
-    }
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        if (onProgress) onProgress(100);
-        resolve();
-      } else {
-        reject(new Error(`CF upload rejected: HTTP ${xhr.status} — ${xhr.responseText.slice(0, 200)}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Upload failed: network error"));
-    xhr.ontimeout = () => reject(new Error("Upload timed out — try a shorter video or check your connection"));
-    xhr.send(bodyBlob);
-  });
+      xhr.onerror = () => reject(new Error(`Chunk network error at offset ${offset}`));
+      xhr.ontimeout = () => reject(new Error(`Chunk timed out at offset ${offset}`));
+      xhr.send(chunk);
+    });
+    offset = newOffset;
+    if (onProgress) onProgress(Math.round(offset / file.size * 100));
+  }
   return {
     stream_uid: sessionData.stream_uid,
     playback_url: sessionData.playback_url,

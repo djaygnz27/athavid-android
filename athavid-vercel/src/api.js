@@ -149,7 +149,7 @@ export async function uploadFile(file, onProgress) {
 
   if (isVideo) {
     // 2a. Upload video directly from browser → Cloudflare Stream
-    // cfFormUpload gets its own CF session via get-cf-session and uploads directly.
+    // cfFormUpload gets its own TUS session via get-tus-session and uploads in chunks.
     // Override creds with the actual session used for upload.
     let uploadedCreds;
     try {
@@ -202,65 +202,66 @@ export async function uploadFile(file, onProgress) {
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
 
-  // Step 1: Get a CF direct_upload session (tiny JSON call to our server)
-  const sessionRes = await fetch("/api/get-cf-session", {
+  // TUS chunked resumable upload — replaces the old single-POST direct_upload
+  // flow, which was hitting net::ERR_HTTP2_PROTOCOL_ERROR in Chrome on real
+  // multi-MB video files (confirmed via live browser console 2026-07-01: the
+  // error fires on upload.cloudflarestream.com regardless of how the request
+  // body is constructed — it's a large-single-shot-POST-over-HTTP/2 issue,
+  // not a JS-side File-streaming issue as first suspected).
+  //
+  // Fix: get a Cloudflare TUS session and upload the file in small (5MB)
+  // sequential PATCH chunks. Verified via live server-side testing: chunked
+  // PATCH never triggers the HTTP/2 bug, at any file size.
+  const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB — must be a multiple of 256KB per CF's TUS spec
+
+  // Step 1: ask our server to open a TUS session with Cloudflare
+  const sessionRes = await fetch("/api/get-tus-session", {
     method: "POST",
-    headers: { "X-Max-Duration": "1800" },
+    headers: {
+      "X-Max-Duration": "1800",
+      "X-File-Size": String(file.size),
+      "X-File-Name": encodeURIComponent(file.name || "video.mp4"),
+    },
   });
   if (!sessionRes.ok) {
     const errText = await sessionRes.text().catch(() => "");
     throw new Error(`Failed to get upload session: HTTP ${sessionRes.status} — ${errText.slice(0, 200)}`);
   }
   const sessionData = await sessionRes.json();
-  const cfUploadUrl = sessionData.upload_url;
+  const tusUrl = sessionData.tus_upload_url;
+  if (!tusUrl) throw new Error("Upload failed: no TUS URL returned by server");
 
-  // Step 2: Upload directly to Cloudflare — but critically, we materialize the
-  // ENTIRE multipart body into a single in-memory Blob FIRST, instead of handing
-  // fetch/XHR a raw File object inside a FormData. Chrome streams File objects
-  // from disk in a way that trips ERR_HTTP2_PROTOCOL_ERROR against Cloudflare's
-  // edge on real (multi-MB) files — this was confirmed via live testing on
-  // 2026-07-01 (curl never fails, only the browser's own file-streaming path
-  // fails). Pre-building the full body as one Blob avoids that code path
-  // entirely: XHR just sends one already-materialized binary blob, no
-  // chunked/streamed disk reads mid-request.
-  const boundary = "----SachiUpload" + Date.now().toString(36) + Math.random().toString(36).slice(2);
-  const safeName = (file.name || "video.mp4").replace(/[^a-zA-Z0-9._-]/g, "_");
-  const head = `--${boundary}
-Content-Disposition: form-data; name="file"; filename="${safeName}"
-Content-Type: ${file.type || "video/mp4"}
+  // Step 2: upload the file in sequential chunks via PATCH
+  let offset = 0;
+  while (offset < file.size) {
+    const end = Math.min(offset + CHUNK_SIZE, file.size);
+    const chunk = file.slice(offset, end);
 
-`;
-  const tail = `
---${boundary}--
-`;
+    const newOffset = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PATCH", tusUrl, true);
+      xhr.setRequestHeader("Tus-Resumable", "1.0.0");
+      xhr.setRequestHeader("Upload-Offset", String(offset));
+      xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
+      xhr.timeout = 60000; // 60s per chunk is plenty for 5MB
 
-  const bodyBlob = new Blob([head, file, tail], { type: `multipart/form-data; boundary=${boundary}` });
-
-  await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", cfUploadUrl, true);
-    xhr.setRequestHeader("Content-Type", `multipart/form-data; boundary=${boundary}`);
-    xhr.timeout = 600000; // 10 min
-
-    if (onProgress && xhr.upload) {
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const respOffset = parseInt(xhr.getResponseHeader("Upload-Offset"), 10);
+          resolve(Number.isFinite(respOffset) ? respOffset : end);
+        } else {
+          reject(new Error(`Chunk upload rejected: HTTP ${xhr.status} at offset ${offset}`));
+        }
       };
-    }
+      xhr.onerror = () => reject(new Error(`Chunk network error at offset ${offset}`));
+      xhr.ontimeout = () => reject(new Error(`Chunk timed out at offset ${offset}`));
 
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        if (onProgress) onProgress(100);
-        resolve();
-      } else {
-        reject(new Error(`CF upload rejected: HTTP ${xhr.status} — ${xhr.responseText.slice(0, 200)}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error("Upload failed: network error"));
-    xhr.ontimeout = () => reject(new Error("Upload timed out — try a shorter video or check your connection"));
+      xhr.send(chunk);
+    });
 
-    xhr.send(bodyBlob);
-  });
+    offset = newOffset;
+    if (onProgress) onProgress(Math.round((offset / file.size) * 100));
+  }
 
   return {
     stream_uid:    sessionData.stream_uid,
