@@ -200,61 +200,53 @@ export async function uploadFile(file, onProgress) {
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
 
-  // Step 1: Get a REAL TUS upload session from our server (needs file size to create it)
-  const sessionRes = await fetch("/api/get-cf-session", {
-    method: "POST",
-    headers: {
-      "X-Max-Duration": "1800",
-      "X-File-Size": String(file.size),
-      "X-File-Name": encodeURIComponent(file.name || "video.mp4"),
-    },
-  });
-  if (!sessionRes.ok) {
-    const errText = await sessionRes.text().catch(() => "");
-    throw new Error(`Failed to get upload session: HTTP ${sessionRes.status} — ${errText.slice(0, 200)}`);
-  }
-  const sessionData = await sessionRes.json();
-  const tusUrl = sessionData.upload_url; // e.g. https://upload.cloudflarestream.com/<uid>
-
-  // Step 2: TUS chunked upload — browser PATCH chunks directly to CF
-  // Each chunk is 8MB — well under any limit, no HTTP/2 streaming issues
-  const CHUNK_SIZE = 8 * 1024 * 1024; // 8MB
-  let offset = 0;
-
-  const uploadChunk = (chunk, currentOffset) => new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PATCH", tusUrl, true);
-    xhr.setRequestHeader("Tus-Resumable", "1.0.0");
-    xhr.setRequestHeader("Content-Type", "application/offset+octet-stream");
-    xhr.setRequestHeader("Upload-Offset", String(currentOffset));
-    xhr.setRequestHeader("Content-Length", String(chunk.size));
-
-    xhr.onload = () => {
-      if (xhr.status === 204) {
-        resolve();
-      } else {
-        reject(new Error(`Chunk upload failed: HTTP ${xhr.status} at offset ${currentOffset} — ${xhr.responseText.slice(0, 100)}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error(`Chunk network error at offset ${currentOffset}`));
-    xhr.ontimeout = () => reject(new Error("Chunk timed out"));
-    xhr.timeout = 120000; // 2 min per chunk
-    xhr.send(chunk);
+  // Upload via OUR edge function (api/upload-edge.js) — same-origin, streaming,
+  // no 4.5MB Vercel body cap (Edge Functions stream, unlike Node serverless),
+  // and no cross-origin POST to Cloudflare's upload subdomain (which was
+  // triggering ERR_HTTP2_PROTOCOL_ERROR in Chrome on real video files).
+  const params = new URLSearchParams({
+    maxDuration: "1800",
+    fileName: encodeURIComponent(file.name || "video.mp4"),
   });
 
-  while (offset < file.size) {
-    const chunk = file.slice(offset, offset + CHUNK_SIZE);
-    await uploadChunk(chunk, offset);
-    offset = Math.min(offset + CHUNK_SIZE, file.size);
-    if (onProgress) onProgress(Math.round((offset / file.size) * 100));
+  // Simulate progress — the underlying stream doesn't expose granular progress
+  let progressInterval = null;
+  if (onProgress) {
+    let fakeProgress = 0;
+    const estimatedMs = Math.max(3000, (file.size / 1024 / 1024) * 1200);
+    const step = 100 / (estimatedMs / 200);
+    progressInterval = setInterval(() => {
+      fakeProgress = Math.min(fakeProgress + step, 92);
+      onProgress(Math.round(fakeProgress));
+    }, 200);
   }
 
-  if (onProgress) onProgress(100);
+  let result;
+  try {
+    const res = await fetch(`/api/upload-edge?${params.toString()}`, {
+      method: "POST",
+      headers: { "Content-Type": "video/mp4" },
+      body: file,
+      duplex: "half",
+    });
+
+    if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+    if (onProgress) onProgress(100);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(`Upload failed: HTTP ${res.status} — ${errText.slice(0, 200)}`);
+    }
+    result = await res.json();
+  } catch (err) {
+    if (progressInterval) clearInterval(progressInterval);
+    throw new Error("Upload failed: " + (err.message || "unknown error"));
+  }
 
   return {
-    stream_uid:    sessionData.stream_uid,
-    playback_url:  sessionData.playback_url,
-    thumbnail_url: sessionData.thumbnail_url,
+    stream_uid:    result.stream_uid,
+    playback_url:  result.playback_url,
+    thumbnail_url: result.thumbnail_url,
   };
 }
 
