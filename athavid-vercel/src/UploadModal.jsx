@@ -10,6 +10,23 @@ import { getStateAbbr, getPostLocation } from "./utils.jsx";
 import VideoEditor from "./VideoEditor.jsx";
 import MusicPicker from "./MusicPicker.jsx";
 
+// ── createPost: server-side write via service token ──────────────────────────
+// Fixes: Google-auth users have no Base44 JWT → 404 on direct entity writes.
+// Uses /api/create-post (Vercel) which writes with SERVICE_TOKEN, bypasses RLS.
+async function createPost(data) {
+  const res = await fetch("/api/create-post", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Post save failed: HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+
 function UploadModal({ currentUser, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
   const [editedFile, setEditedFile] = useState(null); // trimmed/cropped version
@@ -157,7 +174,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const photoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
-      await videos.create({
+      await createPost({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
@@ -273,7 +290,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const videoGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
       const tags = (caption.match(/#\w+/g) || []).map(t => t.toLowerCase());
-      const createdPost = await videos.create({
+      const createdPost = await createPost({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
         avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&size=128&bold=true&format=png`,
@@ -532,7 +549,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setProgress(75); setStep("Posting...");
       const textGeo = await getPostLocation();
       const username = currentUser.full_name || currentUser.email?.split("@")[0] || "user";
-      await videos.create({
+      await createPost({
         user_id: currentUser.id, username,
         display_name: currentUser.full_name || username,
         avatar_url: localStorage.getItem(`avatar_${currentUser.id}`) || localStorage.getItem("avatar_last") ||
