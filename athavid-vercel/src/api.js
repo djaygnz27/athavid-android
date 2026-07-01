@@ -192,11 +192,13 @@ export async function uploadFile(file, onProgress) {
   }
 }
 
-// Cloudflare Stream TUS chunked upload — browser → CF directly
-// Uses TUS protocol (chunked PATCH requests) which avoids:
-//   1. Vercel 4.5MB body limit (we never proxy the file)
-//   2. ERR_HTTP2_PROTOCOL_ERROR (PATCH chunks are HTTP/1.1 compatible)
-// Each chunk is 8MB. Resumable on network interruption.
+// Cloudflare Stream direct upload — browser → CF directly (no Vercel proxy,
+// so no 4.5MB body cap). The ENTIRE multipart body is pre-built as a single
+// in-memory Blob before being sent via one XHR write — this avoids Chrome's
+// disk-streaming code path for raw File objects, which was found (2026-07-01)
+// to trigger ERR_HTTP2_PROTOCOL_ERROR against Cloudflare's edge on real
+// multi-MB video files. curl never hit this bug because it always sends the
+// whole body in one shot — this function now matches that behavior exactly.
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
 
