@@ -63,17 +63,19 @@ module.exports = async function handler(req, res) {
       }
 
       const data = await cfRes.json();
-      const uploadUrl = data.result.uploadURL;  // browser POSTs file here as multipart form
       const streamUid = data.result.uid;
       const playbackUrl = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${streamUid}/manifest/video.m3u8`;
       const thumbnailUrl = `https://customer-i1ij9522l179kiqc.cloudflarestream.com/${streamUid}/thumbnails/thumbnail.jpg`;
 
+      // IMPORTANT: return /api/upload-video as upload_url so ALL client versions
+      // (old fetch() and new XHR) route through our HTTP/1.1 server proxy.
+      // This works regardless of which JS bundle the browser has cached.
       return res.status(200).json({
-        upload_url:    uploadUrl,   // browser POSTs multipart form here
+        upload_url:    "/api/upload-video",  // proxy endpoint — works with any client version
         stream_uid:    streamUid,
         playback_url:  playbackUrl,
         thumbnail_url: thumbnailUrl,
-        method:        "form",      // tells client to use form POST not TUS
+        method:        "proxy",
       });
     } catch (e) {
       return res.status(500).json({ error: e.message });
