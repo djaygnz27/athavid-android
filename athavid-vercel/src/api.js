@@ -202,19 +202,28 @@ export async function uploadFile(file, onProgress) {
   }
 }
 
-// Cloudflare Stream server-side upload proxy
-// Uses XMLHttpRequest instead of fetch() to avoid Chrome ERR_HTTP2_PROTOCOL_ERROR
-// on large POST bodies. XHR forces HTTP/1.1 upgrade, fetch() uses HTTP/2 which
-// breaks on large uploads. XHR also gives real upload progress.
-function cfFormUpload(file, _uploadUrl, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/upload-video", true);
-    xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
-    xhr.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
-    xhr.setRequestHeader("X-Max-Duration", "600");
+// Cloudflare Stream 2-step direct upload:
+// Step 1: Get a CF upload URL from our tiny Vercel function (/api/get-cf-session) — <1KB request, no size limit issue
+// Step 2: Browser uploads the video DIRECTLY to Cloudflare — bypasses Vercel's 4.5MB hard limit entirely
+async function cfFormUpload(file, _uploadUrl, onProgress) {
+  // Step 1: Get CF upload session (tiny request to Vercel)
+  const maxDuration = 1800; // 30 min max
+  const sessionRes = await fetch("/api/get-cf-session", {
+    method: "POST",
+    headers: { "X-Max-Duration": String(maxDuration) },
+  });
+  if (!sessionRes.ok) {
+    const errText = await sessionRes.text();
+    throw new Error(`Failed to get upload session: ${sessionRes.status} — ${errText.slice(0, 200)}`);
+  }
+  const sessionData = await sessionRes.json();
+  const cfUploadUrl = sessionData.upload_url;
 
-    // Real upload progress from XHR
+  // Step 2: Upload directly from browser to Cloudflare (no Vercel size limit)
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", cfUploadUrl, true);
+
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable && onProgress) {
         onProgress(Math.round((e.loaded / e.total) * 100));
@@ -223,26 +232,28 @@ function cfFormUpload(file, _uploadUrl, onProgress) {
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          if (onProgress) onProgress(100);
-          resolve(data);
-        } catch (e) {
-          reject(new Error("Invalid JSON response from upload server"));
-        }
+        if (onProgress) onProgress(100);
+        resolve();
       } else {
-        let errMsg = `Upload failed: HTTP ${xhr.status}`;
-        try { errMsg = JSON.parse(xhr.responseText).error || errMsg; } catch {}
-        reject(new Error(errMsg));
+        reject(new Error(`CF upload failed: HTTP ${xhr.status} — ${xhr.responseText.slice(0, 200)}`));
       }
     };
 
-    xhr.onerror = () => reject(new Error("Upload failed: network error (XHR)"));
-    xhr.ontimeout = () => reject(new Error("Upload timed out"));
-    xhr.timeout = 600000; // 10 minutes for large files
+    xhr.onerror = () => reject(new Error("Upload failed: network error — check your internet connection"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out — try a shorter video"));
+    xhr.timeout = 600000; // 10 minutes
 
-    xhr.send(file); // send raw file bytes
+    const formData = new FormData();
+    formData.append("file", file);
+    xhr.send(formData);
   });
+
+  // Return the CF metadata from the session
+  return {
+    stream_uid:    sessionData.stream_uid,
+    playback_url:  sessionData.playback_url,
+    thumbnail_url: sessionData.thumbnail_url,
+  };
 }
 
 // Direct PUT to R2 presigned URL
