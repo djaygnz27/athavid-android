@@ -209,34 +209,44 @@ async function cfFormUpload(file, _uploadUrl, onProgress) {
   const sessionData = await sessionRes.json();
   const cfUploadUrl = sessionData.upload_url;
 
-  // Step 2: Upload directly from browser to Cloudflare (no Vercel size limit)
-  await new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", cfUploadUrl, true);
+  // Step 2: Upload directly from browser to Cloudflare using fetch()
+  // Using fetch() instead of XHR for better error visibility and streaming support
+  if (file.size === 0) throw new Error("File is empty — please select a valid video");
 
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        onProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    };
+  // Simulate progress since fetch doesn't have native upload progress
+  let progressInterval = null;
+  if (onProgress) {
+    let fakeProgress = 0;
+    const estimatedMs = Math.max(3000, (file.size / 1024 / 1024) * 1500); // ~1.5s per MB
+    const step = 100 / (estimatedMs / 200);
+    progressInterval = setInterval(() => {
+      fakeProgress = Math.min(fakeProgress + step, 92);
+      onProgress(Math.round(fakeProgress));
+    }, 200);
+  }
 
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        if (onProgress) onProgress(100);
-        resolve();
-      } else {
-        reject(new Error(`CF upload failed: HTTP ${xhr.status} — ${xhr.responseText.slice(0, 200)}`));
-      }
-    };
-
-    xhr.onerror = () => reject(new Error("Upload failed: network error — check your internet connection"));
-    xhr.ontimeout = () => reject(new Error("Upload timed out — try a shorter video"));
-    xhr.timeout = 600000; // 10 minutes
-
+  try {
     const formData = new FormData();
     formData.append("file", file);
-    xhr.send(formData);
-  });
+
+    const uploadRes = await fetch(cfUploadUrl, {
+      method: "POST",
+      body: formData,
+      signal: AbortSignal.timeout(600000), // 10 minute timeout
+    });
+
+    if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+    if (onProgress) onProgress(100);
+
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text().catch(() => "");
+      throw new Error(`CF upload rejected: HTTP ${uploadRes.status} — ${errText.slice(0, 200)}`);
+    }
+  } catch (err) {
+    if (progressInterval) { clearInterval(progressInterval); }
+    if (err.name === "TimeoutError") throw new Error("Upload timed out — try a shorter video");
+    throw new Error("Upload failed: " + (err.message || "network error"));
+  }
 
   // Return the CF metadata from the session
   return {
