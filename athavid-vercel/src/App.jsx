@@ -419,6 +419,10 @@ function App() {
       }));
       const raw = normalized.filter(v => {
         if (v.is_archived) return false;
+        // Strip soft-deleted records
+        if (v.username === "__deleted__") return false;
+        // Strip posts with no video URL
+        if (!v.video_url && !v.media_url) return false;
         // Strip posts with broken legacy upload URLs (old Node server — no longer exists)
         const thumb = v.thumbnail_url || "";
         const vid = v.video_url || "";
