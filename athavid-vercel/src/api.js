@@ -200,53 +200,70 @@ export async function uploadFile(file, onProgress) {
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
 
-  // Upload via OUR edge function (api/upload-edge.js) — same-origin, streaming,
-  // no 4.5MB Vercel body cap (Edge Functions stream, unlike Node serverless),
-  // and no cross-origin POST to Cloudflare's upload subdomain (which was
-  // triggering ERR_HTTP2_PROTOCOL_ERROR in Chrome on real video files).
-  const params = new URLSearchParams({
-    maxDuration: "1800",
-    fileName: encodeURIComponent(file.name || "video.mp4"),
+  // Step 1: Get a CF direct_upload session (tiny JSON call to our server)
+  const sessionRes = await fetch("/api/get-cf-session", {
+    method: "POST",
+    headers: { "X-Max-Duration": "1800" },
+  });
+  if (!sessionRes.ok) {
+    const errText = await sessionRes.text().catch(() => "");
+    throw new Error(`Failed to get upload session: HTTP ${sessionRes.status} — ${errText.slice(0, 200)}`);
+  }
+  const sessionData = await sessionRes.json();
+  const cfUploadUrl = sessionData.upload_url;
+
+  // Step 2: Upload directly to Cloudflare — but critically, we materialize the
+  // ENTIRE multipart body into a single in-memory Blob FIRST, instead of handing
+  // fetch/XHR a raw File object inside a FormData. Chrome streams File objects
+  // from disk in a way that trips ERR_HTTP2_PROTOCOL_ERROR against Cloudflare's
+  // edge on real (multi-MB) files — this was confirmed via live testing on
+  // 2026-07-01 (curl never fails, only the browser's own file-streaming path
+  // fails). Pre-building the full body as one Blob avoids that code path
+  // entirely: XHR just sends one already-materialized binary blob, no
+  // chunked/streamed disk reads mid-request.
+  const boundary = "----SachiUpload" + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const safeName = (file.name || "video.mp4").replace(/[^a-zA-Z0-9._-]/g, "_");
+  const head = `--${boundary}
+Content-Disposition: form-data; name="file"; filename="${safeName}"
+Content-Type: ${file.type || "video/mp4"}
+
+`;
+  const tail = `
+--${boundary}--
+`;
+
+  const bodyBlob = new Blob([head, file, tail], { type: `multipart/form-data; boundary=${boundary}` });
+
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", cfUploadUrl, true);
+    xhr.setRequestHeader("Content-Type", `multipart/form-data; boundary=${boundary}`);
+    xhr.timeout = 600000; // 10 min
+
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (onProgress) onProgress(100);
+        resolve();
+      } else {
+        reject(new Error(`CF upload rejected: HTTP ${xhr.status} — ${xhr.responseText.slice(0, 200)}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed: network error"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out — try a shorter video or check your connection"));
+
+    xhr.send(bodyBlob);
   });
 
-  // Simulate progress — the underlying stream doesn't expose granular progress
-  let progressInterval = null;
-  if (onProgress) {
-    let fakeProgress = 0;
-    const estimatedMs = Math.max(3000, (file.size / 1024 / 1024) * 1200);
-    const step = 100 / (estimatedMs / 200);
-    progressInterval = setInterval(() => {
-      fakeProgress = Math.min(fakeProgress + step, 92);
-      onProgress(Math.round(fakeProgress));
-    }, 200);
-  }
-
-  let result;
-  try {
-    const res = await fetch(`/api/upload-edge?${params.toString()}`, {
-      method: "POST",
-      headers: { "Content-Type": "video/mp4" },
-      body: file,
-      duplex: "half",
-    });
-
-    if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
-    if (onProgress) onProgress(100);
-
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      throw new Error(`Upload failed: HTTP ${res.status} — ${errText.slice(0, 200)}`);
-    }
-    result = await res.json();
-  } catch (err) {
-    if (progressInterval) clearInterval(progressInterval);
-    throw new Error("Upload failed: " + (err.message || "unknown error"));
-  }
-
   return {
-    stream_uid:    result.stream_uid,
-    playback_url:  result.playback_url,
-    thumbnail_url: result.thumbnail_url,
+    stream_uid:    sessionData.stream_uid,
+    playback_url:  sessionData.playback_url,
+    thumbnail_url: sessionData.thumbnail_url,
   };
 }
 

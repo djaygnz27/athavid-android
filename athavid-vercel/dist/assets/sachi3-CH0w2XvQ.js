@@ -7572,21 +7572,24 @@ async function uploadFile(file, onProgress) {
   }
   const creds = await credRes.json();
   if (isVideo) {
-    await tusUpload(file, creds.upload_url, onProgress);
-    let media_url = null;
+    let uploadedCreds;
     try {
-      const dlRes = await fetch("/api/trigger-mp4", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stream_uid: creds.stream_uid })
-      });
-      if (dlRes.ok) {
-        const dlData = await dlRes.json();
-        media_url = dlData.media_url || null;
+      uploadedCreds = await cfFormUpload(file, null, onProgress);
+      if (uploadedCreds == null ? void 0 : uploadedCreds.stream_uid) {
+        creds.stream_uid = uploadedCreds.stream_uid;
+        creds.playback_url = uploadedCreds.playback_url;
+        creds.thumbnail_url = uploadedCreds.thumbnail_url;
       }
-    } catch (e) {
-      console.warn("trigger-mp4 failed (non-fatal):", e.message);
+    } catch (uploadErr) {
+      console.error("[Sachi] cfFormUpload failed:", uploadErr.message);
+      throw uploadErr;
     }
+    let media_url = null;
+    fetch("/api/trigger-mp4", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stream_uid: creds.stream_uid })
+    }).then((r2) => r2.ok ? r2.json() : null).catch(() => null);
     return {
       file_url: creds.playback_url,
       thumbnail_url: creds.thumbnail_url,
@@ -7599,24 +7602,56 @@ async function uploadFile(file, onProgress) {
     return { file_url: creds.public_url };
   }
 }
-async function tusUpload(file, uploadUrl, onProgress) {
-  const CHUNK = 50 * 1024 * 1024;
-  let offset = 0;
-  while (offset < file.size) {
-    const chunk = file.slice(offset, offset + CHUNK);
-    const res = await fetch(uploadUrl, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/offset+octet-stream",
-        "Upload-Offset": String(offset),
-        "Tus-Resumable": "1.0.0"
-      },
-      body: chunk
-    });
-    if (!res.ok) throw new Error(`TUS upload failed at offset ${offset}: ${res.status}`);
-    offset += chunk.size;
-    if (onProgress) onProgress(Math.round(offset / file.size * 100));
+async function cfFormUpload(file, _uploadUrl, onProgress) {
+  if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
+  const sessionRes = await fetch("/api/get-cf-session", {
+    method: "POST",
+    headers: { "X-Max-Duration": "1800" }
+  });
+  if (!sessionRes.ok) {
+    const errText = await sessionRes.text().catch(() => "");
+    throw new Error(`Failed to get upload session: HTTP ${sessionRes.status} — ${errText.slice(0, 200)}`);
   }
+  const sessionData = await sessionRes.json();
+  const cfUploadUrl = sessionData.upload_url;
+  const boundary = "----SachiUpload" + Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const safeName = (file.name || "video.mp4").replace(/[^a-zA-Z0-9._-]/g, "_");
+  const head = `--${boundary}
+Content-Disposition: form-data; name="file"; filename="${safeName}"
+Content-Type: ${file.type || "video/mp4"}
+
+`;
+  const tail = `
+--${boundary}--
+`;
+  const bodyBlob = new Blob([head, file, tail], { type: `multipart/form-data; boundary=${boundary}` });
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", cfUploadUrl, true);
+    xhr.setRequestHeader("Content-Type", `multipart/form-data; boundary=${boundary}`);
+    xhr.timeout = 6e5;
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100));
+      };
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (onProgress) onProgress(100);
+        resolve();
+      } else {
+        reject(new Error(`CF upload rejected: HTTP ${xhr.status} — ${xhr.responseText.slice(0, 200)}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed: network error"));
+    xhr.ontimeout = () => reject(new Error("Upload timed out — try a shorter video or check your connection"));
+    xhr.send(bodyBlob);
+  });
+  return {
+    stream_uid: sessionData.stream_uid,
+    playback_url: sessionData.playback_url,
+    thumbnail_url: sessionData.thumbnail_url
+  };
 }
 async function r2Upload(file, uploadUrl, onProgress) {
   return new Promise((resolve, reject) => {
@@ -7989,31 +8024,14 @@ const APP_ID$5 = "69e79122bcc8fb5a04cfb834";
 const BASE_URL$1 = "https://app.base44.com/api";
 async function lookupSachiUser(email) {
   try {
-    const headers = { "Content-Type": "application/json" };
-    try {
-      const res = await fetch(
-        `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiUser?email=${encodeURIComponent(email)}&limit=5`,
-        { headers }
-      );
+    const res = await fetch(`/api/lookup-user?email=${encodeURIComponent(email)}`);
+    if (res.ok) {
       const data = await res.json();
-      const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
-      const found = items.find((u2) => u2.email === email);
-      if (found) return found;
-    } catch {
+      if (data == null ? void 0 : data.id) return data;
     }
-    const existingSession = localStorage.getItem("sachi_user") || localStorage.getItem("sachi_google_user");
-    const sessionObj = existingSession ? JSON.parse(existingSession) : null;
-    if (sessionObj == null ? void 0 : sessionObj.token) headers["Authorization"] = `Bearer ${sessionObj.token}`;
-    const res2 = await fetch(
-      `${BASE_URL$1}/apps/${APP_ID$5}/entities/AthaVidUser?email=${encodeURIComponent(email)}&limit=5`,
-      { headers }
-    );
-    const data2 = await res2.json();
-    const items2 = Array.isArray(data2) ? data2 : (data2 == null ? void 0 : data2.items) || (data2 == null ? void 0 : data2.records) || [];
-    return items2.find((u2) => u2.email === email) || null;
   } catch {
-    return null;
   }
+  return null;
 }
 function buildSessionUser(found, payload) {
   return {
@@ -12746,6 +12764,15 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Delete failed");
+      const cfUidMatch = (video.video_url || video.thumbnail_url || "").match(/cloudflarestream\.com\/([a-f0-9]{32})/);
+      if (cfUidMatch) {
+        fetch("/api/delete-cf-stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stream_uid: cfUidMatch[1] })
+        }).catch(() => {
+        });
+      }
       onDelete && onDelete(video.id);
     } catch (err) {
       alert("Failed to delete. Try again.");
@@ -13815,6 +13842,18 @@ function VideoEditor({ file, onDone, onSkip }) {
     ] })
   ] });
 }
+async function createPost(data) {
+  const res = await fetch("/api/create-post", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Post save failed: HTTP ${res.status}`);
+  }
+  return res.json();
+}
 function UploadModal({ currentUser, onClose, onUploaded }) {
   const [file, setFile] = reactExports.useState(null);
   const [editedFile, setEditedFile] = reactExports.useState(null);
@@ -14060,7 +14099,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const photoGeo = await getPostLocation$1();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       const tags = (caption.match(/#\w+/g) || []).map((t2) => t2.toLowerCase());
-      await videos.create({
+      await createPost({
         user_id: currentUser.id,
         username,
         display_name: currentUser.full_name || username,
@@ -14223,7 +14262,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       const videoGeo = await getPostLocation$1();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
       const tags = (caption.match(/#\w+/g) || []).map((t2) => t2.toLowerCase());
-      const createdPost2 = await videos.create({
+      const createdPost2 = await createPost({
         user_id: currentUser.id,
         username,
         display_name: currentUser.full_name || username,
@@ -14264,7 +14303,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         }, 1e3);
       }
     } catch (e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      const errDetail = e.message || JSON.stringify(e);
+      console.error("UPLOAD FAILED:", errDetail, e);
+      alert("Upload failed:\n\n" + errDetail + "\n\nCheck browser console for details.");
       setUploading(false);
       setProgress(0);
       setStep("");
@@ -14414,7 +14455,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
       setStep("Posting...");
       const textGeo = await getPostLocation$1();
       const username = currentUser.full_name || ((_a = currentUser.email) == null ? void 0 : _a.split("@")[0]) || "user";
-      await videos.create({
+      await createPost({
         user_id: currentUser.id,
         username,
         display_name: currentUser.full_name || username,
@@ -15421,7 +15462,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
     {
       onTouchStart,
       onTouchEnd,
-      style: { position: "fixed", inset: 0, zIndex: 5e3, background: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
+      style: { position: "fixed", inset: 0, zIndex: 9500, background: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "video",
@@ -15441,44 +15482,60 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
           v2.id
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents: "none" } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", padding: "50px 16px 16px", zIndex: 10 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          display: "flex",
+          alignItems: "center",
+          padding: "calc(env(safe-area-inset-top, 20px) + 16px) 16px 16px",
+          zIndex: 20,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)"
+        }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
               onClick: onClose,
               style: {
-                background: "rgba(0,0,0,0.4)",
-                border: "none",
+                background: "rgba(0,0,0,0.55)",
+                border: "1.5px solid rgba(255,255,255,0.25)",
                 borderRadius: "50%",
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
+                minWidth: 44,
                 color: "#fff",
-                fontSize: 20,
+                fontSize: 22,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                justifyContent: "center",
+                WebkitTapHighlightColor: "transparent",
+                flexShrink: 0
               },
-              children: "←"
+              children: "‹"
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, textAlign: "center", color: "#fff", fontWeight: 800, fontSize: 15 }, children: (profile == null ? void 0 : profile.display_name) || username }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flex: 1, textAlign: "center", color: "#fff", fontWeight: 800, fontSize: 15, padding: "0 8px" }, children: (profile == null ? void 0 : profile.display_name) || username }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
               onClick: () => setMuted((m2) => !m2),
               style: {
-                background: "rgba(0,0,0,0.4)",
-                border: "none",
+                background: "rgba(0,0,0,0.55)",
+                border: "1.5px solid rgba(255,255,255,0.25)",
                 borderRadius: "50%",
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
+                minWidth: 44,
                 color: "#fff",
                 fontSize: 18,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                justifyContent: "center",
+                WebkitTapHighlightColor: "transparent",
+                flexShrink: 0
               },
               children: muted ? "🔇" : "🔊"
             }
@@ -15831,91 +15888,88 @@ function vibeLabel(score) {
   if (score >= 40) return "🌱 Building";
   return "👋 Just Started";
 }
-function HoneycombGrid({ videos: vids, onSelect }) {
+function CircleGrid({ videos: vids, onSelect, topLikedIds }) {
   if (!vids.length) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 36, marginBottom: 8 }, children: "🎬" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No videos yet" })
   ] });
-  const CELL = 110;
-  const GAP = 4;
-  const OFFSET = (CELL + GAP) / 2;
-  const PER_ROW = 3;
+  const CELL = 88;
+  const GAP = 10;
+  const medals = ["🥇", "🥈", "🥉"];
   const rows = [];
-  for (let i = 0; i < vids.length; i += PER_ROW) {
-    rows.push(vids.slice(i, i + PER_ROW));
+  for (let i = 0; i < vids.length; i += 3) {
+    rows.push(vids.slice(i, i + 3));
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", paddingBottom: 100 }, children: rows.map((row, ri2) => {
-    const isOffset = ri2 % 2 === 1;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      display: "flex",
-      justifyContent: isOffset ? "flex-start" : "center",
-      paddingLeft: isOffset ? OFFSET : 0,
-      marginTop: ri2 === 0 ? 12 : -24.200000000000003 - 2,
-      gap: GAP,
-      paddingRight: 8,
-      paddingLeft: isOffset ? OFFSET + 8 : 8
-    }, children: row.map((v2, ci2) => /* @__PURE__ */ jsxRuntimeExports.jsx(HexCell, { video: v2, size: CELL, onSelect: () => onSelect(ri2 * PER_ROW + ci2) }, v2.id)) }, ri2);
-  }) });
-}
-function HexCell({ video: v2, size, onSelect }) {
-  const thumb = v2.thumbnail_url ? resolveMediaUrl(v2.thumbnail_url) : null;
-  const hasLikes = (v2.likes_count || 0) > 0;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: onSelect, style: {
-    width: size,
-    height: size,
-    borderRadius: "50%",
-    overflow: "hidden",
-    cursor: "pointer",
-    position: "relative",
-    flexShrink: 0,
-    border: "2px solid rgba(245,200,66,0.35)",
-    boxShadow: "0 4px 18px rgba(0,0,0,0.5)",
-    background: "#111"
-  }, children: [
-    thumb ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: thumb, style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-      "video",
-      {
-        src: resolveMediaUrl(v2.video_url),
-        muted: true,
-        playsInline: true,
-        preload: "metadata",
-        style: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
-        onLoadedMetadata: (e) => {
-          try {
-            e.target.currentTime = 1;
-          } catch {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflowY: "auto", paddingBottom: 100, paddingTop: 8 }, children: rows.map((row, ri2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+    display: "flex",
+    justifyContent: "center",
+    gap: GAP,
+    marginBottom: GAP,
+    paddingHorizontal: 12
+  }, children: row.map((v2, ci2) => {
+    const globalIdx = ri2 * 3 + ci2;
+    const medalIdx = topLikedIds ? topLikedIds.indexOf(v2.id) : -1;
+    const isMedal = medalIdx >= 0 && medalIdx < 3;
+    const thumb = v2.thumbnail_url ? resolveMediaUrl(v2.thumbnail_url) : null;
+    const hasLikes = (v2.likes_count || 0) > 0;
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => onSelect(globalIdx), style: {
+      width: CELL,
+      height: CELL,
+      borderRadius: "50%",
+      overflow: "hidden",
+      cursor: "pointer",
+      position: "relative",
+      flexShrink: 0,
+      border: isMedal ? "2.5px solid #FFD700" : "2px solid #F5C842",
+      boxShadow: isMedal ? "0 0 14px rgba(255,215,0,0.55), 0 4px 12px rgba(0,0,0,0.6)" : "0 0 8px rgba(245,200,66,0.3), 0 4px 10px rgba(0,0,0,0.5)",
+      background: "#111"
+    }, children: [
+      thumb ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: thumb, style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "video",
+        {
+          src: resolveMediaUrl(v2.video_url),
+          muted: true,
+          playsInline: true,
+          preload: "metadata",
+          style: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
+          onLoadedMetadata: (e) => {
+            try {
+              e.target.currentTime = 1;
+            } catch {
+            }
           }
         }
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "radial-gradient(circle at 60% 70%, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 60%)" } }),
-    hasLikes && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-      position: "absolute",
-      bottom: 14,
-      left: 0,
-      right: 0,
-      textAlign: "center",
-      color: "#fff",
-      fontSize: 10,
-      fontWeight: 800,
-      textShadow: "0 1px 4px rgba(0,0,0,0.9)"
-    }, children: [
-      "❤️ ",
-      v2.likes_count
-    ] }),
-    !v2.is_photo && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-      position: "absolute",
-      top: 10,
-      right: 12,
-      width: 16,
-      height: 16,
-      borderRadius: "50%",
-      background: "rgba(255,255,255,0.2)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 7, color: "#fff" }, children: "▶" }) })
-  ] });
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 75%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%)" } }),
+      isMedal && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 3, right: 5, fontSize: 14, lineHeight: 1 }, children: medals[medalIdx] }),
+      hasLikes && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        position: "absolute",
+        bottom: 10,
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        color: "#fff",
+        fontSize: 9,
+        fontWeight: 800,
+        textShadow: "0 1px 4px rgba(0,0,0,0.9)"
+      }, children: [
+        "❤️ ",
+        v2.likes_count
+      ] }),
+      !v2.is_photo && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+        position: "absolute",
+        top: 8,
+        left: 8,
+        width: 14,
+        height: 14,
+        borderRadius: "50%",
+        background: "rgba(255,255,255,0.18)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 6, color: "#fff", marginLeft: 1 }, children: "▶" }) })
+    ] }, v2.id);
+  }) }, ri2)) });
 }
 function SachiFamRow({ userId }) {
   const [fans, setFans] = React.useState([]);
@@ -16361,53 +16415,6 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(CreatorCard, { videoList: userVideos, profile }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(SachiFamRow, { userId }),
-        userVideos.length >= 3 && (() => {
-          const top3 = [...userVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3);
-          const medals = ["🥇", "🥈", "🥉"];
-          const ringColor = ["#FFD700", "#C0C0C0", "#CD7F32"];
-          const SZ = 104;
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px 6px" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }, children: "🏆 Highlight Reel" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 10, justifyContent: "center" }, children: top3.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: () => {
-              const idx = userVideos.findIndex((x2) => x2.id === v2.id);
-              if (idx >= 0) setPlayerIndex(idx);
-            }, style: { flexShrink: 0, width: SZ, cursor: "pointer", position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-                width: SZ,
-                height: SZ,
-                borderRadius: "50%",
-                overflow: "hidden",
-                border: `3px solid ${ringColor[i]}`,
-                boxShadow: `0 0 12px ${ringColor[i]}55`,
-                background: "#111",
-                position: "relative",
-                flexShrink: 0
-              }, children: [
-                v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(v2.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "video",
-                  {
-                    src: resolveMediaUrl(v2.video_url),
-                    muted: true,
-                    playsInline: true,
-                    preload: "metadata",
-                    style: { width: "100%", height: "100%", objectFit: "cover" },
-                    onLoadedMetadata: (e) => {
-                      try {
-                        e.target.currentTime = 1;
-                      } catch {
-                      }
-                    }
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 4, right: 4, fontSize: 16, lineHeight: 1 }, children: medals[i] })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: 700, textAlign: "center" }, children: [
-                "❤️ ",
-                v2.likes_count || 0
-              ] })
-            ] }, v2.id)) })
-          ] });
-        })(),
         isOwnProfile && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 0" }, children: [{ id: "posts", label: "Posts", icon: "🎬" }, { id: "saved", label: "Saved", icon: "🔖" }].map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "button",
           {
@@ -16435,7 +16442,7 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
           },
           t2.id
         )) }),
-        profileTab === "saved" ? savedLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: "Loading saved…" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(HoneycombGrid, { videos: savedVideos, onSelect: (i) => setPlayerIndex(i) }) : /* @__PURE__ */ jsxRuntimeExports.jsx(HoneycombGrid, { videos: userVideos, onSelect: (i) => setPlayerIndex(i) })
+        profileTab === "saved" ? savedLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", padding: 40, color: "#444" }, children: "Loading saved…" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleGrid, { videos: savedVideos, onSelect: (i) => setPlayerIndex(i), topLikedIds: [] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleGrid, { videos: userVideos, onSelect: (i) => setPlayerIndex(i), topLikedIds: [...userVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3).map((v2) => v2.id) })
       ] })
     ] }) }),
     playerIndex !== null && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -16477,13 +16484,56 @@ function AdminPanel({ currentUser }) {
     setAnalyticsError(null);
     try {
       const [usersResp, videosResp] = await Promise.all([
-        request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=500&sort=-created_date"),
+        fetch("/api/admin-users").then((r2) => r2.json()),
         request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?limit=500&sort=-created_date")
       ]);
-      const users = Array.isArray(usersResp) ? usersResp : (usersResp == null ? void 0 : usersResp.items) || [];
-      const videos2 = Array.isArray(videosResp) ? videosResp : (videosResp == null ? void 0 : videosResp.items) || [];
+      const users = (usersResp == null ? void 0 : usersResp.items) || [];
+      const videos2 = Array.isArray(videosResp) ? videosResp : (videosResp == null ? void 0 : videosResp.items) || (videosResp == null ? void 0 : videosResp.records) || [];
       setAllUsers(users);
-      setAnalyticsData({ total_users: users.length, total_videos: videos2.length, videos: videos2 });
+      const today = /* @__PURE__ */ new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      const weekAgo = /* @__PURE__ */ new Date();
+      weekAgo.setDate(today.getDate() - 7);
+      const newToday = users.filter((u2) => (u2.created_date || "").slice(0, 10) === todayStr).length;
+      const newThisWeek = users.filter((u2) => new Date(u2.created_date) >= weekAgo).length;
+      const totalViews = videos2.reduce((s, v2) => s + (v2.views_count || 0), 0);
+      const totalLikes = videos2.reduce((s, v2) => s + (v2.likes_count || 0), 0);
+      const totalComments = videos2.reduce((s, v2) => s + (v2.comments_count || 0), 0);
+      const matureCount = videos2.filter((v2) => v2.is_mature).length;
+      const dailyVideos = Array.from({ length: 14 }, (_, i) => {
+        const d = /* @__PURE__ */ new Date();
+        d.setDate(today.getDate() - (13 - i));
+        const ds = d.toISOString().slice(0, 10);
+        return { date: ds, count: videos2.filter((v2) => (v2.created_date || "").slice(0, 10) === ds).length };
+      });
+      const dailyUsers = Array.from({ length: 14 }, (_, i) => {
+        const d = /* @__PURE__ */ new Date();
+        d.setDate(today.getDate() - (13 - i));
+        const ds = d.toISOString().slice(0, 10);
+        return { date: ds, count: users.filter((u2) => (u2.created_date || "").slice(0, 10) === ds).length };
+      });
+      const creatorMap = {};
+      videos2.forEach((v2) => {
+        const uname = v2.username || v2.created_by || "unknown";
+        creatorMap[uname] = (creatorMap[uname] || 0) + 1;
+      });
+      const topCreators = Object.entries(creatorMap).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([username, count]) => ({ username, count }));
+      const topVideos = [...videos2].sort((a, b) => (b.views_count || 0) - (a.views_count || 0)).slice(0, 10);
+      setAnalyticsData({
+        totalUsers: users.length,
+        totalVideos: videos2.length,
+        totalViews,
+        totalLikes,
+        totalComments,
+        matureCount,
+        newToday,
+        newThisWeek,
+        recentUsers: [...users].sort((a, b) => new Date(b.created_date) - new Date(a.created_date)).slice(0, 50),
+        dailyVideos,
+        dailyUsers,
+        topCreators,
+        topVideos
+      });
     } catch (e) {
       console.error("analytics error", e);
       setAnalyticsError(e.message || "Failed to load analytics");
@@ -16504,6 +16554,7 @@ function AdminPanel({ currentUser }) {
   }, [modTab]);
   const [registeredUsers, setRegisteredUsers] = reactExports.useState([]);
   const [usersLoading, setUsersLoading] = reactExports.useState(false);
+  const [lastSeenMap, setLastSeenMap] = reactExports.useState({});
   const [founders, setFounders] = reactExports.useState([]);
   const [foundersLoading, setFoundersLoading] = reactExports.useState(false);
   const [selectedFounder, setSelectedFounder] = reactExports.useState(null);
@@ -16534,9 +16585,21 @@ function AdminPanel({ currentUser }) {
   const loadRegisteredUsers = async () => {
     setUsersLoading(true);
     try {
-      const usersResp = await request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?limit=500&sort=-created_date");
-      const users = Array.isArray(usersResp) ? usersResp : (usersResp == null ? void 0 : usersResp.items) || [];
+      const [usersResp, sessionsResp] = await Promise.all([
+        fetch("/api/admin-users").then((r2) => r2.json()),
+        fetch("/api/admin-sessions").then((r2) => r2.json()).catch(() => ({ items: [] }))
+      ]);
+      const users = (usersResp == null ? void 0 : usersResp.items) || [];
       setRegisteredUsers(users);
+      const sessions = (sessionsResp == null ? void 0 : sessionsResp.items) || [];
+      const map = {};
+      sessions.forEach((s) => {
+        if (!s.username) return;
+        const key = s.username.toLowerCase();
+        const ts = s.session_start || s.created_date;
+        if (!map[key] || ts > map[key]) map[key] = ts;
+      });
+      setLastSeenMap(map);
     } catch (e) {
       console.error("loadRegisteredUsers error", e);
     }
@@ -16883,8 +16946,24 @@ function AdminPanel({ currentUser }) {
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flexShrink: 0, textAlign: "right" }, children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11 }, children: u2.created_date ? new Date(u2.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#777", fontSize: 10, marginTop: 1 }, children: u2.created_date ? new Date(u2.created_date).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: u2.status === "active" ? "#6BFFB8" : "#FF6B6B", fontSize: 10, fontWeight: 700, marginTop: 2 }, children: u2.status || "active" })
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: u2.status === "active" ? "#6BFFB8" : "#FF6B6B", fontSize: 10, fontWeight: 700, marginTop: 2 }, children: u2.status || "active" }),
+                  (() => {
+                    const ls = lastSeenMap[(u2.username || "").toLowerCase()];
+                    if (!ls) return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 2 }, children: "Never seen" });
+                    const diff = Date.now() - new Date(ls).getTime();
+                    const mins = Math.floor(diff / 6e4);
+                    const hrs = Math.floor(mins / 60);
+                    const days = Math.floor(hrs / 24);
+                    let label;
+                    if (mins < 5) label = "🟢 Just now";
+                    else if (mins < 60) label = `🟢 ${mins}m ago`;
+                    else if (hrs < 24) label = `🟡 ${hrs}h ago`;
+                    else if (days === 1) label = "🟠 Yesterday";
+                    else if (days < 7) label = `🟠 ${days}d ago`;
+                    else if (days < 30) label = `🔴 ${days}d ago`;
+                    else label = `⚫ ${Math.floor(days / 30)}mo ago`;
+                    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 10, marginTop: 2, fontWeight: 700 }, children: label });
+                  })()
                 ] })
               ] }, u2.id || i);
             }),
@@ -18175,12 +18254,30 @@ function CreatorDashboard({ currentUser, onGoToFeed, onOpenProfile, unreadCount,
     )
   ] });
 }
-function VideoManageGrid({ videos: vids, onRefresh }) {
+function VideoManageGrid({ videos: vids, onRefresh, currentUser }) {
+  const [playerIndex, setPlayerIndex] = React.useState(null);
   const [menuVideo, setMenuVideo] = React.useState(null);
   const [editVideo, setEditVideo] = React.useState(null);
   const [editCaption, setEditCaption] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [confirmDelete, setConfirmDelete] = React.useState(null);
+  const pressTimer = React.useRef(null);
+  const didLongPress = React.useRef(false);
+  const handlePressStart = (v2) => {
+    didLongPress.current = false;
+    pressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      setMenuVideo(v2);
+    }, 500);
+  };
+  const handlePressEnd = (v2, idx) => {
+    clearTimeout(pressTimer.current);
+    if (!didLongPress.current) setPlayerIndex(idx);
+  };
+  const handlePressCancel = () => {
+    clearTimeout(pressTimer.current);
+    didLongPress.current = true;
+  };
   const handleDelete = async () => {
     try {
       setSaving(true);
@@ -18207,95 +18304,126 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
   };
   if (!vids || vids.length === 0) return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "center", padding: 40, color: "#555" }, children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 40, marginBottom: 8 }, children: "📹" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No videos yet" })
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 14 }, children: "No videos yet — post something!" })
   ] });
-  const CELL = 110;
-  const GAP = 4;
-  const PER_ROW = 3;
-  const OFFSET = (CELL + GAP) / 2;
+  const CELL = 72;
+  const GAP = 8;
+  const PER_ROW = 4;
+  const topLikedIds = [...vids].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3).map((v2) => v2.id);
+  const medals = ["🥇", "🥈", "🥉"];
   const rows = [];
-  for (let i = 0; i < vids.length; i += PER_ROW) {
-    rows.push(vids.slice(i, i + PER_ROW));
-  }
+  for (let i = 0; i < vids.length; i += PER_ROW) rows.push(vids.slice(i, i + PER_ROW));
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingBottom: 12 }, children: rows.map((row, ri2) => {
-      const isOffset = ri2 % 2 === 1;
-      return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-        display: "flex",
-        justifyContent: isOffset ? "flex-start" : "center",
-        marginTop: ri2 === 0 ? 12 : -24.200000000000003 - 2,
-        gap: GAP,
-        paddingLeft: isOffset ? OFFSET + 8 : 8,
-        paddingRight: 8
-      }, children: row.map((v2, ci2) => {
-        const thumb = v2.thumbnail_url ? resolveMediaUrl(v2.thumbnail_url) : null;
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          "div",
-          {
-            onClick: () => setMenuVideo(v2),
-            style: {
-              width: CELL,
-              height: CELL,
-              borderRadius: "50%",
-              overflow: "hidden",
-              cursor: "pointer",
-              position: "relative",
-              flexShrink: 0,
-              border: "2px solid rgba(245,200,66,0.35)",
-              boxShadow: "0 4px 18px rgba(0,0,0,0.5)",
-              background: "#111"
-            },
-            children: [
-              thumb ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "img",
-                {
-                  src: thumb,
-                  onError: (e) => {
-                    e.target.style.display = "none";
-                  },
-                  style: { width: "100%", height: "100%", objectFit: "cover", display: "block" }
-                }
-              ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }, children: "🎬" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "radial-gradient(circle at 60% 70%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%)" } }),
-              (v2.likes_count || 0) > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-                position: "absolute",
-                bottom: 14,
-                left: 0,
-                right: 0,
-                textAlign: "center",
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 800,
-                textShadow: "0 1px 4px rgba(0,0,0,0.9)"
-              }, children: [
-                "❤️ ",
-                v2.likes_count
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-                position: "absolute",
-                top: 10,
-                right: 12,
-                width: 18,
-                height: 18,
-                borderRadius: "50%",
-                background: "rgba(0,0,0,0.55)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 10,
-                color: "#fff",
-                lineHeight: 1
-              }, children: "⋮" })
-            ]
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { paddingBottom: 16, paddingTop: 8 }, children: rows.map((row, ri2) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", justifyContent: "center", gap: GAP, marginBottom: GAP, paddingLeft: 8, paddingRight: 8 }, children: row.map((v2, ci2) => {
+      const globalIdx = ri2 * PER_ROW + ci2;
+      const medalIdx = topLikedIds.indexOf(v2.id);
+      const isMedal = medalIdx >= 0;
+      const thumb = v2.thumbnail_url ? resolveMediaUrl(v2.thumbnail_url) : null;
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          onMouseDown: () => handlePressStart(v2),
+          onMouseUp: () => handlePressEnd(v2, globalIdx),
+          onMouseLeave: handlePressCancel,
+          onTouchStart: () => handlePressStart(v2),
+          onTouchEnd: () => handlePressEnd(v2, globalIdx),
+          onTouchMove: handlePressCancel,
+          style: {
+            width: CELL,
+            height: CELL,
+            borderRadius: "50%",
+            overflow: "hidden",
+            cursor: "pointer",
+            position: "relative",
+            flexShrink: 0,
+            border: isMedal ? "2.5px solid #FFD700" : "2px solid #F5C842",
+            boxShadow: isMedal ? "0 0 14px rgba(255,215,0,0.55), 0 4px 12px rgba(0,0,0,0.6)" : "0 0 8px rgba(245,200,66,0.25), 0 3px 8px rgba(0,0,0,0.5)",
+            background: "#111",
+            WebkitTapHighlightColor: "transparent",
+            userSelect: "none"
           },
-          v2.id
-        );
-      }) }, ri2);
-    }) }),
+          children: [
+            thumb ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "img",
+              {
+                src: thumb,
+                onError: (e) => {
+                  e.target.style.display = "none";
+                },
+                style: { width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }
+              }
+            ) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }, children: "🎬" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 75%, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.05) 65%)", pointerEvents: "none" } }),
+            isMedal && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 2, right: 4, fontSize: 12, lineHeight: 1, pointerEvents: "none" }, children: medals[medalIdx] }),
+            (v2.likes_count || 0) > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              position: "absolute",
+              bottom: 8,
+              left: 0,
+              right: 0,
+              textAlign: "center",
+              color: "#fff",
+              fontSize: 8,
+              fontWeight: 800,
+              textShadow: "0 1px 4px rgba(0,0,0,0.9)",
+              pointerEvents: "none"
+            }, children: [
+              "❤️ ",
+              v2.likes_count
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onMouseDown: (e) => e.stopPropagation(),
+                onTouchStart: (e) => {
+                  e.stopPropagation();
+                  setMenuVideo(v2);
+                },
+                onClick: (e) => {
+                  e.stopPropagation();
+                  setMenuVideo(v2);
+                },
+                style: {
+                  position: "absolute",
+                  top: 4,
+                  left: 4,
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: "rgba(0,0,0,0.65)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  lineHeight: 1,
+                  padding: 0,
+                  zIndex: 2,
+                  WebkitTapHighlightColor: "transparent"
+                },
+                children: "⋮"
+              }
+            )
+          ]
+        },
+        v2.id
+      );
+    }) }, ri2)) }),
+    playerIndex !== null && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      ProfileVideoPlayer,
+      {
+        videos: vids,
+        startIndex: playerIndex,
+        onClose: () => setPlayerIndex(null),
+        profile: currentUser,
+        username: (currentUser == null ? void 0 : currentUser.username) || (currentUser == null ? void 0 : currentUser.email)
+      }
+    ),
     menuVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
-        style: { position: "fixed", inset: 0, zIndex: 8e3, display: "flex", flexDirection: "column", justifyContent: "flex-end" },
+        style: { position: "fixed", inset: 0, zIndex: 9e3, display: "flex", flexDirection: "column", justifyContent: "flex-end" },
         onClick: () => setMenuVideo(null),
         children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
@@ -18304,15 +18432,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
             onClick: (e) => e.stopPropagation(),
             children: [
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, marginBottom: 20, alignItems: "center" }, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-                  width: 54,
-                  height: 54,
-                  background: "#111",
-                  borderRadius: "50%",
-                  overflow: "hidden",
-                  flexShrink: 0,
-                  border: "2px solid rgba(245,200,66,0.4)"
-                }, children: menuVideo.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(menuVideo.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }, children: "🎬" }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 54, height: 54, background: "#111", borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "2px solid rgba(245,200,66,0.4)" }, children: menuVideo.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: resolveMediaUrl(menuVideo.thumbnail_url), style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }, children: "🎬" }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14 }, children: menuVideo.caption || "(no caption)" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#888", fontSize: 12, marginTop: 4 }, children: [
@@ -18325,6 +18445,32 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
                   ] })
                 ] })
               ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: () => {
+                    setPlayerIndex(vids.indexOf(menuVideo));
+                    setMenuVideo(null);
+                  },
+                  style: {
+                    width: "100%",
+                    padding: "14px 0",
+                    background: "rgba(99,102,241,0.15)",
+                    border: "1px solid rgba(99,102,241,0.4)",
+                    borderRadius: 12,
+                    color: "#a5b4fc",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    marginBottom: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10
+                  },
+                  children: "▶️ Watch Video"
+                }
+              ),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "button",
                 {
@@ -18394,7 +18540,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
     editVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {
-        style: { position: "fixed", inset: 0, zIndex: 8e3, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 },
+        style: { position: "fixed", inset: 0, zIndex: 9e3, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 },
         onClick: () => setEditVideo(null),
         children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
@@ -18430,16 +18576,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
                   "button",
                   {
                     onClick: () => setEditVideo(null),
-                    style: {
-                      flex: 1,
-                      padding: "12px 0",
-                      background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      borderRadius: 12,
-                      color: "#aaa",
-                      fontSize: 14,
-                      cursor: "pointer"
-                    },
+                    style: { flex: 1, padding: "12px 0", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#aaa", fontSize: 14, cursor: "pointer" },
                     children: "Cancel"
                   }
                 ),
@@ -18448,18 +18585,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
                   {
                     onClick: handleSaveEdit,
                     disabled: saving,
-                    style: {
-                      flex: 2,
-                      padding: "12px 0",
-                      background: "linear-gradient(135deg,#F5C842,#FF9500)",
-                      border: "none",
-                      borderRadius: 12,
-                      color: "#fff",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: saving ? "not-allowed" : "pointer",
-                      opacity: saving ? 0.7 : 1
-                    },
+                    style: { flex: 2, padding: "12px 0", background: "linear-gradient(135deg,#F5C842,#FF9500)", border: "none", borderRadius: 12, color: "#fff", fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 },
                     children: saving ? "Saving..." : "Save Changes"
                   }
                 )
@@ -18469,7 +18595,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
         )
       }
     ),
-    confirmDelete && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 8e3, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380, textAlign: "center" }, children: [
+    confirmDelete && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "fixed", inset: 0, zIndex: 9e3, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "#1a1a2e", borderRadius: 20, padding: 24, width: "100%", maxWidth: 380, textAlign: "center" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48, marginBottom: 12 }, children: "🗑️" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 17, marginBottom: 8 }, children: "Delete this video?" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 13, marginBottom: 24 }, children: "This can't be undone." }),
@@ -18478,17 +18604,8 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
           "button",
           {
             onClick: () => setConfirmDelete(null),
-            style: {
-              flex: 1,
-              padding: "12px 0",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12,
-              color: "#aaa",
-              fontSize: 14,
-              cursor: "pointer"
-            },
-            children: "Keep it"
+            style: { flex: 1, padding: "13px 0", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#aaa", fontSize: 14, cursor: "pointer" },
+            children: "Cancel"
           }
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -18496,17 +18613,7 @@ function VideoManageGrid({ videos: vids, onRefresh }) {
           {
             onClick: handleDelete,
             disabled: saving,
-            style: {
-              flex: 1,
-              padding: "12px 0",
-              background: "rgba(229,57,53,0.9)",
-              border: "none",
-              borderRadius: 12,
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: saving ? "not-allowed" : "pointer"
-            },
+            style: { flex: 2, padding: "13px 0", background: "rgba(229,57,53,0.85)", border: "none", borderRadius: 12, color: "#fff", fontSize: 15, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 },
             children: saving ? "Deleting..." : "Yes, Delete"
           }
         )
@@ -19849,11 +19956,7 @@ function App() {
     if (!(currentUser == null ? void 0 : currentUser.email)) return;
     const normalize = async () => {
       try {
-        const res = await fetch(
-          `https://api.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`,
-          { headers: { "Content-Type": "application/json" } }
-        );
-        const data = await res.json();
+        const data = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`);
         const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
         const canonical = items.find((u2) => u2.email === currentUser.email);
         if (canonical && canonical.id && canonical.id !== currentUser.id) {
@@ -20085,6 +20188,8 @@ function App() {
       }));
       const raw = normalized.filter((v2) => {
         if (v2.is_archived) return false;
+        if (v2.username === "__deleted__") return false;
+        if (!v2.video_url && !v2.media_url) return false;
         const thumb = v2.thumbnail_url || "";
         const vid = v2.video_url || "";
         if (thumb.includes("media.sachistream.com/uploads/")) return false;
@@ -20258,15 +20363,19 @@ function App() {
     }
   };
   reactExports.useEffect(() => {
-    var _a2;
+    var _a2, _b;
     if (activeTab === "profile" && currentUser) {
       videos.myVideos(currentUser.id, currentUser.email).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => setMyVideos([]));
-      const myUsername = currentUser.full_name || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
+      const myUsername = currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
+      const myUsername2 = ((_b = currentUser.email) == null ? void 0 : _b.split("@")[0]) || "";
       (async () => {
         try {
-          const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
-          const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
+          const [r1, r2, r3] = await Promise.all([
+            request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null),
+            myUsername ? request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null) : null,
+            myUsername2 && myUsername2 !== myUsername ? request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(myUsername2)}&limit=500`).catch(() => null) : null
+          ]);
+          const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || [], ...(r3 == null ? void 0 : r3.items) || r3 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowersCount(unique.length);
         } catch (e) {
@@ -20274,9 +20383,12 @@ function App() {
       })();
       (async () => {
         try {
-          const r1 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
-          const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null);
-          const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
+          const [r1, r2, r3] = await Promise.all([
+            request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null),
+            myUsername ? request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername)}&limit=500`).catch(() => null) : null,
+            myUsername2 && myUsername2 !== myUsername ? request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(myUsername2)}&limit=500`).catch(() => null) : null
+          ]);
+          const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || [], ...(r3 == null ? void 0 : r3.items) || r3 || []];
           const unique = [...new Map(all.map((f2) => [f2.id, f2])).values()];
           setMeFollowingCount(unique.length);
         } catch (e) {
@@ -20651,7 +20763,7 @@ function App() {
         return s;
       })();
       const memberSince = (currentUser == null ? void 0 : currentUser.created_date) ? new Date(currentUser.created_date).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
-      const top3 = [...myVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3);
+      [...myVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 3);
       const bannerVideo = myVideos.length ? [...myVideos].sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0))[0] : null;
       const bannerSrc = (bannerVideo == null ? void 0 : bannerVideo.video_url) ? bannerVideo.video_url.startsWith("http") ? bannerVideo.video_url : `https://customer-stream.cloudflare.com/${bannerVideo.video_url}/manifest/video.m3u8` : null;
       const RSIZE = 96, rstroke = 3.5, rr = RSIZE / 2, rcirc = 2 * Math.PI * (rr - rstroke), rpct = myVibeScore / 100;
@@ -20773,11 +20885,13 @@ function App() {
             }, children: [
               { value: myVideos.length, label: "Videos", action: null },
               { value: meFollowersCount, label: "Followers", action: async () => {
+                var _a2;
                 setShowFollowersList(true);
                 setFollowListLoading(true);
                 try {
-                  const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null);
-                  const all = (r2 == null ? void 0 : r2.items) || r2 || [];
+                  const uname = currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
+                  const [r1, r2] = await Promise.all([request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_id=${currentUser.id}&limit=500`).catch(() => null), uname ? request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?following_username=${encodeURIComponent(uname)}&limit=500`).catch(() => null) : null]);
+                  const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
                   setFollowersList([...new Map(all.map((f2) => [f2.id, f2])).values()]);
                 } catch (e) {
                   setFollowersList([]);
@@ -20785,11 +20899,13 @@ function App() {
                 setFollowListLoading(false);
               } },
               { value: meFollowingCount, label: "Following", action: async () => {
+                var _a2;
                 setShowFollowingList(true);
                 setFollowListLoading(true);
                 try {
-                  const r2 = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null);
-                  const all = (r2 == null ? void 0 : r2.items) || r2 || [];
+                  const uname = currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]) || "";
+                  const [r1, r2] = await Promise.all([request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_id=${currentUser.id}&limit=500`).catch(() => null), uname ? request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/Follow?follower_username=${encodeURIComponent(uname)}&limit=500`).catch(() => null) : null]);
+                  const all = [...(r1 == null ? void 0 : r1.items) || r1 || [], ...(r2 == null ? void 0 : r2.items) || r2 || []];
                   setFollowingList([...new Map(all.map((f2) => [f2.id, f2])).values()]);
                 } catch (e) {
                   setFollowingList([]);
@@ -20836,43 +20952,9 @@ function App() {
               /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.4)", fontSize: 10, marginTop: 2 }, children: c.label })
             ] })
           ] }, c.label)) }),
-          top3.length >= 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "14px 16px 6px" }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }, children: "🏆 Highlight Reel" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }, children: top3.map((v2, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { flexShrink: 0, width: 100, cursor: "pointer", position: "relative" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-              width: 100,
-              height: 160,
-              borderRadius: 12,
-              overflow: "hidden",
-              border: i === 0 ? "2px solid #FFD700" : i === 1 ? "2px solid #C0C0C0" : "2px solid #CD7F32",
-              background: "#111"
-            }, children: [
-              v2.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "img",
-                {
-                  src: v2.thumbnail_url.startsWith("http") ? v2.thumbnail_url : `https://customer-stream.cloudflare.com/${v2.thumbnail_url}/thumbnails/thumbnail.jpg`,
-                  style: { width: "100%", height: "100%", objectFit: "cover" }
-                }
-              ) : null,
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 6, left: 8, fontSize: 14 }, children: i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-                position: "absolute",
-                bottom: 4,
-                left: 0,
-                right: 0,
-                textAlign: "center",
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 800,
-                textShadow: "0 1px 4px rgba(0,0,0,0.9)"
-              }, children: [
-                "❤️ ",
-                v2.likes_count || 0
-              ] })
-            ] }) }, v2.id)) })
-          ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { padding: "8px 0 0" }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, margin: "0 16px 10px", textTransform: "uppercase" }, children: "🎬 My Videos" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(VideoManageGrid, { videos: myVideos, onRefresh: () => videos.myVideos(currentUser.id, currentUser.email).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => {
+            /* @__PURE__ */ jsxRuntimeExports.jsx(VideoManageGrid, { videos: myVideos, currentUser, onRefresh: () => videos.myVideos(currentUser.id, currentUser.email).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => {
             }) })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 20px 8px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(

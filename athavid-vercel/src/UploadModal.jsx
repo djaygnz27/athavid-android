@@ -320,7 +320,9 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
         setTimeout(() => { onUploaded(createdPost); onClose(); }, 1000);
       }
     } catch(e) {
-      alert("Upload failed: " + (e.message || JSON.stringify(e)));
+      const errDetail = e.message || JSON.stringify(e);
+      console.error("UPLOAD FAILED:", errDetail, e);
+      alert("Upload failed:\n\n" + errDetail + "\n\nCheck browser console for details.");
       setUploading(false); setProgress(0); setStep("");
     }
   };

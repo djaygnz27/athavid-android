@@ -1,11 +1,10 @@
-// SACHi STREAM Service Worker — cache-first, NO forced reloads
-const CACHE_VERSION = 'sachi-v4';
+// SACHi STREAM Service Worker — v6 MINIMAL
+// Removed all fetch interception to fix Cloudflare TUS upload blocking
+const CACHE_VERSION = 'sachi-v6';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
-const CACHE_EXTENSIONS = ['.png', '.ico', '.jpg', '.jpeg', '.webp', '.svg', '.woff2', '.woff'];
-
 self.addEventListener('install', event => {
-  // DO NOT skipWaiting — let the old SW finish serving the current session
+  self.skipWaiting();
   event.waitUntil(
     caches.open(STATIC_CACHE).then(cache =>
       cache.addAll(['/icon-192.png', '/icon-512.png', '/favicon.ico']).catch(() => {})
@@ -16,60 +15,10 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== STATIC_CACHE).map(k => caches.delete(k))
-      )
+      Promise.all(keys.map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
-    // NO postMessage SW_UPDATED — never force-reload an active user session
   );
 });
 
-self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
-
-  // HTML — always network fresh (but DON'T reload if offline, serve cache)
-  if (
-    event.request.mode === 'navigate' ||
-    event.request.headers.get('accept')?.includes('text/html') ||
-    url.pathname === '/' ||
-    url.pathname.endsWith('.html')
-  ) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match('/index.html'))
-    );
-    return;
-  }
-
-  // Vite-hashed JS/CSS assets — cache-first (filename changes on every deploy)
-  if (url.pathname.includes('/assets/')) {
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(resp => {
-          const clone = resp.clone();
-          caches.open(STATIC_CACHE).then(c => c.put(event.request, clone));
-          return resp;
-        });
-      })
-    );
-    return;
-  }
-
-  // Static icons/images — cache-first
-  const ext = '.' + url.pathname.split('.').pop();
-  if (CACHE_EXTENSIONS.includes(ext)) {
-    event.respondWith(
-      caches.match(event.request).then(cached =>
-        cached || fetch(event.request).then(resp => {
-          const clone = resp.clone();
-          caches.open(STATIC_CACHE).then(c => c.put(event.request, clone));
-          return resp;
-        })
-      )
-    );
-    return;
-  }
-
-  // Everything else (API calls etc) — network only, no caching
-  event.respondWith(fetch(event.request));
-});
+// NO fetch handler — all requests go directly to network
+// This prevents the SW from intercepting Cloudflare TUS uploads
