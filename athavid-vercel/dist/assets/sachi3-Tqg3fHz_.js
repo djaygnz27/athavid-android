@@ -7572,6 +7572,20 @@ async function uploadFile(file, onProgress) {
   }
   const creds = await credRes.json();
   if (isVideo) {
+    if (creds.storage === "r2") {
+      await r2Upload(file, creds.upload_url, (pct) => {
+        if (onProgress) onProgress(pct);
+      });
+      return {
+        file_url: creds.public_url,
+        thumbnail_url: null,
+        // client-side captureThumbnail() handles this
+        stream_uid: null,
+        // no Cloudflare Stream session in the R2 path
+        media_url: creds.public_url
+        // direct MP4 — same URL, no HLS needed
+      };
+    }
     let uploadedCreds;
     try {
       uploadedCreds = await cfFormUpload(file, null, onProgress);

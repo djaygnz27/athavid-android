@@ -148,7 +148,25 @@ export async function uploadFile(file, onProgress) {
   const creds = await credRes.json();
 
   if (isVideo) {
-    // 2a. Upload video directly from browser → Cloudflare Stream
+    // 2a. R2 direct PUT upload — interim video pipeline (2026-07-01) until
+    // Sachi Stream 2.0 replaces it. Switched away from Cloudflare Stream
+    // because Jay's desktop Chrome hit net::ERR_HTTP2_PROTOCOL_ERROR talking
+    // to upload.cloudflarestream.com specifically (confirmed via live browser
+    // console), while R2 uploads from the same desktop already worked fine.
+    // get-upload-url now returns R2 presigned-PUT creds for type: "video".
+    if (creds.storage === "r2") {
+      await r2Upload(file, creds.upload_url, (pct) => { if (onProgress) onProgress(pct); });
+      return {
+        file_url: creds.public_url,
+        thumbnail_url: null,   // client-side captureThumbnail() handles this
+        stream_uid: null,      // no Cloudflare Stream session in the R2 path
+        media_url: creds.public_url, // direct MP4 — same URL, no HLS needed
+      };
+    }
+
+    // 2a-legacy. Cloudflare Stream path — only reached if server ever returns
+    // a non-R2 video response (e.g. type: "video_stream" credentials). Not
+    // used by default anymore; preserved for rollback.
     // cfFormUpload gets its own TUS session via get-tus-session and uploads in chunks.
     // Override creds with the actual session used for upload.
     let uploadedCreds;

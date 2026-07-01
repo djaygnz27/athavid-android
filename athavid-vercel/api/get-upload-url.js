@@ -32,10 +32,46 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "type and filename required" });
   }
 
-  // ── VIDEO: Cloudflare Stream direct upload (non-TUS, simple form POST) ──
-  // Uses /stream/direct_upload to get a one-time upload URL the browser can
-  // POST a multipart form to. No TUS, no HTTP/2 issues, no chunking needed.
+  // ── VIDEO: R2 direct PUT upload ─────────────────────────────────────────
+  // Switched from Cloudflare Stream (TUS/direct_upload) to R2 on 2026-07-01.
+  // Root cause: Jay's desktop Chrome hit net::ERR_HTTP2_PROTOCOL_ERROR talking
+  // to upload.cloudflarestream.com specifically — confirmed via live browser
+  // console, reproduced on single-POST AND TUS-chunked attempts, in both
+  // normal and Incognito windows. Server-side curl to the identical CF Stream
+  // endpoints always succeeded, proving it wasn't a code/request-shape issue.
+  // Meanwhile R2 image/avatar uploads from the SAME desktop already worked
+  // reliably — strong evidence the problem is specific to Stream's ingest
+  // servers/routing for Jay's network, not Cloudflare or HTTP/2 in general.
+  // R2 is a standard S3-compatible single PUT — simpler, no TUS chunking,
+  // and proven to work end-to-end on the exact browser that was failing.
+  // This is the interim video pipeline until Sachi Stream 2.0 replaces it.
+  // (Old Cloudflare Stream path preserved below under type: "video_stream"
+  // in case it's ever needed again — not deleted, just no longer the default.)
   if (type === "video") {
+    if (!R2_ACCESS_KEY || !R2_SECRET_KEY) {
+      return res.status(500).json({ error: "R2_ACCESS_KEY_ID or R2_SECRET_ACCESS_KEY not set" });
+    }
+    try {
+      const ext = (filename.split(".").pop() || "mp4").toLowerCase();
+      const key = `videos/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+      const contentType = filetype || "video/mp4";
+      const presigned = await generateR2PresignedUrl(key, contentType, R2_ACCESS_KEY, R2_SECRET_KEY);
+
+      return res.status(200).json({
+        upload_url:  presigned,               // PUT directly to this URL
+        public_url:  `${R2_PUBLIC_URL}/${key}`, // save this as media_url / file_url
+        key,
+        storage:     "r2",
+      });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  // ── VIDEO (legacy): Cloudflare Stream direct upload — DORMANT, not called ──
+  // Kept intact for rollback. Not reachable unless client explicitly sends
+  // type: "video_stream".
+  if (type === "video_stream") {
     if (!CF_TOKEN) return res.status(500).json({ error: "CLOUDFLARE_API_TOKEN not set" });
 
     // maxDuration from client (seconds), default 600 (10 min), max 1800 (30 min)
