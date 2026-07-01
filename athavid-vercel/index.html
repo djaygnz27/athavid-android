@@ -71,9 +71,47 @@
 
   
     <script>
-      // Service Worker — register only, NO forced reloads
+      // Service Worker — force-update any stale worker, then register the
+      // current one. A plain hard refresh (Cmd+Shift+R) does NOT unregister
+      // an already-active service worker still controlling the page — if an
+      // old SW from before a fix was shipped is still running, it can keep
+      // intercepting/breaking fetches indefinitely regardless of new deploys.
+      // This block clears that class of bug once and for all.
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(reg => {
+            // Force this registration to check for a byte-different sw.js
+            // immediately instead of waiting for the browser's lazy check.
+            reg.update().catch(() => {});
+          });
+        });
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          // If a new SW is waiting (installed but not yet active because an
+          // old one still controls the page), activate it immediately.
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+            }
+          });
+        }).catch(() => {});
+
+        // Reload once (and only once) if the controlling worker changes —
+        // this guarantees the page is running under the LATEST worker/code,
+        // closing the loop on stale-SW-serves-broken-JS bugs for good.
+        let refreshed = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshed) return;
+          refreshed = true;
+          window.location.reload();
+        });
       }
     </script>
 
