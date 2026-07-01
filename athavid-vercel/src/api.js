@@ -200,10 +200,14 @@ export async function uploadFile(file, onProgress) {
 async function cfFormUpload(file, _uploadUrl, onProgress) {
   if (!file || file.size === 0) throw new Error("File is empty — please select a valid video");
 
-  // Step 1: Get CF TUS upload URL from our server (tiny JSON request)
+  // Step 1: Get a REAL TUS upload session from our server (needs file size to create it)
   const sessionRes = await fetch("/api/get-cf-session", {
     method: "POST",
-    headers: { "X-Max-Duration": "1800" },
+    headers: {
+      "X-Max-Duration": "1800",
+      "X-File-Size": String(file.size),
+      "X-File-Name": encodeURIComponent(file.name || "video.mp4"),
+    },
   });
   if (!sessionRes.ok) {
     const errText = await sessionRes.text().catch(() => "");
