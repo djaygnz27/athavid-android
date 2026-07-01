@@ -148,22 +148,20 @@ export async function uploadFile(file, onProgress) {
   const creds = await credRes.json();
 
   if (isVideo) {
-    // 2a. Upload video via Vercel server proxy → Cloudflare Stream
-    // Browser sends raw bytes to /api/upload-video which handles CF session creation + upload.
-    // This permanently fixes ERR_HTTP2_PROTOCOL_ERROR — browser never touches CF directly.
+    // 2a. Upload video directly from browser → Cloudflare Stream
+    // cfFormUpload gets its own CF session via get-cf-session and uploads directly.
+    // Override creds with the actual session used for upload.
     let uploadedCreds;
     try {
       uploadedCreds = await cfFormUpload(file, null, onProgress);
-      // Server returns { stream_uid, playback_url, thumbnail_url }
-      // Override the creds from get-upload-url with the ones from the actual upload
+      // cfFormUpload returns { stream_uid, playback_url, thumbnail_url } from its own session
       if (uploadedCreds?.stream_uid) {
-        creds.stream_uid = uploadedCreds.stream_uid;
-        creds.playback_url = uploadedCreds.playback_url;
+        creds.stream_uid    = uploadedCreds.stream_uid;
+        creds.playback_url  = uploadedCreds.playback_url;
         creds.thumbnail_url = uploadedCreds.thumbnail_url;
       }
     } catch (uploadErr) {
-      console.warn("Upload failed:", uploadErr.message);
-      // Server already cleans up on failure — no client-side cleanup needed
+      console.error("[Sachi] cfFormUpload failed:", uploadErr.message);
       throw uploadErr;
     }
 
