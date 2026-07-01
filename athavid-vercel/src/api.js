@@ -148,19 +148,22 @@ export async function uploadFile(file, onProgress) {
   const creds = await credRes.json();
 
   if (isVideo) {
-    // 2a. Upload video directly to Cloudflare Stream via simple form POST
-    // NOT TUS — avoids ERR_HTTP2_PROTOCOL_ERROR entirely.
-    // CF's direct_upload URL accepts a plain multipart/form-data POST.
+    // 2a. Upload video via Vercel server proxy → Cloudflare Stream
+    // Browser sends raw bytes to /api/upload-video which handles CF session creation + upload.
+    // This permanently fixes ERR_HTTP2_PROTOCOL_ERROR — browser never touches CF directly.
+    let uploadedCreds;
     try {
-      await cfFormUpload(file, creds.upload_url, onProgress);
+      uploadedCreds = await cfFormUpload(file, null, onProgress);
+      // Server returns { stream_uid, playback_url, thumbnail_url }
+      // Override the creds from get-upload-url with the ones from the actual upload
+      if (uploadedCreds?.stream_uid) {
+        creds.stream_uid = uploadedCreds.stream_uid;
+        creds.playback_url = uploadedCreds.playback_url;
+        creds.thumbnail_url = uploadedCreds.thumbnail_url;
+      }
     } catch (uploadErr) {
-      // Cleanup the CF session so it doesn't eat quota
-      console.warn("Upload failed, cleaning up CF session:", creds.stream_uid);
-      fetch("/api/delete-cf-stream", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stream_uid: creds.stream_uid }),
-      }).catch(() => {});
+      console.warn("Upload failed:", uploadErr.message);
+      // Server already cleans up on failure — no client-side cleanup needed
       throw uploadErr;
     }
 
@@ -199,35 +202,38 @@ export async function uploadFile(file, onProgress) {
   }
 }
 
-// Cloudflare Stream direct form upload (replaces TUS)
-// Browser POSTs the file as multipart/form-data to CF's one-time upload URL.
-// No HTTP/2 chunking issues — standard browser fetch, one request.
-// onProgress is approximate (fetch doesn't expose upload progress natively,
-// so we fake it with a timer for UX).
-async function cfFormUpload(file, uploadUrl, onProgress) {
-  // Fake progress while uploading (fetch has no upload progress API)
+// Cloudflare Stream server-side upload proxy
+// Browser sends video to Vercel (/api/upload-video), Vercel forwards to CF.
+// Eliminates ERR_HTTP2_PROTOCOL_ERROR — browser never talks to CF directly.
+// onProgress is faked via timer (XHR upload progress not available with fetch).
+async function cfFormUpload(file, _uploadUrl, onProgress) {
+  // Fake progress ticker for UX
   let fakeProgress = 0;
   const fakeTimer = setInterval(() => {
-    fakeProgress = Math.min(fakeProgress + 2, 90);
+    fakeProgress = Math.min(fakeProgress + 3, 90);
     if (onProgress) onProgress(fakeProgress);
-  }, 500);
+  }, 800);
 
   try {
-    const form = new FormData();
-    form.append("file", file, file.name);
-
-    const res = await fetch(uploadUrl, {
+    const res = await fetch("/api/upload-video", {
       method: "POST",
-      body: form,
-      // No Content-Type header — browser sets it with boundary automatically
+      headers: {
+        "Content-Type": file.type || "video/mp4",
+        "X-File-Name": encodeURIComponent(file.name),
+        "X-Max-Duration": "600",
+      },
+      body: file,  // stream raw bytes — no FormData wrapper needed server-side
     });
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      throw new Error(`CF upload failed: HTTP ${res.status} — ${errText.slice(0, 300)}`);
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Upload failed: HTTP ${res.status}`);
     }
 
+    const data = await res.json();
     if (onProgress) onProgress(100);
+    // Return the CF stream info so the caller can update creds
+    return data;
   } finally {
     clearInterval(fakeTimer);
   }
