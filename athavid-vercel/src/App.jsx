@@ -226,7 +226,11 @@ function App() {
   const [feedKey, setFeedKey] = React.useState(0);
   const [prevTab, setPrevTab] = React.useState(null); // tracks where user came from, for back button
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  // Shared video links (/post/:id or ?post=:id) must land straight on the
+  // feed so the deep-link fetch/scroll logic can run -- otherwise anonymous
+  // recipients hit the "Welcome to Sachi / Sign In" dashboard wall first and
+  // never see the video at all (2026-07-02).
+  const [activeTab, setActiveTab] = useState(() => deepLinkPostId ? "feed" : "dashboard");
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
   const [inboxDMTarget, setInboxDMTarget] = useState(null);

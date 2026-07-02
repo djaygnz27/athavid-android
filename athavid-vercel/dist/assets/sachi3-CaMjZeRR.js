@@ -20128,7 +20128,7 @@ function App() {
   const [feedKey, setFeedKey] = React.useState(0);
   const [prevTab, setPrevTab] = React.useState(null);
   const [loading, setLoading] = reactExports.useState(true);
-  const [activeTab, setActiveTab] = reactExports.useState("dashboard");
+  const [activeTab, setActiveTab] = reactExports.useState(() => deepLinkPostId ? "feed" : "dashboard");
   const [unreadCount, setUnreadCount] = reactExports.useState(0);
   const [notifCount, setNotifCount] = reactExports.useState(0);
   const [inboxDMTarget, setInboxDMTarget] = reactExports.useState(null);
