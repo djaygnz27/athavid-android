@@ -12057,23 +12057,23 @@ function VideoPlayer({
       const hls = new window.Hls({
         maxBufferLength: 60,
         maxMaxBufferLength: 120,
-        startLevel: 99,
-        // always start at HIGHEST quality level available
+        startLevel: -1,
+        // auto — hls.js picks a safe starting quality from real conditions
         autoLevelCapping: -1,
-        // no cap — allow any quality level
-        abrEwmaDefaultEstimate: 2e7,
-        // assume 20Mbps — forces highest tier immediately
-        abrBandWidthFactor: 1,
-        // use 100% of measured bandwidth
-        abrBandWidthUpFactor: 1,
-        // upgrade quality instantly when signal allows
+        // no cap — still allow ramping up to any quality level
+        abrEwmaDefaultEstimate: 3e6,
+        // realistic ~3Mbps assumption until real bandwidth is measured
+        abrBandWidthFactor: 0.9,
+        // slight safety margin so segments finish downloading before playback catches up
+        abrBandWidthUpFactor: 0.7,
+        // ramp up smoothly instead of instantly jumping to max
         capLevelToPlayerSize: false,
         // never cap quality to screen pixel size
         enableWorker: true,
         lowLatencyMode: false,
         backBufferLength: 30,
-        progressive: true
-        // start rendering as soon as first bytes arrive
+        progressive: false
+        // only render fully-downloaded segments — no partial/blurry frames
       });
       hls.loadSource(url);
       hls.attachMedia(el2);

@@ -66,19 +66,29 @@ export default function VideoPlayer({
     const attachHls = () => {
       if (!window.Hls || !window.Hls.isSupported()) return;
       if (el._hls) { try { el._hls.destroy(); } catch (e) {} el._hls = null; }
+      // ⛔ Tuned 2026-07-02 — was forcing highest-bitrate-first + partial-segment
+      // rendering, which is exactly what causes "blurry for a few seconds then
+      // clears up": startLevel:99 forced the biggest/slowest-to-download
+      // rendition immediately, abrEwmaDefaultEstimate assumed a fake 20Mbps
+      // connection, and progressive:true painted incomplete segment bytes to
+      // screen before they finished downloading. Result: visible macroblocking/
+      // blur while the oversized segment finished arriving, every single time.
+      // Fix: let hls.js's normal ABR start at a safe/complete quality level and
+      // ramp up once real bandwidth is measured, and never render partial
+      // segment data.
       const hls = new window.Hls({
         maxBufferLength: 60,
         maxMaxBufferLength: 120,
-        startLevel: 99,               // always start at HIGHEST quality level available
-        autoLevelCapping: -1,         // no cap — allow any quality level
-        abrEwmaDefaultEstimate: 20000000, // assume 20Mbps — forces highest tier immediately
-        abrBandWidthFactor: 1.0,      // use 100% of measured bandwidth
-        abrBandWidthUpFactor: 1.0,    // upgrade quality instantly when signal allows
-        capLevelToPlayerSize: false,  // never cap quality to screen pixel size
+        startLevel: -1,                    // auto — hls.js picks a safe starting quality from real conditions
+        autoLevelCapping: -1,              // no cap — still allow ramping up to any quality level
+        abrEwmaDefaultEstimate: 3000000,   // realistic ~3Mbps assumption until real bandwidth is measured
+        abrBandWidthFactor: 0.9,           // slight safety margin so segments finish downloading before playback catches up
+        abrBandWidthUpFactor: 0.7,         // ramp up smoothly instead of instantly jumping to max
+        capLevelToPlayerSize: false,       // never cap quality to screen pixel size
         enableWorker: true,
         lowLatencyMode: false,
         backBufferLength: 30,
-        progressive: true,            // start rendering as soon as first bytes arrive
+        progressive: false,                // only render fully-downloaded segments — no partial/blurry frames
       });
       hls.loadSource(url);
       hls.attachMedia(el);
