@@ -55,7 +55,7 @@ async function presignedUrl({ accountId, bucket, accessKey, secretKey, method, k
     ...query,
   });
   // AWS requires query params sorted by key for the canonical request string.
-  const sortedQuery = new URLSearchParams([...queryParams.entries()].sort((a, b) => a[0].localeCompare(b[0])));
+  const sortedQuery = new URLSearchParams([...queryParams.entries()].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)));
 
   const canonicalRequest = [
     method,
@@ -86,7 +86,7 @@ async function signedRequest({ accountId, bucket, accessKey, secretKey, method, 
   const credentialScope = `${dateOnly}/${REGION}/${SERVICE}/aws4_request`;
   const host = `${bucket}.${accountId}.r2.cloudflarestorage.com`;
 
-  const sortedQueryEntries = Object.entries(query).sort((a, b) => a[0].localeCompare(b[0]));
+  const sortedQueryEntries = Object.entries(query).sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   const canonicalQuery = sortedQueryEntries
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join("&");
@@ -95,7 +95,7 @@ async function signedRequest({ accountId, bucket, accessKey, secretKey, method, 
 
   const headerEntries = [["host", host], ["x-amz-content-sha256", bodyHash], ["x-amz-date", dateStr],
     ...Object.entries(extraHeaders).map(([k, v]) => [k.toLowerCase(), v])]
-    .sort((a, b) => a[0].localeCompare(b[0]));
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 
   const canonicalHeaders = headerEntries.map(([k, v]) => `${k}:${v}\n`).join("");
   const signedHeaders = headerEntries.map(([k]) => k).join(";");
