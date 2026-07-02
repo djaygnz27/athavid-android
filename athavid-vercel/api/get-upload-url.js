@@ -9,6 +9,10 @@
 const CF_ACCOUNT    = "a346b1c78fc48549d2de3de99a789a2d";
 const R2_BUCKET     = "sachi-media";
 const R2_PUBLIC_URL = "https://media.sachistream.com";
+const { signedRequest } = require("./_r2sign.js");
+
+const MULTIPART_THRESHOLD = 8 * 1024 * 1024; // files >= 8MB use multipart
+const PART_SIZE           = 8 * 1024 * 1024; // 8MB per part
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "https://sachistream.com");
@@ -55,11 +59,47 @@ module.exports = async function handler(req, res) {
       const ext = (filename.split(".").pop() || "mp4").toLowerCase();
       const key = `videos/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
       const contentType = filetype || "video/mp4";
-      const presigned = await generateR2PresignedUrl(key, contentType, R2_ACCESS_KEY, R2_SECRET_KEY);
+      const size = parseInt(filesize || "0", 10);
 
+      // ── Multipart path (2026-07-02) ──────────────────────────────────
+      // Root cause found: a SINGLE large PUT (the whole video in one shot)
+      // was failing instantly (0 bytes sent, xhr.status=0) for multiple
+      // unrelated users on different networks/devices (desktop + mobile) --
+      // not an isolated network/VPN issue. Splitting into small 8MB parts
+      // via R2's standard S3-compatible Multipart Upload API is the
+      // industry-standard fix for large binary uploads over HTTP.
+      if (size >= MULTIPART_THRESHOLD) {
+        const initRes = await signedRequest({
+          accountId: CF_ACCOUNT, bucket: R2_BUCKET,
+          accessKey: R2_ACCESS_KEY, secretKey: R2_SECRET_KEY,
+          method: "POST", key, query: { uploads: "" },
+          extraHeaders: { "content-type": contentType },
+        });
+        if (!initRes.ok) {
+          const errText = await initRes.text();
+          return res.status(500).json({ error: `R2 multipart init failed: ${initRes.status} ${errText}` });
+        }
+        const xml = await initRes.text();
+        const uploadIdMatch = xml.match(/<UploadId>([^<]+)<\/UploadId>/);
+        if (!uploadIdMatch) {
+          return res.status(500).json({ error: `R2 multipart init: no UploadId in response: ${xml.slice(0,300)}` });
+        }
+        const uploadId = uploadIdMatch[1];
+
+        return res.status(200).json({
+          storage:    "r2-multipart",
+          key,
+          upload_id:  uploadId,
+          part_size:  PART_SIZE,
+          public_url: `${R2_PUBLIC_URL}/${key}`,
+        });
+      }
+
+      // ── Small file: single PUT (existing path, unchanged) ────────────
+      const presigned = await generateR2PresignedUrl(key, contentType, R2_ACCESS_KEY, R2_SECRET_KEY);
       return res.status(200).json({
-        upload_url:  presigned,               // PUT directly to this URL
-        public_url:  `${R2_PUBLIC_URL}/${key}`, // save this as media_url / file_url
+        upload_url:  presigned,
+        public_url:  `${R2_PUBLIC_URL}/${key}`,
         key,
         storage:     "r2",
       });

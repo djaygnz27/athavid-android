@@ -154,6 +154,20 @@ export async function uploadFile(file, onProgress) {
     // to upload.cloudflarestream.com specifically (confirmed via live browser
     // console), while R2 uploads from the same desktop already worked fine.
     // get-upload-url now returns R2 presigned-PUT creds for type: "video".
+    if (creds.storage === "r2-multipart") {
+      // Large file (>=8MB): upload in small 8MB parts instead of one giant
+      // PUT. Root cause (2026-07-02): a single huge PUT was failing
+      // instantly (0 bytes sent) for multiple unrelated users on different
+      // networks/devices -- this is the standard fix for large uploads.
+      await r2MultipartUpload(file, creds, onProgress);
+      return {
+        file_url: creds.public_url,
+        thumbnail_url: null,
+        stream_uid: null,
+        media_url: creds.public_url,
+      };
+    }
+
     if (creds.storage === "r2") {
       await r2Upload(file, creds.upload_url, (pct) => { if (onProgress) onProgress(pct); });
       return {
@@ -289,6 +303,86 @@ async function cfFormUpload(file, _uploadUrl, onProgress) {
 }
 
 // Direct PUT to R2 presigned URL
+// ── R2 Multipart upload (2026-07-02) ───────────────────────────────────────
+// Splits large files into small (8MB) parts instead of one giant PUT.
+// Each part is uploaded via its own short-lived presigned URL (fetched from
+// our server just-in-time), sequentially, with per-part retry. This is the
+// standard S3-compatible multipart pattern, chosen after a single massive
+// PUT started failing instantly (0 bytes sent) for multiple unrelated users
+// on completely different networks/devices on the same day.
+async function r2UploadPart(url, chunk, attempt = 1) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.timeout = 60000;
+    xhr.onload = () => {
+      if (xhr.status < 300) {
+        const etag = xhr.getResponseHeader("ETag");
+        if (!etag) return reject(new Error(`Part upload succeeded but no ETag header (status ${xhr.status})`));
+        return resolve(etag);
+      }
+      reject(new Error(`Part upload rejected: HTTP ${xhr.status} ${xhr.responseText ? xhr.responseText.slice(0,200) : ""}`));
+    };
+    xhr.onerror   = () => reject(new Error(`Part upload network error (attempt ${attempt})`));
+    xhr.ontimeout = () => reject(new Error(`Part upload timed out (attempt ${attempt})`));
+    xhr.send(chunk);
+  });
+}
+
+async function r2MultipartUpload(file, creds, onProgress) {
+  const { key, upload_id, part_size } = creds;
+  const totalParts = Math.ceil(file.size / part_size);
+  const parts = [];
+  let uploadedBytes = 0;
+
+  for (let i = 0; i < totalParts; i++) {
+    const partNumber = i + 1;
+    const start = i * part_size;
+    const end = Math.min(start + part_size, file.size);
+    const chunk = file.slice(start, end);
+
+    // Get a presigned URL for this specific part (small, fast call)
+    const urlRes = await fetch("/api/r2-part-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, upload_id, part_number: partNumber }),
+    });
+    if (!urlRes.ok) {
+      const err = await urlRes.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to get part ${partNumber} URL (${urlRes.status})`);
+    }
+    const { url } = await urlRes.json();
+
+    // Upload this part, with up to 3 retries (small chunk, cheap to retry)
+    let etag = null, lastErr = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        etag = await r2UploadPart(url, chunk, attempt);
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt));
+      }
+    }
+    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after 3 attempts: ${lastErr?.message}`);
+
+    parts.push({ part_number: partNumber, etag });
+    uploadedBytes += (end - start);
+    if (onProgress) onProgress(Math.round((uploadedBytes / file.size) * 100));
+  }
+
+  // Finalize the upload
+  const completeRes = await fetch("/api/r2-complete-multipart", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, upload_id, parts }),
+  });
+  if (!completeRes.ok) {
+    const err = await completeRes.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to complete multipart upload (${completeRes.status})`);
+  }
+}
+
 async function r2Upload(file, uploadUrl, onProgress) {
   // ── Diagnostic-rich R2 upload (2026-07-01) ──────────────────────────────
   // Prior version threw a bare "R2 upload network error" with zero detail,

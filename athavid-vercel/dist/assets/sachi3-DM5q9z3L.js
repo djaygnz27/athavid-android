@@ -7572,6 +7572,15 @@ async function uploadFile(file, onProgress) {
   }
   const creds = await credRes.json();
   if (isVideo) {
+    if (creds.storage === "r2-multipart") {
+      await r2MultipartUpload(file, creds, onProgress);
+      return {
+        file_url: creds.public_url,
+        thumbnail_url: null,
+        stream_uid: null,
+        media_url: creds.public_url
+      };
+    }
     if (creds.storage === "r2") {
       await r2Upload(file, creds.upload_url, (pct) => {
         if (onProgress) onProgress(pct);
@@ -7665,6 +7674,69 @@ async function cfFormUpload(file, _uploadUrl, onProgress) {
     playback_url: sessionData.playback_url,
     thumbnail_url: sessionData.thumbnail_url
   };
+}
+async function r2UploadPart(url, chunk, attempt = 1) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.timeout = 6e4;
+    xhr.onload = () => {
+      if (xhr.status < 300) {
+        const etag = xhr.getResponseHeader("ETag");
+        if (!etag) return reject(new Error(`Part upload succeeded but no ETag header (status ${xhr.status})`));
+        return resolve(etag);
+      }
+      reject(new Error(`Part upload rejected: HTTP ${xhr.status} ${xhr.responseText ? xhr.responseText.slice(0, 200) : ""}`));
+    };
+    xhr.onerror = () => reject(new Error(`Part upload network error (attempt ${attempt})`));
+    xhr.ontimeout = () => reject(new Error(`Part upload timed out (attempt ${attempt})`));
+    xhr.send(chunk);
+  });
+}
+async function r2MultipartUpload(file, creds, onProgress) {
+  const { key, upload_id, part_size } = creds;
+  const totalParts = Math.ceil(file.size / part_size);
+  const parts = [];
+  let uploadedBytes = 0;
+  for (let i = 0; i < totalParts; i++) {
+    const partNumber = i + 1;
+    const start = i * part_size;
+    const end = Math.min(start + part_size, file.size);
+    const chunk = file.slice(start, end);
+    const urlRes = await fetch("/api/r2-part-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, upload_id, part_number: partNumber })
+    });
+    if (!urlRes.ok) {
+      const err = await urlRes.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to get part ${partNumber} URL (${urlRes.status})`);
+    }
+    const { url } = await urlRes.json();
+    let etag = null, lastErr = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        etag = await r2UploadPart(url, chunk, attempt);
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 3) await new Promise((r2) => setTimeout(r2, 500 * attempt));
+      }
+    }
+    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after 3 attempts: ${lastErr == null ? void 0 : lastErr.message}`);
+    parts.push({ part_number: partNumber, etag });
+    uploadedBytes += end - start;
+    if (onProgress) onProgress(Math.round(uploadedBytes / file.size * 100));
+  }
+  const completeRes = await fetch("/api/r2-complete-multipart", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, upload_id, parts })
+  });
+  if (!completeRes.ok) {
+    const err = await completeRes.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to complete multipart upload (${completeRes.status})`);
+  }
 }
 async function r2Upload(file, uploadUrl, onProgress) {
   return new Promise((resolve, reject) => {
