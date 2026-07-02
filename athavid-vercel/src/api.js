@@ -353,18 +353,26 @@ async function r2MultipartUpload(file, creds, onProgress) {
     }
     const { url } = await urlRes.json();
 
-    // Upload this part, with up to 3 retries (small chunk, cheap to retry)
+    // Upload this part, with retries (small chunk, cheap to retry).
+    // Bumped from 3->6 attempts with longer exponential backoff (2026-07-02)
+    // after seeing net::ERR_CONNECTION_RESET against the R2 endpoint on a
+    // real desktop -- a classic signature of an intermittent middlebox
+    // (VPN/antivirus SSL inspection/ISP filtering) resetting the TCP
+    // connection. Server-side tests against the same endpoint never fail,
+    // so this is transient on the client's network path -- more attempts
+    // with real backoff gives an intermittent reset a chance to clear.
+    const MAX_ATTEMPTS = 6;
     let etag = null, lastErr = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         etag = await r2UploadPart(url, chunk, attempt);
         break;
       } catch (e) {
         lastErr = e;
-        if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt));
+        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000 * attempt));
       }
     }
-    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after 3 attempts: ${lastErr?.message}`);
+    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after ${MAX_ATTEMPTS} attempts: ${lastErr?.message}`);
 
     parts.push({ part_number: partNumber, etag });
     uploadedBytes += (end - start);

@@ -7713,17 +7713,18 @@ async function r2MultipartUpload(file, creds, onProgress) {
       throw new Error(err.error || `Failed to get part ${partNumber} URL (${urlRes.status})`);
     }
     const { url } = await urlRes.json();
+    const MAX_ATTEMPTS = 6;
     let etag = null, lastErr = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         etag = await r2UploadPart(url, chunk, attempt);
         break;
       } catch (e) {
         lastErr = e;
-        if (attempt < 3) await new Promise((r2) => setTimeout(r2, 500 * attempt));
+        if (attempt < MAX_ATTEMPTS) await new Promise((r2) => setTimeout(r2, 1e3 * attempt));
       }
     }
-    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after 3 attempts: ${lastErr == null ? void 0 : lastErr.message}`);
+    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after ${MAX_ATTEMPTS} attempts: ${lastErr == null ? void 0 : lastErr.message}`);
     parts.push({ part_number: partNumber, etag });
     uploadedBytes += end - start;
     if (onProgress) onProgress(Math.round(uploadedBytes / file.size * 100));
