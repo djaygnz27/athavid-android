@@ -290,18 +290,54 @@ async function cfFormUpload(file, _uploadUrl, onProgress) {
 
 // Direct PUT to R2 presigned URL
 async function r2Upload(file, uploadUrl, onProgress) {
+  // ── Diagnostic-rich R2 upload (2026-07-01) ──────────────────────────────
+  // Prior version threw a bare "R2 upload network error" with zero detail,
+  // making it impossible to diagnose from a user's screenshot of the alert.
+  // This version captures everything available on failure — bytes actually
+  // sent before the failure, elapsed time, xhr.status/readyState, and
+  // navigator.onLine — and puts it all directly in the thrown error message
+  // so it shows up in the alert() the user sees, without needing DevTools.
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const startTime = Date.now();
+    let lastLoaded = 0;
+    let lastTotal = file.size || 0;
+
     xhr.open("PUT", uploadUrl);
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-    if (onProgress) {
+    xhr.timeout = 120000; // 2 min hard timeout so we get a distinct signal instead of hanging forever
+
+    if (xhr.upload) {
       xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+        if (e.lengthComputable) {
+          lastLoaded = e.loaded; lastTotal = e.total;
+          if (onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+        }
       };
     }
-    xhr.onload  = () => xhr.status < 300 ? resolve() : reject(new Error(`R2 upload failed: ${xhr.status}`));
-    xhr.onerror = () => reject(new Error("R2 upload network error"));
-    xhr.send(file);
+
+    const diag = (label) => {
+      const elapsed = Date.now() - startTime;
+      const pct = lastTotal ? Math.round((lastLoaded / lastTotal) * 100) : 0;
+      return `${label} | sent ${lastLoaded}/${lastTotal} bytes (${pct}%) | ${elapsed}ms | ` +
+             `xhr.status=${xhr.status} readyState=${xhr.readyState} | ` +
+             `online=${navigator.onLine} | fileType=${file.type} fileSize=${file.size}`;
+    };
+
+    xhr.onload = () => {
+      if (xhr.status < 300) return resolve();
+      reject(new Error(diag(`R2 upload rejected by server (HTTP ${xhr.status})`) +
+        (xhr.responseText ? ` | response: ${xhr.responseText.slice(0,300)}` : "")));
+    };
+    xhr.onerror = () => reject(new Error(diag("R2 upload network error")));
+    xhr.ontimeout = () => reject(new Error(diag("R2 upload TIMED OUT after 120s")));
+    xhr.onabort = () => reject(new Error(diag("R2 upload aborted")));
+
+    try {
+      xhr.send(file);
+    } catch (sendErr) {
+      reject(new Error(`R2 upload send() threw immediately: ${sendErr.message} | fileType=${file.type} fileSize=${file.size}`));
+    }
   });
 }
 
