@@ -340,6 +340,21 @@ function App() {
     loadVideos(undefined, false, 1, () => setPrefetchDone(true));
   }, []);
 
+  // ── Pause background feed media when Upload modal opens (2026-07-01) ──
+  // Bug: opening "Post details" to upload a new video still played the
+  // background music/audio of whatever feed post was active underneath,
+  // because playback is driven by IntersectionObserver watching DOM/scroll
+  // visibility -- a modal overlay on top doesn't change that, so the
+  // observer never fires and the old post's audio/video keeps running.
+  // Fix: dispatch a global event whenever the Upload modal opens; VideoCard
+  // listens and pauses its own video + sound track. Additive only -- does
+  // not touch the locked IntersectionObserver autoplay/pause logic itself.
+  useEffect(() => {
+    if (showUpload) {
+      window.dispatchEvent(new CustomEvent("sachi-pause-all-media"));
+    }
+  }, [showUpload]);
+
   // Handle Android share intent from TikTok/Instagram etc.
   useEffect(() => {
     const handleSachiShare = (e) => {

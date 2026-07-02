@@ -175,6 +175,22 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }
   }, [muted]);
 
+  // ── Global pause listener (2026-07-01) ──────────────────────────────────
+  // Fired when a modal (e.g. Upload/"Post details") opens over the feed.
+  // Independent of the IntersectionObserver autoplay logic below -- this
+  // is the only way to stop this card's video+sound when it's still
+  // "visible" in the DOM but covered by an overlay.
+  useEffect(() => {
+    const handlePauseAll = () => {
+      const el = videoRef.current;
+      if (el) el.pause();
+      if (soundRef.current) soundRef.current.pause();
+      setPlaying(false);
+    };
+    window.addEventListener("sachi-pause-all-media", handlePauseAll);
+    return () => window.removeEventListener("sachi-pause-all-media", handlePauseAll);
+  }, []);
+
   // Auto-play via IntersectionObserver
   useEffect(() => {
     const el = videoRef.current;

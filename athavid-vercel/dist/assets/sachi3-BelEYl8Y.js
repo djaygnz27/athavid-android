@@ -12590,6 +12590,16 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     }
   }, [muted]);
   reactExports.useEffect(() => {
+    const handlePauseAll = () => {
+      const el2 = videoRef.current;
+      if (el2) el2.pause();
+      if (soundRef.current) soundRef.current.pause();
+      setPlaying(false);
+    };
+    window.addEventListener("sachi-pause-all-media", handlePauseAll);
+    return () => window.removeEventListener("sachi-pause-all-media", handlePauseAll);
+  }, []);
+  reactExports.useEffect(() => {
     const el2 = videoRef.current;
     if (!el2) return;
     const obs = new IntersectionObserver(([e]) => {
@@ -20220,6 +20230,11 @@ function App() {
   reactExports.useEffect(() => {
     loadVideos(void 0, false, 1, () => setPrefetchDone(true));
   }, []);
+  reactExports.useEffect(() => {
+    if (showUpload) {
+      window.dispatchEvent(new CustomEvent("sachi-pause-all-media"));
+    }
+  }, [showUpload]);
   reactExports.useEffect(() => {
     const handleSachiShare = (e) => {
       const { type, uri, url } = e.detail || {};
