@@ -1492,7 +1492,7 @@ function App() {
         </div>
       )}
       {showLiveHub && <SachiLiveHub currentUser={currentUser} onClose={() => setShowLiveHub(false)} onNeedAuth={() => { setShowLiveHub(false); setShowAuth(true); }} />}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("dashboard"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={(user) => { setCurrentUser(user); setShowAuth(false); setActiveTab("dashboard"); setFeedKey(k => k+1); setLoginToast(true); setTimeout(() => setLoginToast(false), 4000); }} onNewSignup={handlePostSignup} />}
       {showEditProfile && (
         <div style={{ position:"fixed", inset:0, zIndex:9000, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => setShowEditProfile(false)}>

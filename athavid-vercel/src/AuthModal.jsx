@@ -186,7 +186,7 @@ async function signInWithGooglePopup(onSuccess) {
 }
 
 // ─── Email OTP Step ───────────────────────────────────────────────────────────
-function EmailOTPStep({ onSuccess, onBack }) {
+function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
   const [email, setEmail] = useState("");
   const [verifiedEmail, setVerifiedEmail] = useState("");
   const [code, setCode] = useState("");
@@ -262,7 +262,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
   };
 
   if (isNewUser) {
-    return <FinishStep emailPayload={{ email: verifiedEmail }} onSuccess={onSuccess} />;
+    return <FinishStep emailPayload={{ email: verifiedEmail }} onSuccess={onSuccess} onNewSignup={onNewSignup} />;
   }
 
   return (
@@ -324,7 +324,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
 }
 
 // ─── Finish Step: new users pick username, dob, country ──────────────────────
-function FinishStep({ googlePayload, emailPayload, onSuccess }) {
+function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
   const email = googlePayload?.email || emailPayload?.email || "";
   const name = googlePayload?.name || "";
   const picture = googlePayload?.picture || "";
@@ -335,6 +335,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [invitedBy, setInvitedBy] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -375,8 +376,13 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
 
     setLoading(true); setError("");
     try {
+      // ⛔ FIXED 2026-07-02 — this was POSTing to "AthaVidUser", a table nothing
+      // else in the app ever reads (admin dashboard, follows, likes, avatar sync
+      // all read/write "SachiUser"). Every brand-new signup since the 2026-06-25
+      // revert was creating a profile that was invisible everywhere else in the
+      // app. Fixed to create the real SachiUser record with the correct fields.
       const created = await fetch(
-        `${BASE_URL}/apps/${APP_ID}/entities/AthaVidUser`,
+        `${BASE_URL}/apps/${APP_ID}/entities/SachiUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -385,13 +391,16 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
             username: username.trim().toLowerCase(),
             display_name: name || username.trim(),
             avatar_url: picture || "",
+            google_sub: googlePayload?.sub || null,
             is_verified: true,
             is_18_plus: true,
             status: "active",
             followers_count: 0,
             following_count: 0,
             videos_count: 0,
-            location: (city && country) ? city + ", " + country : (city || country || ""),
+            dob,
+            location_city: city || "",
+            location_country: country || "",
           })
         }
       ).then(r => r.json());
@@ -413,6 +422,75 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
       };
       localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
       localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+
+      // ── Manual "Invited by" attribution ──
+      // Feeds into the SAME SachiInvite/SachiReferral tables the invite-link
+      // system already uses, so it shows up in the existing leaderboard/
+      // referral dashboard automatically. Never blocks signup if it fails.
+      const invitedByHandle = invitedBy.trim().replace(/^@/, "").toLowerCase();
+      if (invitedByHandle) {
+        try {
+          const matchRes = await fetch(
+            `${BASE_URL}/apps/${APP_ID}/entities/SachiUser?username=${encodeURIComponent(invitedByHandle)}&limit=1`,
+            { headers: { "Content-Type": "application/json" } }
+          ).then(r => r.json());
+          const matches = Array.isArray(matchRes) ? matchRes : (matchRes?.items || matchRes?.records || []);
+          const inviter = matches[0];
+          if (inviter && inviter.id !== created.id) {
+            // Get or create the inviter's SachiInvite record
+            const inviteRes = await fetch(
+              `${BASE_URL}/apps/${APP_ID}/entities/SachiInvite?user_id=${inviter.id}&limit=1`
+            ).then(r => r.json());
+            const inviteItems = Array.isArray(inviteRes) ? inviteRes : (inviteRes?.items || inviteRes?.records || []);
+            let inviteRecord = inviteItems[0];
+            if (!inviteRecord) {
+              inviteRecord = await fetch(
+                `${BASE_URL}/apps/${APP_ID}/entities/SachiInvite`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    user_id: inviter.id,
+                    username: inviter.username,
+                    code: `${inviter.id.slice(0,6).toUpperCase()}${Math.random().toString(36).slice(2,5).toUpperCase()}`,
+                    referral_count: 0
+                  })
+                }
+              ).then(r => r.json());
+            }
+            // Record the referral
+            await fetch(
+              `${BASE_URL}/apps/${APP_ID}/entities/SachiReferral`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  inviter_id: inviter.id,
+                  inviter_username: inviter.username,
+                  invite_code: inviteRecord?.code || "manual",
+                  invitee_id: created.id,
+                  invitee_username: username.trim().toLowerCase()
+                })
+              }
+            );
+            // Bump the inviter's referral count
+            if (inviteRecord?.id) {
+              await fetch(
+                `${BASE_URL}/apps/${APP_ID}/entities/SachiInvite/${inviteRecord.id}`,
+                {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ referral_count: (inviteRecord.referral_count || 0) + 1 })
+                }
+              );
+            }
+          }
+        } catch (refErr) {
+          console.warn("Invited-by attribution failed (non-blocking):", refErr);
+        }
+      }
+
+      if (onNewSignup) onNewSignup(sessionUser);
       onSuccess(sessionUser);
     } catch(e) {
       console.error(e);
@@ -477,6 +555,9 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
         {COUNTRIES.map(c => <option key={c} value={c} style={{background:"#1a1b2e", color:"#fff"}}>{c}</option>)}
       </select>
 
+      <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>Invited by <span style={{color:"#888", fontSize:11}}>(optional — friend's @username)</span></div>
+      <input value={invitedBy} onChange={e => setInvitedBy(e.target.value)} placeholder="@username" style={inp} maxLength={30} />
+
       <label style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:16, cursor:"pointer", textAlign:"left" }}>
         <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0, marginTop:2 }} />
         <span style={{ color:"#ccc", fontSize:13, lineHeight:1.5 }}>
@@ -497,7 +578,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
 }
 
 // ─── Main AuthModal ────────────────────────────────────────────────────────────
-export default function AuthModal({ onClose, onSuccess }) {
+export default function AuthModal({ onClose, onSuccess, onNewSignup }) {
   const pendingGoogleRaw = localStorage.getItem("sachi_pending_google");
   const pendingGoogle = pendingGoogleRaw ? (() => { try { return JSON.parse(pendingGoogleRaw); } catch { return null; } })() : null;
 
@@ -546,7 +627,7 @@ export default function AuthModal({ onClose, onSuccess }) {
         <div style={{ textAlign:"center", marginBottom:24 }}>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5 }}>Almost there!</div>
         </div>
-        <FinishStep googlePayload={googlePayload} onSuccess={onSuccess} />
+        <FinishStep googlePayload={googlePayload} onSuccess={onSuccess} onNewSignup={onNewSignup} />
       </>
     );
   }
@@ -556,7 +637,7 @@ export default function AuthModal({ onClose, onSuccess }) {
       <>
         <div style={{ textAlign:"center", marginBottom:24 }}>
           </div>
-        <EmailOTPStep onSuccess={onSuccess} onBack={() => setStep("signin")} />
+        <EmailOTPStep onSuccess={onSuccess} onBack={() => setStep("signin")} onNewSignup={onNewSignup} />
       </>
     );
   }

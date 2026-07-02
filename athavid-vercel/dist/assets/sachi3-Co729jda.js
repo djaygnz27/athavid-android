@@ -8255,7 +8255,7 @@ async function signInWithGooglePopup(onSuccess) {
     }, 150);
   }
 }
-function EmailOTPStep({ onSuccess, onBack }) {
+function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
   const [email, setEmail] = reactExports.useState("");
   const [verifiedEmail, setVerifiedEmail] = reactExports.useState("");
   const [code, setCode] = reactExports.useState("");
@@ -8345,7 +8345,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
     }
   };
   if (isNewUser) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { emailPayload: { email: verifiedEmail }, onSuccess });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { emailPayload: { email: verifiedEmail }, onSuccess, onNewSignup });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onBack, style: { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 13, marginBottom: 16, padding: 0, display: "flex", alignItems: "center", gap: 6 }, children: "← Back" }),
@@ -8400,7 +8400,7 @@ function EmailOTPStep({ onSuccess, onBack }) {
     ] })
   ] });
 }
-function FinishStep({ googlePayload, emailPayload, onSuccess }) {
+function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
   const email = (googlePayload == null ? void 0 : googlePayload.email) || (emailPayload == null ? void 0 : emailPayload.email) || "";
   const name = (googlePayload == null ? void 0 : googlePayload.name) || "";
   const picture = (googlePayload == null ? void 0 : googlePayload.picture) || "";
@@ -8410,6 +8410,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
   const [agreedToTerms, setAgreedToTerms] = reactExports.useState(false);
+  const [invitedBy, setInvitedBy] = reactExports.useState("");
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
   const inp = {
@@ -8460,7 +8461,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL$1}/apps/${APP_ID$5}/entities/AthaVidUser`,
+        `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8469,13 +8470,16 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
             username: username.trim().toLowerCase(),
             display_name: name || username.trim(),
             avatar_url: picture || "",
+            google_sub: (googlePayload == null ? void 0 : googlePayload.sub) || null,
             is_verified: true,
             is_18_plus: true,
             status: "active",
             followers_count: 0,
             following_count: 0,
             videos_count: 0,
-            location: city && country ? city + ", " + country : city || country || ""
+            dob,
+            location_city: city || "",
+            location_country: country || ""
           })
         }
       ).then((r2) => r2.json());
@@ -8495,6 +8499,66 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
       };
       localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
       localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
+      const invitedByHandle = invitedBy.trim().replace(/^@/, "").toLowerCase();
+      if (invitedByHandle) {
+        try {
+          const matchRes = await fetch(
+            `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiUser?username=${encodeURIComponent(invitedByHandle)}&limit=1`,
+            { headers: { "Content-Type": "application/json" } }
+          ).then((r2) => r2.json());
+          const matches = Array.isArray(matchRes) ? matchRes : (matchRes == null ? void 0 : matchRes.items) || (matchRes == null ? void 0 : matchRes.records) || [];
+          const inviter = matches[0];
+          if (inviter && inviter.id !== created.id) {
+            const inviteRes = await fetch(
+              `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiInvite?user_id=${inviter.id}&limit=1`
+            ).then((r2) => r2.json());
+            const inviteItems = Array.isArray(inviteRes) ? inviteRes : (inviteRes == null ? void 0 : inviteRes.items) || (inviteRes == null ? void 0 : inviteRes.records) || [];
+            let inviteRecord = inviteItems[0];
+            if (!inviteRecord) {
+              inviteRecord = await fetch(
+                `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiInvite`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    user_id: inviter.id,
+                    username: inviter.username,
+                    code: `${inviter.id.slice(0, 6).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
+                    referral_count: 0
+                  })
+                }
+              ).then((r2) => r2.json());
+            }
+            await fetch(
+              `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiReferral`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  inviter_id: inviter.id,
+                  inviter_username: inviter.username,
+                  invite_code: (inviteRecord == null ? void 0 : inviteRecord.code) || "manual",
+                  invitee_id: created.id,
+                  invitee_username: username.trim().toLowerCase()
+                })
+              }
+            );
+            if (inviteRecord == null ? void 0 : inviteRecord.id) {
+              await fetch(
+                `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiInvite/${inviteRecord.id}`,
+                {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ referral_count: (inviteRecord.referral_count || 0) + 1 })
+                }
+              );
+            }
+          }
+        } catch (refErr) {
+          console.warn("Invited-by attribution failed (non-blocking):", refErr);
+        }
+      }
+      if (onNewSignup) onNewSignup(sessionUser);
       onSuccess(sessionUser);
     } catch (e) {
       console.error(e);
@@ -8569,6 +8633,11 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: "", style: { background: "#1a1b2e", color: "#888" }, children: "🌍 Select your country" }),
       COUNTRIES.map((c) => /* @__PURE__ */ jsxRuntimeExports.jsx("option", { value: c, style: { background: "#1a1b2e", color: "#fff" }, children: c }, c))
     ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 4, color: "#888", fontSize: 12 }, children: [
+      "Invited by ",
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional — friend's @username)" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: invitedBy, onChange: (e) => setInvitedBy(e.target.value), placeholder: "@username", style: inp, maxLength: 30 }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "checkbox", checked: agreedToTerms, onChange: (e) => setAgreedToTerms(e.target.checked), style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0, marginTop: 2 } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ccc", fontSize: 13, lineHeight: 1.5 }, children: [
@@ -8587,7 +8656,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: handleFinish, disabled: loading, style: { ...btn, opacity: loading ? 0.7 : 1 }, children: loading ? "Setting up your profile…" : "Let's Go 🚀" })
   ] });
 }
-function AuthModal({ onClose, onSuccess }) {
+function AuthModal({ onClose, onSuccess, onNewSignup }) {
   const pendingGoogleRaw = localStorage.getItem("sachi_pending_google");
   const pendingGoogle = pendingGoogleRaw ? (() => {
     try {
@@ -8640,7 +8709,7 @@ function AuthModal({ onClose, onSuccess }) {
     return modalShell(
       /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }, children: "Almost there!" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, onSuccess })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, onSuccess, onNewSignup })
       ] })
     );
   }
@@ -8648,7 +8717,7 @@ function AuthModal({ onClose, onSuccess }) {
     return modalShell(
       /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(EmailOTPStep, { onSuccess, onBack: () => setStep("signin") })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(EmailOTPStep, { onSuccess, onBack: () => setStep("signin"), onNewSignup })
       ] })
     );
   }
@@ -20234,6 +20303,12 @@ function App() {
   const [showEditProfile, setShowEditProfile] = reactExports.useState(false);
   const [editProfileName, setEditProfileName] = reactExports.useState("");
   const [editProfileSaving, setEditProfileSaving] = reactExports.useState(false);
+  async function handlePostSignup(user) {
+    const code = localStorage.getItem("sachi_invite_code");
+    if (code && (user == null ? void 0 : user.id)) {
+      await invites.attributeSignup(code, user.id, user.username || user.full_name);
+    }
+  }
   reactExports.useEffect(() => {
     loadVideos(void 0, false, 1, () => setPrefetchDone(true));
   }, []);
@@ -21648,7 +21723,7 @@ function App() {
       setFeedKey((k2) => k2 + 1);
       setLoginToast(true);
       setTimeout(() => setLoginToast(false), 4e3);
-    } }),
+    }, onNewSignup: handlePostSignup }),
     showEditProfile && /* @__PURE__ */ jsxRuntimeExports.jsx(
       "div",
       {

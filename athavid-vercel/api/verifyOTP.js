@@ -44,12 +44,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: false, error: "Invalid or expired code. Please request a new one." });
     }
 
-    // Code is valid — look up existing AthaVidUser profile
+    // ⛔ FIXED 2026-07-02 — this was looking up "AthaVidUser", an empty table
+    // nothing else reads. Every returning email-login user was being told
+    // isNewUser:true and forced back through onboarding every single time.
+    // Fixed to look up the real "SachiUser" table (same one admin dashboard,
+    // follows, likes, and everything else in the app reads from).
     let existingUser = null;
     if (BASE44_KEY) {
       try {
         const userRes = await fetch(
-          `https://app.base44.com/api/apps/${APP_ID}/entities/AthaVidUser?email=${encodeURIComponent(normalizedEmail)}&limit=5`,
+          `https://app.base44.com/api/apps/${APP_ID}/entities/SachiUser?email=${encodeURIComponent(normalizedEmail)}&limit=5`,
           { headers: { "api-key": BASE44_KEY } }
         );
         const userData = await userRes.json().catch(() => ({}));
