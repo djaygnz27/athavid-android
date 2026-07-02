@@ -97,10 +97,19 @@ function App() {
   // Stage 1: shell renders (instant)
   // Stage 2: splash shows + video prefetch starts in background
   // Stage 3: user taps Enter → feed shows with data already ready
-  // Deep link: read /post/:id from URL on load
+  // Deep link: read /post/:id from URL on load.
+  // NOTE: real (non-crawler) users hitting /post/:id get redirected server-side
+  // (api/post.js) to /?post=:id -- so by the time this code runs, the URL is
+  // "/" with a query string, NOT "/post/:id" anymore. Must check both forms,
+  // or every shared link silently fails to show the actual video (2026-07-02).
   const deepLinkPostId = (() => {
     const m = window.location.pathname.match(/^\/post\/([a-zA-Z0-9]+)/);
-    return m ? m[1] : null;
+    if (m) return m[1];
+    try {
+      const qp = new URLSearchParams(window.location.search).get("post");
+      if (qp && /^[a-zA-Z0-9]+$/.test(qp)) return qp;
+    } catch (e) {}
+    return null;
   })();
   const [hasEntered, setHasEntered] = useState(() => !!deepLinkPostId); // skip splash for deep links
   const [prefetchDone, setPrefetchDone] = useState(false);

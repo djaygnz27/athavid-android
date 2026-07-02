@@ -20030,7 +20030,13 @@ function App() {
   var _a;
   const deepLinkPostId = (() => {
     const m2 = window.location.pathname.match(/^\/post\/([a-zA-Z0-9]+)/);
-    return m2 ? m2[1] : null;
+    if (m2) return m2[1];
+    try {
+      const qp = new URLSearchParams(window.location.search).get("post");
+      if (qp && /^[a-zA-Z0-9]+$/.test(qp)) return qp;
+    } catch (e) {
+    }
+    return null;
   })();
   const [hasEntered, setHasEntered] = reactExports.useState(() => !!deepLinkPostId);
   const [prefetchDone, setPrefetchDone] = reactExports.useState(false);
