@@ -69,6 +69,7 @@ export default function TopPostsGrid({ topPosts, fmtCount }) {
               onMouseDown={() => handleHoldStart(v)}
               onMouseUp={() => handleHoldEnd(v)}
               onMouseLeave={() => handleHoldEnd(v)}
+              onClick={() => { window.location.href = `/?post=${v.id}`; }}
               style={{
                 position: "relative",
                 aspectRatio: "9/13",

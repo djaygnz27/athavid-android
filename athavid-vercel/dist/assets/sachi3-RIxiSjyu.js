@@ -17996,6 +17996,9 @@ function TopPostsGrid({ topPosts, fmtCount }) {
           onMouseDown: () => handleHoldStart(v2),
           onMouseUp: () => handleHoldEnd(v2),
           onMouseLeave: () => handleHoldEnd(v2),
+          onClick: () => {
+            window.location.href = `/?post=${v2.id}`;
+          },
           style: {
             position: "relative",
             aspectRatio: "9/13",
