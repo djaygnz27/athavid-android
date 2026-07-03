@@ -3,7 +3,7 @@
 // Last verified working: 2026-05-23
 
 import { uploadFile } from './post/upload.js';
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import AvatarCropEditor from "./AvatarCropEditor.jsx";
 
 function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {

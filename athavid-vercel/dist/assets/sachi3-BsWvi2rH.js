@@ -15940,7 +15940,7 @@ function AvatarPickerModal({ currentAvatar, onSelect, onClose }) {
   const [uploading, setUploading] = reactExports.useState(false);
   const [activeStyle, setActiveStyle] = reactExports.useState(0);
   const [cropImageUrl, setCropImageUrl] = reactExports.useState(null);
-  const fileRef = useRef();
+  const fileRef = reactExports.useRef();
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
