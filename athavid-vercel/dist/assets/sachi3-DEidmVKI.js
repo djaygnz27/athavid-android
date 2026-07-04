@@ -7425,7 +7425,7 @@ function Landing({ onEnter, prefetchDone = false }) {
   ] });
 }
 const APP_ID$6 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL$2 = "https://sachi-04cfb834.base44.app/api";
+const BASE_URL$3 = "https://sachi-04cfb834.base44.app/api";
 let sessionToken = null;
 function setToken(t2) {
   sessionToken = t2;
@@ -7443,7 +7443,7 @@ async function request$1(method, path, body) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${BASE_URL$2}${path}`, {
+  const res = await fetch(`${BASE_URL$3}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : void 0
@@ -8129,7 +8129,7 @@ const COUNTRIES = [
 ];
 const GOOGLE_CLIENT_ID$1 = "124061688969-7ebbn8gph1ej84dli790clptp32gosdt.apps.googleusercontent.com";
 const APP_ID$5 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL$1 = "https://app.base44.com/api";
+const BASE_URL$2 = "https://app.base44.com/api";
 async function lookupSachiUser(email) {
   try {
     const res = await fetch(`/api/lookup-user?email=${encodeURIComponent(email)}`);
@@ -8461,7 +8461,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
     setError("");
     try {
       const created = await fetch(
-        `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiUser`,
+        `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiUser`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -8503,20 +8503,20 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
       if (invitedByHandle) {
         try {
           const matchRes = await fetch(
-            `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiUser?username=${encodeURIComponent(invitedByHandle)}&limit=1`,
+            `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiUser?username=${encodeURIComponent(invitedByHandle)}&limit=1`,
             { headers: { "Content-Type": "application/json" } }
           ).then((r2) => r2.json());
           const matches = Array.isArray(matchRes) ? matchRes : (matchRes == null ? void 0 : matchRes.items) || (matchRes == null ? void 0 : matchRes.records) || [];
           const inviter = matches[0];
           if (inviter && inviter.id !== created.id) {
             const inviteRes = await fetch(
-              `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiInvite?user_id=${inviter.id}&limit=1`
+              `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiInvite?user_id=${inviter.id}&limit=1`
             ).then((r2) => r2.json());
             const inviteItems = Array.isArray(inviteRes) ? inviteRes : (inviteRes == null ? void 0 : inviteRes.items) || (inviteRes == null ? void 0 : inviteRes.records) || [];
             let inviteRecord = inviteItems[0];
             if (!inviteRecord) {
               inviteRecord = await fetch(
-                `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiInvite`,
+                `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiInvite`,
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -8530,7 +8530,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
               ).then((r2) => r2.json());
             }
             await fetch(
-              `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiReferral`,
+              `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiReferral`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -8545,7 +8545,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
             );
             if (inviteRecord == null ? void 0 : inviteRecord.id) {
               await fetch(
-                `${BASE_URL$1}/apps/${APP_ID$5}/entities/SachiInvite/${inviteRecord.id}`,
+                `${BASE_URL$2}/apps/${APP_ID$5}/entities/SachiInvite/${inviteRecord.id}`,
                 {
                   method: "PUT",
                   headers: { "Content-Type": "application/json" },
@@ -8973,7 +8973,7 @@ function Terms() {
   ] });
 }
 const APP_ID$4 = "69e79122bcc8fb5a04cfb834";
-const BASE_URL = "https://app.base44.com/api";
+const BASE_URL$1 = "https://app.base44.com/api";
 const COINS_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/entities/SachiCoin";
 const GIFTS = [
   { id: "sakura", name: "Sakura", emoji: "🌸", icon: "🌸", coins: 5, color: "#e91e8c", glow: "rgba(233,30,140,0.6)", rarity: "common", anim: "float" },
@@ -8999,7 +8999,7 @@ const COIN_PACKS = [
   { id: "pack_10000", coins: 1e4, price: "$49.99", tag: "BEST VALUE", icon: "👑", price_id: "price_1TKVSmKB9bqKOOJ0fOjNzyQy" }
 ];
 async function apiReq$1(method, path, body) {
-  const res = await fetch(BASE_URL + path, {
+  const res = await fetch(BASE_URL$1 + path, {
     method,
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : void 0
@@ -9596,6 +9596,7 @@ function HostEarningsPanel({ currentUser, onClose }) {
   ] });
 }
 const APP_ID$3 = "69e79122bcc8fb5a04cfb834";
+const BASE_URL = "https://app.base44.com/api";
 const APP_BASE$1 = `/apps/${APP_ID$3}`;
 async function apiReq(method, path, body) {
   return request$1(method, path, body);
@@ -9606,6 +9607,22 @@ const liveRooms = {
   create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiLiveRoom`, data),
   update: (id2, d) => apiReq("PUT", `${APP_BASE$1}/entities/SachiLiveRoom/${id2}`, d)
 };
+function endRoomBeacon(roomId) {
+  try {
+    const token = getToken();
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    fetch(`${BASE_URL}${APP_BASE$1}/entities/SachiLiveRoom/${roomId}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ is_live: false, viewer_count: 0 }),
+      keepalive: true
+    }).catch(() => {
+    });
+  } catch {
+  }
+}
+const LIVE_HEARTBEAT_TIMEOUT_MS = 45e3;
 const liveComments = {
   list: (rid) => apiReq("GET", `${APP_BASE$1}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
   create: (data) => apiReq("POST", `${APP_BASE$1}/entities/SachiLiveComment`, data)
@@ -9845,6 +9862,24 @@ function HostLiveRoom({ room, currentUser, onEnd }) {
       clearInterval(poll);
       if (localStreamRef.current) localStreamRef.current.getTracks().forEach((t2) => t2.stop());
       Object.values(peersRef.current).forEach((pc2) => pc2.close());
+    };
+  }, [room.id]);
+  reactExports.useEffect(() => {
+    const heartbeat = setInterval(() => {
+      liveRooms.update(room.id, { is_live: true }).catch(() => {
+      });
+    }, 15e3);
+    return () => clearInterval(heartbeat);
+  }, [room.id]);
+  reactExports.useEffect(() => {
+    const handleLeave = () => {
+      endRoomBeacon(room.id);
+    };
+    window.addEventListener("beforeunload", handleLeave);
+    window.addEventListener("pagehide", handleLeave);
+    return () => {
+      window.removeEventListener("beforeunload", handleLeave);
+      window.removeEventListener("pagehide", handleLeave);
     };
   }, [room.id]);
   const processGuestSignal = async (req) => {
@@ -10279,7 +10314,19 @@ function SachiLiveHub({ currentUser, onClose, onNeedAuth }) {
   const loadRooms = reactExports.useCallback(async () => {
     try {
       const data = await liveRooms.list();
-      setRooms((Array.isArray(data) ? data : (data == null ? void 0 : data.items) || []).filter((r2) => r2.is_live));
+      const all = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || [];
+      const now = Date.now();
+      const live = [];
+      const stale = [];
+      for (const r2 of all) {
+        if (!r2.is_live) continue;
+        const lastSeen = new Date(r2.updated_date || r2.created_date).getTime();
+        if (!lastSeen || now - lastSeen > LIVE_HEARTBEAT_TIMEOUT_MS) stale.push(r2);
+        else live.push(r2);
+      }
+      setRooms(live);
+      stale.forEach((r2) => liveRooms.update(r2.id, { is_live: false, viewer_count: 0 }).catch(() => {
+      }));
     } catch {
     }
     setLoading(false);

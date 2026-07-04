@@ -18,6 +18,25 @@ const liveRooms = {
   create: (data)  => apiReq("POST", `${APP_BASE}/entities/SachiLiveRoom`, data),
   update: (id, d) => apiReq("PUT",  `${APP_BASE}/entities/SachiLiveRoom/${id}`, d),
 };
+// Auto-close-on-leave: fires a best-effort keepalive PUT during page unload/close so
+// a room never gets stuck "live" if the host force-quits, loses connection, or closes
+// the tab without hitting End. Regular async fetch calls are frequently cancelled by
+// the browser mid-unload; `keepalive: true` tells the browser to complete it anyway.
+function endRoomBeacon(roomId) {
+  try {
+    const token = getToken();
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    fetch(`${BASE_URL}${APP_BASE}/entities/SachiLiveRoom/${roomId}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ is_live: false, viewer_count: 0 }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {}
+}
+// How long a live room can go without a heartbeat before it's treated as dead/stale.
+const LIVE_HEARTBEAT_TIMEOUT_MS = 45000;
 const liveComments = {
   list:   (rid)   => apiReq("GET",  `${APP_BASE}/entities/SachiLiveComment?room_id=${rid}&sort=created_date&limit=100`),
   create: (data)  => apiReq("POST", `${APP_BASE}/entities/SachiLiveComment`, data),
@@ -195,6 +214,28 @@ function HostLiveRoom({ room, currentUser, onEnd }) {
       try { const g=await sachiGifts.list(room.id); setRoomGifts(Array.isArray(g)?g:(g?.items||[])); } catch{}
     }, 3000);
     return ()=>{ clearInterval(timer); clearInterval(poll); if(localStreamRef.current)localStreamRef.current.getTracks().forEach(t=>t.stop()); Object.values(peersRef.current).forEach(pc=>pc.close()); };
+  }, [room.id]);
+
+  // Host presence heartbeat — proves to viewers/room-list this room is still actually
+  // live. If this stops (host force-quit, crashed, lost network), the stale-room check
+  // in SachiLiveHub.loadRooms will auto-close the room after LIVE_HEARTBEAT_TIMEOUT_MS.
+  useEffect(() => {
+    const heartbeat = setInterval(() => {
+      liveRooms.update(room.id, { is_live: true }).catch(() => {});
+    }, 15000);
+    return () => clearInterval(heartbeat);
+  }, [room.id]);
+
+  // Auto-close on leave — catches the host closing the tab/app or navigating away
+  // without clicking End, instead of leaving the room stuck "live" forever.
+  useEffect(() => {
+    const handleLeave = () => { endRoomBeacon(room.id); };
+    window.addEventListener("beforeunload", handleLeave);
+    window.addEventListener("pagehide", handleLeave);
+    return () => {
+      window.removeEventListener("beforeunload", handleLeave);
+      window.removeEventListener("pagehide", handleLeave);
+    };
   }, [room.id]);
 
   const processGuestSignal = async(req) => {
@@ -478,7 +519,26 @@ export default function SachiLiveHub({ currentUser, onClose, onNeedAuth }) {
   const [showEarnings, setShowEarnings] = useState(false);
 
   const loadRooms = useCallback(async()=>{
-    try{ const data=await liveRooms.list(); setRooms((Array.isArray(data)?data:(data?.items||[])).filter(r=>r.is_live)); }catch{}
+    try{
+      const data=await liveRooms.list();
+      const all = Array.isArray(data)?data:(data?.items||[]);
+      const now = Date.now();
+      const live = [];
+      const stale = [];
+      for (const r of all) {
+        if (!r.is_live) continue;
+        const lastSeen = new Date(r.updated_date || r.created_date).getTime();
+        // No heartbeat within the timeout window = host is gone (crash/force-quit/
+        // network loss). Treat as dead immediately instead of showing a room no one
+        // can actually join.
+        if (!lastSeen || now - lastSeen > LIVE_HEARTBEAT_TIMEOUT_MS) stale.push(r);
+        else live.push(r);
+      }
+      setRooms(live);
+      // Self-heal: quietly close out any room whose host has gone silent so it
+      // doesn't stay stuck "live" for everyone else.
+      stale.forEach(r => liveRooms.update(r.id, { is_live:false, viewer_count:0 }).catch(()=>{}));
+    }catch{}
     setLoading(false);
   }, []);
 
