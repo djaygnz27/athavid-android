@@ -8255,7 +8255,7 @@ async function signInWithGooglePopup(onSuccess) {
     }, 150);
   }
 }
-function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
+function EmailOTPStep({ onSuccess, onBack, onNewSignup, invitedBy }) {
   const [email, setEmail] = reactExports.useState("");
   const [verifiedEmail, setVerifiedEmail] = reactExports.useState("");
   const [code, setCode] = reactExports.useState("");
@@ -8345,7 +8345,7 @@ function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
     }
   };
   if (isNewUser) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { emailPayload: { email: verifiedEmail }, onSuccess, onNewSignup });
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { emailPayload: { email: verifiedEmail }, invitedBy, onSuccess, onNewSignup });
   }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: onBack, style: { background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 13, marginBottom: 16, padding: 0, display: "flex", alignItems: "center", gap: 6 }, children: "← Back" }),
@@ -8400,7 +8400,7 @@ function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
     ] })
   ] });
 }
-function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
+function FinishStep({ googlePayload, emailPayload, invitedBy, onSuccess, onNewSignup }) {
   const email = (googlePayload == null ? void 0 : googlePayload.email) || (emailPayload == null ? void 0 : emailPayload.email) || "";
   const name = (googlePayload == null ? void 0 : googlePayload.name) || "";
   const picture = (googlePayload == null ? void 0 : googlePayload.picture) || "";
@@ -8410,7 +8410,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
   const [country, setCountry] = reactExports.useState("");
   const [city, setCity] = reactExports.useState("");
   const [agreedToTerms, setAgreedToTerms] = reactExports.useState(false);
-  const [invitedBy, setInvitedBy] = reactExports.useState("");
+  const [invitedByLocal, setInvitedByLocal] = reactExports.useState(invitedBy || "");
   const [loading, setLoading] = reactExports.useState(false);
   const [error, setError] = reactExports.useState("");
   const inp = {
@@ -8499,7 +8499,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
       };
       localStorage.setItem("sachi_google_user", JSON.stringify(sessionUser));
       localStorage.setItem("sachi_user", JSON.stringify(sessionUser));
-      const invitedByHandle = invitedBy.trim().replace(/^@/, "").toLowerCase();
+      const invitedByHandle = invitedByLocal.trim().replace(/^@/, "").toLowerCase();
       if (invitedByHandle) {
         try {
           const matchRes = await fetch(
@@ -8637,7 +8637,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
       "Invited by ",
       /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888", fontSize: 11 }, children: "(optional — friend's @username)" })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: invitedBy, onChange: (e) => setInvitedBy(e.target.value), placeholder: "@username", style: inp, maxLength: 30 }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("input", { value: invitedByLocal, onChange: (e) => setInvitedByLocal(e.target.value), placeholder: "@username", style: inp, maxLength: 30 }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { style: { display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, cursor: "pointer", textAlign: "left" }, children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx("input", { type: "checkbox", checked: agreedToTerms, onChange: (e) => setAgreedToTerms(e.target.checked), style: { width: 20, height: 20, accentColor: "#F5C842", flexShrink: 0, marginTop: 2 } }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { color: "#ccc", fontSize: 13, lineHeight: 1.5 }, children: [
@@ -8668,6 +8668,7 @@ function AuthModal({ onClose, onSuccess, onNewSignup }) {
   const [step, setStep] = reactExports.useState(pendingGoogle ? "finish-google" : "signin");
   const [googlePayload, setGooglePayload] = reactExports.useState(pendingGoogle || null);
   const [loading, setLoading] = reactExports.useState(false);
+  const [invitedBy, setInvitedBy] = reactExports.useState("");
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
@@ -8709,7 +8710,7 @@ function AuthModal({ onClose, onSuccess, onNewSignup }) {
     return modalShell(
       /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5 }, children: "Almost there!" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, onSuccess, onNewSignup })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(FinishStep, { googlePayload, invitedBy, onSuccess, onNewSignup })
       ] })
     );
   }
@@ -8717,7 +8718,7 @@ function AuthModal({ onClose, onSuccess, onNewSignup }) {
     return modalShell(
       /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", marginBottom: 24 } }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(EmailOTPStep, { onSuccess, onBack: () => setStep("signin"), onNewSignup })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(EmailOTPStep, { invitedBy, onSuccess, onBack: () => setStep("signin"), onNewSignup })
       ] })
     );
   }
@@ -8727,6 +8728,33 @@ function AuthModal({ onClose, onSuccess, onNewSignup }) {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { marginBottom: 12, display: "flex", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: "/sachi-crystal.png", alt: "Sachi", style: { width: 110, height: 110, objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(245,200,66,0.5))" } }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 22, letterSpacing: -0.5, marginBottom: 4 }, children: "Join Sachi" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.45)", fontSize: 14 }, children: "Where truth meets community" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { textAlign: "left", marginBottom: 12 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 4, color: "#888", fontSize: 12 }, children: [
+          "Invited by ",
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#666", fontSize: 11 }, children: "(optional — friend's @username)" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "input",
+          {
+            value: invitedBy,
+            onChange: (e) => setInvitedBy(e.target.value),
+            placeholder: "@username",
+            maxLength: 30,
+            style: {
+              display: "block",
+              width: "100%",
+              boxSizing: "border-box",
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(245,200,66,0.15)",
+              borderRadius: 12,
+              padding: "11px 14px",
+              color: "#fff",
+              fontSize: 14,
+              outline: "none"
+            }
+          }
+        )
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs(
         "button",
@@ -16806,6 +16834,26 @@ function AdminPanel({ currentUser }) {
   reactExports.useEffect(() => {
     if (modTab === "founders") loadFounders();
   }, [modTab]);
+  const [referrals, setReferrals] = reactExports.useState([]);
+  const [invites2, setInvites] = reactExports.useState([]);
+  const [refLoading, setRefLoading] = reactExports.useState(false);
+  const loadReferrals = async () => {
+    setRefLoading(true);
+    try {
+      const [refRes, invRes] = await Promise.all([
+        request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiReferral?limit=500&sort=-created_date"),
+        request$1("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiInvite?limit=500")
+      ]);
+      setReferrals(Array.isArray(refRes) ? refRes : (refRes == null ? void 0 : refRes.items) || (refRes == null ? void 0 : refRes.records) || []);
+      setInvites(Array.isArray(invRes) ? invRes : (invRes == null ? void 0 : invRes.items) || (invRes == null ? void 0 : invRes.records) || []);
+    } catch (e) {
+      console.error("Referral load error:", e);
+    }
+    setRefLoading(false);
+  };
+  reactExports.useEffect(() => {
+    if (modTab === "referrals") loadReferrals();
+  }, [modTab]);
   const updateFounderStatus = async (founder, status) => {
     try {
       await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
@@ -16900,7 +16948,7 @@ function AdminPanel({ currentUser }) {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: modTab === "videos" ? 10 : 0 }, children: [["videos", "🎬 Videos"], ["ai", "🤖 AI Flagged"], ["users", "👥 Users"], ["founders", "🌟 Creators"], ["analytics", "📊 Analytics"]].map(([val, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 6, marginBottom: modTab === "videos" ? 10 : 0 }, children: [["videos", "🎬 Videos"], ["ai", "🤖 AI Flagged"], ["users", "👥 Users"], ["founders", "🌟 Creators"], ["referrals", "🎁 Referrals"], ["analytics", "📊 Analytics"]].map(([val, label]) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
           onClick: () => setModTab(val),
@@ -17551,6 +17599,65 @@ function AdminPanel({ currentUser }) {
           ] })
         ] }, f2.id);
       }) })
+    ] }),
+    modTab === "referrals" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginTop: 16 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 18 }, children: "🎁 Referral Dashboard" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: loadReferrals, style: { background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 20, padding: "7px 14px", color: "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" }, children: "↻ Refresh" })
+      ] }),
+      refLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#888", padding: 40, fontSize: 14 }, children: "Loading referrals…" }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { marginBottom: 24 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 10 }, children: "🏆 Top Inviters" }),
+          invites2.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 13, padding: 16, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12 }, children: "No invite data yet" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6 }, children: [...invites2].sort((a, b) => (b.referral_count || 0) - (a.referral_count || 0)).slice(0, 10).map((inv, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "10px 14px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 28, height: 28, borderRadius: "50%", background: i === 0 ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: i === 0 ? "#0B0C1A" : "#888", fontWeight: 800, fontSize: 12 }, children: i + 1 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontWeight: 700, fontSize: 13 }, children: [
+                "@",
+                inv.username || "unknown"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#666", fontSize: 11 }, children: [
+                "Code: ",
+                inv.code || "—"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 16 }, children: inv.referral_count || 0 })
+          ] }, inv.id || i)) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 10 }, children: "📋 Recent Referrals" }),
+          referrals.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#666", fontSize: 13, padding: 16, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12 }, children: "No referrals recorded yet" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", flexDirection: "column", gap: 6, maxHeight: 400, overflowY: "auto" }, children: referrals.map((ref, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "10px 14px" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 18 }, children: "🤝" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1 }, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 13 }, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontWeight: 700 }, children: [
+                  "@",
+                  ref.invitee_username || "new user"
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { color: "#888" }, children: " was invited by " }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { style: { fontWeight: 700, color: "#F5C842" }, children: [
+                  "@",
+                  ref.inviter_username || "unknown"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 11 }, children: (ref.created_date || "").slice(0, 10) })
+            ] })
+          ] }, ref.id || i)) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, marginTop: 20 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 16, textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 24 }, children: referrals.length }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: 4 }, children: "Total Referrals" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 16, textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 24 }, children: invites2.length }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: 4 }, children: "Active Inviters" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 16, textAlign: "center" }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontWeight: 800, fontSize: 24 }, children: invites2.reduce((s, i) => s + (i.referral_count || 0), 0) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11, marginTop: 4 }, children: "Total Invites Sent" })
+          ] })
+        ] })
+      ] })
     ] })
   ] });
 }

@@ -130,6 +130,26 @@ function AdminPanel({ currentUser }) {
 
   useEffect(() => { if (modTab === "founders") loadFounders(); }, [modTab]);
 
+  // ── Referrals state ──
+  const [referrals, setReferrals] = useState([]);
+  const [invites, setInvites] = useState([]);
+  const [refLoading, setRefLoading] = useState(false);
+
+  const loadReferrals = async () => {
+    setRefLoading(true);
+    try {
+      const [refRes, invRes] = await Promise.all([
+        request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiReferral?limit=500&sort=-created_date"),
+        request("GET", "/apps/69e79122bcc8fb5a04cfb834/entities/SachiInvite?limit=500"),
+      ]);
+      setReferrals(Array.isArray(refRes) ? refRes : (refRes?.items || refRes?.records || []));
+      setInvites(Array.isArray(invRes) ? invRes : (invRes?.items || invRes?.records || []));
+    } catch(e) { console.error("Referral load error:", e); }
+    setRefLoading(false);
+  };
+
+  useEffect(() => { if (modTab === "referrals") loadReferrals(); }, [modTab]);
+
   const updateFounderStatus = async (founder, status) => {
     try {
       await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/FoundingCreator/${founder.id}`, { status, notes: founderNote || founder.notes });
@@ -228,7 +248,7 @@ function AdminPanel({ currentUser }) {
         </div>
         {/* Tab switcher */}
         <div style={{ display:"flex", gap:6, marginBottom: modTab==="videos" ? 10 : 0 }}>
-          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Creators"],["analytics","📊 Analytics"]].map(([val,label]) => (
+          {[["videos","🎬 Videos"],["ai","🤖 AI Flagged"],["users","👥 Users"],["founders","🌟 Creators"],["referrals","🎁 Referrals"],["analytics","📊 Analytics"]].map(([val,label]) => (
             <button key={val} onClick={() => setModTab(val)}
               style={{ padding:"8px 18px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
                 background: modTab===val ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.07)",
@@ -881,6 +901,82 @@ function AdminPanel({ currentUser }) {
           </div>
         </div>
       )}
+      {modTab === "referrals" && (
+        <div style={{ marginTop:16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+            <div style={{ color:"#F5C842", fontWeight:800, fontSize:18 }}>🎁 Referral Dashboard</div>
+            <button onClick={loadReferrals} style={{ background:"rgba(255,255,255,0.07)", border:"none", borderRadius:20, padding:"7px 14px", color:"#888", fontWeight:700, fontSize:12, cursor:"pointer" }}>↻ Refresh</button>
+          </div>
+
+          {refLoading ? (
+            <div style={{ textAlign:"center", color:"#888", padding:40, fontSize:14 }}>Loading referrals…</div>
+          ) : (
+            <>
+              {/* Top Inviters Leaderboard */}
+              <div style={{ marginBottom:24 }}>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:14, marginBottom:10 }}>🏆 Top Inviters</div>
+                {invites.length === 0 ? (
+                  <div style={{ color:"#666", fontSize:13, padding:16, textAlign:"center", background:"rgba(255,255,255,0.03)", borderRadius:12 }}>No invite data yet</div>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                    {[...invites].sort((a,b) => (b.referral_count||0) - (a.referral_count||0)).slice(0, 10).map((inv, i) => (
+                      <div key={inv.id || i} style={{ display:"flex", alignItems:"center", gap:12, background:"rgba(255,255,255,0.05)", borderRadius:10, padding:"10px 14px" }}>
+                        <div style={{ width:28, height:28, borderRadius:"50%", background: i===0 ? "linear-gradient(135deg,#F5C842,#FF9500)" : "rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", color: i===0 ? "#0B0C1A" : "#888", fontWeight:800, fontSize:12 }}>{i+1}</div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ color:"#fff", fontWeight:700, fontSize:13 }}>@{inv.username || "unknown"}</div>
+                          <div style={{ color:"#666", fontSize:11 }}>Code: {inv.code || "—"}</div>
+                        </div>
+                        <div style={{ color:"#F5C842", fontWeight:800, fontSize:16 }}>{inv.referral_count || 0}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Referrals */}
+              <div>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:14, marginBottom:10 }}>📋 Recent Referrals</div>
+                {referrals.length === 0 ? (
+                  <div style={{ color:"#666", fontSize:13, padding:16, textAlign:"center", background:"rgba(255,255,255,0.03)", borderRadius:12 }}>No referrals recorded yet</div>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:400, overflowY:"auto" }}>
+                    {referrals.map((ref, i) => (
+                      <div key={ref.id || i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.05)", borderRadius:10, padding:"10px 14px" }}>
+                        <div style={{ fontSize:18 }}>🤝</div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ color:"#fff", fontSize:13 }}>
+                            <span style={{ fontWeight:700 }}>@{ref.invitee_username || "new user"}</span>
+                            <span style={{ color:"#888" }}> was invited by </span>
+                            <span style={{ fontWeight:700, color:"#F5C842" }}>@{ref.inviter_username || "unknown"}</span>
+                          </div>
+                          <div style={{ color:"#555", fontSize:11 }}>{(ref.created_date||"").slice(0,10)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Summary stats */}
+              <div style={{ display:"flex", gap:12, marginTop:20 }}>
+                <div style={{ flex:1, background:"rgba(255,255,255,0.05)", borderRadius:12, padding:16, textAlign:"center" }}>
+                  <div style={{ color:"#F5C842", fontWeight:800, fontSize:24 }}>{referrals.length}</div>
+                  <div style={{ color:"#888", fontSize:11, marginTop:4 }}>Total Referrals</div>
+                </div>
+                <div style={{ flex:1, background:"rgba(255,255,255,0.05)", borderRadius:12, padding:16, textAlign:"center" }}>
+                  <div style={{ color:"#F5C842", fontWeight:800, fontSize:24 }}>{invites.length}</div>
+                  <div style={{ color:"#888", fontSize:11, marginTop:4 }}>Active Inviters</div>
+                </div>
+                <div style={{ flex:1, background:"rgba(255,255,255,0.05)", borderRadius:12, padding:16, textAlign:"center" }}>
+                  <div style={{ color:"#F5C842", fontWeight:800, fontSize:24 }}>{invites.reduce((s,i) => s + (i.referral_count||0), 0)}</div>
+                  <div style={{ color:"#888", fontSize:11, marginTop:4 }}>Total Invites Sent</div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

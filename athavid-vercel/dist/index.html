@@ -56,7 +56,7 @@
         margin: 0 8px;
       }
     </style>
-    <script type="module" crossorigin src="/assets/sachi3-DEidmVKI.js"></script>
+    <script type="module" crossorigin src="/assets/sachi3-CK2ntQlK.js"></script>
   </head>
   <body>
     <!-- Static footer — visible to crawlers before JS loads -->
@@ -103,13 +103,16 @@
           });
         }).catch(() => {});
 
-        // Reload once (and only once) if the controlling worker changes —
-        // this guarantees the page is running under the LATEST worker/code,
-        // closing the loop on stale-SW-serves-broken-JS bugs for good.
-        let refreshed = false;
+        // Reload once (and only once) if the controlling worker changes.
+        // CRITICAL: use sessionStorage, NOT a local variable — a local var
+        // resets on every page reload, so if Safari fires controllerchange
+        // again after the reload (which it can when clients.claim() runs),
+        // it creates an infinite reload loop → Safari kills the tab with
+        // "This webpage was reloaded" crash. sessionStorage persists across
+        // the reload, breaking the loop after exactly one refresh.
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if (refreshed) return;
-          refreshed = true;
+          if (sessionStorage.getItem('sachi-sw-refreshed')) return;
+          sessionStorage.setItem('sachi-sw-refreshed', '1');
           window.location.reload();
         });
       }

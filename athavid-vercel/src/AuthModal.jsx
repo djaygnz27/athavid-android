@@ -186,7 +186,7 @@ async function signInWithGooglePopup(onSuccess) {
 }
 
 // ─── Email OTP Step ───────────────────────────────────────────────────────────
-function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
+function EmailOTPStep({ onSuccess, onBack, onNewSignup, invitedBy }) {
   const [email, setEmail] = useState("");
   const [verifiedEmail, setVerifiedEmail] = useState("");
   const [code, setCode] = useState("");
@@ -262,7 +262,7 @@ function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
   };
 
   if (isNewUser) {
-    return <FinishStep emailPayload={{ email: verifiedEmail }} onSuccess={onSuccess} onNewSignup={onNewSignup} />;
+    return <FinishStep emailPayload={{ email: verifiedEmail }} invitedBy={invitedBy} onSuccess={onSuccess} onNewSignup={onNewSignup} />;
   }
 
   return (
@@ -324,7 +324,7 @@ function EmailOTPStep({ onSuccess, onBack, onNewSignup }) {
 }
 
 // ─── Finish Step: new users pick username, dob, country ──────────────────────
-function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
+function FinishStep({ googlePayload, emailPayload, invitedBy, onSuccess, onNewSignup }) {
   const email = googlePayload?.email || emailPayload?.email || "";
   const name = googlePayload?.name || "";
   const picture = googlePayload?.picture || "";
@@ -335,7 +335,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [invitedBy, setInvitedBy] = useState("");
+  const [invitedByLocal, setInvitedByLocal] = useState(invitedBy || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -427,7 +427,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
       // Feeds into the SAME SachiInvite/SachiReferral tables the invite-link
       // system already uses, so it shows up in the existing leaderboard/
       // referral dashboard automatically. Never blocks signup if it fails.
-      const invitedByHandle = invitedBy.trim().replace(/^@/, "").toLowerCase();
+      const invitedByHandle = invitedByLocal.trim().replace(/^@/, "").toLowerCase();
       if (invitedByHandle) {
         try {
           const matchRes = await fetch(
@@ -556,7 +556,7 @@ function FinishStep({ googlePayload, emailPayload, onSuccess, onNewSignup }) {
       </select>
 
       <div style={{ textAlign:"left", marginBottom:4, color:"#888", fontSize:12 }}>Invited by <span style={{color:"#888", fontSize:11}}>(optional — friend's @username)</span></div>
-      <input value={invitedBy} onChange={e => setInvitedBy(e.target.value)} placeholder="@username" style={inp} maxLength={30} />
+      <input value={invitedByLocal} onChange={e => setInvitedByLocal(e.target.value)} placeholder="@username" style={inp} maxLength={30} />
 
       <label style={{ display:"flex", gap:10, alignItems:"flex-start", marginBottom:16, cursor:"pointer", textAlign:"left" }}>
         <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ width:20, height:20, accentColor:"#F5C842", flexShrink:0, marginTop:2 }} />
@@ -585,6 +585,7 @@ export default function AuthModal({ onClose, onSuccess, onNewSignup }) {
   const [step, setStep] = useState(pendingGoogle ? "finish-google" : "signin");
   const [googlePayload, setGooglePayload] = useState(pendingGoogle || null);
   const [loading, setLoading] = useState(false);
+  const [invitedBy, setInvitedBy] = useState("");
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -627,7 +628,7 @@ export default function AuthModal({ onClose, onSuccess, onNewSignup }) {
         <div style={{ textAlign:"center", marginBottom:24 }}>
           <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5 }}>Almost there!</div>
         </div>
-        <FinishStep googlePayload={googlePayload} onSuccess={onSuccess} onNewSignup={onNewSignup} />
+        <FinishStep googlePayload={googlePayload} invitedBy={invitedBy} onSuccess={onSuccess} onNewSignup={onNewSignup} />
       </>
     );
   }
@@ -637,7 +638,7 @@ export default function AuthModal({ onClose, onSuccess, onNewSignup }) {
       <>
         <div style={{ textAlign:"center", marginBottom:24 }}>
           </div>
-        <EmailOTPStep onSuccess={onSuccess} onBack={() => setStep("signin")} onNewSignup={onNewSignup} />
+        <EmailOTPStep invitedBy={invitedBy} onSuccess={onSuccess} onBack={() => setStep("signin")} onNewSignup={onNewSignup} />
       </>
     );
   }
@@ -651,6 +652,23 @@ export default function AuthModal({ onClose, onSuccess, onNewSignup }) {
         </div>
         <div style={{ color:"#F5C842", fontWeight:800, fontSize:22, letterSpacing:-0.5, marginBottom:4 }}>Join Sachi</div>
         <div style={{ color:"rgba(255,255,255,0.45)", fontSize:14 }}>Where truth meets community</div>
+      </div>
+
+      {/* Invited By — captured upfront, passed to profile completion */}
+      <div style={{ textAlign:"left", marginBottom:12 }}>
+        <div style={{ marginBottom:4, color:"#888", fontSize:12 }}>Invited by <span style={{color:"#666", fontSize:11}}>(optional — friend's @username)</span></div>
+        <input
+          value={invitedBy}
+          onChange={e => setInvitedBy(e.target.value)}
+          placeholder="@username"
+          maxLength={30}
+          style={{
+            display:"block", width:"100%", boxSizing:"border-box",
+            background:"rgba(255,255,255,0.08)", border:"1px solid rgba(245,200,66,0.15)",
+            borderRadius:12, padding:"11px 14px", color:"#fff", fontSize:14,
+            outline:"none",
+          }}
+        />
       </div>
 
       {/* Google Sign In */}
