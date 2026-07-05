@@ -17696,10 +17696,10 @@ function AdminPanel({ currentUser }) {
       "div",
       {
         onClick: () => setPreviewVideo(null),
-        style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 },
+        style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 },
         children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), style: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 13, fontWeight: 700 }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 14, fontWeight: 700 }, children: [
               "@",
               previewVideo.username || "unknown"
             ] }),
@@ -17707,8 +17707,8 @@ function AdminPanel({ currentUser }) {
               "button",
               {
                 onClick: () => setPreviewVideo(null),
-                style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 20, width: 32, height: 32, color: "#fff", fontSize: 16, cursor: "pointer" },
-                children: "✕"
+                style: { background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.3)", borderRadius: 20, padding: "8px 16px", color: "#F5C842", fontSize: 13, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 },
+                children: "← Back"
               }
             )
           ] }),

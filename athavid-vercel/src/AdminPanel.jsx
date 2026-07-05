@@ -989,12 +989,15 @@ function AdminPanel({ currentUser }) {
       {/* Video preview modal — tap thumbnail to watch */}
       {previewVideo && (
         <div onClick={() => setPreviewVideo(null)}
-          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.9)", zIndex:9999, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.95)", zIndex:9999, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:420, display:"flex", flexDirection:"column", alignItems:"center" }}>
-            <div style={{ width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <div style={{ color:"#fff", fontSize:13, fontWeight:700 }}>@{previewVideo.username || "unknown"}</div>
+            {/* Top bar — username left, Back button right */}
+            <div style={{ width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <div style={{ color:"#fff", fontSize:14, fontWeight:700 }}>@{previewVideo.username || "unknown"}</div>
               <button onClick={() => setPreviewVideo(null)}
-                style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:20, width:32, height:32, color:"#fff", fontSize:16, cursor:"pointer" }}>✕</button>
+                style={{ background:"rgba(245,200,66,0.15)", border:"1px solid rgba(245,200,66,0.3)", borderRadius:20, padding:"8px 16px", color:"#F5C842", fontSize:13, fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+                ← Back
+              </button>
             </div>
             {(() => {
               const src = previewVideo.media_url || resolveMediaUrl(previewVideo.video_url);
