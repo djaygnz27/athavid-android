@@ -17058,44 +17058,47 @@ function AdminPanel({ currentUser }) {
           const today = /* @__PURE__ */ new Date();
           const isNew = joinDate && today - joinDate < 24 * 60 * 60 * 1e3;
           const isThisWeek = joinDate && today - joinDate < 7 * 24 * 60 * 60 * 1e3;
-          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            "div",
-            {
-              onClick: () => {
-                setSearch(u2.username || "");
-                setModTab("videos");
-              },
-              style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", border: isNew ? "1px solid rgba(107,255,184,0.25)" : "1px solid transparent", cursor: "pointer" },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontWeight: 700, fontSize: 11, width: 18, textAlign: "right", flexShrink: 0 }, children: i + 1 }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "img",
-                  {
-                    src: u2.avatar_url || u2.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.display_name || u2.username || u2.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
-                    style: { width: 32, height: 32, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
-                    u2.display_name || u2.full_name || u2.username || "—",
-                    isNew && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { marginLeft: 6, background: "#6BFFB8", color: "#0B0C1A", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 20 }, children: "NEW" })
+          return (
+            // ⛔ LOCKED — USER ROW CLICK → VIDEOS TAB (do not remove onClick)
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "div",
+              {
+                onClick: () => {
+                  setSearch(u2.username || "");
+                  setModTab("videos");
+                },
+                style: { display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 12px", border: isNew ? "1px solid rgba(107,255,184,0.25)" : "1px solid transparent", cursor: "pointer" },
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#444", fontWeight: 700, fontSize: 11, width: 18, textAlign: "right", flexShrink: 0 }, children: i + 1 }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "img",
+                    {
+                      src: u2.avatar_url || u2.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.display_name || u2.username || u2.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
+                      style: { width: 32, height: 32, borderRadius: "50%", flexShrink: 0, objectFit: "cover" }
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                      u2.display_name || u2.full_name || u2.username || "—",
+                      isNew && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { marginLeft: 6, background: "#6BFFB8", color: "#0B0C1A", fontSize: 9, fontWeight: 900, padding: "1px 6px", borderRadius: 20 }, children: "NEW" })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+                      u2.email || "",
+                      u2.username ? ` · @${u2.username}` : ""
+                    ] }),
+                    u2.location && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#444", fontSize: 10, marginTop: 1 }, children: [
+                      "📍 ",
+                      u2.location
+                    ] })
                   ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#555", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
-                    u2.email || "",
-                    u2.username ? ` · @${u2.username}` : ""
-                  ] }),
-                  u2.location && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#444", fontSize: 10, marginTop: 1 }, children: [
-                    "📍 ",
-                    u2.location
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isNew ? "#6BFFB8" : isThisWeek ? "#F5C842" : "#444", fontSize: 10, fontWeight: 600 }, children: joinDate ? joinDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#333" }, children: joinDate ? joinDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "" })
                   ] })
-                ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: isNew ? "#6BFFB8" : isThisWeek ? "#F5C842" : "#444", fontSize: 10, fontWeight: 600 }, children: joinDate ? joinDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—" }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 9, color: "#333" }, children: joinDate ? joinDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "" })
-                ] })
-              ]
-            },
-            u2.id || i
+                ]
+              },
+              u2.id || i
+            )
           );
         }) })
       ] }),
@@ -17220,56 +17223,59 @@ function AdminPanel({ currentUser }) {
                 if (l2.includes("uk") || l2.includes("united kingdom")) return "🇬🇧 " + loc;
                 return "🌍 " + loc;
               };
-              return /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "div",
-                {
-                  onClick: () => {
-                    setSearch(u2.username || "");
-                    setModTab("videos");
-                  },
-                  style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)", cursor: "pointer" },
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx(
-                      "img",
-                      {
-                        src: u2.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.username || u2.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
-                        style: { width: 40, height: 40, borderRadius: "50%", flexShrink: 0, objectFit: "cover", border: "2px solid rgba(107,138,255,0.3)" }
-                      }
-                    ),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: u2.display_name || u2.username || "—" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }, children: [
-                        "@",
-                        u2.username || "?",
-                        " · ",
-                        u2.email || "no email"
+              return (
+                // ⛔ LOCKED — USER ROW CLICK → VIDEOS TAB (do not remove onClick)
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "div",
+                  {
+                    onClick: () => {
+                      setSearch(u2.username || "");
+                      setModTab("videos");
+                    },
+                    style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)", cursor: "pointer" },
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(
+                        "img",
+                        {
+                          src: u2.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u2.username || u2.email || "?")}&background=random&color=fff&size=64&bold=true&format=png`,
+                          style: { width: 40, height: 40, borderRadius: "50%", flexShrink: 0, objectFit: "cover", border: "2px solid rgba(107,138,255,0.3)" }
+                        }
+                      ),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: u2.display_name || u2.username || "—" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }, children: [
+                          "@",
+                          u2.username || "?",
+                          " · ",
+                          u2.email || "no email"
+                        ] }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 11, fontWeight: 600, marginTop: 2 }, children: locationFlag(u2.location) })
                       ] }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#F5C842", fontSize: 11, fontWeight: 600, marginTop: 2 }, children: locationFlag(u2.location) })
-                    ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flexShrink: 0, textAlign: "right" }, children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11 }, children: u2.created_date ? new Date(u2.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: u2.status === "active" ? "#6BFFB8" : "#FF6B6B", fontSize: 10, fontWeight: 700, marginTop: 2 }, children: u2.status || "active" }),
-                      (() => {
-                        const ls = lastSeenMap[(u2.username || "").toLowerCase()];
-                        if (!ls) return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 2 }, children: "Never seen" });
-                        const diff = Date.now() - new Date(ls).getTime();
-                        const mins = Math.floor(diff / 6e4);
-                        const hrs = Math.floor(mins / 60);
-                        const days = Math.floor(hrs / 24);
-                        let label;
-                        if (mins < 5) label = "🟢 Just now";
-                        else if (mins < 60) label = `🟢 ${mins}m ago`;
-                        else if (hrs < 24) label = `🟡 ${hrs}h ago`;
-                        else if (days === 1) label = "🟠 Yesterday";
-                        else if (days < 7) label = `🟠 ${days}d ago`;
-                        else if (days < 30) label = `🔴 ${days}d ago`;
-                        else label = `⚫ ${Math.floor(days / 30)}mo ago`;
-                        return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 10, marginTop: 2, fontWeight: 700 }, children: label });
-                      })()
-                    ] })
-                  ]
-                },
-                u2.id || i
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flexShrink: 0, textAlign: "right" }, children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 11 }, children: u2.created_date ? new Date(u2.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: u2.status === "active" ? "#6BFFB8" : "#FF6B6B", fontSize: 10, fontWeight: 700, marginTop: 2 }, children: u2.status || "active" }),
+                        (() => {
+                          const ls = lastSeenMap[(u2.username || "").toLowerCase()];
+                          if (!ls) return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#555", fontSize: 10, marginTop: 2 }, children: "Never seen" });
+                          const diff = Date.now() - new Date(ls).getTime();
+                          const mins = Math.floor(diff / 6e4);
+                          const hrs = Math.floor(mins / 60);
+                          const days = Math.floor(hrs / 24);
+                          let label;
+                          if (mins < 5) label = "🟢 Just now";
+                          else if (mins < 60) label = `🟢 ${mins}m ago`;
+                          else if (hrs < 24) label = `🟡 ${hrs}h ago`;
+                          else if (days === 1) label = "🟠 Yesterday";
+                          else if (days < 7) label = `🟠 ${days}d ago`;
+                          else if (days < 30) label = `🔴 ${days}d ago`;
+                          else label = `⚫ ${Math.floor(days / 30)}mo ago`;
+                          return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 10, marginTop: 2, fontWeight: 700 }, children: label });
+                        })()
+                      ] })
+                    ]
+                  },
+                  u2.id || i
+                )
               );
             }),
             registeredUsers.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#444", padding: 40, fontSize: 13 }, children: "No users yet." })

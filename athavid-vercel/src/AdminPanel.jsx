@@ -15,7 +15,9 @@ function AdminPanel({ currentUser }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [analyticsError, setAnalyticsError] = useState(null);
   const [saving, setSaving] = useState(null);
+  // ⛔ LOCKED — MOD VIDEO PREVIEW STATE START
   const [previewVideo, setPreviewVideo] = useState(null); // video record being previewed in modal
+  // ⛔ LOCKED — MOD VIDEO PREVIEW STATE END
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
 
@@ -359,7 +361,7 @@ function AdminPanel({ currentUser }) {
                     const today = new Date();
                     const isNew = joinDate && (today - joinDate) < 24*60*60*1000;
                     const isThisWeek = joinDate && (today - joinDate) < 7*24*60*60*1000;
-                    return (
+                    return ( // ⛔ LOCKED — USER ROW CLICK → VIDEOS TAB (do not remove onClick)
                       <div key={u.id||i}
                         onClick={() => { setSearch(u.username || ""); setModTab("videos"); }}
                         style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"10px 12px", border: isNew ? "1px solid rgba(107,255,184,0.25)" : "1px solid transparent", cursor:"pointer" }}>
@@ -535,7 +537,7 @@ function AdminPanel({ currentUser }) {
                           if (l.includes("uk") || l.includes("united kingdom")) return "🇬🇧 " + loc;
                           return "🌍 " + loc;
                         };
-                        return (
+                        return ( // ⛔ LOCKED — USER ROW CLICK → VIDEOS TAB (do not remove onClick)
                         <div key={u.id||i}
                           onClick={() => { setSearch(u.username || ""); setModTab("videos"); }}
                           style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)", cursor:"pointer" }}>
@@ -730,7 +732,7 @@ function AdminPanel({ currentUser }) {
           {filtered.map(video => (
             <div key={video.id} style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, border:`1px solid ${video.is_mature ? "rgba(255,107,107,0.3)" : "rgba(255,255,255,0.07)"}`, overflow:"hidden" }}>
               <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
-                {/* Thumbnail — tap to preview/play the video */}
+                {/* ⛔ LOCKED — MOD VIDEO PREVIEW THUMBNAIL START — do NOT remove onClick or play overlay */}
                 <div onClick={() => setPreviewVideo(video)}
                   style={{ position:"relative", width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e", cursor:"pointer" }}>
                   {video.thumbnail_url ? (
@@ -742,6 +744,7 @@ function AdminPanel({ currentUser }) {
                     <div style={{ width:22, height:22, borderRadius:"50%", background:"rgba(0,0,0,0.55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:"#fff" }}>▶</div>
                   </div>
                 </div>
+                {/* ⛔ LOCKED — MOD VIDEO PREVIEW THUMBNAIL END */}
                 {/* Info */}
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ color:"#aaa", fontSize:11, marginBottom:3 }}>@{video.username || "unknown"}</div>
@@ -986,7 +989,11 @@ function AdminPanel({ currentUser }) {
         </div>
       )}
 
-      {/* Video preview modal — tap thumbnail to watch */}
+      {/* ⛔ LOCKED — MOD VIDEO PREVIEW MODAL START
+          This modal lets MOD/admin tap a video thumbnail to play it inline.
+          DO NOT remove: onClick on thumbnail, setPreviewVideo state, Back button, or the video/img render.
+          Reverts have stripped this twice — the LOCKED markers are here to prevent that.
+      */}
       {previewVideo && (
         <div onClick={() => setPreviewVideo(null)}
           style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.95)", zIndex:9999, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
@@ -1015,6 +1022,7 @@ function AdminPanel({ currentUser }) {
           </div>
         </div>
       )}
+      {/* ⛔ LOCKED — MOD VIDEO PREVIEW MODAL END */}
 
     </div>
   );
