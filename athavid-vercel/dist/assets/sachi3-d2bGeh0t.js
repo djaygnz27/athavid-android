@@ -16342,19 +16342,21 @@ function CircleGrid({ videos: vids, onSelect, topLikedIds }) {
     ] }, v2.id);
   }) }, ri2)) });
 }
-function SachiFamRow({ userId }) {
+function SachiFamRow({ userId, onOpenProfile }) {
   const [fans, setFans] = React.useState([]);
   React.useEffect(() => {
     request$1("GET", `/apps/${APP_ID$2}/entities/SachiLike?limit=500`).then((res) => {
       const all = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
       const counts = {};
       const avatarMap = {};
+      const idMap = {};
       for (const l2 of all) {
         if (!l2.username) continue;
         counts[l2.username] = (counts[l2.username] || 0) + 1;
         if (l2.avatar_url) avatarMap[l2.username] = l2.avatar_url;
+        if (l2.user_id) idMap[l2.username] = l2.user_id;
       }
-      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([uname, cnt]) => ({ username: uname, count: cnt, avatar: avatarMap[uname] }));
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([uname, cnt]) => ({ username: uname, count: cnt, avatar: avatarMap[uname], userId: idMap[uname] }));
       setFans(sorted);
     }).catch(() => {
     });
@@ -16364,39 +16366,49 @@ function SachiFamRow({ userId }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }, children: "🫂 Sachi Fam" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }, children: fans.map((f2) => {
       var _a;
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flexShrink: 0, textAlign: "center" }, children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
-          overflow: "hidden",
-          border: "2px solid rgba(245,200,66,0.5)",
-          background: "#1a1a2e",
-          marginBottom: 3
-        }, children: f2.avatar ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: f2.avatar, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg,#6c63ff,#a855f7)",
-          color: "#fff",
-          fontWeight: 800,
-          fontSize: 16
-        }, children: (_a = f2.username[0]) == null ? void 0 : _a.toUpperCase() }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
-          color: "rgba(255,255,255,0.55)",
-          fontSize: 9,
-          fontWeight: 600,
-          maxWidth: 44,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap"
-        }, children: [
-          "@",
-          f2.username
-        ] })
-      ] }, f2.username);
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          onClick: () => {
+            if (onOpenProfile) onOpenProfile(f2.userId || null, f2.username);
+          },
+          style: { flexShrink: 0, textAlign: "center", cursor: onOpenProfile ? "pointer" : "default" },
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              overflow: "hidden",
+              border: "2px solid rgba(245,200,66,0.5)",
+              background: "#1a1a2e",
+              marginBottom: 3
+            }, children: f2.avatar ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: f2.avatar, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "linear-gradient(135deg,#6c63ff,#a855f7)",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: 16
+            }, children: (_a = f2.username[0]) == null ? void 0 : _a.toUpperCase() }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+              color: "rgba(255,255,255,0.55)",
+              fontSize: 9,
+              fontWeight: 600,
+              maxWidth: 44,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap"
+            }, children: [
+              "@",
+              f2.username
+            ] })
+          ]
+        },
+        f2.username
+      );
     }) })
   ] });
 }
@@ -16512,7 +16524,7 @@ function VibeRing({ score, avatarUrl, size = 90 }) {
     } })
   ] });
 }
-function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = "Back" }) {
+function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = "Back", onOpenProfile }) {
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -16785,7 +16797,9 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(CreatorCard, { videoList: userVideos, profile }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(SachiFamRow, { userId }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SachiFamRow, { userId, onOpenProfile: onOpenProfile ? (uid, uname) => {
+          onOpenProfile(uid, uname, () => onOpenProfile(userId, username, null));
+        } : null }),
         isOwnProfile && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { display: "flex", borderBottom: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 0" }, children: [{ id: "posts", label: "Posts", icon: "🎬" }, { id: "saved", label: "Saved", icon: "🔖" }].map((t2) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "button",
           {
@@ -21815,7 +21829,8 @@ function App() {
           setProfileSheet(null);
           if (cb2) cb2();
         },
-        backLabel: (profileSheet == null ? void 0 : profileSheet.backLabel) || "Back"
+        backLabel: (profileSheet == null ? void 0 : profileSheet.backLabel) || "Back",
+        onOpenProfile: (uid, uname, onBack) => setProfileSheet({ userId: uid, username: uname, backLabel: "Back", onBack: onBack || null })
       }
     ),
     showFollowersList && /* @__PURE__ */ jsxRuntimeExports.jsx(

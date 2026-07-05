@@ -124,7 +124,7 @@ function CircleGrid({ videos: vids, onSelect, topLikedIds }) {
 }
 
 // ── Sachi Fam Row ──────────────────────────────────────────────────────────
-function SachiFamRow({ userId }) {
+function SachiFamRow({ userId, onOpenProfile }) {
   const [fans, setFans] = React.useState([]);
 
   React.useEffect(() => {
@@ -136,15 +136,17 @@ function SachiFamRow({ userId }) {
         // Count by liker username
         const counts = {};
         const avatarMap = {};
+        const idMap = {};
         for (const l of all) {
           if (!l.username) continue;
           counts[l.username] = (counts[l.username] || 0) + 1;
           if (l.avatar_url) avatarMap[l.username] = l.avatar_url;
+          if (l.user_id) idMap[l.username] = l.user_id;
         }
         const sorted = Object.entries(counts)
           .sort((a,b) => b[1]-a[1])
           .slice(0, 10)
-          .map(([uname, cnt]) => ({ username: uname, count: cnt, avatar: avatarMap[uname] }));
+          .map(([uname, cnt]) => ({ username: uname, count: cnt, avatar: avatarMap[uname], userId: idMap[uname] }));
         setFans(sorted);
       }).catch(() => {});
   }, [userId]);
@@ -158,7 +160,8 @@ function SachiFamRow({ userId }) {
       </div>
       <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4 }}>
         {fans.map(f => (
-          <div key={f.username} style={{ flexShrink:0, textAlign:"center" }}>
+          <div key={f.username} onClick={() => { if (onOpenProfile) onOpenProfile(f.userId || null, f.username); }}
+            style={{ flexShrink:0, textAlign:"center", cursor: onOpenProfile ? "pointer" : "default" }}>
             <div style={{
               width:44, height:44, borderRadius:"50%", overflow:"hidden",
               border:"2px solid rgba(245,200,66,0.5)",
@@ -299,7 +302,7 @@ function VibeRing({ score, avatarUrl, size=90 }) {
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────
-function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = "Back" }) {
+function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = "Back", onOpenProfile }) {
   const [profile, setProfile] = React.useState(null);
   const [userVideos, setUserVideos] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -532,7 +535,10 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
               <CreatorCard videoList={userVideos} profile={profile} />
 
               {/* ── SACHI FAM ── */}
-              <SachiFamRow userId={userId} />
+              <SachiFamRow userId={userId} onOpenProfile={onOpenProfile ? (uid, uname) => {
+                // Switch this same sheet to the tapped fam member's profile, with Back returning here
+                onOpenProfile(uid, uname, () => onOpenProfile(userId, username, null));
+              } : null} />
 
 
               {/* ── TAB SWITCHER ── */}

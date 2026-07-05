@@ -1367,7 +1367,8 @@ function App() {
               setProfileSheet(null);
               if (cb) cb();
             }}
-            backLabel={profileSheet?.backLabel || "Back"} />
+            backLabel={profileSheet?.backLabel || "Back"}
+            onOpenProfile={(uid, uname, onBack) => setProfileSheet({ userId: uid, username: uname, backLabel: "Back", onBack: onBack || null })} />
       )}
       {/* ── Followers Sheet (top-level so nothing clips it) ── */}
       {showFollowersList && (
