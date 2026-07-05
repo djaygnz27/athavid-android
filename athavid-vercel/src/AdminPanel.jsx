@@ -359,7 +359,9 @@ function AdminPanel({ currentUser }) {
                     const isNew = joinDate && (today - joinDate) < 24*60*60*1000;
                     const isThisWeek = joinDate && (today - joinDate) < 7*24*60*60*1000;
                     return (
-                      <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"10px 12px", border: isNew ? "1px solid rgba(107,255,184,0.25)" : "1px solid transparent" }}>
+                      <div key={u.id||i}
+                        onClick={() => { setSearch(u.username || ""); setModTab("videos"); }}
+                        style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.03)", borderRadius:10, padding:"10px 12px", border: isNew ? "1px solid rgba(107,255,184,0.25)" : "1px solid transparent", cursor:"pointer" }}>
                         <div style={{ color:"#444", fontWeight:700, fontSize:11, width:18, textAlign:"right", flexShrink:0 }}>{i+1}</div>
                         <img src={u.avatar_url || u.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.display_name||u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
                           style={{ width:32, height:32, borderRadius:"50%", flexShrink:0, objectFit:"cover" }} />
@@ -533,7 +535,9 @@ function AdminPanel({ currentUser }) {
                           return "🌍 " + loc;
                         };
                         return (
-                        <div key={u.id||i} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
+                        <div key={u.id||i}
+                          onClick={() => { setSearch(u.username || ""); setModTab("videos"); }}
+                          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)", cursor:"pointer" }}>
                           <img
                             src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username||u.email||"?")}&background=random&color=fff&size=64&bold=true&format=png`}
                             style={{ width:40, height:40, borderRadius:"50%", flexShrink:0, objectFit:"cover", border:"2px solid rgba(107,138,255,0.3)" }}
