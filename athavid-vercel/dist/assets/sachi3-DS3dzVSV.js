@@ -12681,10 +12681,10 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
   const photoUrls = ((_a = (() => {
-    const isVideoUrl = (u2) => /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i.test(u2 || "");
-    const isImageUrl = (u2) => /\.(jpg|jpeg|png|webp|gif|bmp|heic)(\?|$)/i.test(u2 || "");
+    const isVideoUrl2 = (u2) => /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i.test(u2 || "");
+    const isImageUrl2 = (u2) => /\.(jpg|jpeg|png|webp|gif|bmp|heic)(\?|$)/i.test(u2 || "");
     const vurl = video.video_url || "";
-    if (isVideoUrl(vurl)) return null;
+    if (isVideoUrl2(vurl)) return null;
     let parsedPhotos = null;
     if (video.photo_urls) {
       let arr = video.photo_urls;
@@ -12696,11 +12696,11 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }
       }
       if (Array.isArray(arr)) {
-        parsedPhotos = arr.filter((u2) => u2 && typeof u2 === "string" && u2.trim() && !isVideoUrl(u2));
+        parsedPhotos = arr.filter((u2) => u2 && typeof u2 === "string" && u2.trim() && !isVideoUrl2(u2));
         if (parsedPhotos.length === 0) parsedPhotos = null;
       }
     }
-    const looksLikeImage = isImageUrl(vurl);
+    const looksLikeImage = isImageUrl2(vurl);
     const isPhotoPost = video.is_photo || parsedPhotos || looksLikeImage;
     if (!isPhotoPost) return null;
     if (parsedPhotos) return parsedPhotos;
@@ -15688,19 +15688,55 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     /* @__PURE__ */ jsxRuntimeExports.jsx("audio", { ref: previewAudioRef, onEnded: () => setPreviewTrack(null), style: { display: "none" } })
   ] });
 }
+function isImageUrl(u2) {
+  return /\.(jpg|jpeg|png|webp|gif|bmp|heic)(\?|$)/i.test(u2 || "");
+}
+function isVideoUrl(u2) {
+  return /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i.test(u2 || "");
+}
+function getPhotoUrls(v2) {
+  if (!v2) return null;
+  const vurl = resolveMediaUrl(v2.video_url);
+  if (isVideoUrl(vurl)) return null;
+  let parsedPhotos = null;
+  if (v2.photo_urls) {
+    let arr = v2.photo_urls;
+    if (typeof arr === "string") {
+      try {
+        arr = JSON.parse(arr);
+      } catch (e) {
+        arr = [];
+      }
+    }
+    if (Array.isArray(arr)) {
+      parsedPhotos = arr.filter((u2) => u2 && typeof u2 === "string" && u2.trim() && !isVideoUrl(u2));
+      if (parsedPhotos.length === 0) parsedPhotos = null;
+    }
+  }
+  const looksLikeImage = isImageUrl(vurl);
+  const isPhotoPost = v2.is_photo || parsedPhotos || looksLikeImage;
+  if (!isPhotoPost) return null;
+  if (parsedPhotos) return parsedPhotos.map(resolveMediaUrl);
+  return vurl ? [vurl] : null;
+}
 function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, username }) {
   const [idx, setIdx] = React.useState(startIndex || 0);
   const [muted, setMuted] = React.useState(false);
+  const [photoIdx, setPhotoIdx] = React.useState(0);
   const videoRef = React.useRef(null);
   const touchStartY = React.useRef(null);
+  const touchStartX = React.useRef(null);
   const v2 = vids[idx];
+  const photoUrls = getPhotoUrls(v2);
+  const isPhoto = !!photoUrls;
   React.useEffect(() => {
-    if (videoRef.current) {
+    setPhotoIdx(0);
+    if (videoRef.current && !isPhoto) {
       videoRef.current.currentTime = 0;
       videoRef.current.play().catch(() => {
       });
     }
-  }, [idx]);
+  }, [idx, isPhoto]);
   const goNext = () => {
     if (idx < vids.length - 1) setIdx((i) => i + 1);
   };
@@ -15709,14 +15745,27 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
   };
   const onTouchStart = (e) => {
     touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e) => {
     if (touchStartY.current === null) return;
-    const diff = touchStartY.current - e.changedTouches[0].clientY;
-    if (Math.abs(diff) > 50) {
-      diff > 0 ? goNext() : goPrev();
+    const diffY = touchStartY.current - e.changedTouches[0].clientY;
+    const diffX = touchStartX.current - e.changedTouches[0].clientX;
+    if (isPhoto && photoUrls.length > 1 && Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX > 0) {
+        setPhotoIdx((p2) => Math.min(p2 + 1, photoUrls.length - 1));
+      } else {
+        setPhotoIdx((p2) => Math.max(p2 - 1, 0));
+      }
+      touchStartY.current = null;
+      touchStartX.current = null;
+      return;
+    }
+    if (Math.abs(diffY) > 50) {
+      diffY > 0 ? goNext() : goPrev();
     }
     touchStartY.current = null;
+    touchStartX.current = null;
   };
   if (!v2) return null;
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
@@ -15726,7 +15775,14 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
       onTouchEnd,
       style: { position: "fixed", inset: 0, zIndex: 9500, background: "#000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
+        isPhoto ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "img",
+          {
+            src: photoUrls[photoIdx] || photoUrls[0],
+            alt: "",
+            style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
           "video",
           {
             ref: videoRef,
@@ -15744,6 +15800,13 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
           v2.id
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.3) 100%)", pointerEvents: "none" } }),
+        isPhoto && photoUrls.length > 1 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", top: 80, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6, zIndex: 15 }, children: photoUrls.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+          width: i === photoIdx ? 8 : 6,
+          height: i === photoIdx ? 8 : 6,
+          borderRadius: "50%",
+          background: i === photoIdx ? "#F5C842" : "rgba(255,255,255,0.4)",
+          transition: "all 0.2s"
+        } }, i)) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
           position: "absolute",
           top: 0,
@@ -15782,7 +15845,9 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
-              onClick: () => setMuted((m2) => !m2),
+              onClick: () => {
+                if (!isPhoto) setMuted((m2) => !m2);
+              },
               style: {
                 background: "rgba(0,0,0,0.55)",
                 border: "1.5px solid rgba(255,255,255,0.25)",
@@ -15799,7 +15864,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
                 WebkitTapHighlightColor: "transparent",
                 flexShrink: 0
               },
-              children: muted ? "🔇" : "🔊"
+              children: isPhoto ? "🖼️" : muted ? "🔇" : "🔊"
             }
           )
         ] }),
@@ -15833,6 +15898,50 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
             ] })
           ] })
         ] }),
+        isPhoto && photoUrls.length > 1 && photoIdx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setPhotoIdx((p2) => p2 - 1),
+            style: {
+              position: "absolute",
+              top: "50%",
+              left: 12,
+              transform: "translateY(-50%)",
+              background: "rgba(0,0,0,0.5)",
+              border: "none",
+              borderRadius: "50%",
+              width: 40,
+              height: 40,
+              color: "#fff",
+              fontSize: 18,
+              cursor: "pointer",
+              zIndex: 15
+            },
+            children: "‹"
+          }
+        ),
+        isPhoto && photoUrls.length > 1 && photoIdx < photoUrls.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setPhotoIdx((p2) => p2 + 1),
+            style: {
+              position: "absolute",
+              top: "50%",
+              right: 12,
+              transform: "translateY(-50%)",
+              background: "rgba(0,0,0,0.5)",
+              border: "none",
+              borderRadius: "50%",
+              width: 40,
+              height: 40,
+              color: "#fff",
+              fontSize: 18,
+              cursor: "pointer",
+              zIndex: 15
+            },
+            children: "›"
+          }
+        ),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 4, zIndex: 10 }, children: vids.map((_, i) => /* @__PURE__ */ jsxRuntimeExports.jsx(
           "div",
           {
@@ -15848,7 +15957,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
           },
           i
         )) }),
-        idx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        !isPhoto && idx > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
             onClick: goPrev,
@@ -15870,7 +15979,7 @@ function ProfileVideoPlayer({ videos: vids, startIndex, onClose, profile, userna
             children: "↑"
           }
         ),
-        idx < vids.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        !isPhoto && idx < vids.length - 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
             onClick: goNext,
