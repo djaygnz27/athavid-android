@@ -388,7 +388,7 @@ function App() {
         // Try to load avatar from DB first (most up to date)
         try {
           // Use authenticated request (with Bearer token) to fetch user profile
-          const usersData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData.items || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           // DB takes priority — always use latest CDN avatar_url
@@ -1553,17 +1553,17 @@ function App() {
           const suList = Array.isArray(suData) ? suData : (suData?.items || suData?.records || []);
           const suMatch = suList.find(u => u.email === currentUser.email || u.id === currentUser.id);
           if (suMatch) {
-            await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser/${suMatch.id}/`, { avatar_url: url });
+            await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser/${suMatch.id}`, { avatar_url: url });
           }
         } catch(e) { console.warn("SachiUser avatar update failed:", e); }
 
         // 2. Update AthaVidUser (legacy fallback)
         try {
-          const usersData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : (usersData?.items || usersData?.records || []);
           const match = users.find(u => u.email === currentUser.email || u.user_id === currentUser.id);
           if (match) {
-            await request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+            await request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}`, { avatar_url: url });
           }
         } catch(e) { console.warn("AthaVidUser avatar update failed:", e); }
 
@@ -1574,9 +1574,9 @@ function App() {
 
         // 4. Backfill all your videos so feed shows new avatar immediately
         try {
-          const vidsData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || currentUser.email?.split("@")[0])}&limit=200`);
+          const vidsData = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?username=${encodeURIComponent(currentUser.username || currentUser.email?.split("@")[0])}&limit=200`);
           const vids = Array.isArray(vidsData) ? vidsData : (vidsData?.items || vidsData?.records || []);
-          await Promise.all(vids.map(v => request("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${v.id}/`, { avatar_url: url })));
+          await Promise.all(vids.map(v => request("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${v.id}`, { avatar_url: url })));
           setVideoList(vs => vs.map(v =>
             (v.user_id === currentUser.id || v.created_by === currentUser.id || v.username === (currentUser.username || currentUser.email?.split("@")[0]))
               ? { ...v, avatar_url: url } : v

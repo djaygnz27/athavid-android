@@ -20569,7 +20569,7 @@ function App() {
     const loadAvatar = async () => {
       if (currentUser) {
         try {
-          const usersData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+          const usersData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}`);
           const users = Array.isArray(usersData) ? usersData : usersData.items || [];
           const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
           if (match && match.avatar_url && !match.avatar_url.startsWith("data:")) {
@@ -22060,17 +22060,17 @@ function App() {
         const suList = Array.isArray(suData) ? suData : (suData == null ? void 0 : suData.items) || (suData == null ? void 0 : suData.records) || [];
         const suMatch = suList.find((u2) => u2.email === currentUser.email || u2.id === currentUser.id);
         if (suMatch) {
-          await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser/${suMatch.id}/`, { avatar_url: url });
+          await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser/${suMatch.id}`, { avatar_url: url });
         }
       } catch (e) {
         console.warn("SachiUser avatar update failed:", e);
       }
       try {
-        const usersData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/?email=${encodeURIComponent(currentUser.email)}`);
+        const usersData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser?email=${encodeURIComponent(currentUser.email)}`);
         const users = Array.isArray(usersData) ? usersData : (usersData == null ? void 0 : usersData.items) || (usersData == null ? void 0 : usersData.records) || [];
         const match = users.find((u2) => u2.email === currentUser.email || u2.user_id === currentUser.id);
         if (match) {
-          await request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}/`, { avatar_url: url });
+          await request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/AthaVidUser/${match.id}`, { avatar_url: url });
         }
       } catch (e) {
         console.warn("AthaVidUser avatar update failed:", e);
@@ -22081,9 +22081,9 @@ function App() {
         console.warn("Auth avatar update failed (ok for Google users):", e);
       }
       try {
-        const vidsData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
+        const vidsData = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo?username=${encodeURIComponent(currentUser.username || ((_a2 = currentUser.email) == null ? void 0 : _a2.split("@")[0]))}&limit=200`);
         const vids = Array.isArray(vidsData) ? vidsData : (vidsData == null ? void 0 : vidsData.items) || (vidsData == null ? void 0 : vidsData.records) || [];
-        await Promise.all(vids.map((v2) => request$1("PATCH", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${v2.id}/`, { avatar_url: url })));
+        await Promise.all(vids.map((v2) => request$1("PUT", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiVideo/${v2.id}`, { avatar_url: url })));
         setVideoList((vs) => vs.map(
           (v2) => {
             var _a3;
