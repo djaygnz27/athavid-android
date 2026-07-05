@@ -15,6 +15,7 @@ function AdminPanel({ currentUser }) {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [analyticsError, setAnalyticsError] = useState(null);
   const [saving, setSaving] = useState(null);
+  const [previewVideo, setPreviewVideo] = useState(null); // video record being previewed in modal
   const [filter, setFilter] = useState("all"); // all | mature | clean
   const [search, setSearch] = useState("");
 
@@ -729,13 +730,17 @@ function AdminPanel({ currentUser }) {
           {filtered.map(video => (
             <div key={video.id} style={{ background:"rgba(255,255,255,0.04)", borderRadius:16, border:`1px solid ${video.is_mature ? "rgba(255,107,107,0.3)" : "rgba(255,255,255,0.07)"}`, overflow:"hidden" }}>
               <div style={{ display:"flex", gap:12, padding:"12px 14px" }}>
-                {/* Thumbnail */}
-                <div style={{ width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e" }}>
+                {/* Thumbnail — tap to preview/play the video */}
+                <div onClick={() => setPreviewVideo(video)}
+                  style={{ position:"relative", width:64, height:80, borderRadius:10, overflow:"hidden", flexShrink:0, background:"#1a1a2e", cursor:"pointer" }}>
                   {video.thumbnail_url ? (
                     <img src={video.thumbnail_url} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   ) : (
                     <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", color:"#444", fontSize:24 }}>🎬</div>
                   )}
+                  <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.25)" }}>
+                    <div style={{ width:22, height:22, borderRadius:"50%", background:"rgba(0,0,0,0.55)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, color:"#fff" }}>▶</div>
+                  </div>
                 </div>
                 {/* Info */}
                 <div style={{ flex:1, minWidth:0 }}>
@@ -978,6 +983,33 @@ function AdminPanel({ currentUser }) {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Video preview modal — tap thumbnail to watch */}
+      {previewVideo && (
+        <div onClick={() => setPreviewVideo(null)}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.9)", zIndex:9999, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:420, display:"flex", flexDirection:"column", alignItems:"center" }}>
+            <div style={{ width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+              <div style={{ color:"#fff", fontSize:13, fontWeight:700 }}>@{previewVideo.username || "unknown"}</div>
+              <button onClick={() => setPreviewVideo(null)}
+                style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:20, width:32, height:32, color:"#fff", fontSize:16, cursor:"pointer" }}>✕</button>
+            </div>
+            {(() => {
+              const src = previewVideo.media_url || resolveMediaUrl(previewVideo.video_url);
+              const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(src || "");
+              return isImg ? (
+                <img src={src} style={{ width:"100%", maxHeight:"70vh", borderRadius:12, objectFit:"contain", background:"#000" }} />
+              ) : (
+                <video src={src} controls autoPlay playsInline
+                  style={{ width:"100%", maxHeight:"70vh", borderRadius:12, background:"#000" }} />
+              );
+            })()}
+            {previewVideo.caption && (
+              <div style={{ color:"#ccc", fontSize:13, marginTop:10, textAlign:"center" }}>{previewVideo.caption}</div>
+            )}
+          </div>
         </div>
       )}
 

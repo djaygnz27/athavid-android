@@ -16728,6 +16728,7 @@ function AdminPanel({ currentUser }) {
   const [analyticsData, setAnalyticsData] = reactExports.useState(null);
   const [analyticsError, setAnalyticsError] = reactExports.useState(null);
   const [saving, setSaving] = reactExports.useState(null);
+  const [previewVideo, setPreviewVideo] = reactExports.useState(null);
   const [filter, setFilter] = reactExports.useState("all");
   const [search, setSearch] = reactExports.useState("");
   const loadVideos = async () => {
@@ -17419,7 +17420,17 @@ function AdminPanel({ currentUser }) {
       ] }, label)) }),
       loading ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "Loading videos…" }) : filtered.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { textAlign: "center", color: "#555", padding: 40 }, children: "No videos match this filter." }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }, children: filtered.map((video) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, border: `1px solid ${video.is_mature ? "rgba(255,107,107,0.3)" : "rgba(255,255,255,0.07)"}`, overflow: "hidden" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 12, padding: "12px 14px" }, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 64, height: 80, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#1a1a2e" }, children: video.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: video.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontSize: 24 }, children: "🎬" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              onClick: () => setPreviewVideo(video),
+              style: { position: "relative", width: 64, height: 80, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#1a1a2e", cursor: "pointer" },
+              children: [
+                video.thumbnail_url ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: video.thumbnail_url, style: { width: "100%", height: "100%", objectFit: "cover" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontSize: 24 }, children: "🎬" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.25)" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff" }, children: "▶" }) })
+              ]
+            }
+          ),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#aaa", fontSize: 11, marginBottom: 3 }, children: [
               "@",
@@ -17680,7 +17691,45 @@ function AdminPanel({ currentUser }) {
           ] })
         ] })
       ] })
-    ] })
+    ] }),
+    previewVideo && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "div",
+      {
+        onClick: () => setPreviewVideo(null),
+        style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 },
+        children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { onClick: (e) => e.stopPropagation(), style: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { color: "#fff", fontSize: 13, fontWeight: 700 }, children: [
+              "@",
+              previewVideo.username || "unknown"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => setPreviewVideo(null),
+                style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 20, width: 32, height: 32, color: "#fff", fontSize: 16, cursor: "pointer" },
+                children: "✕"
+              }
+            )
+          ] }),
+          (() => {
+            const src = previewVideo.media_url || resolveMediaUrl(previewVideo.video_url);
+            const isImg = /\.(png|jpe?g|gif|webp|bmp|heic)(\?|$)/i.test(src || "");
+            return isImg ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src, style: { width: "100%", maxHeight: "70vh", borderRadius: 12, objectFit: "contain", background: "#000" } }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "video",
+              {
+                src,
+                controls: true,
+                autoPlay: true,
+                playsInline: true,
+                style: { width: "100%", maxHeight: "70vh", borderRadius: 12, background: "#000" }
+              }
+            );
+          })(),
+          previewVideo.caption && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#ccc", fontSize: 13, marginTop: 10, textAlign: "center" }, children: previewVideo.caption })
+        ] })
+      }
+    )
   ] });
 }
 function ModNavButton({ activeTab, setActiveTab }) {
