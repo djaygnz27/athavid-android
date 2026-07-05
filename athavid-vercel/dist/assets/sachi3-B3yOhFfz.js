@@ -16573,19 +16573,14 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
       const liveFollowing = ((followingRes == null ? void 0 : followingRes.items) || followingRes || []).length;
       const sachiUsers = (sachiRes == null ? void 0 : sachiRes.items) || sachiRes || [];
       const sachiUser = sachiUsers.find((x2) => x2.id === userId || x2.username === username) || null;
-      setProfile(u2 ? {
-        ...u2,
+      setProfile({
+        ...u2 || {},
+        ...sachiUser || {},
         followers_count: liveFollowers,
         following_count: liveFollowing,
         badge: (sachiUser == null ? void 0 : sachiUser.badge) || null,
         is_verified: (sachiUser == null ? void 0 : sachiUser.is_verified) || false,
         created_date: (sachiUser == null ? void 0 : sachiUser.created_date) || (u2 == null ? void 0 : u2.created_date)
-      } : {
-        followers_count: liveFollowers,
-        following_count: liveFollowing,
-        badge: (sachiUser == null ? void 0 : sachiUser.badge) || null,
-        is_verified: (sachiUser == null ? void 0 : sachiUser.is_verified) || false,
-        created_date: sachiUser == null ? void 0 : sachiUser.created_date
       });
       const vidList = Array.isArray(vids) ? vids : (vids == null ? void 0 : vids.items) || [];
       setUserVideos(vidList);

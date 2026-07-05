@@ -353,19 +353,18 @@ function UserProfileSheet({ userId, username, currentUser, onClose, backLabel = 
       const sachiUsers = sachiRes?.items || sachiRes || [];
       const sachiUser = sachiUsers.find(x => x.id === userId || x.username === username) || null;
 
-      setProfile(u ? {
-        ...u,
+      // ⛔ FIX (2026-07-05): SachiUser is the real, authoritative user table.
+      // AthaVidUser is legacy/empty — it must never be allowed to blank out
+      // avatar_url, display_name, bio, etc. Merge order: AthaVidUser (legacy
+      // fallback) < SachiUser (authoritative) so real profile data always wins.
+      setProfile({
+        ...(u || {}),
+        ...(sachiUser || {}),
         followers_count: liveFollowers,
         following_count: liveFollowing,
         badge: sachiUser?.badge || null,
         is_verified: sachiUser?.is_verified || false,
         created_date: sachiUser?.created_date || u?.created_date,
-      } : {
-        followers_count: liveFollowers,
-        following_count: liveFollowing,
-        badge: sachiUser?.badge || null,
-        is_verified: sachiUser?.is_verified || false,
-        created_date: sachiUser?.created_date,
       });
       const vidList = Array.isArray(vids) ? vids : (vids?.items || []);
       setUserVideos(vidList);
