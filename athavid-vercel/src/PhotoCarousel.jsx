@@ -135,8 +135,29 @@ export default function PhotoCarousel({
         touchAction: isMulti ? "none" : "pan-y",
       }}
     >
-      {/* ── PHOTO IMAGE ── */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto" }}>
+      {/* ⛔ LOCKED — PHOTO FIT (contain, not cover) START
+          Photos must NEVER be cropped/zoomed to fill the frame. Non-matching
+          aspect ratios (panoramas, screenshots, landscape shots) get a
+          blurred cover backdrop + a fully-visible contain foreground —
+          same pattern Instagram/Snapchat use. objectFit:"cover" here was
+          reverted back in by a repo restore on 2026-06-25 (main-branch sync
+          wiped a May 20 fix) — do NOT let that happen again. */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto", background: "#000" }}>
+        {/* Blurred backdrop fill — avoids ugly black bars on mismatched aspect ratios */}
+        <img
+          src={resolveMediaUrl(photoUrls[photoIdx])}
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: "absolute", inset: 0,
+            width: "100%", height: "100%",
+            objectFit: "cover", objectPosition: "center",
+            filter: "blur(24px) saturate(1.3) brightness(0.55)",
+            transform: "scale(1.15)",
+            display: "block", pointerEvents: "none",
+          }}
+        />
+        {/* Foreground — always fully visible, never cropped */}
         <img
           src={resolveMediaUrl(photoUrls[photoIdx])}
           alt=""
@@ -154,13 +175,15 @@ export default function PhotoCarousel({
             delete e.target.dataset.retried;
           }}
           style={{
+            position: "relative",
             width: "100%", height: "100%",
-            objectFit: "cover", objectPosition: "center top",
+            objectFit: "contain", objectPosition: "center",
             display: "block", userSelect: "none",
             WebkitUserSelect: "none", pointerEvents: "none",
             opacity: 1, transition: "opacity 0.3s",
           }}
         />
+        {/* ⛔ LOCKED — PHOTO FIT (contain, not cover) END */}
 
         {/* ── LEFT ARROW ── */}
         {isMulti && canGoPrev && (

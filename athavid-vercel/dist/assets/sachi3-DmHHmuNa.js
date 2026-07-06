@@ -12033,7 +12033,27 @@ function PhotoCarousel({
         touchAction: isMulti ? "none" : "pan-y"
       },
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto", background: "#000" }, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: resolveMediaUrl2(photoUrls[photoIdx]),
+              alt: "",
+              "aria-hidden": "true",
+              style: {
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center",
+                filter: "blur(24px) saturate(1.3) brightness(0.55)",
+                transform: "scale(1.15)",
+                display: "block",
+                pointerEvents: "none"
+              }
+            }
+          ),
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "img",
             {
@@ -12053,10 +12073,11 @@ function PhotoCarousel({
                 delete e.target.dataset.retried;
               },
               style: {
+                position: "relative",
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
-                objectPosition: "center top",
+                objectFit: "contain",
+                objectPosition: "center",
                 display: "block",
                 userSelect: "none",
                 WebkitUserSelect: "none",
