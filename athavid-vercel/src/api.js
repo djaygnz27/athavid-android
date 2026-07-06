@@ -314,8 +314,25 @@ async function r2UploadPart(url, chunk, attempt = 1) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
-    xhr.timeout = 60000;
+    xhr.timeout = 120000; // 120s (up from 60s — weak cellular needs more time, 2026-07-05)
+
+    // Stall detection: if no upload progress for 30s, abort and let retry kick in
+    let lastProgressTs = Date.now();
+    let stallTimer = setInterval(() => {
+      if (Date.now() - lastProgressTs > 30000) {
+        xhr.abort();
+        clearInterval(stallTimer);
+      }
+    }, 5000);
+
+    if (xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        lastProgressTs = Date.now();
+      };
+    }
+
     xhr.onload = () => {
+      clearInterval(stallTimer);
       if (xhr.status < 300) {
         const etag = xhr.getResponseHeader("ETag");
         if (!etag) return reject(new Error(`Part upload succeeded but no ETag header (status ${xhr.status})`));
@@ -323,8 +340,9 @@ async function r2UploadPart(url, chunk, attempt = 1) {
       }
       reject(new Error(`Part upload rejected: HTTP ${xhr.status} ${xhr.responseText ? xhr.responseText.slice(0,200) : ""}`));
     };
-    xhr.onerror   = () => reject(new Error(`Part upload network error (attempt ${attempt})`));
-    xhr.ontimeout = () => reject(new Error(`Part upload timed out (attempt ${attempt})`));
+    xhr.onerror   = () => { clearInterval(stallTimer); reject(new Error(`Part upload network error (attempt ${attempt})`)); };
+    xhr.ontimeout = () => { clearInterval(stallTimer); reject(new Error(`Part upload timed out (attempt ${attempt})`)); };
+    xhr.onabort   = () => { clearInterval(stallTimer); reject(new Error(`Part upload stalled — no progress for 30s (attempt ${attempt})`)); };
     xhr.send(chunk);
   });
 }
@@ -361,7 +379,9 @@ async function r2MultipartUpload(file, creds, onProgress) {
     // connection. Server-side tests against the same endpoint never fail,
     // so this is transient on the client's network path -- more attempts
     // with real backoff gives an intermittent reset a chance to clear.
-    const MAX_ATTEMPTS = 6;
+    // Bumped from 6->10 attempts with exponential backoff + jitter (2026-07-05)
+    // to handle persistent cellular instability (James from Texas on weak signal).
+    const MAX_ATTEMPTS = 10;
     let etag = null, lastErr = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
@@ -369,10 +389,14 @@ async function r2MultipartUpload(file, creds, onProgress) {
         break;
       } catch (e) {
         lastErr = e;
-        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 1000 * attempt));
+        if (attempt < MAX_ATTEMPTS) {
+          // Exponential backoff with jitter: 2^attempt seconds, capped at 15s, +0-1s random
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 15000) + Math.random() * 1000;
+          await new Promise(r => setTimeout(r, delay));
+        }
       }
     }
-    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after ${MAX_ATTEMPTS} attempts: ${lastErr?.message}`);
+    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after ${MAX_ATTEMPTS} attempts: ${lastErr?.message}. Try switching to wifi or finding a stronger signal.`);
 
     parts.push({ part_number: partNumber, etag });
     uploadedBytes += (end - start);

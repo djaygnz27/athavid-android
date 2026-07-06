@@ -11,7 +11,7 @@ const R2_BUCKET     = "sachi-media";
 const R2_PUBLIC_URL = "https://media.sachistream.com";
 const { signedRequest } = require("./_r2sign.js");
 
-const PART_SIZE           = 8 * 1024 * 1024; // 8MB per part
+const PART_SIZE           = 5 * 1024 * 1024; // 5MB per part (reduced from 8MB for weak cellular resilience, 2026-07-05)
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "https://sachistream.com");
