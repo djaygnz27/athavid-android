@@ -7679,8 +7679,21 @@ async function r2UploadPart(url, chunk, attempt = 1) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
-    xhr.timeout = 6e4;
+    xhr.timeout = 12e4;
+    let lastProgressTs = Date.now();
+    let stallTimer = setInterval(() => {
+      if (Date.now() - lastProgressTs > 3e4) {
+        xhr.abort();
+        clearInterval(stallTimer);
+      }
+    }, 5e3);
+    if (xhr.upload) {
+      xhr.upload.onprogress = (e) => {
+        lastProgressTs = Date.now();
+      };
+    }
     xhr.onload = () => {
+      clearInterval(stallTimer);
       if (xhr.status < 300) {
         const etag = xhr.getResponseHeader("ETag");
         if (!etag) return reject(new Error(`Part upload succeeded but no ETag header (status ${xhr.status})`));
@@ -7688,8 +7701,18 @@ async function r2UploadPart(url, chunk, attempt = 1) {
       }
       reject(new Error(`Part upload rejected: HTTP ${xhr.status} ${xhr.responseText ? xhr.responseText.slice(0, 200) : ""}`));
     };
-    xhr.onerror = () => reject(new Error(`Part upload network error (attempt ${attempt})`));
-    xhr.ontimeout = () => reject(new Error(`Part upload timed out (attempt ${attempt})`));
+    xhr.onerror = () => {
+      clearInterval(stallTimer);
+      reject(new Error(`Part upload network error (attempt ${attempt})`));
+    };
+    xhr.ontimeout = () => {
+      clearInterval(stallTimer);
+      reject(new Error(`Part upload timed out (attempt ${attempt})`));
+    };
+    xhr.onabort = () => {
+      clearInterval(stallTimer);
+      reject(new Error(`Part upload stalled — no progress for 30s (attempt ${attempt})`));
+    };
     xhr.send(chunk);
   });
 }
@@ -7713,7 +7736,7 @@ async function r2MultipartUpload(file, creds, onProgress) {
       throw new Error(err.error || `Failed to get part ${partNumber} URL (${urlRes.status})`);
     }
     const { url } = await urlRes.json();
-    const MAX_ATTEMPTS = 6;
+    const MAX_ATTEMPTS = 10;
     let etag = null, lastErr = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
@@ -7721,10 +7744,13 @@ async function r2MultipartUpload(file, creds, onProgress) {
         break;
       } catch (e) {
         lastErr = e;
-        if (attempt < MAX_ATTEMPTS) await new Promise((r2) => setTimeout(r2, 1e3 * attempt));
+        if (attempt < MAX_ATTEMPTS) {
+          const delay = Math.min(1e3 * Math.pow(2, attempt - 1), 15e3) + Math.random() * 1e3;
+          await new Promise((r2) => setTimeout(r2, delay));
+        }
       }
     }
-    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after ${MAX_ATTEMPTS} attempts: ${lastErr == null ? void 0 : lastErr.message}`);
+    if (!etag) throw new Error(`Part ${partNumber}/${totalParts} failed after ${MAX_ATTEMPTS} attempts: ${lastErr == null ? void 0 : lastErr.message}. Try switching to wifi or finding a stronger signal.`);
     parts.push({ part_number: partNumber, etag });
     uploadedBytes += end - start;
     if (onProgress) onProgress(Math.round(uploadedBytes / file.size * 100));
@@ -20543,6 +20569,23 @@ function App() {
       }
     })();
   }, [currentUser == null ? void 0 : currentUser.id]);
+  reactExports.useEffect(() => {
+    if (!(currentUser == null ? void 0 : currentUser.email)) return;
+    const fetchFC = async () => {
+      try {
+        const data = await request$1("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`);
+        const items = Array.isArray(data) ? data : (data == null ? void 0 : data.items) || (data == null ? void 0 : data.records) || [];
+        const canonical = items.find((u2) => u2.email === currentUser.email);
+        if (canonical && canonical.is_founding_creator !== void 0) {
+          if (currentUser.is_founding_creator !== canonical.is_founding_creator) {
+            setCurrentUser((prev) => ({ ...prev, is_founding_creator: canonical.is_founding_creator }));
+          }
+        }
+      } catch {
+      }
+    };
+    fetchFC();
+  }, [currentUser == null ? void 0 : currentUser.email]);
   const isAdmin = (currentUser == null ? void 0 : currentUser.email) === "jaygnz27@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "lasanjaya@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "shakeebjasim.mail@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "helloshakeeb.mail@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "hasini.thisaravi@gmail.com" || (currentUser == null ? void 0 : currentUser.email) === "henderson.keith2@gmail.com";
   const [videoList, setVideoList] = reactExports.useState([]);
   const feedContainerRef = reactExports.useRef(null);
@@ -21513,7 +21556,20 @@ function App() {
             /* @__PURE__ */ jsxRuntimeExports.jsx(VideoManageGrid, { videos: myVideos, currentUser, onRefresh: () => videos.myVideos(currentUser.id, currentUser.email).then((r2) => setMyVideos(Array.isArray(r2) ? r2 : [])).catch(() => {
             }) })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 20px 8px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          (currentUser == null ? void 0 : currentUser.is_founding_creator) ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 20px 8px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            width: "100%",
+            padding: "15px 0",
+            background: "linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+            border: "1.5px solid rgba(245,200,66,0.4)",
+            borderRadius: 14,
+            color: "#F5C842",
+            fontWeight: 700,
+            fontSize: 15,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8
+          }, children: "✅ Founding Creator" }) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { padding: "12px 20px 8px" }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
               onClick: () => window.location.href = "/founding-creator",

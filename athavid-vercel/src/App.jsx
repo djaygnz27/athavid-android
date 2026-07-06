@@ -220,6 +220,25 @@ function App() {
   }, [currentUser?.id]);
   // ⛔ LOCKED — USER ID NORMALIZER END
 
+
+  // ── Fetch is_founding_creator flag from SachiUser (separate from locked normalizer) ──
+  useEffect(() => {
+    if (!currentUser?.email) return;
+    const fetchFC = async () => {
+      try {
+        const data = await request("GET", `/apps/69e79122bcc8fb5a04cfb834/entities/SachiUser?email=${encodeURIComponent(currentUser.email)}&limit=2`);
+        const items = Array.isArray(data) ? data : (data?.items || data?.records || []);
+        const canonical = items.find(u => u.email === currentUser.email);
+        if (canonical && canonical.is_founding_creator !== undefined) {
+          if (currentUser.is_founding_creator !== canonical.is_founding_creator) {
+            setCurrentUser(prev => ({ ...prev, is_founding_creator: canonical.is_founding_creator }));
+          }
+        }
+      } catch { /* silent */ }
+    };
+    fetchFC();
+  }, [currentUser?.email]);
+
   const isAdmin = currentUser?.email === "jaygnz27@gmail.com" || currentUser?.email === "lasanjaya@gmail.com" || currentUser?.email === "shakeebjasim.mail@gmail.com" || currentUser?.email === "helloshakeeb.mail@gmail.com" || currentUser?.email === "hasini.thisaravi@gmail.com" || currentUser?.email === "henderson.keith2@gmail.com";
   const [videoList, setVideoList] = useState([]);
   const feedContainerRef = useRef(null);
@@ -1103,15 +1122,25 @@ function App() {
                     <VideoManageGrid videos={myVideos} currentUser={currentUser} onRefresh={() => videos.myVideos(currentUser.id, currentUser.email).then(r => setMyVideos(Array.isArray(r)?r:[])).catch(()=>{})} />
                   </div>
 
-                  {/* Founding Creator CTA */}
-                  <div style={{ padding:"12px 20px 8px" }}>
-                    <button onClick={() => window.location.href='/founding-creator'}
-                      style={{ width:"100%", padding:"15px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
-                        border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:14, color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer",
+                  {/* Founding Creator CTA — hidden if already a FC */}
+                  {currentUser?.is_founding_creator ? (
+                    <div style={{ padding:"12px 20px 8px" }}>
+                      <div style={{ width:"100%", padding:"15px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                        border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:14, color:"#F5C842", fontWeight:700, fontSize:15,
                         display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      🌸 Apply to be a Founding Creator
-                    </button>
-                  </div>
+                        ✅ Founding Creator
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding:"12px 20px 8px" }}>
+                      <button onClick={() => window.location.href='/founding-creator'}
+                        style={{ width:"100%", padding:"15px 0", background:"linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.08))",
+                          border:"1.5px solid rgba(245,200,66,0.4)", borderRadius:14, color:"#F5C842", fontWeight:700, fontSize:15, cursor:"pointer",
+                          display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                        🌸 Apply to be a Founding Creator
+                      </button>
+                    </div>
+                  )}
 
                   {/* Log Out */}
                   <div style={{ padding:"8px 20px 40px" }}>
