@@ -20788,11 +20788,17 @@ function App() {
       const raw = normalized.filter((v2) => {
         if (v2.is_archived) return false;
         if (v2.username === "__deleted__") return false;
-        if (!v2.video_url && !v2.media_url) return false;
+        const hasPhoto = Array.isArray(v2.photo_urls) && v2.photo_urls.length > 0;
+        if (!v2.video_url && !v2.media_url && !hasPhoto) return false;
+        const isPhoto = v2.media_type === "photo" || hasPhoto;
+        if (isPhoto) return true;
         const thumb = v2.thumbnail_url || "";
         const vid = v2.video_url || "";
-        if (thumb.includes("media.sachistream.com/uploads/")) return false;
-        if (vid.includes("media.sachistream.com/uploads/") && !vid.endsWith(".mp4") && !vid.endsWith(".mov") && !vid.endsWith(".webm")) return false;
+        const mediaUrl = v2.media_url || "";
+        const isValIdVid = vid.endsWith(".mp4") || vid.endsWith(".mov") || vid.endsWith(".webm") || vid.endsWith(".m3u8") || vid.includes("cloudflarestream.com");
+        const isValidMedia = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".mov") || mediaUrl.endsWith(".webm") || mediaUrl.endsWith(".m3u8");
+        if (vid.includes("media.sachistream.com/uploads/") && !isValIdVid) return false;
+        if (mediaUrl.includes("media.sachistream.com/uploads/") && !isValidMedia) return false;
         if (thumb.includes("test.com") || thumb.includes("test.example")) return false;
         return true;
       });

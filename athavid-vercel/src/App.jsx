@@ -468,13 +468,22 @@ function App() {
         if (v.is_archived) return false;
         // Strip soft-deleted records
         if (v.username === "__deleted__") return false;
-        // Strip posts with no video URL
-        if (!v.video_url && !v.media_url) return false;
-        // Strip posts with broken legacy upload URLs (old Node server — no longer exists)
+        // Strip posts with no playable content at all
+        const hasPhoto = Array.isArray(v.photo_urls) && v.photo_urls.length > 0;
+        if (!v.video_url && !v.media_url && !hasPhoto) return false;
+        // Photo posts (media_type=photo or has photo_urls) are always valid
+        const isPhoto = v.media_type === "photo" || hasPhoto;
+        if (isPhoto) return true;
+        // For video posts, strip broken legacy URLs
         const thumb = v.thumbnail_url || "";
         const vid = v.video_url || "";
-        if (thumb.includes("media.sachistream.com/uploads/")) return false;
-        if (vid.includes("media.sachistream.com/uploads/") && !vid.endsWith(".mp4") && !vid.endsWith(".mov") && !vid.endsWith(".webm")) return false;
+        const mediaUrl = v.media_url || "";
+        // Allow valid video extensions and HLS manifests
+        const isValIdVid = vid.endsWith(".mp4") || vid.endsWith(".mov") || vid.endsWith(".webm") || vid.endsWith(".m3u8") || vid.includes("cloudflarestream.com");
+        const isValidMedia = mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".mov") || mediaUrl.endsWith(".webm") || mediaUrl.endsWith(".m3u8");
+        // Strip R2 URLs that aren't video files (but allow .mp4 etc)
+        if (vid.includes("media.sachistream.com/uploads/") && !isValIdVid) return false;
+        if (mediaUrl.includes("media.sachistream.com/uploads/") && !isValidMedia) return false;
         // Strip test/junk URLs
         if (thumb.includes("test.com") || thumb.includes("test.example")) return false;
         return true;
