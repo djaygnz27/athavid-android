@@ -11,6 +11,12 @@
 
 // Sachi v2.2.0 - photo fallback fix, version auto-reload
 import React, { useState, useEffect, useRef, useMemo } from "react";
+// ⛔ FIXED 2026-07-07 — APP_ID was referenced at 2 call sites (bulk-liked lookup +
+// avatar/badge enrichment) but never defined/imported in this file. Every feed
+// load silently threw "APP_ID is not defined" inside a try/catch, which meant
+// enrichWithBadges() always fell through to raw video.avatar_url (often null),
+// showing everyone's fallback initials avatar instead of their real profile pic.
+const APP_ID = "69e79122bcc8fb5a04cfb834";
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes, messages, notifications } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";

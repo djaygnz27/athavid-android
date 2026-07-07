@@ -20753,6 +20753,7 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
     ] })
   ] });
 }
+const APP_ID$1 = "69e79122bcc8fb5a04cfb834";
 const APP_VERSION = "2.2.0";
 (function checkVersion() {
   const stored = localStorage.getItem("sachi_app_version");
@@ -21127,7 +21128,7 @@ function App() {
       const tagWithLiked = async (videos2) => {
         if (!(user == null ? void 0 : user.id)) return videos2;
         try {
-          const res = await request$1("GET", `/apps/${APP_ID}/entities/SachiLike?user_id=${user.id}&limit=500`);
+          const res = await request$1("GET", `/apps/${APP_ID$1}/entities/SachiLike?user_id=${user.id}&limit=500`);
           const likeRecords = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
           const likedSet = new Set(likeRecords.map((r2) => r2.video_id));
           return videos2.map((v2) => likedSet.has(v2.id) ? { ...v2, _likedByMe: true } : v2);
@@ -21139,7 +21140,7 @@ function App() {
         try {
           const userIds = [...new Set(videos2.map((v2) => v2.user_id || v2.created_by).filter(Boolean))];
           if (!userIds.length) return videos2;
-          const res = await request$1("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`);
+          const res = await request$1("GET", `/apps/${APP_ID$1}/entities/SachiUser?limit=200`);
           const users = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
           const byId = {};
           const byUsername = {};
@@ -22571,8 +22572,8 @@ function App() {
   ] });
 }
 const API = "https://app.base44.com/api";
-const APP_ID$1 = "69e79122bcc8fb5a04cfb834";
-const APP_BASE = `/apps/${APP_ID$1}`;
+const APP_ID = "69e79122bcc8fb5a04cfb834";
+const APP_BASE = `/apps/${APP_ID}`;
 const SACHI_FN = "https://app.base44.com/api/apps/69e79122bcc8fb5a04cfb834/functions";
 const COVER_COLORS = [
   { bg: "linear-gradient(135deg,#1a0a2e,#6c3cf7)", emoji: "🎙️" },
