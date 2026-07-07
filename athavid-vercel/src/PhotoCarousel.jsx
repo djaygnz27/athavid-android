@@ -6,6 +6,7 @@
 // ║    • tap to toggle UI                                       ║
 // ║    • counter badge (fades during swipe)                     ║
 // ║    • sound overlay for photo posts with sound_url           ║
+// ║    • pinch-to-zoom + pan (added 2026-07-07) — see marker    ║
 // ╚══════════════════════════════════════════════════════════════╝
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -39,6 +40,140 @@ export default function PhotoCarousel({
   useEffect(() => { photoIdxRef.current = photoIdx; }, [photoIdx]);
   useEffect(() => { showUIRef.current = showUI; }, [showUI]);
 
+  // ── PINCH-TO-ZOOM (additive — does not touch the locked photo-fit block) ──
+  const zoomRef       = useRef(null); // ref to the same wrapping div that holds both photo <img>s
+  const [isZoomed, setIsZoomed] = useState(false);
+  const isZoomedRef   = useRef(false);
+  useEffect(() => { isZoomedRef.current = isZoomed; }, [isZoomed]);
+  const zoomStateRef  = useRef({ scale: 1, tx: 0, ty: 0 }); // current transform, persists between gestures
+  const pinchRef      = useRef(null); // { active, dist0, scale0, tx0, ty0, midX, midY, rectW, rectH }
+  const panRef        = useRef(null); // { startX, startY, tx0, ty0 }
+  const lastTapRef    = useRef(0);
+
+  const applyTransform = useCallback(() => {
+    const el = zoomRef.current;
+    if (!el) return;
+    const { scale, tx, ty } = zoomStateRef.current;
+    el.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    el.style.transformOrigin = "0 0";
+  }, []);
+
+  const clampPan = useCallback((tx, ty, scale, rectW, rectH) => {
+    // Don't let the image pan so far that empty space shows past its edges
+    const overflowX = Math.max(0, rectW * scale - rectW);
+    const overflowY = Math.max(0, rectH * scale - rectH);
+    return {
+      tx: Math.min(0, Math.max(tx, -overflowX)),
+      ty: Math.min(0, Math.max(ty, -overflowY)),
+    };
+  }, []);
+
+  const resetZoom = useCallback((animated = true) => {
+    const el = zoomRef.current;
+    if (el) el.style.transition = animated ? "transform 0.25s ease" : "none";
+    zoomStateRef.current = { scale: 1, tx: 0, ty: 0 };
+    applyTransform();
+    setIsZoomed(false);
+    if (animated && el) {
+      setTimeout(() => { if (el) el.style.transition = "none"; }, 260);
+    }
+  }, [applyTransform]);
+
+  // Reset zoom whenever the visible photo changes
+  useEffect(() => { resetZoom(false); }, [photoIdx, resetZoom]);
+
+  useEffect(() => {
+    const el = zoomRef.current;
+    if (!el) return;
+
+    const dist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+    const onStart = (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        const [t1, t2] = e.touches;
+        pinchRef.current = {
+          dist0: dist(t1, t2),
+          scale0: zoomStateRef.current.scale,
+          tx0: zoomStateRef.current.tx,
+          ty0: zoomStateRef.current.ty,
+          midX: (t1.clientX + t2.clientX) / 2 - rect.left,
+          midY: (t1.clientY + t2.clientY) / 2 - rect.top,
+          rectW: rect.width / zoomStateRef.current.scale,
+          rectH: rect.height / zoomStateRef.current.scale,
+        };
+        panRef.current = null;
+      } else if (e.touches.length === 1 && isZoomedRef.current) {
+        panRef.current = {
+          startX: e.touches[0].clientX,
+          startY: e.touches[0].clientY,
+          tx0: zoomStateRef.current.tx,
+          ty0: zoomStateRef.current.ty,
+        };
+      }
+    };
+
+    const onMove = (e) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { dist0, scale0, tx0, ty0, midX, midY, rectW, rectH } = pinchRef.current;
+        const [t1, t2] = e.touches;
+        const newDist = dist(t1, t2);
+        let scale = scale0 * (newDist / dist0);
+        scale = Math.min(4, Math.max(1, scale));
+        let tx = midX - (scale / scale0) * (midX - tx0);
+        let ty = midY - (scale / scale0) * (midY - ty0);
+        const clamped = clampPan(tx, ty, scale, rectW, rectH);
+        zoomStateRef.current = { scale, tx: clamped.tx, ty: clamped.ty };
+        applyTransform();
+      } else if (e.touches.length === 1 && panRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { startX, startY, tx0, ty0 } = panRef.current;
+        const rect = el.getBoundingClientRect();
+        const rectW = rect.width / zoomStateRef.current.scale;
+        const rectH = rect.height / zoomStateRef.current.scale;
+        const tx = tx0 + (e.touches[0].clientX - startX);
+        const ty = ty0 + (e.touches[0].clientY - startY);
+        const clamped = clampPan(tx, ty, zoomStateRef.current.scale, rectW, rectH);
+        zoomStateRef.current = { ...zoomStateRef.current, tx: clamped.tx, ty: clamped.ty };
+        applyTransform();
+      }
+    };
+
+    const onEnd = (e) => {
+      if (e.touches.length === 0) {
+        pinchRef.current = null;
+        panRef.current = null;
+        if (zoomStateRef.current.scale <= 1.05) {
+          resetZoom(true);
+        } else {
+          setIsZoomed(true);
+        }
+      } else if (e.touches.length === 1) {
+        // Lifted one finger out of a pinch — switch to single-finger pan
+        pinchRef.current = null;
+        panRef.current = {
+          startX: e.touches[0].clientX,
+          startY: e.touches[0].clientY,
+          tx0: zoomStateRef.current.tx,
+          ty0: zoomStateRef.current.ty,
+        };
+      }
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: false });
+    el.addEventListener("touchmove",  onMove,  { passive: false });
+    el.addEventListener("touchend",   onEnd,   { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove",  onMove);
+      el.removeEventListener("touchend",   onEnd);
+    };
+  }, [applyTransform, clampPan, resetZoom]);
+
   const goTo = useCallback((idx) => {
     setPhotoIdx(Math.max(0, Math.min(idx, photoUrls.length - 1)));
   }, [photoUrls.length]);
@@ -70,10 +205,12 @@ export default function PhotoCarousel({
     if (!el) return;
 
     const onStart = (e) => {
+      if (e.touches.length > 1 || isZoomedRef.current) return; // let pinch/pan handler own this
       swipeTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
 
     const onMove = (e) => {
+      if (e.touches.length > 1 || isZoomedRef.current) return;
       if (!swipeTouchRef.current || photoUrlsRef.current.length <= 1) return;
       const dx = Math.abs(e.touches[0].clientX - swipeTouchRef.current.x);
       const dy = Math.abs(e.touches[0].clientY - swipeTouchRef.current.y);
@@ -87,6 +224,17 @@ export default function PhotoCarousel({
     };
 
     const onEnd = (e) => {
+      if (isZoomedRef.current) {
+        // Double-tap while zoomed resets back to 1x instead of toggling UI
+        const now = Date.now();
+        if (now - lastTapRef.current < 300) {
+          resetZoom(true);
+          lastTapRef.current = 0;
+        } else {
+          lastTapRef.current = now;
+        }
+        return;
+      }
       setSwiping(false);
       onSwiping && onSwiping(false);
       if (!swipeTouchRef.current) return;
@@ -104,8 +252,25 @@ export default function PhotoCarousel({
         onArrowNav && onArrowNav();
         return;
       }
-      // Tap — toggle UI
+      // Tap — toggle UI, or double-tap-to-zoom-in
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+        const now = Date.now();
+        if (now - lastTapRef.current < 300) {
+          // Double-tap on an unzoomed photo — zoom in 2.5x centered on the container
+          lastTapRef.current = 0;
+          const rect = el.getBoundingClientRect();
+          const scale = 2.5;
+          const tx = rect.width / 2 - (rect.width / 2) * scale;
+          const ty = rect.height / 2 - (rect.height / 2) * scale;
+          const clamped = clampPan(tx, ty, scale, rect.width, rect.height);
+          zoomRef.current.style.transition = "transform 0.25s ease";
+          zoomStateRef.current = { scale, tx: clamped.tx, ty: clamped.ty };
+          applyTransform();
+          setIsZoomed(true);
+          setTimeout(() => { if (zoomRef.current) zoomRef.current.style.transition = "none"; }, 260);
+          return;
+        }
+        lastTapRef.current = now;
         setShowUI(v => !v);
         if (!showUIRef.current) setShowFullCaption(true);
       }
@@ -119,7 +284,7 @@ export default function PhotoCarousel({
       el.removeEventListener("touchmove",  onMove);
       el.removeEventListener("touchend",   onEnd);
     };
-  }, [hideArrowsFor5s, onSwiping, setShowUI, setShowFullCaption]);
+  }, [hideArrowsFor5s, onSwiping, setShowUI, setShowFullCaption, applyTransform, clampPan, resetZoom]);
 
   const canGoPrev = photoIdx > 0;
   const canGoNext = photoIdx < photoUrls.length - 1;
@@ -132,7 +297,7 @@ export default function PhotoCarousel({
         width: "100%", height: "100%",
         position: "relative", overflow: "hidden",
         background: "#000", display: "flex", flexDirection: "column",
-        touchAction: isMulti ? "none" : "pan-y",
+        touchAction: isMulti || isZoomed ? "none" : "pan-y",
       }}
     >
       {/* ⛔ LOCKED — PHOTO FIT (contain, not cover) START
@@ -141,8 +306,11 @@ export default function PhotoCarousel({
           blurred cover backdrop + a fully-visible contain foreground —
           same pattern Instagram/Snapchat use. objectFit:"cover" here was
           reverted back in by a repo restore on 2026-06-25 (main-branch sync
-          wiped a May 20 fix) — do NOT let that happen again. */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto", background: "#000" }}>
+          wiped a May 20 fix) — do NOT let that happen again.
+          NOTE (2026-07-07): the wrapping div below now also carries a
+          pinch-zoom/pan CSS transform (ref=zoomRef). The <img> elements and
+          their objectFit/contain styles inside are completely untouched. */}
+      <div ref={zoomRef} style={{ flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto", background: "#000", willChange: "transform" }}>
         {/* Blurred backdrop fill — avoids ugly black bars on mismatched aspect ratios */}
         <img
           src={resolveMediaUrl(photoUrls[photoIdx])}
@@ -186,7 +354,7 @@ export default function PhotoCarousel({
         {/* ⛔ LOCKED — PHOTO FIT (contain, not cover) END */}
 
         {/* ── LEFT ARROW ── */}
-        {isMulti && canGoPrev && (
+        {isMulti && canGoPrev && !isZoomed && (
           <button
             onTouchStart={e => handleArrow("left", e)}
             onClick={e => handleArrow("left", e)}
@@ -213,7 +381,7 @@ export default function PhotoCarousel({
         )}
 
         {/* ── RIGHT ARROW ── */}
-        {isMulti && canGoNext && (
+        {isMulti && canGoNext && !isZoomed && (
           <button
             onTouchStart={e => handleArrow("right", e)}
             onClick={e => handleArrow("right", e)}
@@ -240,7 +408,7 @@ export default function PhotoCarousel({
         )}
 
         {/* Counter badge */}
-        {isMulti && (
+        {isMulti && !isZoomed && (
           <div style={{
             position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)",
             background: "rgba(0,0,0,0.55)", borderRadius: 20, padding: "3px 10px",
@@ -250,6 +418,19 @@ export default function PhotoCarousel({
             opacity: swiping ? 0 : 1, transition: "opacity 0.2s ease",
           }}>
             {photoIdx + 1} / {photoUrls.length}
+          </div>
+        )}
+
+        {/* Zoom hint badge — shown briefly, fades, only when not zoomed */}
+        {isZoomed && (
+          <div style={{
+            position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)",
+            background: "rgba(0,0,0,0.55)", borderRadius: 20, padding: "4px 12px",
+            fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.8)",
+            zIndex: 100, pointerEvents: "none", letterSpacing: 0.3,
+            backdropFilter: "blur(4px)",
+          }}>
+            Double-tap to reset
           </div>
         )}
       </div>

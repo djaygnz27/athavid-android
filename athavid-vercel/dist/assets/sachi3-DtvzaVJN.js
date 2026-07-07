@@ -12045,6 +12045,131 @@ function PhotoCarousel({
   reactExports.useEffect(() => {
     showUIRef.current = showUI;
   }, [showUI]);
+  const zoomRef = reactExports.useRef(null);
+  const [isZoomed, setIsZoomed] = reactExports.useState(false);
+  const isZoomedRef = reactExports.useRef(false);
+  reactExports.useEffect(() => {
+    isZoomedRef.current = isZoomed;
+  }, [isZoomed]);
+  const zoomStateRef = reactExports.useRef({ scale: 1, tx: 0, ty: 0 });
+  const pinchRef = reactExports.useRef(null);
+  const panRef = reactExports.useRef(null);
+  const lastTapRef = reactExports.useRef(0);
+  const applyTransform = reactExports.useCallback(() => {
+    const el2 = zoomRef.current;
+    if (!el2) return;
+    const { scale, tx, ty } = zoomStateRef.current;
+    el2.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    el2.style.transformOrigin = "0 0";
+  }, []);
+  const clampPan = reactExports.useCallback((tx, ty, scale, rectW, rectH) => {
+    const overflowX = Math.max(0, rectW * scale - rectW);
+    const overflowY = Math.max(0, rectH * scale - rectH);
+    return {
+      tx: Math.min(0, Math.max(tx, -overflowX)),
+      ty: Math.min(0, Math.max(ty, -overflowY))
+    };
+  }, []);
+  const resetZoom = reactExports.useCallback((animated = true) => {
+    const el2 = zoomRef.current;
+    if (el2) el2.style.transition = animated ? "transform 0.25s ease" : "none";
+    zoomStateRef.current = { scale: 1, tx: 0, ty: 0 };
+    applyTransform();
+    setIsZoomed(false);
+    if (animated && el2) {
+      setTimeout(() => {
+        if (el2) el2.style.transition = "none";
+      }, 260);
+    }
+  }, [applyTransform]);
+  reactExports.useEffect(() => {
+    resetZoom(false);
+  }, [photoIdx, resetZoom]);
+  reactExports.useEffect(() => {
+    const el2 = zoomRef.current;
+    if (!el2) return;
+    const dist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    const onStart = (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const rect = el2.getBoundingClientRect();
+        const [t1, t2] = e.touches;
+        pinchRef.current = {
+          dist0: dist(t1, t2),
+          scale0: zoomStateRef.current.scale,
+          tx0: zoomStateRef.current.tx,
+          ty0: zoomStateRef.current.ty,
+          midX: (t1.clientX + t2.clientX) / 2 - rect.left,
+          midY: (t1.clientY + t2.clientY) / 2 - rect.top,
+          rectW: rect.width / zoomStateRef.current.scale,
+          rectH: rect.height / zoomStateRef.current.scale
+        };
+        panRef.current = null;
+      } else if (e.touches.length === 1 && isZoomedRef.current) {
+        panRef.current = {
+          startX: e.touches[0].clientX,
+          startY: e.touches[0].clientY,
+          tx0: zoomStateRef.current.tx,
+          ty0: zoomStateRef.current.ty
+        };
+      }
+    };
+    const onMove = (e) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { dist0, scale0, tx0, ty0, midX, midY, rectW, rectH } = pinchRef.current;
+        const [t1, t2] = e.touches;
+        const newDist = dist(t1, t2);
+        let scale = scale0 * (newDist / dist0);
+        scale = Math.min(4, Math.max(1, scale));
+        let tx = midX - scale / scale0 * (midX - tx0);
+        let ty = midY - scale / scale0 * (midY - ty0);
+        const clamped = clampPan(tx, ty, scale, rectW, rectH);
+        zoomStateRef.current = { scale, tx: clamped.tx, ty: clamped.ty };
+        applyTransform();
+      } else if (e.touches.length === 1 && panRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        const { startX, startY, tx0, ty0 } = panRef.current;
+        const rect = el2.getBoundingClientRect();
+        const rectW = rect.width / zoomStateRef.current.scale;
+        const rectH = rect.height / zoomStateRef.current.scale;
+        const tx = tx0 + (e.touches[0].clientX - startX);
+        const ty = ty0 + (e.touches[0].clientY - startY);
+        const clamped = clampPan(tx, ty, zoomStateRef.current.scale, rectW, rectH);
+        zoomStateRef.current = { ...zoomStateRef.current, tx: clamped.tx, ty: clamped.ty };
+        applyTransform();
+      }
+    };
+    const onEnd = (e) => {
+      if (e.touches.length === 0) {
+        pinchRef.current = null;
+        panRef.current = null;
+        if (zoomStateRef.current.scale <= 1.05) {
+          resetZoom(true);
+        } else {
+          setIsZoomed(true);
+        }
+      } else if (e.touches.length === 1) {
+        pinchRef.current = null;
+        panRef.current = {
+          startX: e.touches[0].clientX,
+          startY: e.touches[0].clientY,
+          tx0: zoomStateRef.current.tx,
+          ty0: zoomStateRef.current.ty
+        };
+      }
+    };
+    el2.addEventListener("touchstart", onStart, { passive: false });
+    el2.addEventListener("touchmove", onMove, { passive: false });
+    el2.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      el2.removeEventListener("touchstart", onStart);
+      el2.removeEventListener("touchmove", onMove);
+      el2.removeEventListener("touchend", onEnd);
+    };
+  }, [applyTransform, clampPan, resetZoom]);
   reactExports.useCallback((idx) => {
     setPhotoIdx(Math.max(0, Math.min(idx, photoUrls.length - 1)));
   }, [photoUrls.length]);
@@ -12069,9 +12194,11 @@ function PhotoCarousel({
     const el2 = containerRef.current;
     if (!el2) return;
     const onStart = (e) => {
+      if (e.touches.length > 1 || isZoomedRef.current) return;
       swipeTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
     const onMove = (e) => {
+      if (e.touches.length > 1 || isZoomedRef.current) return;
       if (!swipeTouchRef.current || photoUrlsRef.current.length <= 1) return;
       const dx = Math.abs(e.touches[0].clientX - swipeTouchRef.current.x);
       const dy = Math.abs(e.touches[0].clientY - swipeTouchRef.current.y);
@@ -12084,6 +12211,16 @@ function PhotoCarousel({
       }
     };
     const onEnd = (e) => {
+      if (isZoomedRef.current) {
+        const now = Date.now();
+        if (now - lastTapRef.current < 300) {
+          resetZoom(true);
+          lastTapRef.current = 0;
+        } else {
+          lastTapRef.current = now;
+        }
+        return;
+      }
       setSwiping(false);
       onSwiping && onSwiping(false);
       if (!swipeTouchRef.current) return;
@@ -12100,6 +12237,24 @@ function PhotoCarousel({
         return;
       }
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+        const now = Date.now();
+        if (now - lastTapRef.current < 300) {
+          lastTapRef.current = 0;
+          const rect = el2.getBoundingClientRect();
+          const scale = 2.5;
+          const tx = rect.width / 2 - rect.width / 2 * scale;
+          const ty = rect.height / 2 - rect.height / 2 * scale;
+          const clamped = clampPan(tx, ty, scale, rect.width, rect.height);
+          zoomRef.current.style.transition = "transform 0.25s ease";
+          zoomStateRef.current = { scale, tx: clamped.tx, ty: clamped.ty };
+          applyTransform();
+          setIsZoomed(true);
+          setTimeout(() => {
+            if (zoomRef.current) zoomRef.current.style.transition = "none";
+          }, 260);
+          return;
+        }
+        lastTapRef.current = now;
         setShowUI((v2) => !v2);
         if (!showUIRef.current) setShowFullCaption(true);
       }
@@ -12112,7 +12267,7 @@ function PhotoCarousel({
       el2.removeEventListener("touchmove", onMove);
       el2.removeEventListener("touchend", onEnd);
     };
-  }, [hideArrowsFor5s, onSwiping, setShowUI, setShowFullCaption]);
+  }, [hideArrowsFor5s, onSwiping, setShowUI, setShowFullCaption, applyTransform, clampPan, resetZoom]);
   const canGoPrev = photoIdx > 0;
   const canGoNext = photoIdx < photoUrls.length - 1;
   const isMulti = photoUrls.length > 1;
@@ -12128,10 +12283,10 @@ function PhotoCarousel({
         background: "#000",
         display: "flex",
         flexDirection: "column",
-        touchAction: isMulti ? "none" : "pan-y"
+        touchAction: isMulti || isZoomed ? "none" : "pan-y"
       },
       children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto", background: "#000" }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: zoomRef, style: { flex: 1, position: "relative", overflow: "hidden", pointerEvents: "auto", background: "#000", willChange: "transform" }, children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "img",
             {
@@ -12185,7 +12340,7 @@ function PhotoCarousel({
               }
             }
           ),
-          isMulti && canGoPrev && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          isMulti && canGoPrev && !isZoomed && /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
               onTouchStart: (e) => handleArrow("left", e),
@@ -12226,7 +12381,7 @@ function PhotoCarousel({
               )
             }
           ),
-          isMulti && canGoNext && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          isMulti && canGoNext && !isZoomed && /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
               onTouchStart: (e) => handleArrow("right", e),
@@ -12267,7 +12422,7 @@ function PhotoCarousel({
               )
             }
           ),
-          isMulti && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+          isMulti && !isZoomed && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
             position: "absolute",
             bottom: 14,
             left: "50%",
@@ -12288,7 +12443,23 @@ function PhotoCarousel({
             photoIdx + 1,
             " / ",
             photoUrls.length
-          ] })
+          ] }),
+          isZoomed && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: {
+            position: "absolute",
+            top: 14,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(0,0,0,0.55)",
+            borderRadius: 20,
+            padding: "4px 12px",
+            fontSize: 11,
+            fontWeight: 700,
+            color: "rgba(255,255,255,0.8)",
+            zIndex: 100,
+            pointerEvents: "none",
+            letterSpacing: 0.3,
+            backdropFilter: "blur(4px)"
+          }, children: "Double-tap to reset" })
         ] }),
         sound_url && /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           "audio",
