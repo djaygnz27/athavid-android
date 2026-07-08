@@ -4,7 +4,7 @@
 // ║ api/_videofix.js) against an ALREADY-uploaded R2 video key. Used to fix ║
 // ║ black-screen videos that were uploaded before the 2026-07-07 automatic  ║
 // ║ fix was added to r2-complete-multipart.js.                              ║
-// ║ Auth: requires header x-fix-key to match R2_ACCESS_KEY_ID (already a    ║
+// ║ Auth: requires header x-fix-key to match R2_SECRET_ACCESS_KEY (already a    ║
 // ║ private server secret) — not for public/client use.                     ║
 // ╚════════════════════════════════════════════════════════════════════════╝
 
@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const provided = req.headers["x-fix-key"];
-  if (!provided || provided !== process.env.R2_ACCESS_KEY_ID) {
+  if (!provided || provided !== process.env.R2_SECRET_ACCESS_KEY) {
     return res.status(403).json({ error: "forbidden" });
   }
 
