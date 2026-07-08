@@ -2,9 +2,29 @@
 // ║ api/r2-complete-multipart.js                                            ║
 // ║ Finalizes an R2 multipart upload once all parts are uploaded.           ║
 // ║ Added 2026-07-02 as part of the multipart video upload fix.             ║
+// ║                                                                          ║
+// ║ Updated 2026-07-07 — ROOT CAUSE FIX for "video plays but black screen": ║
+// ║ Verified on a real production file (Pixel 9 Pro upload): the video was  ║
+// ║ encoded as HEVC/H.265, which most desktop/Android Chrome + Firefox      ║
+// ║ builds cannot decode at all (no license/hardware decoder) — the audio   ║
+// ║ track still decodes and the duration/timer still advances, but no      ║
+// ║ video frame ever paints, exactly matching the reported symptom. On top ║
+// ║ of that, the file's 'moov' atom (frame index) was at the very END of   ║
+// ║ the file instead of the front ("faststart"), which independently can   ║
+// ║ delay/break frame rendering on large files.                            ║
+// ║                                                                          ║
+// ║ Fix: after the multipart upload completes, call the shared fixVideo()   ║
+// ║ helper (api/_videofix.js) — probes the codec with ffprobe; if it's      ║
+// ║ already H.264 + faststart, does nothing; if H.264 but moov is          ║
+// ║ misplaced, does a cheap stream-copy remux; if it's HEVC or anything     ║
+// ║ else, fully transcodes to H.264/AAC with +faststart (also correctly    ║
+// ║ bakes in the phone's rotation metadata). Non-fatal: if this step fails  ║
+// ║ for any reason, the original upload (already saved) is left as-is and  ║
+// ║ the request still reports success.                                     ║
 // ╚════════════════════════════════════════════════════════════════════════╝
 
 const { signedRequest } = require("./_r2sign.js");
+const { fixVideo, isVideoKey } = require("./_videofix.js");
 
 const CF_ACCOUNT = "a346b1c78fc48549d2de3de99a789a2d";
 const R2_BUCKET   = "sachi-media";
@@ -51,7 +71,18 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: `R2 complete multipart failed: ${completeRes.status} ${errText}` });
     }
 
-    return res.status(200).json({ success: true });
+    let videoFix = { attempted: false };
+    if (isVideoKey(key)) {
+      try {
+        const r = await fixVideo(key);
+        videoFix = { attempted: true, ...r };
+      } catch (e) {
+        videoFix = { attempted: true, error: e.message };
+        console.error("video fix failed for", key, e);
+      }
+    }
+
+    return res.status(200).json({ success: true, videoFix });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

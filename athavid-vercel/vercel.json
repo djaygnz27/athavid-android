@@ -103,6 +103,14 @@
     },
     "api/trigger-mp4.js": {
       "maxDuration": 60
+    },
+    "api/r2-complete-multipart.js": {
+      "maxDuration": 300,
+      "memory": 3008
+    },
+    "api/admin-fix-video.js": {
+      "maxDuration": 300,
+      "memory": 3008
     }
   }
 }
