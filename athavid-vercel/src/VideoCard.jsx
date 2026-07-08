@@ -59,8 +59,14 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [likesList, setLikesList] = useState([]);
   const [likesListLoading, setLikesListLoading] = useState(false);
   // Global mute stored on window — readable by stale closures, no prop-drilling
-  if (window.__sachiMuted === undefined) window.__sachiMuted = false;
-  const [muted, _setMutedLocal] = useState(() => window.__sachiMuted ?? false);
+  // ⛔ FIXED 2026-07-07 — this MUST default to true (muted). Browsers block
+  // autoplay of *unmuted* video/audio without a prior user gesture, so every
+  // card's el.play() call was silently rejected (caught by .catch(()=>{}))
+  // until the user manually tapped the card. Starting muted (TikTok/Reels
+  // convention) lets every video autoplay as it scrolls into view; the
+  // speaker icon still lets users unmute per their own preference.
+  if (window.__sachiMuted === undefined) window.__sachiMuted = true;
+  const [muted, _setMutedLocal] = useState(() => window.__sachiMuted ?? true);
   const [userMuted, setUserMuted] = useState(false); // true only when user explicitly muted via button
   const setMuted = (val) => {
     const newVal = typeof val === 'function' ? val(window.__sachiMuted) : val;
@@ -197,7 +203,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        const currentlyMuted = window.__sachiMuted !== undefined ? window.__sachiMuted : false;
+        const currentlyMuted = window.__sachiMuted !== undefined ? window.__sachiMuted : true;
         el.muted = video.sound_url ? true : currentlyMuted;
         // For HLS streams: src is set by hls.js (not as el.src attribute)
         // If el has no src yet, it's an HLS stream still loading — flag for deferred play

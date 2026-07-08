@@ -12954,8 +12954,8 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const [showLikesPanel, setShowLikesPanel] = reactExports.useState(false);
   const [likesList, setLikesList] = reactExports.useState([]);
   const [likesListLoading, setLikesListLoading] = reactExports.useState(false);
-  if (window.__sachiMuted === void 0) window.__sachiMuted = false;
-  const [muted, _setMutedLocal] = reactExports.useState(() => window.__sachiMuted ?? false);
+  if (window.__sachiMuted === void 0) window.__sachiMuted = true;
+  const [muted, _setMutedLocal] = reactExports.useState(() => window.__sachiMuted ?? true);
   const [userMuted, setUserMuted] = reactExports.useState(false);
   const setMuted = (val) => {
     const newVal = typeof val === "function" ? val(window.__sachiMuted) : val;
@@ -13065,7 +13065,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     if (!el2) return;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        const currentlyMuted = window.__sachiMuted !== void 0 ? window.__sachiMuted : false;
+        const currentlyMuted = window.__sachiMuted !== void 0 ? window.__sachiMuted : true;
         el2.muted = video.sound_url ? true : currentlyMuted;
         const hasNoSrc = el2.src === "" || !el2.src || el2.src === window.location.href;
         if (hasNoSrc || el2._hls && el2.readyState < 2) {
