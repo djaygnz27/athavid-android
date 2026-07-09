@@ -236,7 +236,7 @@ function UploadModal({ currentUser, onClose, onUploaded }) {
     } catch {}
     setUploading(true); setProgress(10);
     try {
-      setStep("Uploading video to Cloudflare...");
+      setStep("Uploading video...");
       const uploadResult = await uploadFile(editedFile || file, (pct) => {
         setProgress(10 + Math.round(pct * 0.5)); // 10-60%
       });

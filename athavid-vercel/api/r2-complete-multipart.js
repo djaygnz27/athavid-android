@@ -71,18 +71,24 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: `R2 complete multipart failed: ${completeRes.status} ${errText}` });
     }
 
-    let videoFix = { attempted: false };
+    // ── Respond immediately so the phone's upload completes right away ───
+    // fixVideo (ffprobe + optional ffmpeg transcode) can take 2-4 min for
+    // HEVC clips from modern phones — blocking this response was the root
+    // cause of "stuck on Uploading for 3+ minutes" on mobile devices.
+    // Vercel keeps the lambda alive after res.json() until async work
+    // finishes (up to the maxDuration set in vercel.json = 300s), so the
+    // transcode still runs and completes in the background — the client
+    // just doesn't have to wait for it.
+    res.status(200).json({ success: true, videoFix: { attempted: false, async: true } });
+
     if (isVideoKey(key)) {
       try {
         const r = await fixVideo(key);
-        videoFix = { attempted: true, ...r };
+        console.log("video fix complete for", key, r);
       } catch (e) {
-        videoFix = { attempted: true, error: e.message };
-        console.error("video fix failed for", key, e);
+        console.error("video fix failed for", key, e.message);
       }
     }
-
-    return res.status(200).json({ success: true, videoFix });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
