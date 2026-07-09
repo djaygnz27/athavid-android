@@ -106,6 +106,34 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
   const [followLoading, setFollowLoading] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
+  const [spotifyStatus, setSpotifyStatus] = useState(video.spotify_match_status || null); // null | "checking" | "matched" | "no_match"
+
+  async function handleAddToSpotify(e) {
+    e.stopPropagation();
+    if (spotifyStatus === "checking") return;
+    if (spotifyStatus === "no_match") return;
+    if (spotifyStatus && spotifyStatus.startsWith("http")) {
+      window.open(spotifyStatus, "_blank");
+      return;
+    }
+    setSpotifyStatus("checking");
+    try {
+      const r = await fetch("/api/spotify-add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_id: video.id }),
+      });
+      const data = await r.json();
+      if (data.status === "matched" && data.spotify_url) {
+        setSpotifyStatus(data.spotify_url);
+        window.open(data.spotify_url, "_blank");
+      } else {
+        setSpotifyStatus("no_match");
+      }
+    } catch {
+      setSpotifyStatus(null);
+    }
+  }
   const [showUI, setShowUI] = useState(false);
   const [userTapped, setUserTapped] = useState(false);
   const uiTimerRef = useRef(null);
@@ -728,12 +756,27 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         {video.sound_title && (
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, overflow:"hidden" }}>
           <div style={{ fontSize:14, flexShrink:0, animation: playing ? "spin 3s linear infinite" : "none", display:"inline-block" }}>🎵</div>
-          <div style={{ overflow:"hidden", flex:1 }}>
+          <div style={{ overflow:"hidden", flex:1, minWidth:0 }}>
             <div style={{ color:"rgba(255,255,255,0.85)", fontSize:12, fontWeight:600, whiteSpace:"nowrap",
               animation: playing ? "marquee 8s linear infinite" : "none", display:"inline-block" }}>
               {video.sound_title}{video.sound_artist ? ` · ${video.sound_artist}` : ""}
             </div>
           </div>
+          {spotifyStatus !== "no_match" && (
+            <button
+              data-no-gesture
+              onClick={handleAddToSpotify}
+              disabled={spotifyStatus === "checking"}
+              style={{
+                flexShrink:0, display:"flex", alignItems:"center", gap:4,
+                background:"rgba(29,185,84,0.18)", border:"1px solid rgba(29,185,84,0.4)",
+                borderRadius:20, padding:"3px 9px", color:"#1DB954", fontSize:11, fontWeight:700,
+                cursor: spotifyStatus === "checking" ? "default" : "pointer",
+              }}
+            >
+              {spotifyStatus === "checking" ? "..." : "+ Spotify"}
+            </button>
+          )}
         </div>
       )}
       {/* Real / AI badge + date + location on same row */}

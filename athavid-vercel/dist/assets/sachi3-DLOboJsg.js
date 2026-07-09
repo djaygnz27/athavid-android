@@ -12993,6 +12993,33 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const isFollowing = followedUserIds ? followedUserIds.has(video.user_id || video.created_by) : !!followRecord;
   const [followLoading, setFollowLoading] = reactExports.useState(false);
   const [reportTarget, setReportTarget] = reactExports.useState(null);
+  const [spotifyStatus, setSpotifyStatus] = reactExports.useState(video.spotify_match_status || null);
+  async function handleAddToSpotify(e) {
+    e.stopPropagation();
+    if (spotifyStatus === "checking") return;
+    if (spotifyStatus === "no_match") return;
+    if (spotifyStatus && spotifyStatus.startsWith("http")) {
+      window.open(spotifyStatus, "_blank");
+      return;
+    }
+    setSpotifyStatus("checking");
+    try {
+      const r2 = await fetch("/api/spotify-add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_id: video.id })
+      });
+      const data = await r2.json();
+      if (data.status === "matched" && data.spotify_url) {
+        setSpotifyStatus(data.spotify_url);
+        window.open(data.spotify_url, "_blank");
+      } else {
+        setSpotifyStatus("no_match");
+      }
+    } catch {
+      setSpotifyStatus(null);
+    }
+  }
   const [showUI, setShowUI] = reactExports.useState(false);
   const [userTapped, setUserTapped] = reactExports.useState(false);
   const uiTimerRef = reactExports.useRef(null);
@@ -13617,7 +13644,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
       ),
       video.sound_title && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 6, overflow: "hidden" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 14, flexShrink: 0, animation: playing ? "spin 3s linear infinite" : "none", display: "inline-block" }, children: "🎵" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflow: "hidden", flex: 1 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { overflow: "hidden", flex: 1, minWidth: 0 }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
           color: "rgba(255,255,255,0.85)",
           fontSize: 12,
           fontWeight: 600,
@@ -13627,7 +13654,30 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
         }, children: [
           video.sound_title,
           video.sound_artist ? ` · ${video.sound_artist}` : ""
-        ] }) })
+        ] }) }),
+        spotifyStatus !== "no_match" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            "data-no-gesture": true,
+            onClick: handleAddToSpotify,
+            disabled: spotifyStatus === "checking",
+            style: {
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              background: "rgba(29,185,84,0.18)",
+              border: "1px solid rgba(29,185,84,0.4)",
+              borderRadius: 20,
+              padding: "3px 9px",
+              color: "#1DB954",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: spotifyStatus === "checking" ? "default" : "pointer"
+            },
+            children: spotifyStatus === "checking" ? "..." : "+ Spotify"
+          }
+        )
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap", alignItems: "center" }, children: [
         !video.is_ai_detected ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "rgba(107,255,154,0.15)", color: "#6BFFB8", padding: "2px 9px", borderRadius: 20, fontWeight: 700, border: "1px solid rgba(107,255,154,0.3)" }, children: "✓ Real" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { style: { fontSize: 10, background: "rgba(255,149,0,0.15)", color: "#FF9500", padding: "2px 9px", borderRadius: 20, fontWeight: 700, border: "1px solid rgba(255,149,0,0.3)" }, children: "🤖 AI Generated" }),
