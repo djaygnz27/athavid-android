@@ -138,9 +138,35 @@ function GoLivePanel({ currentUser, onClose, onLive }) {
     if (!title.trim()) return setError("Add a title for your live room.");
     setStarting(true);
     try {
-      const room = await liveRooms.create({ host_id:currentUser.id, host_username:currentUser.username||currentUser.email?.split("@")[0]||"host", host_avatar:currentUser.avatar_url||"", title:title.trim(), category, is_live:true, viewer_count:0, stream_type:"webrtc", rtmp_url:"", stream_key:"", hls_url:"" });
-      onLive(room);
-    } catch { setError("Could not start. Try again."); setStarting(false); }
+      // Create Cloudflare live input first — get publish + play WebRTC URLs
+      const cfRes = await fetch("/api/create-live-input", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), username: currentUser.username }),
+      });
+      const cf = await cfRes.json();
+      if (!cf.success) throw new Error("Could not start stream");
+
+      const room = await liveRooms.create({
+        host_id: currentUser.id,
+        host_username: currentUser.username || currentUser.email?.split("@")[0] || "host",
+        host_avatar: currentUser.avatar_url || "",
+        title: title.trim(),
+        category,
+        is_live: true,
+        viewer_count: 0,
+        stream_type: "webrtc",
+        cf_input_id: cf.cf_input_id,
+        whep_url: cf.webrtc_play_url,   // viewers connect here
+        hls_url: "",
+        rtmp_url: cf.rtmp_url || "",
+        stream_key: cf.stream_key || "",
+        // store publish URL temporarily in hls_url field repurposed — actually pass via onLive
+        _webrtc_publish_url: cf.webrtc_publish_url,
+      });
+      // Attach publish URL to room object so HostLiveRoom can use it
+      onLive({ ...room, webrtc_publish_url: cf.webrtc_publish_url });
+    } catch (e) { setError("Could not start. Try again."); setStarting(false); }
   };
   return (
     <div style={{ position:"fixed", inset:0, zIndex:7000, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
@@ -190,6 +216,7 @@ function HostLiveRoom({ room, currentUser, onEnd }) {
   const localStreamRef = useRef(null);
   const peersRef = useRef({});
   const guestVideosRef = useRef({});
+  const cfPublishPcRef = useRef(null);
   const [guests, setGuests] = useState([]);
   const [pendingReqs, setPendingReqs] = useState([]);
   const [viewerCount, setViewerCount] = useState(0);
@@ -205,7 +232,31 @@ function HostLiveRoom({ room, currentUser, onEnd }) {
 
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({ video:{ facingMode:"user", width:{ideal:1280}, height:{ideal:720} }, audio:true })
-      .then(stream => { localStreamRef.current=stream; if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play();} }).catch(()=>{});
+      .then(async stream => {
+        localStreamRef.current = stream;
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
+        // Push stream to Cloudflare via WebRTC so viewers can watch
+        if (room.webrtc_publish_url) {
+          try {
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            cfPublishPcRef.current = pc;
+            stream.getTracks().forEach(t => pc.addTrack(t, stream));
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            // Send offer to Cloudflare WHIP endpoint
+            const r = await fetch(room.webrtc_publish_url, {
+              method: "POST",
+              headers: { "Content-Type": "application/sdp" },
+              body: offer.sdp,
+            });
+            if (r.ok) {
+              const answerSdp = await r.text();
+              await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+              console.log("✅ Sachi Live: broadcasting to Cloudflare WebRTC");
+            }
+          } catch(e) { console.error("CF WebRTC publish failed:", e); }
+        }
+      }).catch(()=>{});
     const timer = setInterval(() => setElapsed(p=>p+1), 1000);
     getWallet(currentUser.id).then(w=>setWallet(w)).catch(()=>{});
     const poll = setInterval(async()=>{
@@ -213,7 +264,7 @@ function HostLiveRoom({ room, currentUser, onEnd }) {
       try { const d=await guestReqs.list(room.id); const items=Array.isArray(d)?d:(d?.items||[]); setPendingReqs(items.filter(r=>r.status==="pending")); for(const req of items.filter(r=>r.status==="accepted")) await processGuestSignal(req); } catch{}
       try { const g=await sachiGifts.list(room.id); setRoomGifts(Array.isArray(g)?g:(g?.items||[])); } catch{}
     }, 3000);
-    return ()=>{ clearInterval(timer); clearInterval(poll); if(localStreamRef.current)localStreamRef.current.getTracks().forEach(t=>t.stop()); Object.values(peersRef.current).forEach(pc=>pc.close()); };
+    return ()=>{ clearInterval(timer); clearInterval(poll); if(localStreamRef.current)localStreamRef.current.getTracks().forEach(t=>t.stop()); Object.values(peersRef.current).forEach(pc=>pc.close()); if(cfPublishPcRef.current)cfPublishPcRef.current.close(); };
   }, [room.id]);
 
   // Host presence heartbeat — proves to viewers/room-list this room is still actually
@@ -346,7 +397,9 @@ function ViewerLiveRoom({ room, currentUser, onClose }) {
   const [roomGifts, setRoomGifts] = useState([]);
   const [activeGiftAnim, setActiveGiftAnim] = useState(null);
   const remoteVideoRef = useRef(null);
+  const cfViewVideoRef = useRef(null);
   const pcRef = useRef(null);
+  const cfViewPcRef = useRef(null);
   const localStreamRef = useRef(null);
 
   useEffect(() => {
@@ -359,7 +412,36 @@ function ViewerLiveRoom({ room, currentUser, onClose }) {
         try{ const d=await guestReqs.list(room.id); const items=Array.isArray(d)?d:(d?.items||[]); const mine=items.find(r=>r.id===myReqId); if(mine){setReqStatus(mine.status);if(mine.status==="accepted")handleGuestAccepted(mine);} }catch{}
       }
     }, 3000);
-    return ()=>{ clearInterval(poll); liveRooms.update(room.id,{viewer_count:Math.max(0,viewerCount-1)}).catch(()=>{}); if(localStreamRef.current)localStreamRef.current.getTracks().forEach(t=>t.stop()); if(pcRef.current)pcRef.current.close(); };
+    // Connect to Cloudflare broadcast stream (read-only, no mic/cam needed)
+    if (room.whep_url) {
+      (async () => {
+        try {
+          const pc = new RTCPeerConnection({ iceServers: [] });
+          cfViewPcRef.current = pc;
+          pc.addTransceiver("video", { direction: "recvonly" });
+          pc.addTransceiver("audio", { direction: "recvonly" });
+          pc.ontrack = (e) => {
+            if (cfViewVideoRef.current && e.streams[0]) {
+              cfViewVideoRef.current.srcObject = e.streams[0];
+              cfViewVideoRef.current.play().catch(() => {});
+            }
+          };
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          const r = await fetch(room.whep_url, {
+            method: "POST",
+            headers: { "Content-Type": "application/sdp" },
+            body: offer.sdp,
+          });
+          if (r.ok) {
+            const answerSdp = await r.text();
+            await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+          }
+        } catch(e) { console.error("CF viewer WebRTC failed:", e); }
+      })();
+    }
+
+    return ()=>{ clearInterval(poll); liveRooms.update(room.id,{viewer_count:Math.max(0,viewerCount-1)}).catch(()=>{}); if(localStreamRef.current)localStreamRef.current.getTracks().forEach(t=>t.stop()); if(pcRef.current)pcRef.current.close(); if(cfViewPcRef.current)cfViewPcRef.current.close(); };
   }, [room.id, myReqId]);
 
   const handleGuestAccepted = async(req) => {
@@ -403,6 +485,9 @@ function ViewerLiveRoom({ room, currentUser, onClose }) {
       {activeGiftAnim && <GiftAnimationOverlay gift={activeGiftAnim} sender={null} />}
 
       <div style={{ flex:1, position:"relative", background:"linear-gradient(145deg,#1a0a2e,#0B0C1A)", overflow:"hidden" }}>
+        {/* Cloudflare broadcast stream — shown to all viewers */}
+        <video ref={cfViewVideoRef} autoPlay playsInline style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", display: room.whep_url ? "block" : "none" }} />
+        {/* Guest co-host stream — shown only when accepted as guest */}
         {reqStatus==="connected" && <video ref={remoteVideoRef} autoPlay playsInline style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />}
         <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12, pointerEvents:"none" }}>
           <div style={{ position:"relative" }}>
