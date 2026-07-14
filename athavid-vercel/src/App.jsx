@@ -893,7 +893,7 @@ function App() {
               if (feedTab === "forYou" && feedHasMore && !loading && idx >= feedItems.length - 3) {
                 loadMoreVideos();
               }
-            }} style={{ height:"calc(100dvh - 80px)", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y", overflowX:"hidden" }}>
+            }} style={{ height:"calc(100dvh - 70px)", overflowY:"scroll", scrollSnapType:"y mandatory", isolation:"isolate", touchAction:"pan-y", overflowX:"hidden" }}>
           {feedTab === "following" && followingIds.length === 0 && (
             <div style={{ height:"100svh", display:"flex", flexDirection:"column", alignItems:"center",
               justifyContent:"center", color:"rgba(255,255,255,0.5)", gap:16, padding:32, textAlign:"center" }}>
@@ -920,13 +920,13 @@ function App() {
             </div>
           )}
           {loading && (
-            <div style={{ height:"calc(100dvh - 80px)", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
+            <div style={{ height:"calc(100dvh - 70px)", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:48 }}>🎬</div>
               <div style={{ color:"rgba(245,200,66,0.7)", fontSize:14, letterSpacing:1, fontWeight:600 }}>Loading...</div>
             </div>
           )}
           {!loading && videoList.length === 0 && (
-            <div style={{ height:"calc(100dvh - 80px)", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
+            <div style={{ height:"calc(100dvh - 70px)", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:12 }}>
               <div style={{ fontSize:64 }}>🎬</div>
               <div style={{ color:"#fff", fontWeight:800, fontSize:22 }}>No videos yet</div>
               <div style={{ color:"#888", fontSize:15 }}>Be the first to post!</div>
@@ -951,7 +951,7 @@ function App() {
               const inWindow = idx >= windowStart && idx <= windowEnd;
               if (!inWindow) {
                 // Render a placeholder div to maintain scroll position
-                return <div key={v.id} style={{ height:"calc(100dvh - 80px)", scrollSnapAlign:"start", scrollSnapStop:"always", flexShrink:0, overflow:"hidden" }} />;
+                return <div key={v.id} style={{ height:"calc(100dvh - 70px)", scrollSnapAlign:"start", scrollSnapStop:"always", flexShrink:0, overflow:"hidden" }} />;
               }
               return (
                 <VideoCard key={v.id} video={v} currentUser={currentUser}
@@ -971,7 +971,7 @@ function App() {
             });
           })()}
           {feedTab === "forYou" && feedHasMore && (
-            <div style={{ height:"calc(100dvh - 80px)", scrollSnapAlign:"start", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ height:"calc(100dvh - 70px)", scrollSnapAlign:"start", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
               <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:12, color:"rgba(245,200,66,0.6)" }}>
                 <div style={{ width:32, height:32, border:"3px solid rgba(245,200,66,0.2)", borderTop:"3px solid #F5C842", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
                 <div style={{ fontSize:12, letterSpacing:1, fontWeight:600 }}>Loading more</div>

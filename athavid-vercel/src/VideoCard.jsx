@@ -575,7 +575,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
   const tap = (fn) => (e) => { e.stopPropagation(); fn(); };
 
   return (
-    <div ref={cardRef} data-videoid={video.id} style={{ position:"relative", width:"100%", height:"calc(100dvh - 80px)", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start", scrollSnapStop:"always", overflow:"hidden" }}>
+    <div ref={cardRef} data-videoid={video.id} style={{ position:"relative", width:"100%", height:"calc(100dvh - 70px)", background:"#0B0C1A", flexShrink:0, scrollSnapAlign:"start", scrollSnapStop:"always", overflow:"hidden" }}>
 
       {/* ── AGE GATE OVERLAY ── */}
       {showMatureBlock && (
