@@ -17,6 +17,9 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 // enrichWithBadges() always fell through to raw video.avatar_url (often null),
 // showing everyone's fallback initials avatar instead of their real profile pic.
 const APP_ID = "69e79122bcc8fb5a04cfb834";
+// Module-level badge cache — fetched once per session, not on every feed load
+let _sachiUserCache = null;
+let _sachiUserCacheFetching = null;
 import Landing from "./Landing";
 import { auth, videos, comments, uploadFile, follows, request, interests, reports, bookmarks, blocks, likes, messages, notifications } from "./api.js";
 import AuthModal, { initGoogleOneTap, handleGoogleRedirectCallback } from "./AuthModal.jsx";
@@ -536,15 +539,24 @@ function App() {
       };
 
       // Enrich videos with uploader badge (FC / blue check) from SachiUser
+      // Uses module-level cache — fetched ONCE per session, not on every feed load
       const enrichWithBadges = async (videos) => {
         try {
-          // Get unique user_ids from this batch
           const userIds = [...new Set(videos.map(v => v.user_id || v.created_by).filter(Boolean))];
           if (!userIds.length) return videos;
-          // Fetch SachiUser records in one go (up to 200 users per batch)
-          const res = await request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`);
-          const users = Array.isArray(res) ? res : (res?.items || res?.records || []);
-          // Build lookup map by id AND by username for fallback
+          if (!_sachiUserCache) {
+            if (!_sachiUserCacheFetching) {
+              _sachiUserCacheFetching = request("GET", `/apps/${APP_ID}/entities/SachiUser?limit=200`)
+                .then(res => {
+                  _sachiUserCache = Array.isArray(res) ? res : (res?.items || res?.records || []);
+                  _sachiUserCacheFetching = null;
+                  return _sachiUserCache;
+                })
+                .catch(() => { _sachiUserCacheFetching = null; return []; });
+            }
+            await _sachiUserCacheFetching;
+          }
+          const users = _sachiUserCache || [];
           const byId = {};
           const byUsername = {};
           for (const u of users) {
@@ -559,7 +571,6 @@ function App() {
               ...v,
               _badge: sachiUser.badge || null,
               _is_verified: sachiUser.is_verified || false,
-              // Always use the latest avatar from SachiUser — this is the source of truth
               avatar_url: sachiUser.avatar_url || v.avatar_url || null,
             };
           });
@@ -567,15 +578,19 @@ function App() {
       };
 
       if (append) {
-        const tagged = await tagWithLiked(ranked2);
-        const enriched = await enrichWithBadges(tagged);
+        // Run likes + badges in parallel instead of sequentially
+        const [tagged, badged] = await Promise.all([tagWithLiked(ranked2), enrichWithBadges(ranked2)]);
+        const likedIds = new Set(tagged.filter(v => v._likedByMe).map(v => v.id));
+        const enriched = badged.map(v => likedIds.has(v.id) ? { ...v, _likedByMe: true } : v);
         setVideoList(prev => {
           const existing = new Set(prev.map(v => v.id));
           return [...prev, ...enriched.filter(v => !existing.has(v.id))];
         });
       } else {
-        const tagged = await tagWithLiked(ranked2);
-        const enriched = await enrichWithBadges(tagged);
+        // Run likes + badges in parallel instead of sequentially
+        const [tagged, badged] = await Promise.all([tagWithLiked(ranked2), enrichWithBadges(ranked2)]);
+        const likedIds = new Set(tagged.filter(v => v._likedByMe).map(v => v.id));
+        const enriched = badged.map(v => likedIds.has(v.id) ? { ...v, _likedByMe: true } : v);
         setVideoList(enriched);
         if (onReady) onReady(); // signal prefetch complete
         requestAnimationFrame(() => {
