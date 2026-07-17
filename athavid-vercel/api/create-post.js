@@ -29,6 +29,14 @@ module.exports = async function handler(req, res) {
 
   if (!body.user_id) return res.status(400).json({ error: "user_id required" });
 
+  // Safety defaults — prevent "only_me" or missing visibility from hiding content
+  if (!body.post_visibility || body.post_visibility === "") {
+    body.post_visibility = "everyone";
+  }
+  if (body.is_approved === undefined || body.is_approved === null) {
+    body.is_approved = body.post_visibility !== "only_me";
+  }
+
   try {
     const apiRes = await fetch(`${BASE_URL}/apps/${APP_ID}/entities/SachiVideo`, {
       method: "POST",

@@ -13501,7 +13501,7 @@ function VideoCard({ video, currentUser, onCommentOpen, onLike, onView, onNeedAu
     e.stopPropagation();
     fn();
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: cardRef, "data-videoid": video.id, style: { position: "relative", width: "100%", height: "calc(100dvh - 80px)", background: "#0B0C1A", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", overflow: "hidden" }, children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { ref: cardRef, "data-videoid": video.id, style: { position: "relative", width: "100%", height: "calc(100dvh - 70px)", background: "#0B0C1A", flexShrink: 0, scrollSnapAlign: "start", scrollSnapStop: "always", overflow: "hidden" }, children: [
     showMatureBlock && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
       position: "absolute",
       inset: 0,
@@ -20885,6 +20885,8 @@ function InboxPanel({ currentUser, onClose, initialDMTarget, onOpen, fromProfile
   ] });
 }
 const APP_ID$1 = "69e79122bcc8fb5a04cfb834";
+let _sachiUserCache = null;
+let _sachiUserCacheFetching = null;
 const APP_VERSION = "2.2.0";
 (function checkVersion() {
   const stored = localStorage.getItem("sachi_app_version");
@@ -21271,8 +21273,20 @@ function App() {
         try {
           const userIds = [...new Set(videos2.map((v2) => v2.user_id || v2.created_by).filter(Boolean))];
           if (!userIds.length) return videos2;
-          const res = await request$1("GET", `/apps/${APP_ID$1}/entities/SachiUser?limit=200`);
-          const users = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+          if (!_sachiUserCache) {
+            if (!_sachiUserCacheFetching) {
+              _sachiUserCacheFetching = request$1("GET", `/apps/${APP_ID$1}/entities/SachiUser?limit=200`).then((res) => {
+                _sachiUserCache = Array.isArray(res) ? res : (res == null ? void 0 : res.items) || (res == null ? void 0 : res.records) || [];
+                _sachiUserCacheFetching = null;
+                return _sachiUserCache;
+              }).catch(() => {
+                _sachiUserCacheFetching = null;
+                return [];
+              });
+            }
+            await _sachiUserCacheFetching;
+          }
+          const users = _sachiUserCache || [];
           const byId = {};
           const byUsername = {};
           for (const u2 of users) {
@@ -21287,7 +21301,6 @@ function App() {
               ...v2,
               _badge: sachiUser.badge || null,
               _is_verified: sachiUser.is_verified || false,
-              // Always use the latest avatar from SachiUser — this is the source of truth
               avatar_url: sachiUser.avatar_url || v2.avatar_url || null
             };
           });
@@ -21296,15 +21309,17 @@ function App() {
         }
       };
       if (append) {
-        const tagged = await tagWithLiked(ranked2);
-        const enriched = await enrichWithBadges(tagged);
+        const [tagged, badged] = await Promise.all([tagWithLiked(ranked2), enrichWithBadges(ranked2)]);
+        const likedIds = new Set(tagged.filter((v2) => v2._likedByMe).map((v2) => v2.id));
+        const enriched = badged.map((v2) => likedIds.has(v2.id) ? { ...v2, _likedByMe: true } : v2);
         setVideoList((prev) => {
           const existing = new Set(prev.map((v2) => v2.id));
           return [...prev, ...enriched.filter((v2) => !existing.has(v2.id))];
         });
       } else {
-        const tagged = await tagWithLiked(ranked2);
-        const enriched = await enrichWithBadges(tagged);
+        const [tagged, badged] = await Promise.all([tagWithLiked(ranked2), enrichWithBadges(ranked2)]);
+        const likedIds = new Set(tagged.filter((v2) => v2._likedByMe).map((v2) => v2.id));
+        const enriched = badged.map((v2) => likedIds.has(v2.id) ? { ...v2, _likedByMe: true } : v2);
         setVideoList(enriched);
         if (onReady) onReady();
         requestAnimationFrame(() => {
@@ -21633,7 +21648,7 @@ function App() {
       if (feedTab === "forYou" && feedHasMore && !loading && idx >= feedItems.length - 3) {
         loadMoreVideos();
       }
-    }, style: { height: "calc(100dvh - 80px)", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y", overflowX: "hidden" }, children: [
+    }, style: { height: "calc(100dvh - 70px)", overflowY: "scroll", scrollSnapType: "y mandatory", isolation: "isolate", touchAction: "pan-y", overflowX: "hidden" }, children: [
       feedTab === "following" && followingIds.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: {
         height: "100svh",
         display: "flex",
@@ -21674,11 +21689,11 @@ function App() {
           )
         ] })
       ] }),
-      loading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "calc(100dvh - 80px)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
+      loading && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "calc(100dvh - 70px)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 48 }, children: "🎬" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "rgba(245,200,66,0.7)", fontSize: 14, letterSpacing: 1, fontWeight: 600 }, children: "Loading..." })
       ] }),
-      !loading && videoList.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "calc(100dvh - 80px)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
+      !loading && videoList.length === 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { height: "calc(100dvh - 70px)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 64 }, children: "🎬" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#fff", fontWeight: 800, fontSize: 22 }, children: "No videos yet" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { color: "#888", fontSize: 15 }, children: "Be the first to post!" }),
@@ -21698,7 +21713,7 @@ function App() {
         return feedItems.map((v2, idx) => {
           const inWindow = idx >= windowStart && idx <= windowEnd;
           if (!inWindow) {
-            return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "calc(100dvh - 80px)", scrollSnapAlign: "start", scrollSnapStop: "always", flexShrink: 0, overflow: "hidden" } }, v2.id);
+            return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "calc(100dvh - 70px)", scrollSnapAlign: "start", scrollSnapStop: "always", flexShrink: 0, overflow: "hidden" } }, v2.id);
           }
           return /* @__PURE__ */ jsxRuntimeExports.jsx(
             VideoCard,
@@ -21723,7 +21738,7 @@ function App() {
           );
         });
       })(),
-      feedTab === "forYou" && feedHasMore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "calc(100dvh - 80px)", scrollSnapAlign: "start", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "rgba(245,200,66,0.6)" }, children: [
+      feedTab === "forYou" && feedHasMore && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { height: "calc(100dvh - 70px)", scrollSnapAlign: "start", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 12, color: "rgba(245,200,66,0.6)" }, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { width: 32, height: 32, border: "3px solid rgba(245,200,66,0.2)", borderTop: "3px solid #F5C842", borderRadius: "50%", animation: "spin 0.8s linear infinite" } }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { style: { fontSize: 12, letterSpacing: 1, fontWeight: 600 }, children: "Loading more" })
       ] }) }),
